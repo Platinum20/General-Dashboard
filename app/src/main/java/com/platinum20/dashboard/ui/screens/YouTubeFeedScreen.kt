@@ -288,21 +288,25 @@ fun YouTubeChannelScreen(
     val name = info?.name?.ifBlank { null } ?: channel.title
     val avatar = info?.avatar?.ifBlank { null } ?: channel.thumbnail
     val playingKey = rememberPlayingKey()
-    val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    // Giro 2 (1.566): il canale come una persona, foto grande al centro, nome, iscritti e un solo tasto; poi i
+    // video sullo sfondo (il più nuovo in grande), Shorts e Playlist in file che scorrono di lato.
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        TopLevelBar(title = name, subtitle = "Canale YouTube", onBack = onBack, scrollBehavior = bar)
         LazyColumn(
-            Modifier.fillMaxSize().nestedScroll(bar.nestedScrollConnection),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 120.dp),
+            Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 120.dp),
         ) {
-            // La prima card: foto, iscritti, la descrizione in due righe e Iscritto/Iscriviti. Niente copertina in alto.
             item(key = "head") {
-                MediaHeadCard(
+                MediaHero(
+                    title = name,
                     image = avatar,
-                    line = channelLine(info?.subscribers ?: -1, info?.verified == true).ifBlank { "Canale" },
-                    detail = videos.data?.size?.takeIf { it > 0 }?.let { if (channel.id in more) "più di $it video" else "$it video" }.orEmpty(),
+                    onBack = onBack,
+                    style = HeroStyle.ROUND,
+                    detail = listOf(
+                        channelLine(info?.subscribers ?: -1, info?.verified == true),
+                        videos.data?.size?.takeIf { it > 0 }?.let { if (channel.id in more) "più di $it video" else "$it video" }.orEmpty(),
+                    ).filter { it.isNotBlank() }.joinToString(" · "),
                     description = info?.description.orEmpty(),
-                    picture = { ChannelAvatar(avatar, name, 72) },
+                    picture = { ChannelAvatar(avatar, name, MediaPage.HERO_ROUND.value.toInt()) },
                     buttons = {
                         CanvasButton(
                             if (subscribed) "Iscritto" else "Iscriviti",
@@ -317,14 +321,13 @@ fun YouTubeChannelScreen(
                     },
                 )
             }
-            mediaGap("head-gap")
-            if (videos.data == null && videos.loading) item(key = "v-loading") { PlaceholderList(rows = 3, label = "Carico i video") }
+            if (videos.data == null && videos.loading) item(key = "v-loading") { PlaceholderList(Modifier.padding(horizontal = 16.dp), rows = 3, label = "Carico i video") }
             videos.error?.takeIf { videos.data == null }?.let { e -> item(key = "v-error") { ChannelNote(e) } }
             // VIDEO: il più nuovo in grande, poi righe; "Altri" li apre tutti e arrivando in fondo carica i successivi.
             val shownVideos = if (allVideos) pick.videos else pick.videos.take(CHANNEL_CARD_ROWS)
             if (shownVideos.isNotEmpty()) mediaGroup(
                 key = "videos",
-                title = "Video",
+                title = "Ultimi video",
                 items = shownVideos,
                 itemKey = { it.id },
                 trailing = { if (pick.videos.size > CHANNEL_CARD_ROWS || channel.id in more) MoreToggle(allVideos) { allVideos = !allVideos } },
@@ -343,27 +346,26 @@ fun YouTubeChannelScreen(
             // SHORTS: una fila di copertine verticali.
             val shorts = tabsState[channel.id + "/" + shortsTab]?.data?.videos.orEmpty()
             if (shorts.isNotEmpty()) {
-                item(key = "shorts") {
-                    CardSection("Shorts", trailing = { Text("${shorts.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }) {
-                        LazyRow(
-                            state = rememberRowAtStart(),
-                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 14.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            items(shorts, key = { "s-" + it.id }) { short ->
+                mediaShelf("shorts", "Shorts") {
+                    LazyRow(
+                        state = rememberRowAtStart(),
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(shorts, key = { "s-" + it.id }) { short ->
+                            Column(Modifier.width(108.dp).bouncyPress(0.96f).clickable { onPlay(short.watchUrl) }) {
                                 AsyncImage(
                                     model = "https://i.ytimg.com/vi/${short.id}/hqdefault.jpg",
                                     contentDescription = short.title,
                                     contentScale = ContentScale.Crop,
-                                    modifier = Modifier.width(96.dp).aspectRatio(9f / 16f).clip(MaterialTheme.shapes.medium)
-                                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                                        .bouncyPress(0.96f).clickable { onPlay(short.watchUrl) },
+                                    modifier = Modifier.fillMaxWidth().aspectRatio(9f / 16f).clip(MaterialTheme.shapes.medium)
+                                        .background(MaterialTheme.colorScheme.surfaceVariant),
                                 )
+                                Text(short.title, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
                             }
                         }
                     }
                 }
-                mediaGap("shorts-gap")
             }
             // LIVE e PLAYLIST: righe Canvas, le prime e poi "Altri".
             val lives = tabsState[channel.id + "/" + liveTab]?.data?.videos.orEmpty()
@@ -374,14 +376,19 @@ fun YouTubeChannelScreen(
                 )
             }
             val lists = tabsState[channel.id + "/" + listsTab]?.data?.playlists.orEmpty()
-            if (lists.isNotEmpty()) mediaGroup(
-                key = "lists", title = "Playlist", items = lists, itemKey = { it.id },
-                trailing = { Text("${lists.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) },
-            ) { _, p ->
-                MediaRow(
-                    title = p.title, line = if (p.count > 0) "${p.count} video" else "Playlist", image = p.thumbnail, wide = true,
-                    mark = MediaMark(MediaType.VIDEO), click = Modifier.clickable { onOpenPlaylist(p) },
-                )
+            if (lists.isNotEmpty()) mediaShelf("lists", "Playlist") {
+                val tile = bigVideoWidth() * 0.62f
+                LazyRow(state = rememberRowAtStart(), contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(lists, key = { "l-" + it.id }) { p ->
+                        Column(Modifier.width(tile).bouncyPress(0.96f).clickable { onOpenPlaylist(p) }) {
+                            CaptionedCover(p.title, if (p.count > 0) "${p.count} video" else "Playlist") {
+                                Box(Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.surfaceVariant)) {
+                                    AsyncImage(model = p.thumbnail, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -495,19 +502,30 @@ fun <T> FeedList(
     listState: androidx.compose.foundation.lazy.LazyListState = androidx.compose.foundation.lazy.rememberLazyListState(),
     /** Le pagine a card (1.563) mettono le righe attaccate e lo spazio solo fra una card e l'altra. */
     spacing: androidx.compose.ui.unit.Dp = 16.dp,
+    /** Il giro 2 (1.566): le pagine col blocco in cima a tutta larghezza mettono 0 e le righe portano il loro margine. */
+    edge: androidx.compose.ui.unit.Dp = 16.dp,
+    top: androidx.compose.ui.unit.Dp = 8.dp,
+    /** Il blocco in cima (immagine grande, nome, ▶): c'è anche mentre l'elenco si carica, col tasto indietro. */
+    header: (@Composable () -> Unit)? = null,
     content: LazyListScope.() -> Unit,
 ) {
     val isEmpty = (state.data as? List<*>)?.isEmpty() ?: (state.data == null)
     when {
+        state.data == null && (state.loading || state.error != null) && header != null -> Column(Modifier.fillMaxSize().padding(horizontal = edge).padding(top = top)) {
+            header()
+            if (state.loading) PlaceholderList(Modifier.padding(16.dp), label = "Carico")
+            else Text(state.error.orEmpty(), color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
+        }
         state.data == null && state.loading -> PlaceholderList(Modifier.padding(top = 12.dp), label = "Carico i video")
         state.data == null && state.error != null -> Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
             Text(state.error, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.error)
         }
         else -> LazyColumn(
             state = listState,
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
+            contentPadding = PaddingValues(start = edge, end = edge, top = top, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(spacing),
         ) {
+            if (header != null) item(key = "media-hero") { header() }
             if (state.loading) item { PlaceholderList(rows = 3, label = "Carico i video") }
             state.error?.let { error -> item { Text(error, color = MaterialTheme.colorScheme.error) } }
             content()
@@ -754,16 +772,11 @@ private fun HistoryTab(onPlay: (String) -> Unit) {
         }
         val playingKey = rememberPlayingKey()
         val today = remember { java.time.LocalDate.now() }
-        FeedList(state, empty = "Ancora nessun video guardato", spacing = 0.dp) {
-            // Una card per giorno come il Calendario (1.563, strada A): Oggi, Ieri, Mar 18 nov…
+        FeedList(state, empty = "Ancora nessun video guardato", spacing = 0.dp, edge = 0.dp) {
+            // La linea del tempo del Calendario (giro 2, 1.566): "Oggi ——— ●", poi le righe sullo sfondo.
             HistoryDays.group(watched, { it.watchedAt }, java.time.ZoneId.systemDefault(), today).forEach { (day, list) ->
-                mediaGroup(
-                    key = "d$day",
-                    title = day,
-                    items = list,
-                    itemKey = { "l" + it.id },
-                    trailing = { Text("${list.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                ) { _, w ->
+                item(key = "dh$day") { DayLineHeader(day, now = day == "Oggi", onLongClick = { confirmClear = true }) }
+                list.forEach { w -> item(key = "l" + w.id) {
                     val video = YtVideo(
                         id = w.id, title = w.title, channel = w.channel, channelId = w.channelId, published = null,
                         durationSec = (w.durationMs / 1000).toInt(), channelAvatar = w.channelAvatar,
@@ -775,7 +788,7 @@ private fun HistoryTab(onPlay: (String) -> Unit) {
                         image = video.thumbnail, wide = true, mark = videoMark(video), now = w.id == playingKey,
                         click = Modifier.tapOrSave({ SavedLinks.youtube(video) }) { onPlay(video.watchUrl) },
                     )
-                }
+                } }
             }
             if (fromYouTube.isNotEmpty()) mediaGroup(
                 key = "web", title = "Dalla tua cronologia di YouTube", items = fromYouTube, itemKey = { "w" + it.id },
@@ -785,11 +798,14 @@ private fun HistoryTab(onPlay: (String) -> Unit) {
                     click = Modifier.tapOrSave({ SavedLinks.youtube(v) }) { onPlay(v.watchUrl) },
                 )
             }
-            // Svuotare sta in fondo, in rosso (prima era un tasto nell'intestazione: niente tasti nelle intestazioni).
+            // Svuotare non è più un tasto rosso in vista (giro 2): si tiene premuto il nome di un giorno.
             if (watched.isNotEmpty()) item(key = "clear") {
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    DangerButton(onClick = { confirmClear = true }) { Text("Svuota la cronologia") }
-                }
+                Text(
+                    "Tieni premuto il nome di un giorno per svuotare la cronologia.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                )
             }
         }
     }

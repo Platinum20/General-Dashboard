@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.567.0
+**Spotify e YouTube, giro 2: più immagini, niente scatole**
+- Album, playlist e mix: in cima la copertina grande, il nome, l'artista e un tasto ▶ grande; la pagina prende il colore della copertina. I brani stanno sullo sfondo, come nel Calendario e in News
+- Artista: la foto a tutta larghezza col nome sopra; i Popolari con la copertina; Discografia e "Appare in" in file che scorrono di lato
+- Il player della musica è la pagina intera: colore della copertina, copertina grande, tutto in uno schermo senza scorrere. In fondo la linguetta "Dopo" apre la coda (come tirando su)
+- Sotto i video di YouTube niente più card: titolo, "altro" per la descrizione, il canale, i tasti; i capitoli in una fila che scorre col capitolo di adesso colorato; l'anteprima del primo commento (toccala per tutti) e subito i prossimi video in grande
+- Il canale: foto grande al centro, nome, iscritti e Iscriviti; poi gli ultimi video, Shorts e Playlist in file che scorrono
+- La Cronologia è sulla linea del tempo del Calendario (Oggi ——— ●). Per svuotarla tieni premuto il nome di un giorno
+- Il player dei video di YouTube resta com'è
+
 ## 1.566.0
 **Il venduto del turno dice sempre la stessa cosa**
 - La notifica e la pagina del turno mostrano gli stessi numeri: se Creators Pro segna $0, lo dicono tutte e due

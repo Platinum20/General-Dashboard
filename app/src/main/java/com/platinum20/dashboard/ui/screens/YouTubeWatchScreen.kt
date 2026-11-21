@@ -138,6 +138,9 @@ import com.platinum20.dashboard.media.youtube.player.YtText
 import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.withStyle
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.withLink
 import kotlinx.coroutines.delay
@@ -183,6 +186,7 @@ fun YouTubeWatchScreen(
     val feed by YouTubeStore.subscriptions.collectAsState()
     var fullscreen by rememberSaveable { mutableStateOf(false) }
     var panel by rememberSaveable { mutableStateOf<WatchPanel?>(null) }
+    var showDescription by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(url) { url?.let { YtPlayer.play(context, it) } }
 
@@ -195,7 +199,8 @@ fun YouTubeWatchScreen(
     LaunchedEffect(upNext.map { it.id }, currentId) {
         YtPlayer.queue = listOfNotNull(currentId?.let { "https://www.youtube.com/watch?v=$it" }) + upNext.map { it.watchUrl }
     }
-    val thread = now?.stream?.id?.takeIf { panel == WatchPanel.COMMENTS }?.let { commentsFor(it) }
+    // Si caricano subito (giro 2, 1.566): sotto il video c'è l'anteprima del primo commento.
+    val thread = now?.stream?.id?.let { commentsFor(it) }
     val scope = rememberCoroutineScope()
 
     val inPip = rememberPictureInPicture(enabled = now?.playing == true)
@@ -301,8 +306,8 @@ fun YouTubeWatchScreen(
             // Toccato "Commenti" o "Correlati": la lista scorre fino a loro.
             LaunchedEffect(panel) {
                 if (panel != null && stream0 != null) {
-                    // Con commenti o correlati aperti descrizione e capitoli spariscono: la loro card è subito dopo il canale.
-                    listState.animateScrollToItem(2)
+                    // Con i commenti aperti capitoli e descrizione spariscono: i commenti sono subito dopo il titolo.
+                    listState.animateScrollToItem(1)
                 }
             }
             LazyColumn(
@@ -312,16 +317,26 @@ fun YouTubeWatchScreen(
                 modifier = Modifier.fillMaxSize().graphicsLayer { alpha = pageFade() },
             ) {
                 val stream = now?.stream
-                item(key = "title") { TitleBlock(now, stream, panel, onPanel = { panel = if (panel == it) null else it }, onOpenChannel = onOpenChannel) }
+                // Giro 2 (1.566): niente card, si legge come YouTube. Titolo, riga con "altro", canale, tasti; poi
+                // capitoli in fila, l'anteprima dei commenti e subito i prossimi video in grande.
+                item(key = "title") { TitleBlock(now, stream, showDescription, onDescription = { showDescription = !showDescription }, onOpenChannel = onOpenChannel) }
                 if (stream != null) {
-                    item(key = "channel") { ChannelCard(stream, onOpenChannel) }
-                    // Descrizione e capitoli solo quando sotto non c'è altro: con commenti o correlati aperti spariscono insieme.
+                    if (showDescription && panel == null && stream.description.isNotBlank()) item(key = "desc") { Description(stream) }
                     if (panel == null && stream.chapters.size > 1) item(key = "chapters") { Chapters(stream.chapters) }
-                    if (panel == null && stream.description.isNotBlank()) item(key = "desc") { Description(stream) }
-                    if (panel != WatchPanel.RELATED) item(key = "comments-card") {
-                        PanelCard("Commenti", open = panel == WatchPanel.COMMENTS) { panel = if (panel == WatchPanel.COMMENTS) null else WatchPanel.COMMENTS }
+                    if (panel == null) item(key = "comments-peek") {
+                        CommentsPeek(thread) { panel = WatchPanel.COMMENTS }
                     }
                     if (panel == WatchPanel.COMMENTS) {
+                        item(key = "comments-h") {
+                            CardTitle("Commenti", trailing = {
+                                Text(
+                                    "Chiudi",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.clip(MaterialTheme.shapes.small).clickable { panel = null }.padding(horizontal = 6.dp, vertical = 4.dp),
+                                )
+                            })
+                        }
                         if (thread != null && thread.loaded && !thread.disabled && !(thread.failed && thread.comments.isEmpty())) {
                             item(key = "comments-new") {
                                 CommentField("Aggiungi un commento…", "") { text ->
@@ -357,16 +372,13 @@ fun YouTubeWatchScreen(
                         }
                     }
                 }
-                // I correlati non stanno sempre sotto: si aprono dalla loro card.
-                if (stream != null && panel != WatchPanel.COMMENTS) item(key = "related-card") {
-                    PanelCard("Correlati", open = panel == WatchPanel.RELATED) { panel = if (panel == WatchPanel.RELATED) null else WatchPanel.RELATED }
-                }
-                if (panel == WatchPanel.RELATED) {
+                // I prossimi video stanno sempre sotto, in grande come nella Home di YouTube (giro 2).
+                if (stream != null && panel != WatchPanel.COMMENTS) {
                     if (upNext.isEmpty()) {
                         item(key = "next-e") { Text("Nessun video correlato", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     } else {
-                        if (related.isEmpty()) item(key = "next-h") { SectionHeader("Prossimi dai canali che segui") }
-                        items(upNext, key = { it.id }) { video -> VideoRow(video, onClick = { YtPlayer.play(context, video.watchUrl) }) }
+                        item(key = "next-h") { CardTitle(if (related.isEmpty()) "Dai canali che segui" else "Prossimi", modifier = Modifier.padding(top = 4.dp)) }
+                        items(upNext, key = { it.id }) { video -> VideoCard(video, onClick = { YtPlayer.play(context, video.watchUrl) }) }
                     }
                 }
             }
@@ -1015,8 +1027,8 @@ private enum class WatchPanel { COMMENTS, RELATED }
 private fun TitleBlock(
     now: YtNow?,
     stream: YtStream?,
-    panel: WatchPanel?,
-    onPanel: (WatchPanel) -> Unit,
+    descriptionOpen: Boolean,
+    onDescription: () -> Unit,
     onOpenChannel: (YtChannel) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -1044,16 +1056,27 @@ private fun TitleBlock(
         val sponsorOn by AppSettings.sponsorBlock.collectAsState()
         val actions by AppSettings.sponsorActions.collectAsState()
         val label = sponsor?.takeIf { sponsorOn && it.videoId == stream.id }?.let { SponsorBlock.label(it.segments, actions) }
+        // Visualizzazioni · quando · "altro": toccandola si apre la descrizione (giro 2: non occupa spazio se non la leggi).
+        val meta = listOfNotNull(
+            stream.views.takeIf { it >= 0 }?.let { "${compactCount(it)} visualizzazioni" },
+            stream.uploaded.takeIf { it.isNotBlank() }?.let { YtText.age(it, System.currentTimeMillis()) },
+        ).joinToString(" · ")
+        val hasDescription = stream.description.isNotBlank()
         Text(
-            listOfNotNull(
-                stream.views.takeIf { it >= 0 }?.let { "${compactCount(it)} visualizzazioni" },
-                stream.uploaded.takeIf { it.isNotBlank() }?.let { YtText.age(it, System.currentTimeMillis()) },
-            ).joinToString(" · "),
+            androidx.compose.ui.text.buildAnnotatedString {
+                append(meta)
+                if (hasDescription) {
+                    if (meta.isNotEmpty()) append(" · ")
+                    withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)) { append(if (descriptionOpen) "meno" else "altro") }
+                }
+            },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+            modifier = if (hasDescription) Modifier.clip(MaterialTheme.shapes.small).clickable(onClickLabel = "Descrizione", onClick = onDescription) else Modifier,
         )
+        ChannelRow(stream, onOpenChannel)
         // SponsorBlock: tutto il video è promozione (es. prodotto avuto dal marchio).
         if (label != null) {
             Row(
@@ -1112,9 +1135,9 @@ private fun TitleBlock(
     }
 }
 
-/** La card del canale sotto il video (1.563): foto, nome › (apre il canale), iscritti e Iscritto/Iscriviti. */
+/** La riga del canale sotto il titolo (giro 2, senza card): foto, nome (apre il canale), iscritti e Iscriviti. */
 @Composable
-private fun ChannelCard(stream: YtStream, onOpenChannel: (YtChannel) -> Unit) {
+private fun ChannelRow(stream: YtStream, onOpenChannel: (YtChannel) -> Unit) {
     val context = LocalContext.current
     val haptic = rememberHaptic()
     val channelId = YtResolver.channelId(stream.channelUrl)
@@ -1124,17 +1147,19 @@ private fun ChannelCard(stream: YtStream, onOpenChannel: (YtChannel) -> Unit) {
     // Per sapere se sei già iscritto serve la lista dei canali (presa dalla cache se recente).
     LaunchedEffect(Unit) { YouTubeStore.refreshChannels(context) }
     val subscribed = channelId != null && YtRatings.isSubscribed(channelId, changedSubs, channels.data)
-    CanvasCard(Modifier.fillMaxWidth(), onClick = channelId?.let { id -> { onOpenChannel(YtChannel(id, stream.channel, stream.channelAvatar)) } }) {
-        Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+    run {
+        Row(
+            Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium)
+                .then(if (channelId != null) Modifier.clickable { onOpenChannel(YtChannel(channelId, stream.channel, stream.channelAvatar)) } else Modifier)
+                .padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             if (stream.channel.isNotBlank()) {
                 ChannelAvatar(stream.channelAvatar, stream.channel, 40)
                 Spacer(Modifier.width(12.dp))
             }
             Column(Modifier.weight(1f)) {
-                Text(
-                    if (channelId != null) stream.channel + " ›" else stream.channel,
-                    style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                )
+                Text(stream.channel, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 stream.subscribers.takeIf { it >= 0 }?.let {
                     Text("${compactCount(it)} iscritti", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                 }
@@ -1154,16 +1179,28 @@ private fun ChannelCard(stream: YtStream, onOpenChannel: (YtChannel) -> Unit) {
     }
 }
 
-/** Commenti e Correlati come card che si aprono (1.563): il titolo con › e, aperte, la lista sotto. */
+/** L'anteprima dei commenti sotto il video (giro 2, come YouTube): quanti e il primo; toccandola si aprono tutti. */
 @Composable
-private fun PanelCard(title: String, open: Boolean, trailing: String? = null, onToggle: () -> Unit) {
-    CardSection(title, onClick = onToggle, trailing = {
-        Text(
-            if (open) "Chiudi" else trailing.orEmpty(),
-            style = MaterialTheme.typography.labelMedium,
+private fun CommentsPeek(thread: CommentThread?, onOpen: () -> Unit) {
+    val first = thread?.comments?.firstOrNull()
+    if (thread != null && thread.loaded && thread.disabled) return
+    Column(
+        Modifier.fillMaxWidth().clip(MaterialTheme.shapes.large).background(MaterialTheme.colorScheme.card)
+            .bouncyPress(0.98f).clickable(onClickLabel = "Apri i commenti", onClick = onOpen)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+    ) {
+        Text("Commenti", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+        if (first != null) Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            ChannelAvatar(first.avatar, first.author, 24)
+            Spacer(Modifier.width(10.dp))
+            Text(first.text, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        } else Text(
+            if (thread == null || !thread.loaded) "Carico…" else "Nessun commento, scrivi il primo",
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp),
         )
-    }) { Spacer(Modifier.height(8.dp)) }
+    }
 }
 
 /** Tastino tondo: sempre su una riga sola; senza [label] resta solo l'icona. */
@@ -1231,8 +1268,7 @@ private fun Description(stream: YtStream) {
         }
     }
     var overflows by remember(stream.id) { mutableStateOf(false) }
-    CanvasCard(Modifier.fillMaxWidth()) {
-        CardTitle("Descrizione")
+    run {
         Column(
             Modifier
                 .fillMaxWidth()
@@ -1241,11 +1277,12 @@ private fun Description(stream: YtStream) {
                     indication = null,
                     onClickLabel = if (expanded) "Riduci la descrizione" else "Leggi tutta la descrizione",
                 ) { expanded = !expanded }
-                .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
+                .clip(MaterialTheme.shapes.large).background(MaterialTheme.colorScheme.card)
+                .padding(horizontal = 14.dp, vertical = 12.dp),
         ) {
             Text(
                 text,
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium,
                 maxLines = if (expanded) Int.MAX_VALUE else DESCRIPTION_LINES,
                 overflow = TextOverflow.Ellipsis,
                 onTextLayout = { if (!expanded) overflows = it.hasVisualOverflow },
@@ -1263,56 +1300,39 @@ private fun Description(stream: YtStream) {
 }
 
 /** Righe della descrizione chiusa: dal 1.563 è una card fra le altre, si apre toccandola. */
-private const val DESCRIPTION_LINES = 4
+private const val DESCRIPTION_LINES = 12
 
+/** I capitoli in una fila che scorre (giro 2): ora e nome, quello di adesso col bordo colorato; un tocco salta lì. */
 @Composable
 private fun Chapters(chapters: List<YtChapter>) {
     val context = LocalContext.current
     val engine by com.platinum20.dashboard.media.CanvasPlayer.now.collectAsState()
     val position = engine?.positionMs ?: 0L
-    // Il capitolo di adesso: l'ultimo cominciato (1.563, come nel mockup: a destra "adesso").
     val current = chapters.indexOfLast { it.startSec * 1000L <= position }
-    var open by rememberSaveable { mutableStateOf(false) }
-    val shown = if (open || chapters.size <= CHAPTER_ROWS) chapters.indices.toList()
-    else chapters.indices.toList().let { all ->
-        // Chiusa si vedono le righe intorno a quella di adesso.
-        val from = (current - 1).coerceIn(0, (chapters.size - CHAPTER_ROWS).coerceAtLeast(0))
-        all.subList(from, (from + CHAPTER_ROWS).coerceAtMost(all.size))
-    }
-    CanvasCard(Modifier.fillMaxWidth()) {
-        CardTitle("Capitoli", trailing = {
-            if (chapters.size > CHAPTER_ROWS) MoreToggle(open) { open = !open }
-            else Text("${chapters.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        })
-        shown.forEach { i ->
+    val rowState = androidx.compose.foundation.lazy.rememberLazyListState()
+    // La fila segue il video: il capitolo di adesso resta in vista.
+    LaunchedEffect(current) { if (current >= 0) rowState.animateScrollToItem((current - 1).coerceAtLeast(0)) }
+    val accent = MaterialTheme.colorScheme.primary
+    LazyRow(state = rowState, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(chapters.size, key = { "ch$it" }) { i ->
             val chapter = chapters[i]
             val now = i == current
-            Row(
-                Modifier.fillMaxWidth().bouncyPress(0.98f).clickable { YtPlayer.seekTo(context, chapter.startSec * 1000L) }
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            Column(
+                Modifier.widthIn(max = 200.dp).clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.card)
+                    .then(if (now) Modifier.border(1.dp, accent, MaterialTheme.shapes.medium) else Modifier)
+                    .bouncyPress(0.96f).clickable { YtPlayer.seekTo(context, chapter.startSec * 1000L) }
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
             ) {
                 Text(
-                    formatDuration(chapter.startSec * 1000L),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.width(56.dp),
+                    formatDuration(chapter.startSec * 1000L) + if (now) " · adesso" else "",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (now) accent else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Text(
-                    chapter.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = if (now) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
-                )
-                if (now) Text("adesso", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                Text(chapter.title, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
-        Spacer(Modifier.height(8.dp))
     }
 }
-
-/** Le righe dei capitoli a card chiusa. */
-private const val CHAPTER_ROWS = 4
 
 /** Commenti (o risposte a un commento) caricati a pagine, come nell'app di YouTube. */
 private class CommentThread {

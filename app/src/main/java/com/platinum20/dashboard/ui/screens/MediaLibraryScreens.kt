@@ -135,9 +135,9 @@ fun MediaLikedScreen(videosOnly: Boolean, onBack: () -> Unit, onPlayVideo: (Stri
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {
             val playingKey = rememberPlayingKey()
-            FeedList(state, empty = if (videosOnly) "Nessun video con il Mi piace" else "Nessun brano che ti piace", spacing = 0.dp) {
+            FeedList(state, empty = if (videosOnly) "Nessun video con il Mi piace" else "Nessun brano che ti piace", spacing = 0.dp, edge = 0.dp) {
                 if (entries.isNotEmpty()) item(key = "play") {
-                    CanvasButton("Riproduci tutto", onClick = {
+                    CanvasButton("Riproduci tutto", modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), onClick = {
                         val now = System.currentTimeMillis()
                         CanvasPlayer.playList(context, entries.map { it.resume(now).let { r -> if (videosOnly) r else r.copy(link = LIKED_LINK) } })
                     }, primary = true)
@@ -194,7 +194,7 @@ fun MediaPlaylistsScreen(onBack: () -> Unit, onOpenSpotify: (SpItem) -> Unit) {
         topBar = { TopLevelBar(title = "Playlist", subtitle = "Playlist e album salvati", scrollBehavior = bar, onBack = onBack) },
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {
-            FeedList(state, empty = "Nessuna playlist", spacing = 0.dp) {
+            FeedList(state, empty = "Nessuna playlist", spacing = 0.dp, edge = 0.dp) {
                 // Una card sola con le righe Canvas (1.563, strada A).
                 if (entries.isNotEmpty()) mediaGroup(
                     key = "lists", title = "Dall'ultima ascoltata", items = entries, itemKey = { it.uri },
@@ -235,38 +235,29 @@ fun MixScreen(mixId: String, onBack: () -> Unit) {
     LaunchedEffect(Unit) { com.platinum20.dashboard.media.spotify.MadeStore.refresh(context) }
     val mix = remember(home.data, library.data, made) { mixesOf(home.data, library.data, today, made).firstOrNull { it.id == mixId } }
     val tracks = mix?.tracks.orEmpty()
-    val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
-    Scaffold(
-        modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
-        topBar = {
-            TopLevelBar(
-                title = mix?.title ?: "Mix",
-                subtitle = listOfNotNull(mix?.badge ?: "Mix", "${tracks.size} brani".takeIf { tracks.isNotEmpty() }, MediaMarks.clock(tracks.sumOf { it.durationMs })).joinToString(" · "),
-                scrollBehavior = bar,
-                onBack = onBack,
-            )
-        },
-    ) { inner ->
-        val state = Loadable(data = tracks.takeIf { mix != null }, loading = home.loading || library.loading, error = home.error)
-        Column(Modifier.fillMaxSize().padding(inner)) {
+    val state = Loadable(data = tracks.takeIf { mix != null }, loading = home.loading || library.loading, error = home.error)
+    // Giro 2 (1.566): come album e playlist, la copertina grande col nome in cima e i brani sullo sfondo.
+    run {
+        Column(Modifier.fillMaxSize()) {
             val playingKey = rememberPlayingKey()
-            FeedList(state, empty = "Questo mix oggi non c'è più", spacing = 0.dp) {
-                // Come album e playlist (1.563, strada A): la prima card con la copertina del mix e i tasti, poi i brani.
-                if (mix != null) item(key = "head") {
-                    MediaHeadCard(
-                        image = mix.image,
-                        mark = MediaMark(MediaType.MUSIC),
-                        line = mix.badge,
-                        detail = mix.subtitle,
-                        onPlay = { playTracks(context, tracks, null, mixLink(mix)) },
-                        onShuffle = { playTracks(context, tracks.shuffled(), null, mixLink(mix)) },
-                        onMore = { com.platinum20.dashboard.capture.SavedLinks.offer(com.platinum20.dashboard.capture.SavedLinks.mix(mix.id, mix.title, mix.subtitle, mix.image)) },
-                    )
-                }
-                if (mix != null) mediaGap("head-gap")
+            val hero: @Composable () -> Unit = {
+                MediaHero(
+                    title = mix?.title ?: "Mix",
+                    image = mix?.image.orEmpty(),
+                    onBack = onBack,
+                    mark = MediaMark(MediaType.MUSIC),
+                    line = mix?.badge.orEmpty(),
+                    detail = listOfNotNull("${tracks.size} brani".takeIf { tracks.isNotEmpty() }, MediaMarks.clock(tracks.sumOf { it.durationMs })).joinToString(" · "),
+                    description = mix?.subtitle.orEmpty(),
+                    onPlay = mix?.let { m -> { playTracks(context, tracks, null, mixLink(m)) } },
+                    onShuffle = mix?.let { m -> { playTracks(context, tracks.shuffled(), null, mixLink(m)) } },
+                    onMore = mix?.let { m -> { com.platinum20.dashboard.capture.SavedLinks.offer(com.platinum20.dashboard.capture.SavedLinks.mix(m.id, m.title, m.subtitle, m.image)) } },
+                )
+            }
+            FeedList(state, empty = "Questo mix oggi non c'è più", spacing = 0.dp, edge = 0.dp, top = 0.dp, header = hero) {
                 if (tracks.isNotEmpty()) mediaGroup(
                     key = "tracks",
-                    title = "Brani",
+                    title = "",
                     items = tracks,
                     itemKey = { it.uri },
                     trailing = { Text("${tracks.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) },
@@ -311,14 +302,13 @@ fun MediaNewsScreen(onBack: () -> Unit, onPlayVideo: (String) -> Unit) {
         val count = tips.size
         Column(Modifier.fillMaxSize().padding(inner)) {
             val playingKey = rememberPlayingKey()
-            FeedList(Loadable(data = tips, loading = home.loading && count == 0, error = home.error.takeIf { count == 0 }), empty = "Niente da scoprire per ora", spacing = 0.dp) {
+            FeedList(Loadable(data = tips, loading = home.loading && count == 0, error = home.error.takeIf { count == 0 }), empty = "Niente da scoprire per ora", spacing = 0.dp, edge = 0.dp) {
                 // Una card sola come le altre pagine (1.563, strada A): un video in grande ogni sei, gli altri in righe.
                 if (tips.isNotEmpty()) mediaGroup(
                     key = "tips",
-                    title = "Per te",
+                    title = "",
                     items = tips,
                     itemKey = { it.id },
-                    trailing = { Text("dalla tua Home di YouTube", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     footer = if (!ended && home.data != null) ({
                         // Composto solo vicino al fondo: lì arrivano altri consigliati, come scorrendo la Home di YouTube.
                         LaunchedEffect(count) { YouTubeStore.loadMoreHome(context) }
@@ -667,7 +657,7 @@ fun MusicAllScreen(onBack: () -> Unit, onOpenRoute: (String) -> Unit) {
                     is PerTe.Liked -> MediaRow(title = "Brani che ti piacciono", line = "${e.count} brani", image = e.image, click = Modifier.clickable { openItem(e) })
                 }
             }
-            FeedList(Loadable(data = Unit), empty = "", spacing = 0.dp) {
+            FeedList(Loadable(data = Unit), empty = "", spacing = 0.dp, edge = 0.dp) {
                 // La libreria: quello che è tuo e non cambia (salvati, Mi piace, podcast, radio).
                 val library = buildList<Pair<String, @Composable () -> Unit>> {
                     if (saved.isNotEmpty()) add("saved" to {

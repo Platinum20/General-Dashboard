@@ -146,34 +146,16 @@ fun SpotifyItemScreen(item: SpItem, onBack: () -> Unit, onOpenItem: (SpItem) -> 
         ArtistScreen(item, onBack = onBack, onOpenItem = onOpenItem)
         return
     }
-    val barScroll = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
-    Scaffold(
-        modifier = Modifier.nestedScroll(barScroll.nestedScrollConnection),
-        topBar = {
-            TopLevelBar(
-                // Dopo "Modifica" il nome nuovo si vede subito (1.507).
-                title = if (item.kind == SpKind.PLAYLIST) PlaylistManage.title(item) else item.title,
-                subtitle = when (item.kind) {
-                    SpKind.ALBUM -> "Album"
-                    SpKind.PLAYLIST -> "Playlist"
-                    SpKind.SHOW -> "Podcast"
-                    else -> "Spotify"
-                },
-                scrollBehavior = barScroll,
-                onBack = onBack,
-            )
-        },
-    ) { inner ->
-        Column(Modifier.fillMaxSize().padding(inner)) {
-            ChildrenList(item, onGone = onBack, onOpen = onOpenItem, onPlay = { playSpotifyList(context, it, null) }, onPlayFrom = { child ->
-                // Da un album o una playlist si continua con i brani successivi, nella coda unica.
-                if (item.kind == SpKind.ALBUM || item.kind == SpKind.PLAYLIST || item.kind == SpKind.SHOW) {
-                    playSpotifyList(context, item, child)
-                } else {
-                    SpotifyPlayer.play(context, child)
-                }
-            })
-        }
+    // Giro 2 (1.566): niente barra del titolo, il nome sta nel blocco in cima con la copertina grande.
+    Column(Modifier.fillMaxSize()) {
+        ChildrenList(item, onBack = onBack, onGone = onBack, onOpen = onOpenItem, onPlay = { playSpotifyList(context, it, null) }, onPlayFrom = { child ->
+            // Da un album o una playlist si continua con i brani successivi, nella coda unica.
+            if (item.kind == SpKind.ALBUM || item.kind == SpKind.PLAYLIST || item.kind == SpKind.SHOW) {
+                playSpotifyList(context, item, child)
+            } else {
+                SpotifyPlayer.play(context, child)
+            }
+        })
     }
 }
 
@@ -592,7 +574,7 @@ internal fun playTracks(context: android.content.Context, row: List<SpItem>, sta
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun ChildrenList(parent: SpItem, onGone: () -> Unit, onOpen: (SpItem) -> Unit, onPlay: (SpItem) -> Unit, onPlayFrom: (SpItem) -> Unit) {
+private fun ChildrenList(parent: SpItem, onBack: () -> Unit, onGone: () -> Unit, onOpen: (SpItem) -> Unit, onPlay: (SpItem) -> Unit, onPlayFrom: (SpItem) -> Unit) {
     val context = LocalContext.current
     val view = androidx.compose.ui.platform.LocalView.current
     val all by SpotifyStore.children.collectAsState()
@@ -640,43 +622,49 @@ private fun ChildrenList(parent: SpItem, onGone: () -> Unit, onOpen: (SpItem) ->
     val inApp = LocalInAppNav.current
     val toArtist = parent.kind == SpKind.ALBUM && inApp != null && parent.uri.isNotBlank()
     val playable = tracks.count { it.kind == SpKind.TRACK || it.kind == SpKind.EPISODE }
-    FeedList(if (note != null) state.copy(error = null) else state, empty = if (note != null) "" else "Vuoto", listState = listState, spacing = 0.dp) {
-        // La prima card (1.563, Antonio strada A: "come il resto dell'app"): copertina piccola a sinistra, di un album
-        // l'artista che si tocca ("Madame ›"), di una playlist di chi è; sotto quanti brani, poi Riproduci · Casuale · Altro.
-        item(key = "header") {
-            MediaHeadCard(
-                image = parent.image,
-                round = parent.kind == SpKind.ARTIST,
-                mark = MediaMarks.of(parent),
-                line = if (isPlaylist && info != null) {
-                    SpotifyPlaylists.ownerLine(PlaylistManage.infos[parent.id]?.second == true, info.public, info.collaborative, parent.subtitle.substringBefore(" · "))
-                } else parent.subtitle.substringBefore(" · "),
-                onLine = if (toArtist) ({
-                    SavedLinks.spotify(parent)?.let { goToCreator(context, (it as com.platinum20.dashboard.capture.SavedLink.Media).item, inApp!!.openRoute) }
-                }) else null,
-                detail = SpotifyPlaylists.headerLine("", playable, tracks.sumOf { it.durationMs }),
-                description = info?.description.orEmpty(),
-                onPlay = if (!arranging && parent.kind != SpKind.ARTIST) ({ onPlay(parent) }) else null,
-                onShuffle = if (!arranging && parent.kind != SpKind.ARTIST) ({ playTracks(context, tracks.shuffled(), null, link = parent.uri) }) else null,
-                // "Altro" = le stesse azioni della pressione lunga (regola 1.513): le tue playlist hanno Modifica/Riordina/Elimina.
-                onMore = if (arranging) null else ({
-                    if (isPlaylist && info != null) PlaylistManage.openMenu(context, parent, onGone)
-                    else SavedLinks.spotify(parent)?.let(SavedLinks::offer)
-                }),
-                buttons = { if (arranging) CanvasButton("Fine", onClick = { PlaylistManage.arranging.remove(parent.id) }, primary = true) },
-            )
-        }
-        mediaGap("header-gap")
+    val kindLabel = when (parent.kind) {
+        SpKind.ALBUM -> "Album"
+        SpKind.PLAYLIST -> "Playlist"
+        SpKind.SHOW -> "Podcast"
+        else -> ""
+    }
+    val owner = parent.subtitle.substringBefore(" · ")
+    val hero: @Composable () -> Unit = {
+        MediaHero(
+            // Dopo "Modifica" il nome nuovo si vede subito (1.507).
+            title = if (isPlaylist) PlaylistManage.title(parent) else parent.title,
+            image = parent.image,
+            onBack = onBack,
+            mark = MediaMarks.of(parent),
+            line = if (isPlaylist && info != null) {
+                SpotifyPlaylists.ownerLine(PlaylistManage.infos[parent.id]?.second == true, info.public, info.collaborative, owner)
+            } else owner,
+            onLine = if (toArtist) ({
+                SavedLinks.spotify(parent)?.let { goToCreator(context, (it as com.platinum20.dashboard.capture.SavedLink.Media).item, inApp!!.openRoute) }
+            }) else null,
+            detail = listOf(kindLabel, SpotifyPlaylists.headerLine("", playable, tracks.sumOf { it.durationMs })).filter { it.isNotBlank() }.joinToString(" · "),
+            description = info?.description.orEmpty(),
+            onPlay = if (!arranging) ({ onPlay(parent) }) else null,
+            onShuffle = if (!arranging) ({ playTracks(context, tracks.shuffled(), null, link = parent.uri) }) else null,
+            // "Altro" = le stesse azioni della pressione lunga (regola 1.513): le tue playlist hanno Modifica/Riordina/Elimina.
+            onMore = if (arranging) null else ({
+                if (isPlaylist && info != null) PlaylistManage.openMenu(context, parent, onGone)
+                else SavedLinks.spotify(parent)?.let(SavedLinks::offer)
+            }),
+            buttons = { if (arranging) CanvasButton("Fine", onClick = { PlaylistManage.arranging.remove(parent.id) }, primary = true, modifier = Modifier.padding(start = 12.dp)) },
+        )
+    }
+    FeedList(if (note != null) state.copy(error = null) else state, empty = if (note != null) "" else "Vuoto", listState = listState, spacing = 0.dp, edge = 0.dp, top = 0.dp, header = hero) {
         if (arranging) item(key = "arrange-hint") {
             Text(
                 "Trascina un brano dalla maniglia per spostarlo; toccalo per toglierlo o portarlo in cima.",
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = MediaPage.GAP),
+                modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = MediaPage.GAP),
             )
         }
         note?.let { message ->
             item(key = "note") {
-                Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = MediaPage.GAP))
+                Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = MediaPage.GAP))
             }
         }
         if (arranging) {
@@ -685,7 +673,7 @@ private fun ChildrenList(parent: SpItem, onGone: () -> Unit, onOpen: (SpItem) ->
                 val key = keys[i]
                 ArrangeRow(
                     child,
-                    modifier = (if (reorder.isDragging(key)) Modifier else Modifier.animateItem()).reorderItem(reorder, key).padding(vertical = 4.dp),
+                    modifier = (if (reorder.isDragging(key)) Modifier else Modifier.animateItem()).reorderItem(reorder, key).padding(horizontal = 16.dp, vertical = 4.dp),
                     handle = Modifier.reorderHandle(reorder, key) { view.haptic(Haptic.GRAB) },
                     onClick = { PlaylistManage.trackMenu(context, parent, child, i, shown.size) },
                 )
@@ -693,7 +681,7 @@ private fun ChildrenList(parent: SpItem, onGone: () -> Unit, onOpen: (SpItem) ->
         } else if (shown.isNotEmpty()) {
             mediaGroup(
                 key = "tracks",
-                title = if (parent.kind == SpKind.SHOW) "Episodi" else "Brani",
+                title = when (parent.kind) { SpKind.SHOW -> "Episodi"; SpKind.ALBUM -> ""; else -> "Brani" },
                 items = shown.indices.toList(),
                 itemKey = { keys[it] },
                 trailing = {

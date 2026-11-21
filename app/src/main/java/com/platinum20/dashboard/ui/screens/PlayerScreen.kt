@@ -56,6 +56,11 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.MoreHoriz
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.ui.text.withStyle
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.RepeatOne
@@ -186,15 +191,30 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
     BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
     val w = constraints.maxWidth.toFloat().coerceAtLeast(1f)
     val h = constraints.maxHeight.toFloat().coerceAtLeast(1f)
+    // Giro 2 (1.566): il player è la pagina, senza scatole. Prende il colore della copertina, che sfuma nello sfondo.
+    val tint = rememberCoverTint(now?.artwork.orEmpty())
+    Box(
+        Modifier.fillMaxWidth().fillMaxHeight(0.8f).background(
+            Brush.verticalGradient(listOf((tint ?: MaterialTheme.colorScheme.background).copy(alpha = 0.7f), MaterialTheme.colorScheme.background))
+        )
+    )
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
-            TopLevelBar(
-                title = "In ascolto",
-                subtitle = now?.source?.label?.uppercase(),
-                onBack = onBack,
-                transparent = true,
-            )
+            // In alto: ⌄ (torna al mini player), da dove arriva, ⋯ (le azioni della pressione lunga).
+            Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 4.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBack) { Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = "Riduci") }
+                Text(
+                    now?.source?.label?.uppercase().orEmpty(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = { Playback.currentAsItem()?.let { SavedLinks.offer(SavedLink.Media(it)) } }) {
+                    Icon(Icons.Rounded.MoreHoriz, contentDescription = "Altro")
+                }
+            }
         },
     ) { inner ->
         val current = now
@@ -297,18 +317,10 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
                     scaleY = sc
                     alpha = 1f - 0.6f * side
                 }
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .then(pageDrag)
+                .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // La maniglia in alto dice che il blocco colorato si trascina giù.
-            Box(
-                Modifier
-                    .padding(bottom = 8.dp)
-                    .size(width = 36.dp, height = 4.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
-            )
             // Il testo (1.491): si apre e si chiude toccando la copertina o "Testo"; da solo col volume a zero (Antonio).
             val lyrics = rememberLyrics(current)
             var showLyrics by remember(current.title) { mutableStateOf(false) }
@@ -317,44 +329,34 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
             LaunchedEffect(muted, lyrics != null) { if (lyrics != null) showLyrics = muted }
             val item = remember(current.title, current.subtitle) { Playback.currentAsItem() }
             val seed = remember(item?.key) { item?.let(com.platinum20.dashboard.media.spotify.MadeStore::seedOf) }
-            // Il blocco colorato (1.563, player A): tutto quello che serve sta qui, e si trascina come la pagina di prima.
-            CanvasCard(
-                modifier = Modifier.fillMaxWidth().widthIn(max = 480.dp).then(pageDrag),
-                shape = MaterialTheme.shapes.extraLarge,
-                colors = androidx.compose.material3.CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                ),
-            ) {
-                Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Artwork(
-                        current, Modifier.fillMaxWidth(0.82f),
-                        lyrics = lyrics?.takeIf { showLyrics },
-                        onTap = if (lyrics != null) ({ showLyrics = !showLyrics }) else null,
-                    )
-                    Spacer(Modifier.height(20.dp))
-                    PlayerTitle(current, item, seed)
-                    Spacer(Modifier.height(12.dp))
-                    TimeBar(current)
-                    Spacer(Modifier.height(4.dp))
-                    Controls(current)
+            // Tutto in uno schermo, senza scorrere: copertina grande (più piccola se lo schermo è basso), poi i comandi.
+            Spacer(Modifier.height(8.dp))
+            Artwork(
+                current, Modifier.weight(1f, fill = false).fillMaxWidth(),
+                lyrics = lyrics?.takeIf { showLyrics },
+                onTap = if (lyrics != null) ({ showLyrics = !showLyrics }) else null,
+            )
+            Column(Modifier.fillMaxWidth().widthIn(max = 480.dp)) {
+                Spacer(Modifier.height(20.dp))
+                PlayerTitle(current, item, seed)
+                Spacer(Modifier.height(12.dp))
+                TimeBar(current)
+                Spacer(Modifier.height(4.dp))
+                Controls(current)
+                Spacer(Modifier.height(10.dp))
+                PlayerTools(
+                    current, seed,
+                    lyrics = lyrics != null, showLyrics = showLyrics,
+                    onLyrics = { showLyrics = !showLyrics },
+                    onOpenQueue = onOpenQueue,
+                )
+                if (current.source == PlaySource.SPEECH) {
                     Spacer(Modifier.height(8.dp))
-                    Box(Modifier.fillMaxWidth().height(1.dp).background(LocalContentColor.current.copy(alpha = 0.12f)))
-                    Spacer(Modifier.height(8.dp))
-                    PlayerTools(
-                        current, seed,
-                        lyrics = lyrics != null, showLyrics = showLyrics,
-                        onLyrics = { showLyrics = !showLyrics },
-                        onOpenQueue = onOpenQueue,
-                    )
+                    SpeechChapters()
                 }
+                Spacer(Modifier.height(12.dp))
+                NextPeek(onOpenQueue)
             }
-            Spacer(Modifier.height(12.dp))
-            Column(Modifier.fillMaxWidth().widthIn(max = 480.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (current.source == PlaySource.SPEECH) SpeechChapters()
-                NextCard(onOpenQueue)
-            }
-            Spacer(Modifier.height(24.dp))
         }
     }
     }
@@ -419,7 +421,6 @@ private fun PlayerTools(
     val ytLink = if (now.source == PlaySource.MUSIC) YtPlayer.now.value?.link else null
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
         if (seed != null) PlayerTool(Icons.AutoMirrored.Outlined.PlaylistAdd, "Playlist") { PlaylistPicker.open(context, seed) }
-        PlayerTool(Icons.Outlined.QueueMusic, "Coda", onClick = onOpenQueue)
         if (lyrics) PlayerTool(Icons.AutoMirrored.Outlined.Notes, if (showLyrics) "Copertina" else "Testo", on = showLyrics, onClick = onLyrics)
         if (seed != null) PlayerTool(Icons.Outlined.Sensors, "Radio") {
             com.platinum20.dashboard.media.spotify.MadeStore.startRadio(context, seed) { CaptureFeedback.tell(context, it) }
@@ -445,36 +446,34 @@ private fun PlayerTool(icon: ImageVector, label: String, on: Boolean = false, on
     }
 }
 
-/** "DOPO ›": i prossimi della coda; il titolo apre la coda intera, una riga salta lì. */
+/** La linguetta "Dopo" in fondo (giro 2): il prossimo della coda; toccandola (o tirando su la pagina) si apre la coda. */
 @Composable
-private fun NextCard(onOpenQueue: () -> Unit) {
+private fun NextPeek(onOpenQueue: () -> Unit) {
     val queue by com.platinum20.dashboard.media.CanvasPlayer.queue.collectAsState()
-    val next = queue.upcoming
-    if (next.isEmpty()) return
-    val shown = next.take(NEXT_ROWS)
-    CardSection(
-        "Dopo",
-        onClick = onOpenQueue,
-        trailing = {
-            if (next.size > shown.size) Text("altri ${next.size - shown.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        },
+    val next = queue.upcoming.firstOrNull()
+    Column(
+        Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
+            .background(MaterialTheme.colorScheme.card).clickable(onClickLabel = "Apri la coda", onClick = onOpenQueue)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Column(Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp)) {
-            shown.forEach { entry ->
-                MediaRow(
-                    title = entry.item.title,
-                    line = entry.item.subtitle,
-                    image = entry.item.image,
-                    trailing = entry.item.durationMs.takeIf { it > 0 }?.let(com.platinum20.dashboard.media.spotify.SpotifyPlaylists::clock),
-                    click = Modifier.clickable { com.platinum20.dashboard.media.CanvasPlayer.jump(entry.id) },
-                )
-            }
-        }
+        Box(Modifier.size(width = 36.dp, height = 4.dp).clip(CircleShape).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)))
+        Spacer(Modifier.height(6.dp))
+        Text(
+            androidx.compose.ui.text.buildAnnotatedString {
+                withStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold)) { append("Dopo") }
+                withStyle(androidx.compose.ui.text.SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant)) {
+                    append(if (next == null) " · la coda è vuota" else " · " + listOf(next.item.title, next.item.subtitle).filter { it.isNotBlank() }.joinToString(" · "))
+                    if (queue.upcoming.size > 1) append(" · altri ${queue.upcoming.size - 1}")
+                }
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
-
-/** Quanti brani della coda si vedono sotto il player: il resto è nella coda. */
-private const val NEXT_ROWS = 3
 
 /** "In diretta" lo dice già la riga del tempo, sotto il titolo: non due volte. */
 internal fun showPlayerSubtitle(live: Boolean, subtitle: String): Boolean =
