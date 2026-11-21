@@ -95,6 +95,7 @@ import com.platinum20.dashboard.news.NewsRecap
 import com.platinum20.dashboard.news.NewsStore
 import com.platinum20.dashboard.news.NewsFeed
 import com.platinum20.dashboard.news.NewsStories
+import com.platinum20.dashboard.news.NewsStory
 import com.platinum20.dashboard.news.reader.ArticleVerifier
 import com.platinum20.dashboard.autofill.AutoFill
 import com.platinum20.dashboard.mail.GmailAuth
@@ -270,8 +271,7 @@ fun HomeScreen(
             // Compare anche vuota se c'è l'archivio: si apre da qui.
             HomeCard.LATER -> todos.isNotEmpty() || doneCount > 0 || notes.habits.isNotEmpty()
             HomeCard.JOTTINGS -> jottings.isNotEmpty() || archivedCount > 0
-            // Niente di nuovo da leggere: la card News sparisce invece di dire che sei in pari (punto 20 A).
-            HomeCard.RECAP -> news.loading || news.error != null || news.feed.fresh.isNotEmpty()
+            // La card News resta sempre: senza nuove mostra le ultime già viste (Antonio, 2026-11-21).
             else -> true
         }
     }
@@ -431,6 +431,10 @@ fun HomeScreen(
 /** La card News in Home: le storie divise dal segno dell'ultima visita, come nella scheda. */
 data class NewsCardState(
     val feed: NewsFeed = NewsFeed(emptyList(), emptyList(), null),
+    /** Le righe della card: non lette prima, poi le già lette (aprire la scheda News non segna niente). */
+    val home: List<NewsStory> = emptyList(),
+    val unreadCount: Int = 0,
+    val read: Set<String> = emptySet(),
     val loading: Boolean = true,
     val error: String? = null,
     val retry: () -> Unit = {},
@@ -464,8 +468,14 @@ fun rememberNewsCardState(): NewsCardState {
         val forWidget = NewsStories.forWidget(feed)
         if (forWidget.isNotEmpty()) NewsWidget.save(context, forWidget, feed.fresh.size)
     }
+    val readSet = remember(readList) { readList.toSet() }
+    val unread = remember(stories, readSet) { NewsStories.unread(stories, readSet) }
+    val home = remember(stories, readSet) { NewsStories.forHome(stories, readSet) }
     return NewsCardState(
         feed = feed,
+        home = home,
+        unreadCount = unread.size,
+        read = readSet,
         loading = feed.isEmpty && error == null && (result == null || verification.pending > 0 || stories.isEmpty() && result?.items?.isNotEmpty() == true),
         error = error,
         retry = { attempt++ },
@@ -615,8 +625,8 @@ private fun WeatherSummary(
 }
 
 /**
- * La card News: quante storie nuove dall'ultima visita e le prime tre, una riga per fatto. Senza nuove resta
- * una riga sola che dice che sei in pari. Un tocco fuori dalle righe apre la scheda News.
+ * La card News: quante storie da leggere e tre righe, una per fatto: prima le non lette, poi le
+ * ultime già lette (più chiare). Letta = aperta, non vista nella scheda News. Resta sempre in Home. Un tocco fuori dalle righe apre la scheda News.
  */
 @Composable
 private fun NewsCard(
@@ -627,13 +637,15 @@ private fun NewsCard(
     val context = LocalContext.current
     run {
         val feed = state.feed
-        val shown = feed.fresh.take(3)
+        // Prima le non lette, poi le ultime già lette: la card non sparisce dopo una visita alle News.
+        val shown = state.home
+        fun isRead(story: NewsStory) = story.items.any { it.link in state.read }
         // "25 nuove dalle 18:40" sta sulla riga del titolo, tutto a destra: una riga in meno (Antonio, 2026-11-10).
         CardSection("News", onClick = onOpenNews, trailing = {
             if (!feed.isEmpty) Text(
-                NewsStories.homeLine(if (feed.since == null) shown.size else feed.fresh.size, feed.since, Instant.now(), ::newsClock),
+                NewsStories.unreadLine(state.unreadCount),
                 style = MaterialTheme.typography.labelMedium,
-                color = if (shown.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
+                color = if (state.unreadCount == 0) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(start = 12.dp, end = 4.dp),
@@ -648,6 +660,8 @@ private fun NewsCard(
                                 story,
                                 read = { false },
                                 onOpen = onOpenArticle,
+                                // Le già lette un po' più chiare, come nella scheda News.
+                                dim = if (isRead(story)) 0.85f else 1f,
                                 onLongClick = { ActionBubble.show(*storyActions(context, story) {}) },
                                 expandable = false,
                                 thumb = if (index == 0) 56.dp else 0.dp,

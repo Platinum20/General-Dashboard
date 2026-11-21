@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.560.0
+**La card News resta sempre in Home e conta solo quello che apri**
+- Aprire la sezione News non segna più niente come letto: una notizia è letta solo quando la apri
+- La card in Home mostra in cima le notizie che non hai ancora aperto, con "N da leggere" sulla riga del titolo
+- Quando le hai aperte tutte la card non sparisce: mostra le ultime, un po' più chiare, e dice "Tutte lette"
+
 ## 1.559.0
 **Cerchi e pallini rotondi nelle note**
 - I cerchi delle voci da spuntare e i pallini degli elenchi sono di nuovo tondi, non più barrette strette
