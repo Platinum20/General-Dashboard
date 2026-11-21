@@ -11,8 +11,8 @@ class ChecklistTest {
     private val spesa = "Spesa\n[x] latte\n[ ] pane\n- uova\n[X] caffè\nnote a margine\n[] mele"
 
     @Test fun contaFatteETotali() {
-        assertEquals(2 to 5, Checklist.progress(spesa))
-        assertEquals("2 di 5 fatti", Checklist.progressLabel(spesa))
+        assertEquals(2 to 4, Checklist.progress(spesa))
+        assertEquals("2 di 4 fatte", Checklist.progressLabel(spesa))
     }
 
     @Test fun notaSenzaVociNonELista() {
@@ -30,8 +30,9 @@ class ChecklistTest {
         assertEquals("[ ] pane", back.lines()[2])
     }
 
-    @Test fun ilTrattinoSpuntatoDiventaParentesi() =
-        assertEquals("[x] uova", Checklist.toggle(spesa, 3).lines()[3])
+    /** Dalla 1.555 il trattino è un punto dell'elenco: non si spunta. */
+    @Test fun ilTrattinoEUnPuntoNonUnaVoce() =
+        assertEquals(spesa, Checklist.toggle(spesa, 3))
 
     @Test fun spuntareUnaRigaNormaleNonCambiaNulla() {
         assertEquals(spesa, Checklist.toggle(spesa, 5))

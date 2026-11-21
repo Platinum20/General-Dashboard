@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.555.0
+**Elenchi e voci da spuntare dentro le note**
+- Nella stessa nota puoi mescolare testo, elenchi puntati, voci da spuntare e titoletti: ogni riga sceglie da sola cosa essere
+- Mentre scrivi, sopra la tastiera c'è una barra: Punti, Spunta, Titolo e Aa (grassetto, corsivo, barrato). Il tasto acceso ti dice com'è la riga dove sei
+- Invio aggiunge un'altra voce dello stesso tipo, Invio su una voce vuota torna al testo normale; cancellando il cerchio la voce torna testo
+- Le voci si spuntano toccando il cerchio, anche senza aprire la tastiera; tieni premuto il cerchio per cambiarla, spostarla, mandarla in "Da fare" o toglierla
+- Quando spunti l'ultima arriva "Tutto fatto" con "Togli le fatte"; in "Altro" ci sono anche "Fatte in fondo" e "Togli tutte le spunte"
+- Nella card Appunti la nota dice "2 di 4 fatte" e quelle che mancano
+- Le stesse righe e la stessa barra nel campo Note di promemoria, date ed eventi; nella pagina dell'evento le voci si spuntano al volo
+- "- uova" adesso è un punto dell'elenco, non più una voce da spuntare
 ## 1.554.0
 **Media salvati: copertine, Appunti e download**
 - Lo zaino del treno non c'è più: niente si scarica più da solo prima dei viaggi

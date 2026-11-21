@@ -9,6 +9,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -347,7 +349,38 @@ fun EventDetailScreen(
                     // Con i dati del biglietto già sopra, le note del treno non dicono altro.
                     if (notes.isNotBlank() && ticketAll.isEmpty()) {
                         Sep()
-                        DetailRow(Icons.AutoMirrored.Outlined.Notes, notes, maxLines = Int.MAX_VALUE)
+                        if (current.id > 0 && shift == null && com.platinum20.dashboard.notes.NoteLines.parse(notes).any { it.isList }) {
+                            // Punti e voci da spuntare (1.555): si spuntano qui e la spunta va nelle note dell'evento.
+                            var shownNotes by remember(notes) { mutableStateOf(androidx.compose.ui.text.input.TextFieldValue(notes)) }
+                            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.Top) {
+                                Icon(Icons.AutoMirrored.Outlined.Notes, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 1.dp).size(20.dp))
+                                Spacer(Modifier.width(14.dp))
+                                RichNoteField(
+                                    value = shownNotes,
+                                    readOnly = true,
+                                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
+                                    placeholder = "",
+                                    onValueChange = { v ->
+                                        val before = shownNotes.text
+                                        shownNotes = v
+                                        if (v.text != before) {
+                                            val description = when {
+                                                current.description == before -> v.text
+                                                current.description.contains(before) -> current.description.replace(before, v.text)
+                                                else -> null
+                                            }
+                                            if (description != null) scope.launch {
+                                                val saved = CalendarRepository.save(context, com.platinum20.dashboard.calendar.EventDraft.from(current, zone).copy(description = description), zone)
+                                                if (saved == null) tell("Il calendario non ha accettato la spunta.") else reload++
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
+                        } else {
+                            DetailRow(Icons.AutoMirrored.Outlined.Notes, notes, maxLines = Int.MAX_VALUE)
+                        }
                     }
                     if (current.calendarName.isNotBlank()) {
                         Sep()
@@ -429,6 +462,7 @@ fun EventEditScreen(
 
     Scaffold(
         modifier = Modifier.imePadding(),
+        bottomBar = { if (richBarShown()) RichToolbar(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) },
         topBar = {
             TopAppBar(
                 title = { Text(if (eventId == null) "Nuovo evento" else "Modifica evento") },
@@ -560,15 +594,29 @@ private fun EventForm(
             colors = canvasFieldColors(),
             modifier = Modifier.fillMaxWidth(),
         )
-        OutlinedTextField(
-            value = draft.description,
-            onValueChange = { onChange(draft.copy(description = it)) },
-            label = { Text("Note") },
-            minLines = 3,
-            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-            colors = canvasFieldColors(),
-            modifier = Modifier.fillMaxWidth(),
-        )
+        // Le note con punti e voci da spuntare, la barra delle righe sopra la tastiera (1.555).
+        var notesField by remember { mutableStateOf(androidx.compose.ui.text.input.TextFieldValue(draft.description)) }
+        if (notesField.text != draft.description) notesField = androidx.compose.ui.text.input.TextFieldValue(draft.description)
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .border(cardBorder(), RoundedCornerShape(4.dp))
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+        ) {
+            Text("Note", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(4.dp))
+            RichNoteField(
+                value = notesField,
+                onValueChange = { v ->
+                    notesField = v
+                    if (v.text != draft.description) onChange(draft.copy(description = v.text))
+                },
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                placeholder = "Scrivi qui…",
+                minHeight = 72.dp,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
         if (error != null) {
             Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
         }

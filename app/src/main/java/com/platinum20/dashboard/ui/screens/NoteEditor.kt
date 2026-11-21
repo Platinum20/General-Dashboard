@@ -57,6 +57,11 @@ import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Stop
 import androidx.compose.material.icons.outlined.Title
+import androidx.compose.material.icons.outlined.TaskAlt
+import androidx.compose.material.icons.outlined.VerticalAlignBottom
+import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import androidx.compose.material.icons.outlined.RemoveDone
+import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.filled.PushPin as PushPinFilled
 import androidx.compose.material.icons.outlined.Checklist as ChecklistIcon
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -116,6 +121,7 @@ import com.platinum20.dashboard.capture.Dictation
 import com.platinum20.dashboard.capture.PhotoAttach
 import com.platinum20.dashboard.notes.Checklist
 import com.platinum20.dashboard.notes.NoteFormat
+import com.platinum20.dashboard.notes.NoteLines
 import com.platinum20.dashboard.notes.NotePhotoFiles
 import com.platinum20.dashboard.notes.NotePhotos
 import com.platinum20.dashboard.notes.NoteText
@@ -144,8 +150,6 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
     var body by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue(first.second)) }
     val text = NoteText.join(title.text, body.text)
     var deleted by remember { mutableStateOf(false) }
-    // Le note con voci da spuntare si aprono come lista; "Aggiungi" › "Torna al testo" la riporta al testo.
-    var checkMode by rememberSaveable { mutableStateOf(noteId != null && Checklist.hasItems(text)) }
     val data by NotesStore.data.collectAsStateWithLifecycle()
     val current = id?.let { now -> data.notes.firstOrNull { it.id == now } }
     val pinned = current?.pinned ?: false
@@ -248,13 +252,9 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
         haptic(Haptic.TOGGLE_ON)
         dictation.start { heard ->
             if (heard.isNullOrBlank()) return@start
-            if (checkMode) {
-                setText(Checklist.add(NoteText.join(title.text, body.text), heard.trim()))
-            } else {
-                val (next, cursor) = NoteText.insert(body.text, body.selection.end, heard)
-                body = TextFieldValue(next, TextRange(cursor))
-                save()
-            }
+            val (next, cursor) = NoteText.insert(body.text, body.selection.end, heard)
+            body = TextFieldValue(next, TextRange(cursor))
+            save()
         }
         dictation.lock()
     }
@@ -267,13 +267,35 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
         }
     }
 
-    fun toggleList() {
-        haptic(Haptic.TOGGLE_ON)
-        if (checkMode) {
-            checkMode = false
+    /**
+     * Punto, voce da spuntare o titoletto da "Aggiungi" (1.555): la riga del cursore cambia; senza cursore nel testo
+     * se ne aggiunge una nuova in fondo.
+     */
+    fun lineKind(kind: NoteLines.Kind) {
+        haptic(Haptic.TICK)
+        if (bodyFocused) {
+            val e = NoteLines.setKind(body.text, body.selection.min, body.selection.max, kind)
+            body = TextFieldValue(e.text, TextRange(e.start, e.end))
         } else {
-            setText(Checklist.toList(text))
-            checkMode = true
+            val prefix = when (kind) {
+                NoteLines.Kind.BULLET -> NoteLines.BULLET
+                NoteLines.Kind.CHECK -> NoteLines.CHECK
+                NoteLines.Kind.HEADING -> NoteLines.HEADING
+                NoteLines.Kind.TEXT -> ""
+            }
+            val base = body.text.trimEnd('\n')
+            val next = if (base.isEmpty()) prefix else base + "\n" + prefix
+            body = TextFieldValue(next, TextRange(next.length))
+        }
+        save()
+        bodyFocus.requestFocus()
+    }
+
+    /** "Tutto fatto": l'ultima voce spuntata. Niente cambia da solo, si possono togliere le fatte. */
+    fun allDone() {
+        CaptureFeedback.tell(context, "Tutto fatto", Icons.Outlined.TaskAlt, "Togli le fatte") {
+            body = TextFieldValue(NoteLines.removeDone(body.text))
+            save()
         }
     }
 
@@ -283,14 +305,10 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
             *listOfNotNull(
                 BubbleAction(Icons.Outlined.AddPhotoAlternate, "Foto", "dalla galleria, anche più insieme") { pickPhotos() },
                 BubbleAction(Icons.Outlined.PhotoCamera, "Scatta una foto") { camera.launch(ReceiptReader.photoUri(context)) },
-                BubbleAction(Icons.Outlined.Mic, "Detta", if (checkMode) "diventa una voce della lista" else "il testo va dove c'è il cursore") { dictate() },
-                if (checkMode) BubbleAction(Icons.AutoMirrored.Outlined.Notes, "Torna al testo") { toggleList() }
-                else BubbleAction(Icons.Outlined.ChecklistIcon, "Lista da spuntare") { toggleList() },
-                if (checkMode) null else BubbleAction(Icons.Outlined.Title, "Titoletto", "la riga dove sta il cursore") {
-                    val e = NoteFormat.heading(body.text, body.selection.min, body.selection.max)
-                    body = TextFieldValue(e.text, TextRange(e.start, e.end))
-                    save()
-                },
+                BubbleAction(Icons.Outlined.Mic, "Detta", "il testo va dove c'è il cursore") { dictate() },
+                BubbleAction(Icons.AutoMirrored.Outlined.FormatListBulleted, "Elenco puntato") { lineKind(NoteLines.Kind.BULLET) },
+                BubbleAction(Icons.Outlined.ChecklistIcon, "Lista da spuntare") { lineKind(NoteLines.Kind.CHECK) },
+                BubbleAction(Icons.Outlined.Title, "Titoletto") { lineKind(NoteLines.Kind.HEADING) },
             ).toTypedArray(),
         )
     }
@@ -306,6 +324,24 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     ) {
                         haptic(if (pinned) Haptic.TOGGLE_OFF else Haptic.TOGGLE_ON)
                         NotesStore.togglePin(nid)
+                    }
+                },
+                // Per le liste (1.555): le fatte in fondo, via, o tutte da rifare (la valigia).
+                if (!NoteLines.hasDone(body.text)) null else BubbleAction(Icons.Outlined.VerticalAlignBottom, "Fatte in fondo", "in ogni lista le spuntate scendono") {
+                    body = TextFieldValue(NoteLines.doneToBottom(body.text))
+                    save()
+                },
+                if (!NoteLines.hasDone(body.text)) null else BubbleAction(Icons.Outlined.RadioButtonUnchecked, "Togli tutte le spunte", "per rifare la stessa lista") {
+                    body = TextFieldValue(NoteLines.uncheckAll(body.text))
+                    save()
+                },
+                if (!NoteLines.hasDone(body.text)) null else BubbleAction(Icons.Outlined.RemoveDone, "Togli le fatte", "con Annulla") {
+                    val before = body.text
+                    body = TextFieldValue(NoteLines.removeDone(before))
+                    save()
+                    CaptureFeedback.tell(context, "Fatte tolte", Icons.Outlined.Delete, "Annulla") {
+                        body = TextFieldValue(before)
+                        save()
                     }
                 },
                 if (text.isBlank()) null else BubbleAction(Icons.Outlined.ContentCopy, "Copia il testo") {
@@ -326,14 +362,13 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
         )
     }
 
-    val selecting = !checkMode && bodyFocused && !body.selection.collapsed
     val meta = when {
         dictation.listening -> dictation.partial.ifBlank { "Ti ascolto…" }
         arranging -> "Trascina per cambiare l'ordine"
         else -> listOfNotNull(
             if (opened == null) "Nuova nota" else NoteText.moment(opened.createdAt, opened.updatedAt),
             if (pinned) "fissata" else null,
-            if (checkMode) Checklist.progressLabel(text) else NoteText.stats(text),
+            Checklist.progressLabel(text) ?: NoteText.stats(text),
             NotePhotos.label(photos.size),
         ).joinToString(" · ")
     }
@@ -368,23 +403,9 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     .imePadding()
                     .miniPlayerFloor()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
-                if (selecting) {
-                    FormatChips(
-                        active = NoteFormat.active(body.text, body.selection.min, body.selection.max),
-                        onMark = { mark ->
-                            haptic(Haptic.TICK)
-                            val e = NoteFormat.toggle(body.text, body.selection.min, body.selection.max, mark)
-                            body = TextFieldValue(e.text, TextRange(e.start, e.end))
-                            save()
-                        },
-                        onHeading = {
-                            haptic(Haptic.TICK)
-                            val e = NoteFormat.heading(body.text, body.selection.min, body.selection.max)
-                            body = TextFieldValue(e.text, TextRange(e.start, e.end))
-                            save()
-                        },
-                        modifier = place,
-                    )
+                // Mentre si scrive, al posto dei due tasti: la barra delle righe (1.555).
+                if (richBarShown()) {
+                    RichToolbar(place)
                 } else {
                     // Come in DetailPage: tasto tondo a sinistra col suo nome, "Altro" a destra.
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = place) {
@@ -406,20 +427,9 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                 }
             },
         ) { inner ->
-            if (checkMode) {
-                ChecklistView(
-                    text = text,
-                    onChange = { next -> setText(next) },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(inner),
-                )
-                return@Scaffold
-            }
             val bodyStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface, lineHeight = 26.sp)
             val titleStyle = MaterialTheme.typography.headlineSmall.copy(color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
             val faint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-            val formats = rememberNoteFormats(body.selection, bodyFocused)
             Column(
                 Modifier
                     .fillMaxSize()
@@ -470,28 +480,22 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     )
                 }
                 Spacer(Modifier.size(12.dp))
-                BasicTextField(
+                RichNoteField(
                     value = body,
                     onValueChange = { v ->
                         body = v
                         save()
                     },
                     textStyle = bodyStyle,
-                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                    visualTransformation = formats,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                    decorationBox = { field ->
-                        Box {
-                            if (body.text.isEmpty()) Text("Scrivi qui…", style = bodyStyle, color = faint)
-                            field()
-                        }
-                    },
+                    placeholder = "Scrivi qui…",
+                    focusRequester = bodyFocus,
+                    onFocusChange = { bodyFocused = it },
+                    sendToTodo = true,
+                    onAllDone = { allDone() },
+                    minHeight = 320.dp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 320.dp)
-                        .padding(horizontal = 24.dp)
-                        .focusRequester(bodyFocus)
-                        .onFocusChanged { bodyFocused = it.isFocused },
+                        .padding(horizontal = 24.dp),
                 )
             }
         }
@@ -532,86 +536,6 @@ private fun HoldRoundButton(icon: ImageVector, label: String, tint: Color = Mate
             .combinedClickable(onClickLabel = label, onLongClick = onLongClick, onClick = onClick),
     ) {
         Icon(icon, contentDescription = label, tint = tint, modifier = Modifier.size(20.dp))
-    }
-}
-
-/**
- * I formati disegnati: grassetto, corsivo, barrato, titoletto. I segni (`**`, `~~`, `## `) si nascondono (1.552) e
- * ricompaiono sbiaditi solo attorno al formato dove sta il cursore, per correggerli.
- */
-@Composable
-private fun rememberNoteFormats(selection: TextRange, focused: Boolean): VisualTransformation {
-    val mark = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
-    return remember(mark, selection, focused) {
-        VisualTransformation { input ->
-            val text = input.text
-            val styled = buildAnnotatedString {
-                append(text)
-                NoteFormat.spans(text).forEach { s ->
-                    val style = when (s.kind) {
-                        NoteFormat.Kind.BOLD -> SpanStyle(fontWeight = FontWeight.Bold)
-                        NoteFormat.Kind.ITALIC -> SpanStyle(fontStyle = FontStyle.Italic)
-                        NoteFormat.Kind.STRIKE -> SpanStyle(textDecoration = TextDecoration.LineThrough)
-                        NoteFormat.Kind.HEADING -> SpanStyle(fontWeight = FontWeight.SemiBold, fontSize = 19.sp)
-                        NoteFormat.Kind.MARK -> SpanStyle(color = mark)
-                    }
-                    addStyle(style, s.start, s.end)
-                }
-            }
-            val hidden = NoteFormat.hidden(text, selection.start.coerceIn(0, text.length), selection.end.coerceIn(0, text.length), focused)
-            if (hidden.isEmpty()) return@VisualTransformation TransformedText(styled, OffsetMapping.Identity)
-            val shown = buildAnnotatedString {
-                var at = 0
-                hidden.forEach { r ->
-                    append(styled.subSequence(at, r.first))
-                    at = r.last + 1
-                }
-                append(styled.subSequence(at, text.length))
-            }
-            val collapse = NoteFormat.Collapse(hidden)
-            val mapping = object : OffsetMapping {
-                override fun originalToTransformed(offset: Int) = collapse.toShown(offset).coerceIn(0, shown.length)
-                override fun transformedToOriginal(offset: Int) = collapse.toText(offset).coerceIn(0, text.length)
-            }
-            TransformedText(shown, mapping)
-        }
-    }
-}
-
-/** I formati sul testo scelto (1.529): al posto dei due tasti in basso, finché c'è una selezione. */
-@Composable
-private fun FormatChips(active: Set<NoteFormat.Kind>, onMark: (String) -> Unit, onHeading: () -> Unit, modifier: Modifier) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier,
-    ) {
-        FormatChip("G", "Grassetto", NoteFormat.Kind.BOLD in active, SpanStyle(fontWeight = FontWeight.Bold)) { onMark(NoteFormat.BOLD) }
-        FormatChip("C", "Corsivo", NoteFormat.Kind.ITALIC in active, SpanStyle(fontStyle = FontStyle.Italic)) { onMark(NoteFormat.ITALIC) }
-        FormatChip("B", "Barrato", NoteFormat.Kind.STRIKE in active, SpanStyle(textDecoration = TextDecoration.LineThrough)) { onMark(NoteFormat.STRIKE) }
-        FormatChip("Titoletto", "Titoletto", NoteFormat.Kind.HEADING in active, SpanStyle(fontWeight = FontWeight.SemiBold)) { onHeading() }
-    }
-}
-
-@Composable
-private fun FormatChip(label: String, description: String, on: Boolean, style: SpanStyle, onClick: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .heightIn(min = 40.dp)
-            .bouncyPress(0.92f)
-            .clip(RoundedCornerShape(20.dp))
-            .background(if (on) colors.primary else colors.card)
-            .border(cardBorder(), RoundedCornerShape(20.dp))
-            .clickable(onClickLabel = description, onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 9.dp),
-    ) {
-        Text(
-            AnnotatedString(label, spanStyles = listOf(AnnotatedString.Range(style, 0, label.length))),
-            style = MaterialTheme.typography.labelLarge,
-            color = if (on) colors.onPrimary else colors.onSurface,
-        )
     }
 }
 
