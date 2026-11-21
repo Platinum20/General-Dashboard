@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.549.0
+**Le righe di Media partono da sinistra**
+- Aprendo Media la riga Musica (e le altre righe orizzontali) si apre dall'inizio, non più tutta a destra
+
 ## 1.548.0
 **Notifica del treno più essenziale**
 - Il ritardo torna nella prima riga, accanto a "parte tra" o "arriva tra": "+12 min · parte tra 33 min", senza l'ora dell'ultima lettura, anche nella notifica ridotta

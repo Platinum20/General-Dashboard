@@ -354,6 +354,32 @@ fun rememberReselectListState(route: String, initialIndex: Int = 0): LazyListSta
     return state
 }
 
+/**
+ * Fila orizzontale che si apre sempre dall'inizio (1.549, Antonio: la riga Musica partiva tutta a destra).
+ * Le tessere arrivano a pezzi (salvati, mix, playlist) davanti a quelle fisse in fondo: LazyRow resta
+ * attaccata alla tessera che vedeva, cioè l'ultima. Finché non la tocchi col dito torna a sinistra a ogni cambio.
+ */
+@Composable
+fun rememberRowAtStart(): LazyListState {
+    val state = rememberLazyListState()
+    var touched by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(state) {
+        state.interactionSource.interactions.collect { if (it is androidx.compose.foundation.interaction.DragInteraction.Start) touched = true }
+    }
+    LaunchedEffect(state) {
+        snapshotFlow { state.layoutInfo.totalItemsCount to state.firstVisibleItemIndex }.collect { (_, first) ->
+            if (RowStart.reset(touched, first, state.firstVisibleItemScrollOffset)) state.scrollToItem(0)
+        }
+    }
+    return state
+}
+
+/** Regola pura di [rememberRowAtStart]. */
+object RowStart {
+    /** Torna all'inizio solo se il dito non l'ha mai spostata e non è già lì. */
+    fun reset(touched: Boolean, firstIndex: Int, offset: Int): Boolean = !touched && (firstIndex != 0 || offset != 0)
+}
+
 /** Apre "Cerca ovunque": nelle sezioni si trascina giù dalla cima (qui l'azione per TalkBack). */
 val LocalOpenSearch = staticCompositionLocalOf<(() -> Unit)?> { null }
 
