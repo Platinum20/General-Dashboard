@@ -106,4 +106,16 @@ class ShiftLiveTest {
         val fresh = ShiftLive.card(shift, at(14, 50), selling, month, zone, readAt = at(14, 40))!!
         assertEquals(1, fresh.lines.size)
     }
+
+    @Test
+    fun rileggeSullaBustaPagaNonSullaTimeline() {
+        val now = at(19, 45)
+        // Busta paga vecchia di un'ora: si rilegge, anche se la timeline è appena stata letta.
+        assertEquals(true, ShiftLive.shouldRead(now, payReadAt = at(18, 45), tried = 0L))
+        // Appena provato: si aspetta un po' prima di riprovare.
+        assertEquals(false, ShiftLive.shouldRead(now, payReadAt = at(18, 45), tried = at(19, 43)))
+        assertEquals(true, ShiftLive.shouldRead(now, payReadAt = at(18, 45), tried = at(19, 39)))
+        // Busta paga fresca: niente.
+        assertEquals(false, ShiftLive.shouldRead(now, payReadAt = at(19, 40), tried = 0L))
+    }
 }

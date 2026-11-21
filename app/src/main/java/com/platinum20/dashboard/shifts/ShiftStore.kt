@@ -29,6 +29,12 @@ object ShiftStore {
     val linked: StateFlow<Boolean> = _linked.asStateFlow()
     private val _readAt = MutableStateFlow(0L)
     val readAt: StateFlow<Long> = _readAt.asStateFlow()
+    private val _payReadAt = MutableStateFlow(0L)
+    /**
+     * L'ultima volta che la busta paga (venduto e guadagno) è stata letta davvero. Diversa da [readAt]: la timeline
+     * si legge anche quando la lettura si interrompe prima della busta paga (2026-11-21, venduto fermo per ore).
+     */
+    val payReadAt: StateFlow<Long> = _payReadAt.asStateFlow()
     private val _expired = MutableStateFlow(false)
     val expired: StateFlow<Boolean> = _expired.asStateFlow()
     private val _refreshing = MutableStateFlow(false)
@@ -71,6 +77,7 @@ object ShiftStore {
         val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         _linked.value = prefs.getBoolean("linked", false)
         _readAt.value = prefs.getLong("readAt", 0)
+        _payReadAt.value = prefs.getLong("payReadAt", 0)
         _expired.value = prefs.getBoolean("expired", false)
         _shifts.value = ShiftParse.fromJson(prefs.getString("shifts", null))
         _pay.value = ShiftPay.fromJson(prefs.getString("pay", null))
@@ -208,6 +215,7 @@ object ShiftStore {
         _pay.value = emptyList()
         _payMonths.value = emptyList()
         _readAt.value = 0
+        _payReadAt.value = 0
         _expired.value = false
         myIds = emptySet()
         timelineUrl = null
@@ -217,6 +225,12 @@ object ShiftStore {
         val app = appContext ?: return
         app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().apply()
         File(app.filesDir, CAPTURES).delete()
+    }
+
+    /** La busta paga è arrivata tutta (la pagina ha finito di chiederla). */
+    fun notePayRead(at: Long = System.currentTimeMillis()) {
+        _payReadAt.value = at
+        appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()?.putLong("payReadAt", at)?.apply()
     }
 
     /**

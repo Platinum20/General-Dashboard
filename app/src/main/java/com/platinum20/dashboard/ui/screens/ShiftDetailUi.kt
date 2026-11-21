@@ -58,7 +58,7 @@ internal fun ShiftPayCards(shift: Shift) {
     // Mentre lavori anche a zero, come la notifica: le due dicono la stessa cosa (2026-11-21).
     val earning = ShiftPay.of(shift, pay)?.takeIf { ShiftPay.worked(it) || working }
     val month = ShiftPay.monthOf(shift.start, months)
-    val readAt by ShiftStore.readAt.collectAsStateWithLifecycle()
+    val readAt by ShiftStore.payReadAt.collectAsStateWithLifecycle()
     earning?.let { ShiftEarningCard(it, readAt.takeIf { working && now - it > com.platinum20.dashboard.trips.ShiftLive.STALE_MS }) }
     // Turno iniziato ma Creators Pro non ha ancora i numeri: lo diciamo, con l'ora dell'ultima lettura (2026-11-21).
     if (earning == null && shift.start <= now) {
