@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.552.0
+## 1.554.0
 **Media salvati: copertine, Appunti e download**
 - Lo zaino del treno non c'è più: niente si scarica più da solo prima dei viaggi
 - Quando salvi un video di YouTube o un episodio di podcast, si scarica sul telefono; con "Scarica solo col Wi-Fi" acceso aspetta il Wi-Fi. Togliendolo dai salvati il file si cancella
@@ -8,6 +8,17 @@
 - In Media ogni cosa salvata ha la sua tessera con la copertina vera, in testa alla fila Musica o Video
 - Video, brani e podcast salvati compaiono anche nella card Appunti della Home
 - Impostazioni › Media: "Scarica i salvati" dice quanti sono pronti senza rete e quanto pesano
+
+## 1.552.0
+**Nota lunga più pulita**
+- Grassetto, corsivo, barrato e titoletti si vedono senza gli asterischi: i segni ricompaiono sbiaditi solo quando metti il cursore su quel pezzo
+- La riga in alto sta su una riga: dice solo l'ultima modifica ("Modificata 14 nov, 09:44 · 7 parole · 3 foto")
+- Le foto stanno dentro i margini della pagina: tre riempiono la riga, le altre scorrendo, nessuna tagliata dal bordo
+- La stessa foto scelta due volte non si aggiunge più, e le note che l'avevano doppia tornano con una sola
+
+## 1.551.0
+**Le righe di Media partono da sinistra**
+- Aprendo Media la riga Musica (e le altre righe orizzontali) si apre dall'inizio, non più tutta a destra
 
 ## 1.549.0
 **Il mini player si appoggia sopra i tasti**

@@ -253,7 +253,7 @@ internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOp
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         // Il titolo apre Scopri, il tastino a destra la fila intera in verticale (1.493, Antonio: "invertire la funzione").
         OpenableHeader("Musica", onDiscover, Modifier.padding(horizontal = 16.dp)) { HistoryButton(onOpenAll) }
-        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        LazyRow(state = rememberRowAtStart(), contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             // Le cose salvate per dopo, prima di tutto; senza niente di salvato la tessera non c'è (1.490, Antonio).
             // Ognuno con la sua copertina (2026-11-21, Antonio); se sono tanti, in fondo l'elenco intero.
             val (savedShown, savedMore) = savedRow(saved)
@@ -397,7 +397,7 @@ internal fun RadioRow(onOpenAll: () -> Unit) {
     val tile = coverTileWidth()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SectionHeader("Radio", Modifier.padding(horizontal = 16.dp))
-        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        LazyRow(state = rememberRowAtStart(), contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             items(radios, key = { "radio-${it.id}" }) { station ->
                 val track = now?.takeIf { it.station.id == station.id }?.track.orEmpty()
                 val genre = com.platinum20.dashboard.media.radio.RadioGenre.of(station.tags) ?: "Radio"
