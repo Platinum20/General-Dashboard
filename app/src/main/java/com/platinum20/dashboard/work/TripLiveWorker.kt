@@ -28,6 +28,8 @@ import com.platinum20.dashboard.trips.LiveCard
 import com.platinum20.dashboard.trips.LivePhase
 import com.platinum20.dashboard.trips.LiveTrip
 import com.platinum20.dashboard.trips.ShiftLive
+import com.platinum20.dashboard.trips.ShiftPhase
+import com.platinum20.dashboard.shifts.CreatorsLink
 import com.platinum20.dashboard.shifts.ShiftPay
 import com.platinum20.dashboard.shifts.ShiftStore
 import com.platinum20.dashboard.trips.TrainLive
@@ -84,9 +86,20 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
             ShiftStore.init(context)
             for (event in events) {
                 if (event.trip != null || event.eventId >= -1) continue
+                val phase = ShiftLive.phase(event, now) ?: continue
                 val shift = ShiftStore.shifts.value.firstOrNull { it.eventId == event.eventId }
-                val earning = shift?.let { ShiftPay.of(it, ShiftStore.pay.value) }?.takeIf(ShiftPay::worked)
-                val card = ShiftLive.card(event, now, earning, ShiftPay.monthOf(event.begin, ShiftStore.payMonths.value)) ?: continue
+                // Mentre lavori (e nelle due ore dopo, finché il guadagno non c'è) si rilegge ogni 15 minuti, non ogni ora.
+                val numbers = shift?.let { ShiftPay.of(it, ShiftStore.pay.value) }
+                val wanted = phase == ShiftPhase.WORKING || phase == ShiftPhase.DONE && now < event.end + 2 * 3_600_000L && numbers?.let(ShiftPay::worked) != true
+                val tried = prefs.getLong(KEY_SHIFT_READ, 0L)
+                if (wanted && ShiftStore.linked.value && !ShiftStore.expired.value &&
+                    now - ShiftStore.readAt.value >= ShiftLive.READ_EVERY_MS && now - tried >= ShiftLive.READ_EVERY_MS
+                ) {
+                    prefs.edit().putLong(KEY_SHIFT_READ, now).apply()
+                    runCatching { CreatorsLink.refresh(context) }
+                }
+                val earning = shift?.let { ShiftPay.of(it, ShiftStore.pay.value) }
+                val card = ShiftLive.card(event, now, earning, ShiftPay.monthOf(event.begin, ShiftStore.payMonths.value), readAt = ShiftStore.readAt.value) ?: continue
                 val id = event.eventId.toString()
                 if (!card.done) {
                     post(context, event, card, now)
@@ -229,6 +242,7 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
         const val PREFS = "trip_live"
         private const val KEY_SHOWN = "shown"
         private const val KEY_TICK = "tick"
+        private const val KEY_SHIFT_READ = "shift_read"
         private const val READ_EVERY_MS = 2 * 60_000L
         private const val LATE_READ_EVERY_MS = 15 * 60_000L
         private const val NOTIFICATION_BASE = 7_000

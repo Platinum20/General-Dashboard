@@ -67,10 +67,18 @@ class ShiftLiveTest {
     }
 
     @Test
-    fun senzaNumeriMentreLavoriRestanoGliOrari() {
-        val card = ShiftLive.card(shift, at(12, 10), null, month, zone)!!
-        assertTrue(card.lines.isEmpty())
+    fun mentreLavoriAncheAZeroSiVede() {
+        val zero = selling.copy(sold = 0.0, earned = 0.0, current = false)
+        val card = ShiftLive.card(shift, at(12, 10), zero, month, zone)!!
+        assertEquals(listOf("Venduto $0,00 · 10% → $0,00 finora"), card.lines)
+    }
+
+    @Test
+    fun senzaNumeriMentreLavoriLoDice() {
+        val card = ShiftLive.card(shift, at(12, 10), null, month, zone, readAt = at(12, 5))!!
+        assertEquals(listOf("Venduto: non ancora segnato · letto alle 12:05"), card.lines)
         assertEquals("12:00 → 17:00 · in doppio con Luca", card.text)
+        assertEquals("Venduto: non ancora segnato", ShiftLive.missing(0L, zone))
     }
 
     @Test
