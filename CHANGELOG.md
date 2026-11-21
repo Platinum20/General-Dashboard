@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.549.0
+## 1.552.0
 **Media salvati: copertine, Appunti e download**
 - Lo zaino del treno non c'è più: niente si scarica più da solo prima dei viaggi
 - Quando salvi un video di YouTube o un episodio di podcast, si scarica sul telefono; con "Scarica solo col Wi-Fi" acceso aspetta il Wi-Fi. Togliendolo dai salvati il file si cancella
@@ -8,6 +8,11 @@
 - In Media ogni cosa salvata ha la sua tessera con la copertina vera, in testa alla fila Musica o Video
 - Video, brani e podcast salvati compaiono anche nella card Appunti della Home
 - Impostazioni › Media: "Scarica i salvati" dice quanti sono pronti senza rete e quanto pesano
+
+## 1.549.0
+**Il mini player si appoggia sopra i tasti**
+- Nelle note e nelle pagine di dettaglio i tasti in basso restano fermi: è il mini player ad agganciarsi sopra di loro
+- Anche quando apri la tastiera il mini player sale sopra la barra dei tasti
 
 ## 1.548.0
 **Notifica del treno più essenziale**
