@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.556.0
+**Liste nelle note più compatte**
+- Le voci da spuntare e gli elenchi puntati stanno vicini come in una lista normale, senza righe vuote in mezzo
+- Il testo scritto sotto una voce resta allineato e il cursore sta dove scrivi
+
 ## 1.555.0
 **Elenchi e voci da spuntare dentro le note**
 - Nella stessa nota puoi mescolare testo, elenchi puntati, voci da spuntare e titoletti: ogni riga sceglie da sola cosa essere

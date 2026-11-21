@@ -57,7 +57,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.ParagraphStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
@@ -71,7 +70,6 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -98,8 +96,11 @@ object RichBar {
 @Composable
 internal fun richBarShown(): Boolean = RichBar.target != null && WindowInsets.isImeVisible
 
-/** Il rientro di punti e voci: lì sopra si disegna il cerchio o il pallino. */
-private val INDENT = 28.sp
+/**
+ * Il posto di cerchio e pallino: lo spazio sottile al posto del segno, allargato con la spaziatura delle lettere.
+ * Niente ParagraphStyle (1.556): ogni voce diventava un paragrafo a sé e fra le righe compariva una riga vuota.
+ */
+private val INDENT = 24.sp
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -180,19 +181,24 @@ internal fun RichNoteField(
         // I cerchi e i pallini, sopra il rientro di ogni voce: si toccano senza aprire la tastiera.
         val l = layout
         if (l != null) {
-            val shown = NoteLines.Shown(value.text)
+            // Gli stessi segni nascosti del testo disegnato, se no le posizioni scivolano di riga.
+            val text = value.text
+            val shown = NoteLines.Shown(text, NoteFormat.hidden(text, value.selection.start.coerceIn(0, text.length), value.selection.end.coerceIn(0, text.length), focused))
             val density = LocalDensity.current
-            val indent = with(density) { INDENT.toDp() }
+            val drawn = l.layoutInput.text.length
             shown.lines.filter { it.isList }.forEach { line -> androidx.compose.runtime.key(line.index) {
-                val at = shown.toShown(line.contentStart).coerceIn(0, l.layoutInput.text.length)
+                val at = shown.toShown(line.start)
+                if (at >= drawn) return@key
+                val place = l.getBoundingBox(at)
                 val row = l.getLineForOffset(at)
                 val top = l.getLineTop(row)
                 val height = with(density) { (l.getLineBottom(row) - top).toDp() }
+                val width = with(density) { place.width.coerceAtLeast(1f).toDp() }
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .offset { IntOffset(0, top.toInt()) }
-                        .size(indent, height)
+                        .offset { IntOffset(place.left.toInt(), top.toInt()) }
+                        .size(width, height)
                         .combinedClickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
@@ -266,10 +272,9 @@ private fun richText(text: String, selection: TextRange, focused: Boolean, mark:
             at = c.end
         }
         append(styled.subSequence(at, text.length))
-        view.lines.filter { it.isList }.forEach { line ->
+        view.lines.filter { it.isList && it.prefix > 0 }.forEach { line ->
             val s = view.toShown(line.start)
-            val e = view.toShown(line.end)
-            if (e > s) addStyle(ParagraphStyle(textIndent = TextIndent(firstLine = INDENT, restLine = INDENT)), s, e)
+            if (s < length) addStyle(SpanStyle(letterSpacing = INDENT), s, s + 1)
         }
     }
     val mapping = object : OffsetMapping {
