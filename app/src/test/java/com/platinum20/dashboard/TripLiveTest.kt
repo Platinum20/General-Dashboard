@@ -64,10 +64,10 @@ class TripLiveTest {
         assertTrue(LiveMark(LiveCard.DEPART, "6:40", MarkKind.STRUCK) in card.marks)
         assertTrue(LiveMark(LiveCard.ARRIVE, "11:12", MarkKind.STRUCK) in card.marks)
         assertTrue(LiveMark(LiveCard.ARRIVE, "11:22", MarkKind.LATE) in card.marks)
-        // Versione compatta 1: il ritardo è l'ultima riga, l'intestazione solo "parte tra", il binario nella riga del treno.
-        assertEquals(listOf("+10 min"), card.lines)
-        assertTrue(LiveMark(0, "+10 min", MarkKind.LATE) in card.marks)
-        assertEquals("parte tra 20 min", card.header)
+        // 2026-11-21: il ritardo nella prima riga accanto a "parte tra", nessuna riga in fondo.
+        assertTrue(card.lines.isEmpty())
+        assertEquals("+10 min · parte tra 20 min", card.header)
+        assertTrue(LiveMark(LiveCard.HEADER, "+10 min", MarkKind.LATE) in card.marks)
         assertEquals("Bin. 4 · IC 612 · carr. 8 · posto 11D", card.sub)
         assertTrue(card.late)
         // La linea di progresso nell'ultima ora prima di partire: a 20 minuti dalla partenza è a due terzi.
@@ -86,7 +86,7 @@ class TripLiveTest {
         assertEquals("arriva tra 2 h 16 min", card.header)
         assertEquals("6:40 Taranto", card.depart)
         assertEquals("Pescara 11:12", card.arrive)
-        assertEquals(listOf("In orario"), card.lines)
+        assertTrue(card.lines.isEmpty())
         assertEquals("IC 612 · carr. 8 · posto 11D", card.sub)
         assertTrue(card.marks.isEmpty())
     }
@@ -100,17 +100,16 @@ class TripLiveTest {
         val status = TrainStatus(15, readAt = at(8, 55), stops = stops)
         val card = LiveTrip.card(train, at(8, 56), status, checked = true, zone = zone)!!
         assertEquals("Pescara 11:12 11:27", card.arrive)
-        assertEquals("arriva tra 2 h 31 min", card.header)
-        assertEquals("Prossima: Foggia 9:25", card.next)
-        assertEquals(listOf("+15 min"), card.lines)
+        assertEquals("+15 min · arriva tra 2 h 31 min", card.header)
+        assertNull(card.next)
+        assertTrue(card.lines.isEmpty())
         assertEquals(listOf(70, 150), card.track!!.steps(at(8, 56)).points)
         assertEquals(listOf(LiveStop("8:05", "Bari Centrale", true, "7:50"), LiveStop("9:25", "Foggia", false, "9:10")), card.stops)
-        // Senza rete resta l'ultima lettura: orari col ritardo, e dice quanto è vecchia.
+        // Senza rete resta l'ultima lettura: orari col ritardo, senza l'ora della lettura (Antonio, 2026-11-21).
         val old = LiveTrip.card(train, at(9, 30), status, checked = true, zone = zone)!!
         assertEquals("Pescara 11:12 11:27", old.arrive)
-        assertEquals("arriva tra 1 h 57 min", old.header)
-        assertEquals(listOf("+15 min · letto 35 min fa"), old.lines)
-        assertTrue(LiveMark(0, " · letto 35 min fa", MarkKind.SOFT) in old.marks)
+        assertEquals("+15 min · arriva tra 1 h 57 min", old.header)
+        assertEquals("+15 min · arriva tra 1 h 57 min", old.text)
         val steps = LiveTrack(at(6, 55), at(11, 27), listOf(at(8, 5), at(9, 25))).steps(at(8, 56))
         assertEquals(272, steps.max)
         assertEquals(121, steps.progress)
@@ -209,7 +208,7 @@ class TripLiveTest {
         assertEquals("parte tra 20 min", card.header)
         assertEquals("IC 612 · carr. 8 · posto 11D", card.sub)
         assertEquals("In orario · parte tra 20 min", card.text)
-        assertEquals(listOf("In orario"), card.lines)
+        assertTrue(card.lines.isEmpty())
         // In anticipo: orari del biglietto.
         assertEquals(at(6, 40), LiveTrip.card(train, at(6, 20), TrainStatus(-4, readAt = at(6, 19)), checked = true, zone = zone)!!.countdownTo)
     }
@@ -280,7 +279,7 @@ class TripLiveTest {
         assertFalse(cards.first()!!.late)
         assertTrue(cards.any { it!!.phase == LivePhase.SOON && it.late })
         assertEquals(LivePhase.ON_BOARD, cards.last()!!.phase)
-        assertTrue(cards.last()!!.lines.first().contains("letto"))
+        assertTrue(cards.last()!!.header!!.startsWith("+"))
         // Dura poco più di un minuto: a ogni fotogramma 3 secondi.
         assertTrue(frames.size * com.platinum20.dashboard.trips.LiveDemo.FRAME_MS in 60_000L..120_000L)
     }
