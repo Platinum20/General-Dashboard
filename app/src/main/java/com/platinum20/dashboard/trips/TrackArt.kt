@@ -15,7 +15,8 @@ import com.platinum20.dashboard.R
 object TrackArt {
     private const val GREY = 0xFF6B6B6B.toInt()
 
-    fun draw(context: Context, steps: TrackSteps, accent: Int, arrived: Boolean): Bitmap {
+    /** [train] = il treno nel cerchio; senza (il turno) un pallino bianco col bordo del colore della linea, come la proposta A. */
+    fun draw(context: Context, steps: TrackSteps, accent: Int, arrived: Boolean, train: Boolean = true): Bitmap {
         val dm = context.resources.displayMetrics
         fun dp(v: Float) = v * dm.density
         // Larga quanto lo schermo meno i margini della notifica: l'ImageView la rimpicciolisce se serve, senza stirarla.
@@ -40,7 +41,14 @@ object TrackArt {
             dot.color = if (m <= steps.progress || (arrived && m == steps.max)) accent else GREY
             c.drawCircle(x(m), cy, dp(5f), dot)
         }
-        if (!arrived) {
+        if (!arrived && !train) {
+            dot.color = 0xFFFFFFFF.toInt()
+            c.drawCircle(xp, cy, dp(10f), dot)
+            dot.style = Paint.Style.STROKE
+            dot.strokeWidth = dp(5f)
+            dot.color = accent
+            c.drawCircle(xp, cy, dp(7.5f), dot)
+        } else if (!arrived) {
             // Il treno: cerchio bianco con un filo grigio (si vede anche sul tema chiaro) e l'icona nel colore della linea.
             dot.color = 0xFFFFFFFF.toInt()
             c.drawCircle(xp, cy, r, dot)
