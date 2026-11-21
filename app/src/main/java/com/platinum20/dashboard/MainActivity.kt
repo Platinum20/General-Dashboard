@@ -315,6 +315,7 @@ class MainActivity : ComponentActivity() {
         com.platinum20.dashboard.media.CanvasPlayer.init(this)
         // Il riproduttore di Spotify si accende con l'app e resta pronto: il play parte subito.
         com.platinum20.dashboard.media.spotify.SpotifyAuth.init(this)
+        com.platinum20.dashboard.media.youtube.YouTubeStore.init(this)
         if (com.platinum20.dashboard.media.spotify.SpotifyAuth.connected.value) com.platinum20.dashboard.media.spotify.SpotifyPlayer.start(this)
         if (savedInstanceState == null) openRequest.value = OpenRequest.from(intent)
         // YouTube uguale al PC: Guarda più tardi = Note, Mi piace, cronologia (solo con l'accesso fatto nell'app).

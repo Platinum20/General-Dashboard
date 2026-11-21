@@ -66,8 +66,10 @@ class WidgetTour {
         // Le abitudini in cima al widget Da fare: una da fare, una già fatta oggi con la sua serie.
         if (NotesStore.data.value.habits.isEmpty()) {
             NotesStore.saveHabit(null, "Bere 2 litri d'acqua")
-            NotesStore.saveHabit(null, "Camminare 30 minuti")?.let { id ->
-                (0L..4L).forEach { NotesStore.markHabitDone(id, LocalDate.now().minusDays(it)) }
+            NotesStore.saveHabit(null, "Camminare 30 minuti")
+            // Per nome: due abitudini create nello stesso istante possono avere lo stesso id.
+            NotesStore.data.value.habits.lastOrNull { it.title.startsWith("Camminare") }?.let { h ->
+                (0L..4L).forEach { NotesStore.markHabitDone(h.id, LocalDate.now().minusDays(it)) }
             }
         }
         context.getSharedPreferences("widget", Context.MODE_PRIVATE).edit()
