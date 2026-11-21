@@ -1353,7 +1353,7 @@ private fun SavedDownloadSetting() {
 
 /**
  * Il viaggio vivo: un'ora prima del treno una notifica sola con minuti alla partenza, ritardo, binario e biglietto;
- * sotto, lo stesso conto alla rovescia prima dei turni (solo se lo accendi).
+ * sotto, il turno dal vivo (2026-11-21): da tre quarti d'ora prima alla fine, poi il riepilogo.
  */
 @Composable
 private fun LiveTripSettings() {
@@ -1389,8 +1389,8 @@ private fun LiveTripSettings() {
     SettingsItem(
         icon = Icons.Outlined.Schedule,
         accent = TileAccent.BLUE,
-        title = "Conto alla rovescia dei turni",
-        subtitle = if (shifts) "Tre quarti d'ora prima di ogni turno" else "La stessa notifica prima di ogni turno",
+        title = "Turno dal vivo",
+        subtitle = if (shifts) "Da tre quarti d'ora prima alla fine del turno" else "Una notifica che segue il turno fino alla fine",
         onClick = { change(!shifts, AppSettings::setLiveShifts) },
         trailing = { Switch(checked = shifts && !needsPermission, onCheckedChange = hapticToggle { change(it, AppSettings::setLiveShifts) }) },
     )

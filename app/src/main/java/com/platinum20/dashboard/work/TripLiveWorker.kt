@@ -27,6 +27,9 @@ import com.platinum20.dashboard.tickets.TicketQrStore
 import com.platinum20.dashboard.trips.LiveCard
 import com.platinum20.dashboard.trips.LivePhase
 import com.platinum20.dashboard.trips.LiveTrip
+import com.platinum20.dashboard.trips.ShiftLive
+import com.platinum20.dashboard.shifts.ShiftPay
+import com.platinum20.dashboard.shifts.ShiftStore
 import com.platinum20.dashboard.trips.TrainLive
 import com.platinum20.dashboard.trips.TrackArt
 import java.time.LocalDate
@@ -54,9 +57,8 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
         val events = if (!trains && !shifts) emptyList() else runCatching {
             CalendarRepository.eventsFrom(context, today.minusDays(1), days = 3).values.flatten().distinctBy { it.eventId }
         }.getOrDefault(emptyList())
-        val active = events.filter { e ->
-            if (e.trip != null) trains else shifts && e.eventId < -1
-        }.filter { LiveTrip.phase(it, now, TrainLive.known(it.eventId, now)) != null }
+        val active = events.filter { e -> trains && e.trip != null }
+            .filter { LiveTrip.phase(it, now, TrainLive.known(it.eventId, now)) != null }
 
         val posted = mutableSetOf<String>()
         if (MorningWorker.canNotify(context)) for (event in active) {
@@ -75,6 +77,29 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
             post(context, event, card, now)
             posted += event.eventId.toString()
         }
+        // I turni (proposta A, 2026-11-21): prima, mentre lavori, e il riepilogo a fine turno. Il riepilogo non è
+        // fisso: si ridisegna solo se cambia (il guadagno segnato dopo), così tolto col dito non torna uguale.
+        val kept = mutableSetOf<String>()
+        if (shifts && MorningWorker.canNotify(context)) {
+            ShiftStore.init(context)
+            for (event in events) {
+                if (event.trip != null || event.eventId >= -1) continue
+                val shift = ShiftStore.shifts.value.firstOrNull { it.eventId == event.eventId }
+                val earning = shift?.let { ShiftPay.of(it, ShiftStore.pay.value) }?.takeIf(ShiftPay::worked)
+                val card = ShiftLive.card(event, now, earning, ShiftPay.monthOf(event.begin, ShiftStore.payMonths.value)) ?: continue
+                val id = event.eventId.toString()
+                if (!card.done) {
+                    post(context, event, card, now)
+                    posted += id
+                    continue
+                }
+                kept += id
+                val sign = card.text + "|" + card.lines.joinToString("|")
+                if (prefs.getString("done_$id", null) == sign) continue
+                prefs.edit().putString("done_$id", sign).apply()
+                post(context, event, card, now)
+            }
+        }
         // I treni già arrivati (sull'orario del biglietto) di cui non sappiamo com'è finita: una lettura ogni 15 minuti
         // finché non è chiusa, così il Calendario tiene il ritardo vero anche se l'abbiamo perso (2026-11-20).
         if (trains) for (event in events) {
@@ -89,7 +114,7 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
             TrainLive.refresh(event.eventId, trip, event.begin, event.end)
         }
         // Le notifiche dei viaggi finiti (o spenti) se ne vanno.
-        (shown - posted).forEach { NotificationManagerCompat.from(context).cancel(notificationId(it.toLong())) }
+        (shown - posted - kept).forEach { NotificationManagerCompat.from(context).cancel(notificationId(it.toLong())) }
         prefs.edit().putStringSet(KEY_SHOWN, posted).apply()
 
         // Ogni minuto finché c'è un viaggio vivo, o uno che comincia entro il prossimo giro da 15 minuti.
@@ -125,7 +150,7 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 setViewVisibility(R.id.trip_sub, if (card.sub == null) android.view.View.GONE else android.view.View.VISIBLE)
                 card.track?.let { track ->
                     val arrived = card.phase == LivePhase.ON_BOARD && now >= track.end
-                    runCatching { setImageViewBitmap(R.id.trip_track, TrackArt.draw(context, track.steps(now), accent, arrived)) }
+                    runCatching { setImageViewBitmap(R.id.trip_track, TrackArt.draw(context, track.steps(now), accent, arrived, train = event.trip != null)) }
                 }
                 setTextViewText(R.id.trip_depart, card.depart?.let { marked(it, LiveCard.DEPART, card) } ?: "")
                 setTextViewText(R.id.trip_arrive, card.arrive?.let { marked(it, LiveCard.ARRIVE, card) } ?: "")
@@ -145,14 +170,15 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 // Arancio = attenzione (in ritardo o soppresso), altrimenti il blu della Canvas: un colore, un significato.
                 .setColor(accent)
                 .setContentIntent(PendingIntent.getActivity(context, id, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
-                .setOngoing(true)
+                .setOngoing(!card.done)
+                .setAutoCancel(card.done)
                 .setOnlyAlertOnce(true)
                 .setShowWhen(false)
-                .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+                .setCategory(if (card.done) NotificationCompat.CATEGORY_STATUS else NotificationCompat.CATEGORY_PROGRESS)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 // Col ritardo: un treno in ritardo di due ore non perde la notifica all'arrivo del biglietto (2026-11-20).
-                .setTimeoutAfter((event.end + TrainLive.shiftMs(TrainLive.known(event.eventId, now)) + 2 * LiveTrip.AFTER_MS + 60 * 60_000L - now).coerceAtLeast(60_000L))
+                .setTimeoutAfter(if (event.trip == null) (event.end + ShiftLive.DONE_MS - now).coerceAtLeast(60_000L) else (event.end + TrainLive.shiftMs(TrainLive.known(event.eventId, now)) + 2 * LiveTrip.AFTER_MS + 60 * 60_000L - now).coerceAtLeast(60_000L))
             if (card.phase == LivePhase.ON_BOARD || event.trip != null) {
                 if (TicketQrStore.cached(context, event.eventId).isNotEmpty()) {
                     builder.addAction(0, "Biglietto", TicketActivity.pending(context, event.eventId))
@@ -180,6 +206,7 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     com.platinum20.dashboard.trips.MarkKind.LATE -> android.text.style.ForegroundColorSpan(LATE_TEXT)
                     com.platinum20.dashboard.trips.MarkKind.STRUCK -> android.text.style.StrikethroughSpan()
                     com.platinum20.dashboard.trips.MarkKind.SOFT -> android.text.style.ForegroundColorSpan(PASSED_TEXT)
+                    com.platinum20.dashboard.trips.MarkKind.NOW -> android.text.style.ForegroundColorSpan(NOW_TEXT)
                 }
                 out.setSpan(span, at, at + m.text.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                 from = at + m.text.length
@@ -209,6 +236,8 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
         private const val LATE_COLOR = 0xFFD9572B.toInt()
         /** L'arancio del testo: più chiaro, si legge sia sul chiaro sia sullo scuro. */
         private const val LATE_TEXT = 0xFFF08A3C.toInt()
+        /** Il blu del guadagno del turno: più chiaro del blu Canvas, si legge sullo scuro. */
+        private const val NOW_TEXT = 0xFF7AA7FF.toInt()
         /** Le fermate già passate, spente. */
         private const val PASSED_TEXT = 0xFF8A8A8A.toInt()
 
