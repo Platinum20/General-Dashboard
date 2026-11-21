@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.560.0
+**Spotify smette di dire "non ha accettato l'accesso"**
+- Quando Spotify rifiuta l'accesso (di solito al risveglio del telefono, con la rete non ancora pronta) l'app rinnova e riprova da sola più volte, con calma, senza dirti niente
+- Senza rete aspetta che torni e poi riparte da sola
+- Il messaggio esce solo se stai ascoltando e Spotify rifiuta anche dopo tutti i tentativi
+- Nella pagina Musica non c'è più la riga "Nuova playlist": la crei da "Aggiungi a una playlist" tenendo premuto un brano
+
 ## 1.559.0
 **Cerchi e pallini rotondi nelle note**
 - I cerchi delle voci da spuntare e i pallini degli elenchi sono di nuovo tondi, non più barrette strette

@@ -13,10 +13,12 @@ import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.ResumeKind
 import com.platinum20.dashboard.media.createMediaWebView
+import com.platinum20.dashboard.net.Online
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -50,8 +52,10 @@ object SpotifyPlayer : ExternalBackend {
     private var page = 0
     /** L'ultimo errore detto dalla pagina (accesso, Premium, WebView): il play non lo cancella. */
     private var pageError: String? = null
-    /** Ultimo rinnovo silenzioso dopo un "accesso non valido" della pagina ([SpotifyRelink]). */
-    private var authRetryAt = 0L
+    /** I rinnovi silenziosi recenti dopo un "accesso non valido" della pagina ([SpotifyRelink]). */
+    private var authRetries = emptyList<Long>()
+    /** Senza rete si aspetta che torni per riaccendere la pagina (uno solo alla volta). */
+    private var onlineWait: Job? = null
 
     /** La voce che il player unico ci ha chiesto di suonare (uri di Spotify). */
     private var target: String? = null
@@ -325,20 +329,43 @@ object SpotifyPlayer : ExternalBackend {
      */
     private fun authFailed() {
         val now = System.currentTimeMillis()
-        val step = SpotifyRelink.step(SpotifyAuth.connected.value, authRetryAt, now)
-        if (step == SpotifyRelink.Step.RETRY) {
-            val context = appContext
-            if (context != null) {
-                authRetryAt = now
+        authRetries = SpotifyRelink.recent(authRetries, now)
+        val context = appContext
+        val step = SpotifyRelink.step(SpotifyAuth.connected.value, Online.online.value, authRetries, playing = target != null)
+        when (step) {
+            SpotifyRelink.Step.RETRY -> {
+                if (context == null) return quietError(SpotifyRelink.LATER)
+                val wait = SpotifyRelink.delayFor(authRetries.size)
+                authRetries = authRetries + now
                 pageError = null
                 scope.launch {
+                    delay(wait)
                     runCatching { SpotifyAuth.token(forceRefresh = true) }
                     if (SpotifyAuth.connected.value) restart(context) else showPageError(SpotifyRelink.RELINK)
                 }
-                return
             }
+            SpotifyRelink.Step.ASK -> showPageError(SpotifyRelink.RELINK)
+            SpotifyRelink.Step.WAIT_NETWORK -> {
+                if (target != null) showPageError(SpotifyRelink.OFFLINE) else quietError(SpotifyRelink.OFFLINE)
+                if (context != null && onlineWait?.isActive != true) {
+                    onlineWait = scope.launch {
+                        Online.online.first { it }
+                        // Rete tornata: si riparte da capo, coi tentativi azzerati.
+                        authRetries = emptyList()
+                        runCatching { SpotifyAuth.token(forceRefresh = true) }
+                        if (SpotifyAuth.connected.value && webView != null) restart(context)
+                    }
+                }
+            }
+            // Non stai ascoltando: niente messaggio. La pagina resta segnata e il prossimo play la riaccende.
+            SpotifyRelink.Step.QUIET -> quietError(SpotifyRelink.LATER)
+            SpotifyRelink.Step.LATER -> showPageError(SpotifyRelink.LATER)
         }
-        showPageError(if (step == SpotifyRelink.Step.ASK) SpotifyRelink.RELINK else SpotifyRelink.LATER)
+    }
+
+    /** La pagina è ferma ma non lo si dice: [device] la riaccende al prossimo play. */
+    private fun quietError(text: String) {
+        pageError = text
     }
 
     private fun showPageError(text: String) {
@@ -510,6 +537,8 @@ object SpotifyPlayer : ExternalBackend {
     private const val SLEEP_MS = 5 * 60_000L
     /** Quanto si aspetta la pagina prima di riaccenderla, e poi quanto la pagina riaccesa. */
     private const val FIRST_WAIT_MS = 6_000L
+    /** Quanto la pagina aspetta un token (la chiamata blocca il suo thread: mai all'infinito). */
+    private const val TOKEN_WAIT_MS = 20_000L
     /** Dopo il play, quanto si aspetta il primo segno di vita del brano prima di rimandarlo. */
     private const val START_CHECK_MS = 4_000L
     private const val SECOND_WAIT_MS = 20_000L
@@ -527,7 +556,19 @@ object SpotifyPlayer : ExternalBackend {
         }
 
         @JavascriptInterface
-        fun token(): String = runBlocking { runCatching { SpotifyAuth.token() }.getOrNull() }.orEmpty()
+        fun token(): String = runBlocking {
+            // Al risveglio la rete ci mette qualche secondo: un rinnovo fallito dava un token vuoto alla
+            // pagina, che rispondeva "accesso non valido". Si riprova un paio di volte prima di arrendersi.
+            withTimeoutOrNull(TOKEN_WAIT_MS) {
+                var token: String? = null
+                for (attempt in 0 until 3) {
+                    token = runCatching { SpotifyAuth.token() }.getOrNull()
+                    if (token != null || !SpotifyAuth.connected.value) break
+                    delay(2_000)
+                }
+                token
+            }
+        }.orEmpty()
 
         @JavascriptInterface
         fun onReady(id: String) = mine {
