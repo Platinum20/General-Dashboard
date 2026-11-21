@@ -2,7 +2,7 @@
 
 ## 1.548.0
 **Notifica del treno più essenziale**
-- Il ritardo torna nella prima riga, accanto a "parte tra" o "arriva tra": "+12 min · parte tra 33 min", senza l'ora dell'ultima lettura
+- Il ritardo torna nella prima riga, accanto a "parte tra" o "arriva tra": "+12 min · parte tra 33 min", senza l'ora dell'ultima lettura, anche nella notifica ridotta
 - Niente più tasto "Fermate" né la riga in fondo con gli orari delle fermate
 - Niente più "Prossima: …", né nella notifica aperta né in quella ridotta
 
