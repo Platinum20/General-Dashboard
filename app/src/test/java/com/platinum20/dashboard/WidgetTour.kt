@@ -39,6 +39,7 @@ class WidgetTour {
     private val sizes = mapOf(
         "DashboardWidget" to WidgetSize(360, 200),
         "TasksWidget" to WidgetSize(360, 300),
+        "TodoWidget" to WidgetSize(360, 300),
         "NewsWidget" to WidgetSize(360, 240),
         "SimWidget" to WidgetSize(170, 170),
         "WeatherWidget" to WidgetSize(360, 200),
@@ -61,6 +62,15 @@ class WidgetTour {
             NotesStore.addTask("domani alle 9 dentista")
             NotesStore.saveDate(null, "Compleanno di Marco", LocalDate.now().plusDays(2), yearly = true)
             NotesStore.saveParcel(null, "Cuffie", "TBA123456789012", LocalDate.now())
+        }
+        // Le abitudini in cima al widget Da fare: una da fare, una già fatta oggi con la sua serie.
+        if (NotesStore.data.value.habits.isEmpty()) {
+            NotesStore.saveHabit(null, "Bere 2 litri d'acqua")
+            NotesStore.saveHabit(null, "Camminare 30 minuti")
+            // Per nome: due abitudini create nello stesso istante possono avere lo stesso id.
+            NotesStore.data.value.habits.lastOrNull { it.title.startsWith("Camminare") }?.let { h ->
+                (0L..4L).forEach { NotesStore.markHabitDone(h.id, LocalDate.now().minusDays(it)) }
+            }
         }
         context.getSharedPreferences("widget", Context.MODE_PRIVATE).edit()
             .putString(

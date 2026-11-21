@@ -16,6 +16,7 @@ data class WidgetBrief(val text: String, val urgent: Boolean = false, val action
 object WidgetRows {
     private val LONG_DATE = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.ITALIAN)
     private val HOUR = DateTimeFormatter.ofPattern("HH")
+    private val SHORT_DATE = DateTimeFormatter.ofPattern("EEEE d", Locale.ITALIAN)
 
     /** Sotto la temperatura: "Sereno · 22°/10° · pioggia 40%" (la pioggia solo dal 30%). */
     fun weatherLine(description: String, max: String?, min: String?, rainChance: Int?): String =
@@ -25,6 +26,18 @@ object WidgetRows {
 
     /** "LUNEDÌ 9 NOVEMBRE": l'etichetta in cima al widget Oggi. */
     fun dateLabel(day: LocalDate): String = day.format(LONG_DATE).uppercase(Locale.ITALIAN)
+
+    /** "SABATO 21 · ROMA": l'etichetta del blocco colorato del widget Oggi (giro 2). */
+    fun todayLabel(day: LocalDate, place: String?): String =
+        listOfNotNull(day.format(SHORT_DATE), place?.takeIf { it.isNotBlank() }).joinToString(" · ").uppercase(Locale.ITALIAN)
+
+    /** Cosa ci sta nel widget Oggi: quante ore sotto il meteo (0 = nessuna) e se c'è posto per la prossima cosa. */
+    data class TodayParts(val hours: Int, val next: Boolean)
+
+    fun todayParts(size: WidgetSize): TodayParts = TodayParts(
+        hours = if (size.heightDp < 150) 0 else (size.widthDp / 52).coerceIn(3, 7),
+        next = size.heightDp >= 120,
+    )
 
     /** "Lunedì 9": il titolo del widget Calendario. */
     fun dayTitle(day: LocalDate): String =

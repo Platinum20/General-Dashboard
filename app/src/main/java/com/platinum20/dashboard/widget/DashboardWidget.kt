@@ -8,15 +8,15 @@ import com.platinum20.dashboard.OpenRequest
 import com.platinum20.dashboard.R
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.today.BriefAction
-import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.weather.WeatherCodes
 import com.platinum20.dashboard.weather.WeatherStore
 import com.platinum20.dashboard.weather.asTemp
-import java.time.LocalDate
+import java.time.LocalDateTime
 
 /**
- * Widget "Oggi" (il primo widget di Canvas, il nome della classe resta per non toglierlo dalla Home):
- * il blocco colorato col meteo e sotto pioggia e abitudini di "Adesso" più tutto Oggi del calendario.
+ * Widget "Oggi" (il primo widget di Canvas, il nome della classe resta per non toglierlo dalla Home).
+ * Giro 2 (Antonio, 2026-11-21): come la card Adesso, il meteo con le prossime ore e sotto la prossima cosa.
+ * Le righe "Ancora da fare: 2 abitudini" non dicevano cosa: le abitudini ora stanno nel widget Da fare.
  */
 class DashboardWidget : CanvasWidget(Renderer, WidgetSize(250, 180)) {
 
@@ -50,51 +50,52 @@ class DashboardWidget : CanvasWidget(Renderer, WidgetSize(250, 180)) {
 
         private val Renderer: WidgetRenderer = { context, size ->
             val views = RemoteViews(context.packageName, R.layout.widget_today)
+            val zone = java.time.ZoneId.systemDefault()
+            val now = LocalDateTime.now(zone)
             views.setOnClickPendingIntent(android.R.id.background, Widgets.open(context, OpenRequest(OpenRequest.HOME), 100))
             views.setOnClickPendingIntent(R.id.today_hero, Widgets.open(context, OpenRequest(OpenRequest.WEATHER), 101))
-            views.setTextViewText(R.id.today_date, WidgetRows.dateLabel(LocalDate.now()))
 
             val forecast = WeatherStore.cached(context)
+            views.setTextViewText(R.id.today_date, WidgetRows.todayLabel(now.toLocalDate(), forecast?.place))
+            views.removeAllViews(R.id.today_hours)
+            views.setViewVisibility(R.id.today_hours, View.GONE)
+            val parts = WidgetRows.todayParts(size)
             if (forecast != null) {
                 val c = forecast.current
                 val today = forecast.today
                 views.setTextViewText(R.id.today_icon, WeatherCodes.emoji(c.code, c.isDay))
                 views.setTextViewText(R.id.today_temp, c.temperature.asTemp())
-                views.setTextViewText(R.id.today_place, forecast.place)
                 views.setTextViewText(
                     R.id.today_desc,
                     WidgetRows.weatherLine(WeatherCodes.description(c.code), today?.max?.asTemp(), today?.min?.asTemp(), today?.precipitationProbability),
                 )
+                // Le prossime ore come nella card Adesso della Home (HourStrip), se c'è spazio.
+                // La prima colonna è "Ora", come nella Home.
+                val hours = WidgetRows.hours(forecast.hourly, now, parts.hours - 1, step = 1)
+                if (parts.hours > 0) {
+                    views.setViewVisibility(R.id.today_hours, View.VISIBLE)
+                    views.addView(R.id.today_hours, RemoteViews(context.packageName, R.layout.widget_hour).apply {
+                        setTextViewText(R.id.hour_time, "Ora")
+                        setTextViewText(R.id.hour_icon, WeatherCodes.emoji(c.code, c.isDay))
+                        setTextViewText(R.id.hour_temp, c.temperature.asTemp())
+                    })
+                    hours.forEach { h ->
+                        views.addView(R.id.today_hours, RemoteViews(context.packageName, R.layout.widget_hour).apply {
+                            setTextViewText(R.id.hour_time, WidgetRows.hourLabel(h.time))
+                            setTextViewText(R.id.hour_icon, WeatherCodes.emoji(h.code, h.isDay))
+                            setTextViewText(R.id.hour_temp, h.temperature.asTemp())
+                        })
+                    }
+                }
             }
 
-            // Pioggia e abitudini di Adesso, poi lo stesso Oggi del calendario: ricalcolati adesso a ogni disegno.
-            val max = WidgetRows.linesForHeight(size.heightDp)
-            val lines = if (max == 0) emptyList() else {
-                val zone = java.time.ZoneId.systemDefault()
-                val brief = runCatching { Briefing.load(context, max = Int.MAX_VALUE) }.getOrDefault(emptyList())
-                val days = runCatching { TasksWidget.loadDays(context, zone) }.getOrDefault(emptyList())
-                WidgetRows.todayEntries(brief, AgendaRows.todayItems(days, LocalDate.now(zone), zone), max)
-            }
-            views.removeAllViews(R.id.today_lines)
-            views.setViewVisibility(R.id.today_lines, if (lines.isEmpty()) View.GONE else View.VISIBLE)
-            lines.forEachIndexed { i, line ->
-                val row = RemoteViews(context.packageName, R.layout.widget_row_line)
-                row.setTextViewText(R.id.line_text, line.text)
-                row.setInt(R.id.line_dot, "setColorFilter", context.getColor(if (line.urgent) R.color.widget_late else R.color.widget_accent))
-                row.setOnClickPendingIntent(R.id.line_root, Widgets.open(context, OpenRequest(OpenRequest.HOME), 100))
-                val actionable = line.action != null && line.targetId != null
-                row.setViewVisibility(R.id.line_action, if (actionable) View.VISIBLE else View.GONE)
-                if (actionable) {
-                    row.setOnClickPendingIntent(
-                        R.id.line_action,
-                        Widgets.broadcast(context, DashboardWidget::class.java, ACTION_BRIEF, 110 + i) {
-                            putExtra(EXTRA_ACTION, line.action!!.name)
-                            putExtra(EXTRA_TARGET, line.targetId!!)
-                        },
-                    )
-                }
-                views.addView(R.id.today_lines, row)
-            }
+            // Sotto, una riga sola: la prossima cosa vera del calendario (le abitudini hanno il widget Da fare).
+            val next = if (!parts.next) null else runCatching {
+                AgendaRows.next(TasksWidget.loadDays(context, zone), System.currentTimeMillis(), zone)
+            }.getOrNull()
+            views.setViewVisibility(R.id.today_next, if (next == null) View.GONE else View.VISIBLE)
+            views.setTextViewText(R.id.today_next_text, next.orEmpty())
+            views.setOnClickPendingIntent(R.id.today_next, Widgets.open(context, OpenRequest(OpenRequest.NOTES), 102))
             views
         }
     }

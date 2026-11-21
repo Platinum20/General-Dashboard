@@ -70,7 +70,7 @@ class NewsWidget : CanvasWidget(Renderer, WidgetSize(250, 220)) {
     }
 }
 
-/** Widget "SIM": i giga che restano con la barra, il rinnovo e il credito. */
+/** Widget "SIM": i giga che restano nell'anello, come nella pagina SIM, e quando si rinnova. */
 class SimWidget : CanvasWidget(Renderer, WidgetSize(110, 110)) {
     companion object {
         private val Renderer: WidgetRenderer = { context, _ ->
@@ -79,11 +79,10 @@ class SimWidget : CanvasWidget(Renderer, WidgetSize(110, 110)) {
             val m = SimWidgetRows.model(SimStore.status.value, SimStore.linked.value, LocalDate.now())
             views.setTextViewText(R.id.sim_big, m.big)
             views.setTextViewText(R.id.sim_of, m.of)
-            views.setViewVisibility(R.id.sim_bar, if (m.progress == null) View.GONE else View.VISIBLE)
+            views.setViewVisibility(R.id.sim_of, if (m.of.isEmpty()) View.GONE else View.VISIBLE)
+            // Senza totale (illimitati, solo credito) l'anello resta vuoto: c'è solo il fondo.
             views.setProgressBar(R.id.sim_bar, 1000, m.progress ?: 0, false)
             views.setTextViewText(R.id.sim_line1, m.line1)
-            views.setTextViewText(R.id.sim_line2, m.line2)
-            views.setViewVisibility(R.id.sim_line2, if (m.line2.isEmpty()) View.GONE else View.VISIBLE)
             views
         }
     }
