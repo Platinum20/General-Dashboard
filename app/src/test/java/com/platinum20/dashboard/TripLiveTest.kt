@@ -150,12 +150,9 @@ class TripLiveTest {
     }
 
     @Test
-    fun ilTurnoHaSoloIlContoAllaRovescia() {
-        assertNull(LiveTrip.phase(shift, at(8, 10)))
-        val card = LiveTrip.card(shift, at(8, 20), null, checked = false, zone = zone)!!
-        assertEquals("Turno su Giulia", card.title)
-        assertEquals("Inizia alle 9:00 · In doppio con Marco", card.text)
-        assertNull(LiveTrip.card(shift, at(10, 0), null, checked = false, zone = zone))
+    fun iTurniNonPassanoDalTreno() {
+        assertNull(LiveTrip.phase(shift, at(8, 20)))
+        assertNull(LiveTrip.card(shift, at(8, 20), null, checked = false, zone = zone))
     }
 
     @Test

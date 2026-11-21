@@ -132,8 +132,8 @@ object AppSettings {
     private val _liveTrips = MutableStateFlow(true)
     /** Il viaggio vivo: un'ora prima del treno una notifica sola con ritardo, binario e biglietto (acceso di default). */
     val liveTrips: StateFlow<Boolean> = _liveTrips.asStateFlow()
-    private val _liveShifts = MutableStateFlow(false)
-    /** Lo stesso conto alla rovescia prima di ogni turno (spento di default). */
+    private val _liveShifts = MutableStateFlow(true)
+    /** Il turno dal vivo ([com.platinum20.dashboard.trips.ShiftLive]): acceso di default dal 2026-11-21. */
     val liveShifts: StateFlow<Boolean> = _liveShifts.asStateFlow()
     private val _downloadSaved = MutableStateFlow(true)
     /** I video e gli episodi salvati si scaricano sul telefono (acceso di default; prima era lo zaino del treno). */
@@ -229,7 +229,7 @@ object AppSettings {
         _updateNotify.value = prefs.getBoolean(KEY_UPDATE_NOTIFY, true)
         _rainAlert.value = prefs.getBoolean(KEY_RAIN_ALERT, false)
         _liveTrips.value = prefs.getBoolean(KEY_LIVE_TRIPS, true)
-        _liveShifts.value = prefs.getBoolean(KEY_LIVE_SHIFTS, false)
+        _liveShifts.value = prefs.getBoolean(KEY_LIVE_SHIFTS, true)
         _downloadSaved.value = prefs.getBoolean(KEY_TRAIN_PACK, true)
         _savedQuality.value = prefs.getInt(KEY_SAVED_QUALITY, com.platinum20.dashboard.media.SavedQuality.DEFAULT.height)
         _readingVoice.value = ReadingVoice.of(prefs.getString(KEY_READING_VOICE, null))

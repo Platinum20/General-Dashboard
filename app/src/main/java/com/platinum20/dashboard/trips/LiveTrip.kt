@@ -9,8 +9,8 @@ import java.time.format.DateTimeFormatter
 enum class LivePhase { SOON, ON_BOARD }
 
 /** Come segnare un pezzo di testo: arancio (in ritardo) o barrato (l'orario del biglietto superato dal ritardo). */
-/** LATE = arancio, STRUCK = barrato, SOFT = grigio (le righe di contorno, come nella proposta A). */
-enum class MarkKind { LATE, STRUCK, SOFT }
+/** LATE = arancio, STRUCK = barrato, SOFT = grigio (le righe di contorno, come nella proposta A), NOW = blu (il guadagno del turno). */
+enum class MarkKind { LATE, STRUCK, SOFT, NOW }
 
 /** Un pezzo di testo da segnare nella riga [line] di [LiveCard.lines] (-1 = nel [LiveCard.text]). */
 data class LiveMark(val line: Int, val text: String, val kind: MarkKind)
@@ -67,6 +67,8 @@ data class LiveCard(
     val sub: String? = null,
     /** Fra titolo e [sub]: "Prossima: Reggio Emilia Av 23:56". */
     val next: String? = null,
+    /** Il riepilogo del turno finito: non più fisso, si toglie col dito ([ShiftLive]). */
+    val done: Boolean = false,
 ) {
     companion object {
         const val TEXT = -1
@@ -85,14 +87,12 @@ data class LiveStop(val time: String, val name: String, val passed: Boolean, val
 
 /**
  * Il viaggio vivo (1.467): un'ora prima del treno nasce una notifica sola che conta i minuti alla partenza,
- * poi in viaggio avanza fino all'arrivo. Per i turni (se acceso) solo il conto alla rovescia all'inizio.
+ * poi in viaggio avanza fino all'arrivo. I turni stanno in [ShiftLive].
  * Logica pura: orari, ritardo e testi, per i test.
  */
 object LiveTrip {
     /** Da quanto prima della partenza compare. */
     const val LEAD_MS = 60 * 60_000L
-    /** Per i turni basta meno: il tempo di prepararsi e uscire. */
-    const val SHIFT_LEAD_MS = 45 * 60_000L
     /** Quanto resta dopo l'arrivo, per vedere che sei arrivato. */
     const val AFTER_MS = 5 * 60_000L
 
@@ -100,16 +100,13 @@ object LiveTrip {
 
     /** Una fase per [event] adesso, o null se è troppo presto o è già finito. Il ritardo sposta partenza e arrivo. */
     fun phase(event: CalendarEvent, now: Long, status: TrainStatus? = null): LivePhase? {
-        if (event.allDay || event.end <= event.begin) return null
-        val shift = event.trip == null
-        val delay = if (shift) 0L else TrainLive.shiftMs(status)
+        // I turni hanno la loro notifica ([ShiftLive]).
+        if (event.allDay || event.end <= event.begin || event.trip == null) return null
+        val delay = TrainLive.shiftMs(status)
         val start = event.begin + delay
-        val lead = if (shift) SHIFT_LEAD_MS else LEAD_MS
         return when {
-            now < start - lead -> null
+            now < start - LEAD_MS -> null
             now < start -> LivePhase.SOON
-            // Il turno non ha notifica mentre lavori: sarebbe solo rumore.
-            shift -> null
             status?.cancelled == true -> null
             now < event.end + delay + AFTER_MS -> LivePhase.ON_BOARD
             else -> null
@@ -129,20 +126,7 @@ object LiveTrip {
 
     /** La notifica per [event] adesso; null se non serve. [checked] = abbiamo provato a leggere il ritardo. */
     fun card(event: CalendarEvent, now: Long, status: TrainStatus?, checked: Boolean, zone: ZoneId = ZoneId.systemDefault()): LiveCard? {
-        val trip = event.trip
-        if (trip == null) {
-            if (phase(event, now) != LivePhase.SOON) return null
-            val company = event.mates.takeIf { it.isNotEmpty() }
-                ?.let { com.platinum20.dashboard.shifts.ShiftParse.company(it.map(com.platinum20.dashboard.shifts.ShiftParse::firstName)) }
-            return LiveCard(
-                LivePhase.SOON,
-                title = com.platinum20.dashboard.ui.screens.RowText.event(event),
-                text = listOfNotNull("Inizia alle ${at(event.begin, zone)}", company).joinToString(" · "),
-                chip = at(event.begin, zone),
-                countdownTo = event.begin,
-                header = "inizia ${inText(event.begin - now)}",
-            )
-        }
+        val trip = event.trip ?: return null
         val title = com.platinum20.dashboard.ui.screens.RowText.event(event)
         val seat = SeatText.line(trip, status?.platform)
         if (status?.cancelled == true && now < event.begin) {

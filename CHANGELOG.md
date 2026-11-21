@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.563.0
+**Il turno dal vivo nella notifica**
+- Tre quarti d'ora prima del turno compare una notifica fissa: quanto manca, con chi sei e quanto dura
+- Mentre lavori una linea va dall'inizio alla fine del turno, e sotto vedi quanto hai venduto e guadagnato finora
+- Alla fine diventa il riepilogo, con il guadagno e il totale del mese, e la togli col dito
+- Stesso disegno della notifica del treno: niente più spazi vuoti quando la apri
+- Accesa di default: la trovi in Impostazioni › Notifiche, "Turno dal vivo"
+
 ## 1.562.0
 **Scrivere nelle liste delle note**
 - Su una voce da spuntare vuota il cursore sta dopo il cerchio, dove scrivi, e non più sopra il cerchio
