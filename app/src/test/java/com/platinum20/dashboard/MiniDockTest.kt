@@ -9,7 +9,7 @@ import org.junit.Test
 class MiniDockTest {
     private val frame = Rect(48f, 100f, 1032f, 2000f)
 
-    /** 1.545: il video riempie il riquadro 200 × 113, nell'angolo dove sta; in alto sotto il titolo. */
+    /** 1.546: il video riempie il riquadro 200 × 113, nell'angolo dove sta; in alto sotto il titolo. */
     @Test
     fun thumbIsTheWholeBoxInItsCorner() {
         assertEquals(Rect(432f, 1661f, 1032f, 2000f), MiniDock.thumb(frame, atTop = false, atRight = true, density = 3f))

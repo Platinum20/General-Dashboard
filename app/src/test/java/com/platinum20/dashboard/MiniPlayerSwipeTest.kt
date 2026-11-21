@@ -23,7 +23,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Il riquadro del mini player (1.545) si aggancia ai quattro angoli; lanciato verso il suo bordo si ritira nella
+ * Il riquadro del mini player (1.546) si aggancia ai quattro angoli; lanciato verso il suo bordo si ritira nella
  * linguetta (1.508), anche mentre lo si sposta su e giù. Si chiude solo portandolo giù, sotto lo schermo (calamita).
  */
 @RunWith(RobolectricTestRunner::class)
@@ -73,7 +73,7 @@ class MiniPlayerSwipeTest {
         assertTrue(MiniDock.tuckRight)
     }
 
-    /** 1.545: dall'angolo a destra, lanciato a sinistra va nell'angolo a sinistra; lanciato ancora, nella linguetta. */
+    /** 1.546: dall'angolo a destra, lanciato a sinistra va nell'angolo a sinistra; lanciato ancora, nella linguetta. */
     @Test
     fun lanciatoVersoLAltraMetaCambiaAngoloPoiSiRitira() {
         show()
@@ -188,7 +188,7 @@ class MiniPlayerSwipeTest {
     private fun tabCenter(): Offset =
         compose.onNodeWithContentDescription("Mini player: Brano di prova", substring = true).fetchSemanticsNode().boundsInRoot.center
 
-    /** 1.545: tirata verso il centro (con la vibrazione) la linguetta fa uscire il riquadro dal suo lato. */
+    /** 1.546: tirata verso il centro (con la vibrazione) la linguetta fa uscire il riquadro dal suo lato. */
     @Test
     fun laLinguettaTirataVersoIlCentroEsce() {
         show()

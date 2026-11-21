@@ -34,7 +34,7 @@ object MiniDock {
     /** In alto o in basso: resta dove l'hai lasciato anche dopo aver aperto il player grande. */
     var atTop: Boolean = false
 
-    /** A destra o a sinistra (i quattro angoli del riquadro, 1.545): a destra all'inizio. */
+    /** A destra o a sinistra (i quattro angoli del riquadro, 1.546): a destra all'inizio. */
     var atRight: Boolean = true
 
     /** Ritirato nella linguetta sul bordo ([MiniTuck]): allora non copre la pagina e non serve spazio in fondo. */

@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -235,11 +237,53 @@ private fun HabitTodoRow(
                 )
             }
         }
-        habitFlame(habit, now.toLocalDate())?.let {
+        habitFlame(habit, now.toLocalDate())?.let { days ->
             Spacer(Modifier.width(8.dp))
-            Text(it, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            val ink = MaterialTheme.colorScheme.onSurfaceVariant
+            androidx.compose.material3.Icon(HabitFlameIcon, contentDescription = null, tint = ink, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(3.dp))
+            Text("$days", style = MaterialTheme.typography.labelLarge, color = ink,
+                modifier = Modifier.semantics { contentDescription = "$days di fila" })
         }
     }
+}
+
+/**
+ * La fiamma della serie delle abitudini (1.545, Antonio: "disegna tu un'icona in stile Canvas" al posto di 🔥):
+ * contorno a tratto arrotondato come le icone Outlined, con la fiammella interna; colore = inchiostro (regola 2).
+ */
+internal val HabitFlameIcon: androidx.compose.ui.graphics.vector.ImageVector by lazy {
+    val stroke = androidx.compose.ui.graphics.SolidColor(androidx.compose.ui.graphics.Color.Black)
+    androidx.compose.ui.graphics.vector.ImageVector.Builder(
+        name = "HabitFlame", defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = 24f, viewportHeight = 24f,
+    ).apply {
+        // Il corpo: punta in alto, lingua a sinistra, base tonda.
+        addPath(
+            pathData = androidx.compose.ui.graphics.vector.PathBuilder().apply {
+                moveTo(12f, 2.8f)
+                curveTo(15.5f, 6.2f, 18.5f, 9.6f, 18.5f, 14.2f)
+                arcTo(6.5f, 6.5f, 0f, false, true, 5.5f, 14.2f)
+                curveTo(5.5f, 11.4f, 7f, 9.2f, 8.6f, 7.6f)
+                curveTo(8.8f, 9.4f, 9.6f, 10.6f, 10.8f, 11.2f)
+                curveTo(10.6f, 8f, 11f, 5.2f, 12f, 2.8f)
+                close()
+            }.nodes,
+            stroke = stroke, strokeLineWidth = 2f,
+            strokeLineCap = androidx.compose.ui.graphics.StrokeCap.Round,
+            strokeLineJoin = androidx.compose.ui.graphics.StrokeJoin.Round,
+        )
+        // La fiammella dentro, piena: si legge anche a 16 dp.
+        addPath(
+            pathData = androidx.compose.ui.graphics.vector.PathBuilder().apply {
+                moveTo(12f, 14.2f)
+                curveTo(13.4f, 15.3f, 14.4f, 16.4f, 14.4f, 17.6f)
+                arcTo(2.4f, 2.4f, 0f, false, true, 9.6f, 17.6f)
+                curveTo(9.6f, 16.4f, 10.6f, 15.3f, 12f, 14.2f)
+                close()
+            }.nodes,
+            fill = stroke,
+        )
+    }.build()
 }
 
 private fun looseIcon(item: LooseItem) = when (item.kind) {

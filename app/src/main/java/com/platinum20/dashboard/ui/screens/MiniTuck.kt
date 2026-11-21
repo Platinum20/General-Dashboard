@@ -1,7 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
 /**
- * Le regole del mini player (1.508, Antonio; riquadro dal 1.545): un riquadro con video o copertina e i tasti
+ * Le regole del mini player (1.508, Antonio; riquadro dal 1.546): un riquadro con video o copertina e i tasti
  * dentro, agganciato a uno dei quattro angoli; lanciato di lato (solo a mano) si ritira in una linguetta alta
  * quanto lui sul bordo, che si tira fuori con una vibrazione; si chiude solo portandolo giù, sotto lo schermo,
  * dove una calamita lo prende con una vibrazione. Pure, provate nei test.
@@ -27,7 +27,7 @@ object MiniTuck {
     /** La calamita lo tiene: è sceso di almeno [thresholdPx] sotto il suo posto in basso. */
     fun magnet(belowPx: Float, thresholdPx: Float): Boolean = belowPx > thresholdPx
 
-    /** Il riquadro del mini player (1.545, Antonio): circa il doppio del video di prima (84 × 48), 16:9. */
+    /** Il riquadro del mini player (1.546, Antonio): circa il doppio del video di prima (84 × 48), 16:9. */
     const val BOX_W = 200f
     const val BOX_H = 113f
 
@@ -61,7 +61,7 @@ object MiniTuck {
         (maxOf(-left, left + boxW - maxW).coerceAtLeast(0f) / boxW.coerceAtLeast(1f)).coerceIn(0f, 1f)
 
     /**
-     * Cosa succede lasciandolo (1.545): preso dalla calamita = si chiude; portato oltre il bordo = linguetta da
+     * Cosa succede lasciandolo (1.546): preso dalla calamita = si chiude; portato oltre il bordo = linguetta da
      * quel lato; lanciato verso il bordo del suo angolo ([fromRight] = da dove è partito) = linguetta, lanciato
      * verso l'altro lato = angolo di là; altrimenti l'angolo della metà dove l'hai lasciato. In alto o in basso
      * lo decide la parte verticale.

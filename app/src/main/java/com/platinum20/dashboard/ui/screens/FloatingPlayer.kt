@@ -83,7 +83,7 @@ import kotlin.math.roundToInt
 
 /**
  * Mini player unico sopra tutta l'app, per qualunque cosa suoni (YouTube, musica, Spotify, radio,
- * podcast): dal 1.545 un riquadro 16:9 (circa il doppio del video di prima) con dentro il video o la
+ * podcast): dal 1.546 un riquadro 16:9 (circa il doppio del video di prima) con dentro il video o la
  * copertina e i tasti, uguale per tutte le fonti. Si trascina e si aggancia a uno dei quattro angoli
  * (in alto sotto il titolo, in basso sopra la barra delle sezioni); un tocco apre il player grande.
  * Dal 1.508 ([MiniTuck]): lanciato di lato (o scorrendo una pagina) si ritira in una linguetta sul bordo,
@@ -131,7 +131,7 @@ fun FloatingPlayer(
         val density = LocalDensity.current
         val maxH = constraints.maxHeight.toFloat()
         val maxW = constraints.maxWidth.toFloat().coerceAtLeast(1f)
-        // Il riquadro (1.545): misure fisse, 16:9.
+        // Il riquadro (1.546): misure fisse, 16:9.
         val boxW = with(density) { MiniTuck.BOX_W.dp.toPx() }
         val barH = with(density) { MiniTuck.BOX_H.dp.toPx() }
         val edgePad = with(density) { 16.dp.toPx() }
@@ -201,7 +201,7 @@ fun FloatingPlayer(
             val bar = barH
             val tabRange = range
             // Trascinabile (1.521): su e giù lungo il bordo, giù sulla X per chiuderla; tirata verso il centro
-            // fa uscire il riquadro con una vibrazione (1.545, Antonio). Anche il tocco la riapre.
+            // fa uscire il riquadro con una vibrazione (1.546, Antonio). Anche il tocco la riapre.
             val tabDx = remember { Animatable(0f) }
             val tabDy = remember { Animatable(0f) }
             var tabMagnet by remember { mutableStateOf(false) }
@@ -485,7 +485,7 @@ private fun androidx.compose.foundation.layout.BoxScope.CloseMark(near: Float, m
 }
 
 /**
- * La linguetta sul bordo (1.545): sottile, alta quanto il riquadro, sul filo del bordo, con uno
+ * La linguetta sul bordo (1.546): sottile, alta quanto il riquadro, sul filo del bordo, con uno
  * spicchio della copertina. Un tocco o tirarla verso il centro riapre il riquadro; trascinata su e giù cambia
  * angolo, giù sulla X chiude.
  */
@@ -570,7 +570,7 @@ private fun androidx.compose.foundation.layout.BoxScope.MiniTab(
 }
 
 /**
- * Il contenuto del riquadro (1.545, Antonio): lo stesso per tutto. Il video lo riempie; con musica, radio e
+ * Il contenuto del riquadro (1.546, Antonio): lo stesso per tutto. Il video lo riempie; con musica, radio e
  * podcast c'è la copertina nitida su sé stessa sfocata, con titolo. I tre tasti stanno sempre nello stesso
  * punto, in basso al centro: sul video compaiono al tocco e spariscono dopo [MiniTuck.CONTROLS_MS].
  */

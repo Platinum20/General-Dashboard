@@ -1,11 +1,16 @@
 # Changelog
 
-## 1.545.0
+## 1.546.0
 **Mini player a riquadro: video grande il doppio, uguale per YouTube e Spotify**
 - Il mini player è un riquadro con dentro il video (circa il doppio di prima) o la copertina, e i tasti indietro, pausa e avanti sempre nello stesso punto
 - Col video i tasti compaiono quando tocchi e spariscono dopo 3 secondi (restano se è in pausa); con Spotify, radio e podcast c'è la copertina su sé stessa sfocata, col titolo e i tasti sempre in vista
 - Si aggancia ai quattro angoli: in basso a destra o a sinistra sopra la barra, in alto sotto il titolo della pagina
 - Lanciato verso il bordo diventa una linguetta alta quanto lui; tirala verso il centro (senti una piccola vibrazione) o toccala per farlo uscire. Giù sulla X rossa si chiude, come prima
+
+## 1.545.0
+**Card Calendario più ariosa, fiamma delle abitudini disegnata**
+- Nella card Calendario della Home c'è il triplo dello spazio vuoto sotto la linea del tempo; la linea resta com'era
+- La serie delle abitudini in Da fare ha una fiamma disegnata nello stile di Canvas al posto dell'emoji 🔥
 
 ## 1.544.0
 **Spotify non chiede più di ricollegarsi senza motivo**

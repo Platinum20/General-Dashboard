@@ -8,7 +8,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** 1.508/1.545: riquadro nei quattro angoli, lancio verso il bordo = linguetta, giù sotto lo schermo = calamita che chiude. */
+/** 1.508/1.546: riquadro nei quattro angoli, lancio verso il bordo = linguetta, giù sotto lo schermo = calamita che chiude. */
 class MiniTuckTest {
     private val w = 1_000f
 
