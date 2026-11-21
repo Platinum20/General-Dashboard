@@ -76,6 +76,13 @@ object NewsStories {
         return listOf(top) + (fresh - top)
     }
 
+    /**
+     * Le righe della card News in Home: prima le nuove, poi le ultime già viste fino a [n] righe.
+     * La card non sparisce più quando apri le News (Antonio, 2026-11-21): resta con le notizie di adesso.
+     */
+    fun forHome(feed: NewsFeed, n: Int = 3): List<NewsStory> =
+        (feed.fresh.take(n) + feed.seen).take(n)
+
     /** Le storie del widget e della notifica del mattino: le nuove, o se non ce ne sono le più riprese. */
     fun forWidget(feed: NewsFeed): List<NewsStory> =
         feed.fresh.ifEmpty { feed.all.sortedByDescending { it.sourceCount } }.take(3)

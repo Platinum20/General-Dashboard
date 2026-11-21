@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.559.0
+**La card News resta sempre in Home**
+- Aprire le News non fa più sparire la card: mostra le notizie nuove in cima e, sotto, le ultime che hai già visto, un po' più chiare
+- Sopra resta scritto quante nuove ci sono dall'ultima visita, o "Niente di nuovo" quando sei in pari
+
 ## 1.558.0
 **Liste nelle note più compatte**
 - Le voci da spuntare e gli elenchi puntati stanno vicini come in una lista normale, senza righe vuote in mezzo

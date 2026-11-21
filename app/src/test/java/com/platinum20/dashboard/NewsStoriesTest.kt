@@ -128,4 +128,17 @@ class NewsStoriesTest {
         assertEquals("https://x.it/v.mp4", ArticleVideos.playable(ReaderBlock.Video("https://x.it/v.mp4", false, null)))
         assertNull(ArticleVideos.playable(ReaderBlock.Video("https://player.vimeo.com/video/1", true, null)))
     }
+
+    @Test fun laCardInHomeRestaAncheSenzaNovità() {
+        val stories = NewsStories.group(sciopero + meteo + vecchia)
+        // Visita appena fatta: niente di nuovo, ma la card mostra le ultime già viste.
+        val nothingNew = NewsStories.split(stories, since = now)
+        assertTrue(nothingNew.fresh.isEmpty())
+        assertEquals(3, NewsStories.forHome(nothingNew).size)
+        // Con una nuova: la nuova prima, poi le già viste a riempire.
+        val oneNew = NewsStories.split(stories, since = now.minusSeconds(10 * 60))
+        val home = NewsStories.forHome(oneNew)
+        assertEquals(oneNew.fresh.first(), home.first())
+        assertEquals(3, home.size)
+    }
 }
