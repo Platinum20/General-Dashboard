@@ -233,6 +233,21 @@ object PodcastHero {
         val started = episodes.firstOrNull { PodcastProgress.resumeAt(saved(it), it.durationSec * 1000) > 0 && !finished(it) }
         return started ?: episodes.sortedByDescending { it.publishedAt }.firstOrNull { !finished(it) }
     }
+
+    /**
+     * La riga sotto l'autore nel blocco in cima del podcast (1.572): quale puntata parte col ▶ grande.
+     * "Da riprendere · restano 12 min · Titolo" oppure "Nuova · ieri · 45 min · Titolo". Una riga sola.
+     */
+    fun line(episode: Episode, savedMs: Long, now: java.time.ZonedDateTime): String {
+        val durationMs = episode.durationSec * 1000
+        val started = PodcastProgress.resumeAt(savedMs, durationMs) > 0
+        return listOf(
+            if (started) "Da riprendere" else "Nuova",
+            if (started) "" else EpisodeDate.label(episode.publishedAt, now),
+            PodcastProgress.label(episode.durationSec, if (started) savedMs else 0),
+            episode.title,
+        ).filter { it.isNotBlank() }.joinToString(" · ")
+    }
 }
 
 /** Quando è uscito un episodio, detto come lo direbbe una persona. */
