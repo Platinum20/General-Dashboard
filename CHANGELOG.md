@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.556.0
+**Copertine per tutti i salvati**
+- I video di YouTube salvati senza immagine prendono la miniatura del video
+- Brani, album, playlist e artisti di Spotify salvati senza immagine ricevono la loro copertina da Spotify, anche quelli salvati prima
+- Le copertine compaiono ovunque ci sono i salvati: file di Media, elenco Salvati e card Appunti
+
 ## 1.555.0
 **Elenchi e voci da spuntare dentro le note**
 - Nella stessa nota puoi mescolare testo, elenchi puntati, voci da spuntare e titoletti: ogni riga sceglie da sola cosa essere

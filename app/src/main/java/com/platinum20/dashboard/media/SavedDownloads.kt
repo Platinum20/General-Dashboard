@@ -128,6 +128,8 @@ object SavedDownloads {
         AppSettings.init(context)
         NotesStore.init(context)
         fun saved() = SavedLinks.later(NotesStore.data.value.notes.filter { it.archivedAt == null }).map { it.item }
+        // Prima le copertine che mancano ai salvati di Spotify: una richiesta piccola, anche coi dati.
+        runCatching { com.platinum20.dashboard.capture.SavedCovers.fill(context) }
         val on = AppSettings.downloadSaved.value
         lock.withLock {
             val gone = if (on) SavedDownloadPlan.stale(saved(), _files.value) else _files.value

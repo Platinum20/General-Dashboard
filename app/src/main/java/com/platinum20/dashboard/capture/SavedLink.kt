@@ -189,8 +189,32 @@ object SavedLinks {
      */
     fun later(notes: List<Note>): List<Later> = notes
         .sortedByDescending { it.createdAt }
-        .mapNotNull { note -> ((find(note.text) as? SavedLink.Media)?.item ?: pastedYoutube(note))?.let { Later(note, it) } }
+        .mapNotNull { note -> ((find(note.text) as? SavedLink.Media)?.item ?: pastedYoutube(note))?.let { Later(note, withCover(it)) } }
         .distinctBy { "${it.item.kind}:${it.item.key}" }
+
+    /**
+     * Ogni salvato ha la sua copertina (2026-11-21, Antonio): un video di YouTube salvato senza immagine prende la
+     * miniatura dal suo id. Quelli di Spotify senza immagine la ricevono da [SavedCovers.fill].
+     */
+    fun withCover(item: ResumeItem): ResumeItem =
+        if (item.image.isBlank() && item.kind == ResumeKind.YOUTUBE && item.key.isNotBlank()) item.copy(image = "https://i.ytimg.com/vi/${item.key}/hqdefault.jpg") else item
+
+    /** L'indirizzo spotify:tipo:id come pagina pubblica, per chiederne la copertina; null se non è di Spotify. */
+    fun spotifyPage(key: String): String? {
+        val parts = key.split(":")
+        if (parts.size != 3 || parts[0] != "spotify" || parts[2].isBlank()) return null
+        if (parts[1] !in setOf("track", "album", "playlist", "artist", "show", "episode")) return null
+        return "https://open.spotify.com/${parts[1]}/${parts[2]}"
+    }
+
+    /** Il testo della nota con la copertina dentro la cosa salvata; uguale se la nota non tiene un media. */
+    fun withImage(text: String, image: String): String {
+        val item = (find(text) as? SavedLink.Media)?.item ?: return text
+        val lines = text.lines()
+        val at = lines.indexOfLast { it.trim().startsWith(PREFIX) }
+        if (at < 0) return text
+        return lines.toMutableList().also { it[at] = encode(SavedLink.Media(item.copy(image = image))) }.joinToString("\n")
+    }
 
     /** Le cose salvate per dopo da vedere (video) o da ascoltare (il resto): Media le divide nelle sue due file (1.490). */
     fun isVideo(item: ResumeItem): Boolean = item.kind == ResumeKind.YOUTUBE || item.kind == ResumeKind.VIDEO
@@ -281,8 +305,8 @@ object SavedLinks {
         NotesStore.init(context)
         if (notesWith(NotesStore.data.value.notes, link).isNotEmpty()) return
         val id = NotesStore.saveNote(null, noteText(link)) ?: return
-        // Video ed episodi si scaricano subito (col Wi-Fi se l'impostazione è accesa), 2026-11-21.
-        if (link is SavedLink.Media && com.platinum20.dashboard.media.SavedDownloadPlan.kindOf(link.item) != null) {
+        // Video ed episodi si scaricano subito (col Wi-Fi se l'impostazione è accesa); a Spotify si chiede la copertina se manca, 2026-11-21.
+        if (link is SavedLink.Media) {
             runCatching { com.platinum20.dashboard.work.SavedDownloadWorker.now(context) }
         }
         CaptureFeedback.show(
