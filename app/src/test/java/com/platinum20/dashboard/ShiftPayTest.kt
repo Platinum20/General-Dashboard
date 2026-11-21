@@ -91,4 +91,12 @@ class ShiftPayTest {
         assertFalse(shape.contains("Mario"))
         assertFalse(shape.contains("Antonio"))
     }
+
+    @Test
+    fun iMesiSenzaIChargeback() {
+        val body = """{"data":[{"status":"OPEN","chargebacks":[{"amount":10,"user":{"username":"fan1","name":"Fan Uno"}}],"info":{"id":"m1"}}]}"""
+        val clean = ShiftPay.withoutPeople(body)
+        assertFalse(clean.contains("fan1"))
+        assertTrue(clean.contains("\"m1\""))
+    }
 }

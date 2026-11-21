@@ -264,6 +264,7 @@ object CreatorsLink {
     suspend fun refresh(context: Context): Boolean {
         ShiftStore.init(context)
         if (!ShiftStore.linked.value) return false
+        ShiftStore.noteRead("avvio" + if (ShiftStore.expired.value) " (segnato scaduto)" else "")
         if (ShiftStore.refreshing.value) { ShiftStore.noteRead("saltata: già in corso"); return false }
         ShiftStore.setRefreshing(true)
         val before = ShiftStore.readAt.value

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.568.0
+**Il venduto del turno si aggiorna davvero**
+- Il tuo file ha mostrato che Creators Pro il venduto in corso lo dà ($97 alle 19:46): mancavano solo le riletture durante il turno
+- Mentre lavori Canvas rilegge ogni 15 minuti anche se l'accesso sembrava scaduto per un attimo: prima un intoppo in background le fermava fino a fine turno
+- Il file dei dati letti tiene la storia delle riletture anche se l'app si riavvia, e non salva più i nomi dei fan dei chargeback
+
 ## 1.567.0
 **Spotify e YouTube, giro 2: più immagini, niente scatole**
 - Album, playlist e mix: in cima la copertina grande, il nome, l'artista e un tasto ▶ grande; la pagina prende il colore della copertina. I brani stanno sullo sfondo, come nel Calendario e in News
