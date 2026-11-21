@@ -17,6 +17,9 @@ import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -427,6 +430,8 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                 }
             },
         ) { inner ->
+            @OptIn(ExperimentalLayoutApi::class)
+            val imeOpen = WindowInsets.isImeVisible
             val bodyStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface, lineHeight = 26.sp)
             val titleStyle = MaterialTheme.typography.headlineSmall.copy(color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
             val faint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
@@ -492,7 +497,9 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     onFocusChange = { bodyFocused = it },
                     sendToTodo = true,
                     onAllDone = { allDone() },
-                    minHeight = 320.dp,
+                    // Con la tastiera aperta niente altezza minima: se no la pagina scorre per mostrarla tutta e titolo e foto
+                    // finiscono fuori dallo schermo (1.559).
+                    minHeight = if (imeOpen) 0.dp else 320.dp,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp),
