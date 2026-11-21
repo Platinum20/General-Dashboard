@@ -11,12 +11,21 @@
 - Le stesse righe e la stessa barra nel campo Note di promemoria, date ed eventi; nella pagina dell'evento le voci si spuntano al volo
 - "- uova" adesso è un punto dell'elenco, non più una voce da spuntare
 
-## 1.550.0
+## 1.552.0
 **Nota lunga più pulita**
 - Grassetto, corsivo, barrato e titoletti si vedono senza gli asterischi: i segni ricompaiono sbiaditi solo quando metti il cursore su quel pezzo
 - La riga in alto sta su una riga: dice solo l'ultima modifica ("Modificata 14 nov, 09:44 · 7 parole · 3 foto")
 - Le foto stanno dentro i margini della pagina: tre riempiono la riga, le altre scorrendo, nessuna tagliata dal bordo
 - La stessa foto scelta due volte non si aggiunge più, e le note che l'avevano doppia tornano con una sola
+
+## 1.551.0
+**Le righe di Media partono da sinistra**
+- Aprendo Media la riga Musica (e le altre righe orizzontali) si apre dall'inizio, non più tutta a destra
+
+## 1.549.0
+**Il mini player si appoggia sopra i tasti**
+- Nelle note e nelle pagine di dettaglio i tasti in basso restano fermi: è il mini player ad agganciarsi sopra di loro
+- Anche quando apri la tastiera il mini player sale sopra la barra dei tasti
 
 ## 1.548.0
 **Notifica del treno più essenziale**

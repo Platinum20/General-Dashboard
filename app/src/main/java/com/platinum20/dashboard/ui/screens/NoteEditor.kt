@@ -177,7 +177,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
     }
 
     // ---- Foto ----
-    // Le note con la stessa foto due volte (prima della 1.549 si poteva) tornano con una sola.
+    // Le note con la stessa foto due volte (prima della 1.552 si poteva) tornano con una sola.
     LaunchedEffect(noteId) {
         val nid = noteId ?: return@LaunchedEffect
         val now = NotesStore.note(nid)?.photos.orEmpty()
@@ -397,14 +397,11 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                 }
             },
             bottomBar = {
-                // Il mini player sta sopra tutte le pagine: qui i tasti salgono sopra di lui invece di finirci sotto.
-                val playing by com.platinum20.dashboard.media.Playback.now.collectAsStateWithLifecycle()
-                val miniRoom = MiniDock.bottomRoom(playing != null, MiniDock.atTop, MiniDock.barHeight, LocalDensity.current.density, MiniDock.tucked)
                 val place = Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
                     .imePadding()
-                    .padding(bottom = miniRoom.dp)
+                    .miniPlayerFloor()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
                 // Mentre si scrive, al posto dei due tasti: la barra delle righe (1.553).
                 if (richBarShown()) {
@@ -556,7 +553,7 @@ private fun PhotoStrip(
     onAdd: () -> Unit,
 ) {
     BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = 24.dp)) {
-        // Tre foto riempiono giuste la larghezza fra i margini della pagina (1.549): niente foto tagliata dal bordo.
+        // Tre foto riempiono giuste la larghezza fra i margini della pagina (1.552): niente foto tagliata dal bordo.
         PhotoRow(photos, (maxWidth - PHOTO_GAP * 2) / 3, onOpen, onMenu, onMove, onArranging, onAdd)
     }
 }

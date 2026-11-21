@@ -4,6 +4,13 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.findRootCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -65,6 +72,19 @@ object MiniDock {
     fun bottomRoom(playing: Boolean, atTop: Boolean, barHeight: Float, density: Float, tucked: Boolean = false): Float =
         if (!playing || atTop || tucked) 0f else (if (barHeight > 0f) barHeight / density else BAR_GUESS) + 6f
 
+    /**
+     * Le barre di tasti fisse in fondo alle pagine (editor delle note, pagine di dettaglio): quanto stanno
+     * in alto dal fondo dello schermo, in px. I tasti restano fermi e il mini player si aggancia sopra di
+     * loro (1.549, Antonio), non il contrario.
+     */
+    val floors = androidx.compose.runtime.mutableStateMapOf<Any, Float>()
+
+    /** Il pavimento del mini player: la barra di tasti più alta tra quelle sullo schermo, 0 se non ce n'è. */
+    fun floor(values: Collection<Float>): Float = values.maxOrNull()?.coerceAtLeast(0f) ?: 0f
+
+    /** Quanto alzare il mini player sopra lo spazio che già lascia lo Scaffold (barra delle sezioni), in px. */
+    fun lift(floor: Float, scaffoldBottom: Float): Float = (floor - scaffoldBottom).coerceAtLeast(0f)
+
     /** Dove sta il video nel mini player, in px: tutto il riquadro, nell'angolo dove sta davvero. */
     fun thumb(frame: Rect, atTop: Boolean, atRight: Boolean, density: Float): Rect {
         val w = MiniTuck.BOX_W * density
@@ -117,6 +137,19 @@ object MiniDock {
  * Lo spazio in fondo per il mini player nelle pagine senza barra delle sezioni (Impostazioni, Meteo…):
  * senza, l'ultima riga resta sotto il mini player anche a fine lista.
  */
+/**
+ * Segna una barra di tasti fissa in fondo alla pagina: il mini player in basso si appoggia sopra di lei.
+ * Va messa dopo i padding di sistema (barra di navigazione, tastiera) e prima del margine della barra.
+ */
+fun Modifier.miniPlayerFloor(): Modifier = composed {
+    val key = remember { Any() }
+    DisposableEffect(key) { onDispose { MiniDock.floors.remove(key) } }
+    onGloballyPositioned { c ->
+        val root = c.findRootCoordinates()
+        MiniDock.floors[key] = (root.size.height - c.boundsInRoot().top).coerceAtLeast(0f)
+    }
+}
+
 @Composable
 fun miniPlayerRoom(): Dp {
     val playing by Playback.now.collectAsStateWithLifecycle()
