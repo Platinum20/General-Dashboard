@@ -18,6 +18,7 @@ object ShiftStore {
     private const val PREFS = "shifts"
     private const val CAPTURES = "shift-captures.json"
     private const val MAX_CAPTURES = 60
+    private const val KEY_READS = "reads"
     /** Rilettura con l'app aperta: spesso, perché un turno nuovo deve comparire subito. */
     const val STALE_MS = 5 * 60 * 1000L
 
@@ -123,7 +124,8 @@ object ShiftStore {
         synchronized(this) {
             val clean = url.substringBefore('#')
             captures.removeAll { it.optString("url") == clean }
-            val kept = if (months != null) body.take(20_000) else "turni letti: ${shifts?.size ?: -1}\n" + ShiftPay.shape(body).take(20_000)
+            // Dei mesi si tiene la risposta senza i chargeback: portano nomi e username dei fan.
+            val kept = if (months != null) ShiftPay.withoutPeople(body).take(20_000) else "turni letti: ${shifts?.size ?: -1}\n" + ShiftPay.shape(body).take(20_000)
             captures.addLast(JSONObject().put("url", clean).put("at", System.currentTimeMillis()).put("turni", shifts?.size ?: months?.size ?: -1).put("body", kept))
             while (captures.size > MAX_CAPTURES) captures.removeFirst()
         }
@@ -217,19 +219,26 @@ object ShiftStore {
         File(app.filesDir, CAPTURES).delete()
     }
 
-    /** Le ultime riletture nascoste (ora e com'è andata), per capire dal file se il giro dei 15 minuti gira. */
-    private val reads = ArrayDeque<String>()
-
+    /**
+     * Le ultime riletture nascoste (ora e com'è andata), per capire dal file se il giro dei 15 minuti gira.
+     * Tenute nelle preferenze: il processo in background riparte spesso e in memoria si perdevano.
+     */
     fun noteRead(line: String) {
+        val app = appContext ?: return
         synchronized(this) {
-            reads.addLast(java.time.Instant.ofEpochMilli(System.currentTimeMillis()).toString() + " " + line)
-            while (reads.size > 30) reads.removeFirst()
+            val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            val old = prefs.getString(KEY_READS, "").orEmpty().lines().filter { it.isNotBlank() }
+            val all = (old + (java.time.Instant.ofEpochMilli(System.currentTimeMillis()).toString() + " " + line)).takeLast(40)
+            prefs.edit().putString(KEY_READS, all.joinToString("\n")).apply()
         }
     }
 
+    private fun reads(): List<String> =
+        appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.getString(KEY_READS, "").orEmpty().lines().filter { it.isNotBlank() }
+
     fun capturesText(): String = synchronized(this) {
         JSONObject()
-            .put("riletture", JSONArray(reads.toList()))
+            .put("riletture", JSONArray(reads()))
             .put("turni_letti", JSONArray(ShiftParse.toJson(_shifts.value)))
             .put("pagina", timelineUrl ?: "")
             .put("testo_pagina", pageText)

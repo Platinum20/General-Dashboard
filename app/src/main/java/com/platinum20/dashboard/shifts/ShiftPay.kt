@@ -96,6 +96,13 @@ object ShiftPay {
         }
     }
 
+    /** La lista dei mesi senza i chargeback (nomi e username dei fan): per il file dei dati letti. */
+    fun withoutPeople(body: String): String = runCatching {
+        val o = JSONObject(body)
+        o.optJSONArray("data")?.let { d -> for (i in 0 until d.length()) d.optJSONObject(i)?.remove("chargebacks") }
+        o.toString()
+    }.getOrDefault("")
+
     /**
      * La forma del dettaglio busta paga senza i dati delle persone (2026-11-21): per ogni turno i numeri, le date e
      * i sì/no, e delle liste solo quante sono e i nomi dei campi. Serve a capire dal file dei dati letti dove
