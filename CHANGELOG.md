@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.549.0
+**Il mini player si appoggia sopra i tasti**
+- Nelle note e nelle pagine di dettaglio i tasti in basso restano fermi: è il mini player ad agganciarsi sopra di loro
+- Anche quando apri la tastiera il mini player sale sopra la barra dei tasti
+
 ## 1.548.0
 **Notifica del treno più essenziale**
 - Il ritardo torna nella prima riga, accanto a "parte tra" o "arriva tra": "+12 min · parte tra 33 min", senza l'ora dell'ultima lettura, anche nella notifica ridotta

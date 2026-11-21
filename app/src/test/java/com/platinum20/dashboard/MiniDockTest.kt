@@ -63,4 +63,14 @@ class MiniDockTest {
         assertEquals(0f, MiniDock.bottomRoom(playing = true, atTop = true, barHeight = 210f, density = 3f), 0.01f)
         assertEquals(0f, MiniDock.bottomRoom(playing = false, atTop = false, barHeight = 210f, density = 3f), 0.01f)
     }
+
+    @Test
+    fun miniPlayerSitsAboveTheBottomButtons() {
+        assertEquals(0f, MiniDock.floor(emptyList()), 0f)
+        assertEquals(300f, MiniDock.floor(listOf(120f, 300f)), 0f)
+        // Pagina con i tasti: si alza di quanto stanno sopra la barra dello Scaffold (qui assente).
+        assertEquals(300f, MiniDock.lift(floor = 300f, scaffoldBottom = 0f), 0f)
+        // Con la barra delle sezioni più alta dei tasti non si alza di più.
+        assertEquals(0f, MiniDock.lift(floor = 100f, scaffoldBottom = 240f), 0f)
+    }
 }

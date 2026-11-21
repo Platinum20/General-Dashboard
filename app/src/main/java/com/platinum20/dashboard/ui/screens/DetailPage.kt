@@ -33,9 +33,7 @@ import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -103,16 +101,13 @@ internal fun DetailPage(
         },
         bottomBar = {
             if (left != null || extra.isNotEmpty()) {
-                // Come nell'editor delle note: i tasti salgono sopra il mini player invece di finirci sotto.
-                val playing by com.platinum20.dashboard.media.Playback.now.collectAsStateWithLifecycle()
-                val miniRoom = MiniDock.bottomRoom(playing != null, MiniDock.atTop, MiniDock.barHeight, LocalDensity.current.density, MiniDock.tucked)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
                         .navigationBarsPadding()
                         .imePadding()
-                        .padding(bottom = miniRoom.dp)
+                        .miniPlayerFloor()
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                 ) {
                     left?.let { action ->
