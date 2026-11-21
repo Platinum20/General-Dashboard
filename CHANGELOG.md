@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.558.0
+**Liste nelle note più compatte**
+- Le voci da spuntare e gli elenchi puntati stanno vicini come in una lista normale, senza righe vuote in mezzo
+- Il testo scritto sotto una voce resta allineato e il cursore sta dove scrivi
+
 ## 1.557.0
 **I video salvati si scaricano in Full HD**
 - I video di YouTube che salvi adesso si scaricano in Full HD (1080p): video e audio arrivano separati e il telefono li unisce in un file solo
