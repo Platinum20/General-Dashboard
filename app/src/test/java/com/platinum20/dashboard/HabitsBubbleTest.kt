@@ -7,6 +7,7 @@ import com.platinum20.dashboard.ui.screens.habitTodoLine
 import com.platinum20.dashboard.ui.screens.habitsBubble
 import com.platinum20.dashboard.ui.screens.habitsLine
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -59,7 +60,10 @@ class HabitsBubbleTest {
         val morning = today.atTime(9, 0)
         val evening = today.atTime(20, 0)
         assertEquals("Fatta oggi · torna domani", habitTodoLine(habits[0], morning)?.text)
-        assertNull(habitTodoLine(habits[1], morning))
+        val day = habitTodoLine(habits[1], morning)
+        assertEquals("Manca oggi", day?.text)
+        assertFalse(day!!.urgent)
+        assertFalse(habitTodoLine(habits[1], today.atTime(19, 59))!!.urgent)
         val late = habitTodoLine(habits[1], evening)
         assertEquals("Manca oggi", late?.text)
         assertTrue(late!!.urgent)

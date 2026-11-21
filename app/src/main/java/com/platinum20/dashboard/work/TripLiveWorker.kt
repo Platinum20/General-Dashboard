@@ -227,9 +227,6 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
             return out
         }
 
-        /** La preferenza "Fermate aperte" di un viaggio. */
-        fun stopsKey(eventId: Long) = "stops_$eventId"
-
         /** Ridisegna subito (dal tasto "Fermate"), senza toccare la catena dei giri da un minuto. */
         fun now(context: Context) {
             WorkManager.getInstance(context).enqueueUniqueWork(NOW, ExistingWorkPolicy.REPLACE, OneTimeWorkRequestBuilder<TripLiveWorker>().build())

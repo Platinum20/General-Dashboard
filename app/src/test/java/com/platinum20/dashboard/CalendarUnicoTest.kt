@@ -6,8 +6,6 @@ import com.platinum20.dashboard.notes.Parcel
 import com.platinum20.dashboard.today.BriefKind
 import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.ui.screens.dueDays
-import com.platinum20.dashboard.ui.screens.CalendarFilter
-import com.platinum20.dashboard.ui.screens.only
 import com.platinum20.dashboard.ui.screens.pastDays
 import com.platinum20.dashboard.ui.screens.timelineEntries
 import java.time.LocalDate
@@ -90,25 +88,12 @@ class CalendarUnicoTest {
         assertEquals(listOf(oggi.minusDays(1)), past.map { it.day })
     }
 
-    @Test fun filtriNoteEventi() {
-        val groups = calendario(
-            tasks = listOf(TaskItem(1, "Latte", createdAt = 1), TaskItem(2, "Palestra", createdAt = 1, dueAt = ms(oggi.plusDays(2).atTime(18, 0)))),
-            notes = listOf(Note(3, "Idea", createdAt = 1)),
-        )
-        // OGGI resta con ogni filtro.
-        assertEquals(listOf("today", "task-1", "note-3"), groups.only(CalendarFilter.NOTES).flatMap { it.rows }.map { it.key })
-        // Un promemoria con la data sta con gli eventi (1.361: sono la stessa cosa).
-        assertEquals(listOf("today", "task-2"), groups.only(CalendarFilter.EVENTS).flatMap { it.rows }.map { it.key })
-        assertTrue(timelineEntries(groups.only(CalendarFilter.EVENTS), oggi, zone).first().first.todayHeader)
-        assertEquals(groups, groups.only(null))
-    }
-
     @Test fun pacchiERinnovoSimSonoEventi() {
         val groups = dueDays(
             emptyList(), listOf(Parcel(5, "Cuffie", expected = oggi.plusDays(1))), emptyList(),
             now = adesso, zone = zone, simRenewal = oggi.plusDays(3), withToday = true,
         )
-        assertEquals(listOf("today", "parcel-5", "sim-renewal"), groups.only(CalendarFilter.EVENTS).flatMap { it.rows }.map { it.key })
+        assertEquals(listOf("today", "parcel-5", "sim-renewal"), groups.flatMap { it.rows }.map { it.key })
         val entries = timelineEntries(groups, oggi, zone).map { it.first }
         assertEquals(BriefKind.EVENT, entries.first { it.key == "parcel-5" }.kind)
         assertEquals(BriefKind.EVENT, entries.first { it.key == "sim-renewal" }.kind)

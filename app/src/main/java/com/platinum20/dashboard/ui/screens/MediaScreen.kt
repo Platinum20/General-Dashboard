@@ -337,65 +337,6 @@ fun MediaScreen(
     }
 }
 
-/** Le storie (1.481): foto tonde in fila, anello blu se ha pubblicato dopo l'ultima visita, sotto nome e quando. */
-@Composable
-private fun StoriesRow(stories: List<com.platinum20.dashboard.media.MediaStory>, onOpen: (com.platinum20.dashboard.media.MediaStory) -> Unit) {
-    val nowMs = remember { System.currentTimeMillis() }
-    LazyRow(state = rememberRowAtStart(), contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        items(stories, key = { it.key }) { story ->
-            Column(
-                Modifier.width(72.dp).bouncyPress(0.94f).clickable { onOpen(story) },
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                val ring = if (story.fresh) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
-                Box(
-                    Modifier
-                        .size(68.dp)
-                        .border(if (story.fresh) 2.5.dp else 1.dp, ring, CircleShape)
-                        .padding(4.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(story.title.take(1).uppercase(), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    if (story.image.isNotBlank()) {
-                        AsyncImage(model = story.image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
-                    }
-                }
-                Spacer(Modifier.height(4.dp))
-                Text(story.title, style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
-                Text(
-                    com.platinum20.dashboard.media.MediaStories.age(story.latest, nowMs),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                )
-            }
-        }
-    }
-}
-
-/**
- * Le Novità in una fila: video rettangolari, episodi quadrati, tutti alti uguali; il segno dell'ultima visita in mezzo,
- * poche vecchie e in fondo "Tutte le novità" (1.486, Antonio) che apre l'elenco intero in verticale.
- */
-@Composable
-private fun NewsRow(feed: com.platinum20.dashboard.media.MediaFeedRows, onPlayVideo: (String) -> Unit, onOpenAll: () -> Unit) {
-    val height = coverTileWidth()
-    val older = feed.older.take(com.platinum20.dashboard.media.MediaFeed.ROW_OLDER)
-    @Composable
-    fun Entry(entry: com.platinum20.dashboard.media.FeedEntry) = when (entry) {
-        is com.platinum20.dashboard.media.FeedEntry.Video -> VideoTile(entry.video, height) { onPlayVideo(entry.video.watchUrl) }
-        is com.platinum20.dashboard.media.FeedEntry.Podcast -> EpisodeTile(entry.episode, height)
-    }
-    LazyRow(state = rememberRowAtStart(), contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        items(feed.fresh, key = { "f-" + it.key }) { Entry(it) }
-        if (feed.fresh.isNotEmpty() && older.isNotEmpty()) item(key = "feed-marker") { VisitMarkTile(height) }
-        items(older, key = { "o-" + it.key }) { Entry(it) }
-        item(key = "feed-all") { AllTile(height, "Tutte le novità", "${feed.fresh.size + feed.older.size} in tutto", onClick = onOpenAll) }
-    }
-}
-
 /** L'ultima tessera di una fila: apre la pagina con tutto (stessa altezza delle copertine). */
 @Composable
 internal fun AllTile(

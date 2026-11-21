@@ -273,7 +273,7 @@ internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOp
                 )
             }
             // Radio è un tasto in fondo a Per te, non più una sezione (1.488, Antonio); coi loghi delle tue radio (1.493).
-            item(key = "radio-all") { AllTile(tile, "Radio", "Preferite e più ascoltate", images = radioLogos, type = MediaType.RADIO, onClick = onOpenRadio) }
+            item(key = "radio-all") { AllTile(tile, "Radio", RADIO_TILE_LINE, images = radioLogos, type = MediaType.RADIO, onClick = onOpenRadio) }
         }
     }
 }
@@ -804,3 +804,6 @@ internal fun playSpotifyList(context: android.content.Context, parent: SpItem, s
     val start = startAt?.let { s -> tracks.indexOfFirst { it.uri == s.uri } }?.coerceAtLeast(0) ?: 0
     com.platinum20.dashboard.media.CanvasPlayer.playList(context, items, start)
 }
+
+/** Sotto la tessera Radio della fila Musica: corto, la tessera è stretta ("Preferite e più ascoltate" finiva coi puntini). */
+internal const val RADIO_TILE_LINE = "Le tue preferite"

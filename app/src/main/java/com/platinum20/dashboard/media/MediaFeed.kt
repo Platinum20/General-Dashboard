@@ -11,79 +11,8 @@ import androidx.compose.runtime.setValue
 import java.time.Instant
 import java.time.ZoneId
 
-/** Una storia in cima a Media (1.481, Antonio: "tipo storie di Instagram"): un canale YouTube o un artista Spotify. */
-data class MediaStory(
-    val kind: Kind,
-    val id: String,
-    val title: String,
-    val image: String,
-    /** Quando ha pubblicato l'ultima volta, se si sa. */
-    val latest: Instant?,
-    /** Ha pubblicato dopo l'ultima visita: anello blu. */
-    val fresh: Boolean,
-    /** Quando l'hai guardato o ascoltato l'ultima volta; null = lo segui ma non l'hai visto di recente. */
-    val seen: Instant? = null,
-) {
-    enum class Kind { CHANNEL, ARTIST }
-
-    val key: String get() = "${kind.name}-$id"
-}
-
-/**
- * Le storie (1.485, Antonio: "chi ho guardato per ultimo", "quello che ho ascoltato più di recente come primo"):
- * i canali dei video che hai visto e gli artisti che hai ascoltato, dal più recente. Dopo, se c'è posto, i canali e gli
- * artisti che segui, da chi ha pubblicato per ultimo. L'anello blu resta "ha pubblicato dopo l'ultima visita"; un
- * artista ha solo il giorno dell'uscita e conta come mezzanotte.
- */
+/** Quando ha pubblicato: le righe e le tessere di Media (le storie in cima sono state tolte nella 1.490). */
 object MediaStories {
-    const val MAX = 40
-
-    fun build(
-        watched: List<YtWatched>,
-        listened: List<SpListened>,
-        channels: List<YtChannel>,
-        recent: List<YtVideo>,
-        artists: List<SpArtistLatest>,
-        since: Long,
-        zone: ZoneId = ZoneId.systemDefault(),
-        max: Int = MAX,
-    ): List<MediaStory> {
-        val videos = recent.filter { it.channelId.isNotBlank() }
-        val byChannel = videos.groupBy { it.channelId }
-        val channelById = channels.associateBy { it.id }
-        // I vecchi salvataggi della cronologia non hanno l'id del canale: lo si ritrova dal nome.
-        val idByName = (channels.map { it.title to it.id } + videos.map { it.channel to it.channelId })
-            .filter { it.first.isNotBlank() }.associate { it.first.lowercase() to it.second }
-        val releaseById = artists.associateBy { it.artist.id }
-
-        fun channelStory(id: String, title: String, avatar: String, seen: Instant?): MediaStory {
-            val posts = byChannel[id].orEmpty()
-            val latest = posts.mapNotNull { it.published }.maxOrNull()
-            val image = avatar.ifBlank { channelById[id]?.thumbnail.orEmpty() }
-                .ifBlank { posts.firstOrNull { it.channelAvatar.isNotBlank() }?.channelAvatar.orEmpty() }
-            return MediaStory(MediaStory.Kind.CHANNEL, id, title.ifBlank { channelById[id]?.title.orEmpty() }, imageUrl(image), latest, MediaFresh.isNew(latest, since), seen)
-        }
-        fun artistStory(artist: com.platinum20.dashboard.media.spotify.SpItem, seen: Instant?): MediaStory {
-            val followed = releaseById[artist.id]
-            val latest = followed?.latest?.atStartOfDay(zone)?.toInstant()
-            val image = artist.image.ifBlank { followed?.artist?.image.orEmpty() }
-            return MediaStory(MediaStory.Kind.ARTIST, artist.id, artist.title, imageUrl(image), latest, MediaFresh.isNew(latest, since), seen)
-        }
-
-        val fromWatched = watched.sortedByDescending { it.watchedAt }.mapNotNull { w ->
-            val id = w.channelId.ifBlank { idByName[w.channel.lowercase()].orEmpty() }
-            if (id.isBlank()) null else channelStory(id, w.channel, w.channelAvatar, Instant.ofEpochMilli(w.watchedAt))
-        }.distinctBy { it.id }
-        val fromListened = listened.map { artistStory(it.artist, it.at) }.distinctBy { it.id }
-        val seen = (fromWatched + fromListened).sortedByDescending { it.seen }
-        val taken = seen.map { it.key }.toSet()
-        val others = (channels.distinctBy { it.id }.map { channelStory(it.id, it.title, it.thumbnail, null) } +
-            artists.distinctBy { it.artist.id }.map { artistStory(it.artist, null) })
-            .filter { it.key !in taken }
-            .sortedWith(compareByDescending<MediaStory> { it.latest ?: Instant.MIN }.thenBy { it.title.lowercase() })
-        return (seen + others).take(max)
-    }
-
     /** Le foto dei canali a volte arrivano senza "https:" davanti ("//yt3.ggpht.com/…"): così non si caricano. */
     fun imageUrl(url: String): String = when {
         url.startsWith("//") -> "https:$url"

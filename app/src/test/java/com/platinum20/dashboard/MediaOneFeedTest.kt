@@ -4,7 +4,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.platinum20.dashboard.media.FeedEntry
 import com.platinum20.dashboard.media.MediaFeed
 import com.platinum20.dashboard.media.MediaStories
-import com.platinum20.dashboard.media.MediaStory
 import com.platinum20.dashboard.media.podcast.Episode
 import com.platinum20.dashboard.media.spotify.SpArtistLatest
 import com.platinum20.dashboard.media.spotify.SpItem
@@ -36,33 +35,6 @@ class MediaOneFeedTest {
     private fun episode(id: String, at: Instant) =
         Episode(id, "Episodio $id", "https://x/$id.mp3", at.toEpochMilli(), 38 * 60L, "", "", "Il Post", "https://x/feed")
     private fun artist(id: String, name: String) = SpItem(id, "spotify:artist:$id", SpKind.ARTIST, name, "Artista", "")
-
-    @Test fun storieDiChiHaiGuardatoEAscoltatoPerUltimoPoiQuelliCheSegui() {
-        val channels = listOf(YtChannel("geo", "Geopop", ""), YtChannel("kz", "Kurzgesagt", "//yt3.ggpht.com/kz"), YtChannel("muto", "Muto", ""))
-        val recent = listOf(
-            video("a", "geo", now.minusSeconds(2 * 3600)).copy(channelAvatar = "https://a/geo"),
-            video("b", "kz", now.minusSeconds(3 * 86_400)),
-        )
-        val artists = listOf(
-            SpArtistLatest(artist("pf", "Pink Floyd"), LocalDate.of(2026, 11, 10)),
-            SpArtistLatest(artist("nuovo", "Nuovo"), LocalDate.of(2026, 11, 12)),
-        )
-        val watched = listOf(
-            // Vecchio salvataggio senza id: il canale si ritrova dal nome.
-            com.platinum20.dashboard.media.youtube.YtWatched("w1", "Video", "Kurzgesagt", "", 0, 0, now.minusSeconds(600).toEpochMilli()),
-            com.platinum20.dashboard.media.youtube.YtWatched("w2", "Video", "Geopop", "", 0, 0, now.minusSeconds(7200).toEpochMilli(), "geo"),
-        )
-        val listened = listOf(com.platinum20.dashboard.media.spotify.SpListened(artist("pf", "Pink Floyd"), now.minusSeconds(3600)))
-        val stories = MediaStories.build(watched, listened, channels, recent, artists, since, ZoneOffset.UTC)
-        assertEquals(listOf("Kurzgesagt", "Pink Floyd", "Geopop", "Nuovo", "Muto"), stories.map { it.title })
-        assertEquals(listOf(false, false, true, true, false), stories.map { it.fresh })
-        assertEquals("https://yt3.ggpht.com/kz", stories[0].image)
-        assertEquals("https://a/geo", stories[2].image)
-        assertEquals(MediaStory.Kind.ARTIST, stories[1].kind)
-        // Un artista uscito oggi, con la visita stamattina, non è "nuovo": conta il giorno, non l'ora.
-        val today = MediaStories.build(emptyList(), emptyList(), emptyList(), emptyList(), listOf(SpArtistLatest(artist("x", "X"), LocalDate.of(2026, 11, 11))), since, ZoneOffset.UTC)
-        assertFalse(today.single().fresh)
-    }
 
     @Test fun artistiAscoltatiDiRecenteDaSpotify() {
         fun play(at: String, vararg ids: String) = JSONObject().put("played_at", at).put(

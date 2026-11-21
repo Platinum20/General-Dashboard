@@ -7,6 +7,12 @@ package com.platinum20.dashboard.ui.screens
  * dove una calamita lo prende con una vibrazione. Pure, provate nei test.
  */
 object MiniTuck {
+    /**
+     * La riga sotto il titolo nel riquadro: solo il sottotitolo, perché la fonte la dice già l'icona della copertina
+     * ("Radio · Collegamento…" finiva coi puntini nei 200 dp del riquadro). Senza sottotitolo, la fonte.
+     */
+    fun line(source: String, subtitle: String): String = subtitle.ifBlank { source }
+
     /** Oltre quanti dp sotto il suo posto in basso la calamita lo prende (e lasciandolo si chiude). */
     const val MAGNET_DP = 72f
 

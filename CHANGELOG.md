@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.572.0
+**Meno puntini, meno allarmi, meno codice**
+- Abitudini in Da fare: "Manca oggi" è grigio di giorno e diventa arancione solo dalle 20, se non l'hai ancora fatta. Prima usava il colore del tema: con Material You sembrava grigio anche la sera
+- Mini player: sotto il titolo solo cosa sta succedendo ("In diretta", "Collegamento…"), senza "Radio ·" davanti che lo faceva finire coi puntini
+- Testi più corti dove finivano coi puntini: la tessera Radio in Media ("Le tue preferite") e "Turno dal vivo" nelle Notifiche
+- Tolto codice che non si usava più (storie e Novità di Media, barra dei giorni, filtri del Calendario, pagina dei video piaciuti, tasto Fermate della notifica del treno): l'app non cambia, è solo più leggera
+
 ## 1.571.0
 **YouTube sempre nella lingua originale**
 - I canali, la Home, la Cronologia, la ricerca e le playlist non mostrano più i video italiani tradotti in inglese: Canvas chiedeva a YouTube una lingua che non conosce e YouTube rispondeva in inglese
