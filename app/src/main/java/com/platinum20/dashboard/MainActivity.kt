@@ -438,7 +438,6 @@ object Routes {
     const val YOUTUBE_PLAYLIST = "media/playlist/{id}?title={title}&count={count}"
     fun youtubePlaylist(p: com.platinum20.dashboard.media.youtube.YtPlaylist) =
         "media/playlist/${Uri.encode(p.id)}?title=${Uri.encode(p.title)}&count=${p.count}"
-    const val YOUTUBE_LIKED = "media/liked"
     /** I brani che ti piacciono (1.488): Mi piace diviso in brani e video. */
     const val LIKED_TRACKS = "media/liked/tracks"
     /** Un mix di Per te come pagina sua, con Riproduci (1.486). */
@@ -1479,14 +1478,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 com.platinum20.dashboard.ui.screens.MusicDiscoverScreen(
                     onBack = { navController.popBackStack() },
                     onOpen = { navController.navigate(Routes.spotifyItem(it)) },
-                )
-            }
-            // Mi piace (1.488): i video da una parte, i brani dall'altra.
-            composable(Routes.YOUTUBE_LIKED) {
-                com.platinum20.dashboard.ui.screens.MediaLikedScreen(
-                    videosOnly = true,
-                    onBack = { navController.popBackStack() },
-                    onPlayVideo = { navController.navigate(Routes.youtubeWatch(it)) },
                 )
             }
             composable(Routes.LIKED_TRACKS) {

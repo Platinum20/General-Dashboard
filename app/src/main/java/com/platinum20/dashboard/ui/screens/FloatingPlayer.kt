@@ -651,7 +651,7 @@ private fun MiniPlayer(now: Playing, onExpand: () -> Unit) {
             Column(Modifier.padding(start = 70.dp, top = 12.dp, end = 10.dp)) {
                 Text(now.title, style = MaterialTheme.typography.titleSmall, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
-                    listOf(now.source.label, now.subtitle).filter { it.isNotBlank() }.joinToString(" · "),
+                    MiniTuck.line(now.source.label, now.subtitle),
                     style = MaterialTheme.typography.bodySmall,
                     color = if (now.error != null) MaterialTheme.colorScheme.errorContainer else Color.White.copy(alpha = 0.85f),
                     maxLines = 1,

@@ -480,28 +480,6 @@ internal fun timelineEntries(
     }
 }
 
-/**
- * Le tacche della linea del tempo per le Note: una per giorno di inserimento, dalla più nuova in giù,
- * a partire dalla riga [first]. Le note fissate stanno in cima fuori dall'ordine: niente tacca.
- */
-internal fun noteMarks(notes: List<com.platinum20.dashboard.notes.Note>, today: LocalDate, first: Int, zone: ZoneId = ZoneId.systemDefault()): List<DayMark> {
-    var previous: LocalDate? = null
-    return notes.mapIndexedNotNull { i, note ->
-        if (note.pinned) return@mapIndexedNotNull null
-        val day = Instant.ofEpochMilli(note.createdAt).atZone(zone).toLocalDate()
-        if (day == previous) return@mapIndexedNotNull null
-        val label = when (day) {
-            today -> "Oggi"
-            today.minusDays(1) -> "Ieri"
-            else -> day.format(if (day.year == today.year) shortDay else shortDayYear).replaceFirstChar { it.uppercase() }
-        }
-        DayMark(first + i, label, day.toEpochDay().toDouble(), DayScroll.tick(day, today, previous)).also { previous = day }
-    }
-}
-
-private val shortDay = DateTimeFormatter.ofPattern("EEE d MMM", Locale.ITALIAN)
-private val shortDayYear = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ITALIAN)
-
 /** Una riga della linea del tempo delle Note: un promemoria da spuntare o una nota. */
 internal data class UndatedRow(val task: TaskItem? = null, val note: com.platinum20.dashboard.notes.Note? = null)
 
@@ -578,28 +556,6 @@ internal fun nowRoom(viewport: Int, bottomPadding: Int, below: Int?): Int =
  */
 internal fun nowIndex(entries: List<TimelineEntry>): Int =
     entries.indexOfFirst { it.dayLabel == "Oggi" || it.dayLabel == "Fissate" }.takeIf { it >= 0 } ?: entries.size
-
-/** I filtri del calendario intero (Antonio): uno per le note, uno per gli eventi. */
-internal enum class CalendarFilter(val label: String) { NOTES("Note"), EVENTS("Eventi") }
-
-/**
- * A quale filtro appartiene una riga: eventi, promemoria con una data, date da ricordare, pacchi e rinnovo SIM
- * stanno insieme (1.361: sono la stessa cosa); le cose senza data con le note.
- */
-internal fun DueRow.filter(): CalendarFilter = when {
-    event != null || task?.dueAt != null || parcel != null || simRenewal -> CalendarFilter.EVENTS
-    else -> CalendarFilter.NOTES
-}
-
-/**
- * Solo le righe del filtro scelto; i giorni rimasti vuoti spariscono. null = tutto. La riga di OGGI ([DueRow.today])
- * resta con ogni filtro: senza, oggi diventava un giorno qualsiasi col vecchio titolo "Oggi" o spariva (Antonio, 2026-11-10).
- */
-internal fun List<DueDay>.only(filter: CalendarFilter?): List<DueDay> =
-    if (filter == null) this else mapNotNull { d ->
-        d.rows.filter { it.today || it.filter() == filter }.takeIf { it.isNotEmpty() }?.let { d.copy(rows = it) }
-    }
-
 
 /**
  * Dove va la riga "Abitudini" nel calendario (1.357): dentro OGGI, subito prima del primo giorno dopo oggi;

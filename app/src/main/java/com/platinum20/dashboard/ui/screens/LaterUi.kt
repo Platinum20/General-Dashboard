@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -232,7 +233,8 @@ private fun HabitTodoRow(
                 Text(
                     it.text,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (it.urgent) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    // Arancione vero in ogni tema: con Material You il terziario viene dallo sfondo e sembrava grigio.
+                    color = if (it.urgent) Urgent.color(MaterialTheme.colorScheme.background.luminance() < 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

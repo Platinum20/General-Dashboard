@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.574.0
+**Meno puntini, meno allarmi, meno codice**
+- Abitudini in Da fare: "Manca oggi" è grigio di giorno e diventa arancione solo dalle 20, se non l'hai ancora fatta. Prima usava il colore del tema: con Material You sembrava grigio anche la sera
+- Mini player: sotto il titolo solo cosa sta succedendo ("In diretta", "Collegamento…"), senza "Radio ·" davanti che lo faceva finire coi puntini
+- Testi più corti dove finivano coi puntini: la tessera Radio in Media ("Le tue preferite") e "Turno dal vivo" nelle Notifiche
+- Tolto codice che non si usava più (storie e Novità di Media, barra dei giorni, filtri del Calendario, pagina dei video piaciuti, tasto Fermate della notifica del treno): l'app non cambia, è solo più leggera
+
 ## 1.573.0
 **Widget nuovi: Da fare, e Oggi, SIM e Calendario come la Home**
 - Nuovo widget Da fare: in cima le abitudini con la fiamma della serie, poi le cose da fare. Il cerchio si spunta senza aprire l'app, il nome apre la sua pagina, il titolo apre tutto Da fare. Lo aggiungi dall'elenco dei widget del telefono

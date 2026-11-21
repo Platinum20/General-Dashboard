@@ -264,13 +264,11 @@ fun NotesScreen(
     // Sopra, scorrendo in su, il passato: cose fatte, pacchi arrivati, eventi finiti.
     val past = remember(data, events, day) { pastDays(data.tasks, data.parcels, events, withToday = true) }
     // Dove comincia "adesso" dentro la card della linea del tempo: la pagina si apre lì, non dal passato.
-    // Niente filtri in alto (1.465, Antonio): la pagina mostra sempre tutto.
-    val filter: CalendarFilter? = null
     val shiftsExpired by com.platinum20.dashboard.shifts.ShiftStore.expired.collectAsStateWithLifecycle()
     // La riga Abitudini dentro OGGI: chiusa dice quante ne hai fatte, aperta mostra le abitudini una per una.
     var habitsOpen by rememberSaveable { mutableStateOf(false) }
     // Quanto c'è sotto "OGGI" nella linea del tempo: sotto serve spazio perché oggi stia in cima allo schermo.
-    var below by remember(filter) { mutableStateOf<Int?>(null) }
+    var below by remember { mutableStateOf<Int?>(null) }
     var startedAtNow by remember { mutableStateOf(false) }
     // Senza il permesso del calendario qui c'è l'invito (prima stava nella pagina Calendario).
     var calendarGranted by remember { mutableStateOf(CalendarRepository.hasPermission(context)) }
@@ -292,8 +290,7 @@ fun NotesScreen(
             TopLevelBar(
                 title = "Calendario",
                 scrollBehavior = barScroll,
-                // Con un filtro acceso il sottotitolo lo dice ("SOLO NOTE"): toccandolo di nuovo si torna a tutto.
-                subtitle = filter?.let { "Solo " + it.label.lowercase() } ?: listOfNotNull(
+                subtitle = listOfNotNull(
                     dueToday.takeIf { it > 0 }?.let { "$it oggi" },
                     overdue.takeIf { it > 0 }?.let { if (it == 1) "1 scaduta" else "$it scadute" },
                 ).joinToString(" · ").ifEmpty { null },
@@ -312,7 +309,7 @@ fun NotesScreen(
         val today = LocalDate.now()
         // Le cose senza scadenza (da fare, note, foto, cose salvate) non stanno qui: sono in fondo alla card
         // Calendario della Home (Antonio, 2026-11-12). Qui solo le cose con un giorno.
-        val groups = remember(past, timeline, filter) { (past + timeline).withoutLoose().only(filter) }
+        val groups = remember(past, timeline) { (past + timeline).withoutLoose() }
         // Oggi c'è sempre (almeno la sua riga): vuoto = solo quella riga e niente altro.
         val empty = groups.sumOf { it.rows.size } <= 1 && data.habits.isEmpty()
         // Ogni riga è un item della lista, così si disegna solo quello che si vede: prima tutta la linea
@@ -324,7 +321,7 @@ fun NotesScreen(
         }
         val entryKeys = remember(entries) { timelineKeys(entries.map { it.first.key }) }
         // Quello che compare di nuovo (salvato col +, arrivato dalla banca) si accende un attimo.
-        FlashNewRows(entries.map { it.first.key }, filter)
+        FlashNewRows(entries.map { it.first.key })
         val nowAt = entries.indexOfFirst { !it.first.past }
         val invite = !calendarGranted && !(calendarOff ?: CalendarAsk.isOff(context))
         val listPadding = padding
@@ -356,13 +353,6 @@ fun NotesScreen(
                 val last = info.visibleItemsInfo.firstOrNull { it.index == lastItem }
                 if (last == null) info.viewportSize.height else last.offset + last.size - now.offset
             }.collect { if (it != null) below = it }
-        }
-        // Cambiando filtro si torna su OGGI.
-        var lastFilter by remember { mutableStateOf(filter) }
-        LaunchedEffect(filter) {
-            if (lastFilter == filter) return@LaunchedEffect
-            lastFilter = filter
-            nowItem?.let { runCatching { listState.scrollToItem(it) } }
         }
         // Fra adesso e passato una piccola resistenza, con una vibrazione.
         // In fondo alla linea si legge un altro anno di calendario: Prossimi giorni non finisce mai.

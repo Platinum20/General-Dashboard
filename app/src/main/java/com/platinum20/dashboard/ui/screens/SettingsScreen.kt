@@ -1390,7 +1390,7 @@ private fun LiveTripSettings() {
         icon = Icons.Outlined.Schedule,
         accent = TileAccent.BLUE,
         title = "Turno dal vivo",
-        subtitle = if (shifts) "Da tre quarti d'ora prima alla fine del turno" else "Una notifica che segue il turno fino alla fine",
+        subtitle = if (shifts) SHIFT_LIVE_ON else SHIFT_LIVE_OFF,
         onClick = { change(!shifts, AppSettings::setLiveShifts) },
         trailing = { Switch(checked = shifts && !needsPermission, onCheckedChange = hapticToggle { change(it, AppSettings::setLiveShifts) }) },
     )
@@ -1686,3 +1686,7 @@ private fun adBlockStatusText(status: AdBlocker.Status): String {
     status.lastError?.let { parts += it }
     return parts.joinToString(" · ").replaceFirstChar { it.uppercase() }
 }
+
+/** Sottotitoli di "Turno dal vivo": corti, per stare su una riga (prima finivano coi puntini). */
+internal const val SHIFT_LIVE_ON = "Da 45 minuti prima a fine turno"
+internal const val SHIFT_LIVE_OFF = "Ti segue il turno fino alla fine"

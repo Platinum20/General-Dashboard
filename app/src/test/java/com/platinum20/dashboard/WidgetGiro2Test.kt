@@ -46,9 +46,10 @@ class WidgetGiro2Test {
         val walk = Habit(2, "Camminare 30 minuti", done = setOf(today, today.minusDays(1)))
         val m = TodoWidgetRows.build(listOf(water, walk), listOf(todo(10, "Comprare il latte"), todo(11, "Dentista", "Chiedere per giovedì")), evening, heightDp = 400)
         assertEquals(listOf("Bere 2 litri d'acqua", "Camminare 30 minuti", "Comprare il latte", "Dentista"), m.rows.map { it.title })
-        // Dalle 17 l'abitudine non fatta dice "Manca oggi" in arancione, come nella card.
+        // L'abitudine non fatta dice "Manca oggi" come nella card: grigio alle 18, arancione dalle 20.
         assertEquals("Manca oggi", m.rows[0].line)
-        assertTrue(m.rows[0].urgent)
+        assertFalse(m.rows[0].urgent)
+        assertTrue(TodoWidgetRows.build(listOf(water), emptyList(), evening.withHour(20), heightDp = 400).rows[0].urgent)
         assertFalse(m.rows[0].done)
         // Quella fatta resta, spenta fino a domani, con la sua serie.
         assertTrue(m.rows[1].done)
