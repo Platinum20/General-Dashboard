@@ -55,6 +55,15 @@ class NoteEditorBlocksTest {
     }
 
     @Test
+    fun enterKeepsTheQuote() {
+        val old = "> detto"
+        val e = NoteLines.afterEdit(old, "$old\n", old.length + 1)!!
+        assertEquals("> detto\n> ", e.text)
+        val closed = NoteLines.afterEdit(e.text, e.text + "\n", e.text.length + 1)!!
+        assertEquals("> detto\n", closed.text)
+    }
+
+    @Test
     fun dividerGoesBelowTheLine() {
         val e = NoteLines.insertDivider("uno\ndue", 1)
         assertEquals("uno\n---\ndue", e.text)

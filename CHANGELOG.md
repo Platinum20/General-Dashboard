@@ -10,6 +10,8 @@
 - Con almeno 3 titoli, in cima c'è l'indice: tocchi un titolo e la nota scorre lì
 - Menu "/": scelto un blocco (per esempio Linea), la "/" scritta sparisce
 - Nelle note con foto, dopo l'ultima c'è un riquadro col "+" per aggiungerne altre (tienilo premuto per scattare o dettare)
+- Citazioni, riquadri e voci che vanno a capo restano rientrate accanto alla barra o al cerchio; Invio in una citazione ne continua un'altra riga
+- Fra cerchio e testo delle voci c'è di nuovo un po' di spazio
 ## 1.585.0
 **Editor delle note più completo (parte 2)**
 - Scrivi "/" per aggiungere un blocco: punti, numeri, spunte, titolo, citazione, riquadro, linea, foto, scatta, detta

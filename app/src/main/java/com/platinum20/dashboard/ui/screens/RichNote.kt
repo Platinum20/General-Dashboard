@@ -64,6 +64,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.ParagraphStyle
+import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
@@ -583,8 +585,15 @@ private fun richText(
         append(styled.subSequence(at, text.length))
         view.lines.filter { it.hasMark && it.prefix > 0 && it.kind != NoteLines.Kind.DIVIDER }.forEach { line ->
             val s = view.toShown(line.start)
+            // Il paragrafo comprende il suo "\n", come vuole Compose: se no il solo "\n" diventa un paragrafo vuoto in più.
+            val e = (view.toShown(line.end) + if (line.end < text.length) 1 else 0).coerceAtMost(length)
             // Ogni livello di sotto-voce sposta il testo di un altro rientro (1.579); citazione e riquadro uno solo.
-            if (s < length) addStyle(SpanStyle(letterSpacing = (INDENT.value * (1 + line.level)).sp), s, s + 1)
+            // Rientro del paragrafo (1.586), non spazio fra lettere: così anche le righe che vanno a capo da sole restano
+            // rientrate accanto alla barra o al cerchio, e il segno ha sempre il suo spazio prima del testo.
+            if (s < e) {
+                val indent = (INDENT.value * (1 + line.level)).sp
+                addStyle(ParagraphStyle(textIndent = TextIndent(firstLine = indent, restLine = indent)), s, e)
+            }
         }
     }
     val mapping = object : OffsetMapping {

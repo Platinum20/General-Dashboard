@@ -156,7 +156,8 @@ object NoteLines {
         ) {
             val p = cursor - 1
             val line = lineAt(old, p)
-            if (!line.isList || p < line.contentStart) return null
+            // Le voci e la citazione (1.586) continuano nella riga nuova; Invio su una vuota le chiude.
+            if (!(line.isList || line.kind == Kind.QUOTE) || p < line.contentStart) return null
             if (content(old, line).isBlank()) {
                 // Invio su una voce vuota rientrata: torna su di un livello; non rientrata: la lista finisce.
                 if (line.level > 0) {
