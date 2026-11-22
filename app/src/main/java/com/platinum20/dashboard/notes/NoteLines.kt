@@ -7,7 +7,7 @@ package com.platinum20.dashboard.notes
  * pallini. Funzioni pure: si provano senza telefono.
  */
 object NoteLines {
-    enum class Kind { TEXT, BULLET, CHECK, HEADING, NUMBER, QUOTE, CALLOUT, DIVIDER }
+    enum class Kind { TEXT, BULLET, CHECK, HEADING, NUMBER, QUOTE, CALLOUT, DIVIDER, TABLE }
 
     /** Una riga: [start]..[end] ([end] = dove sta il "\n" o la fine), il segno davanti lungo [prefix]. */
     data class Line(val index: Int, val start: Int, val end: Int, val kind: Kind, val done: Boolean, val prefix: Int, val level: Int = 0, val number: Int = 0) {
@@ -15,7 +15,7 @@ object NoteLines {
         val isList: Boolean get() = kind == Kind.BULLET || kind == Kind.CHECK || kind == Kind.NUMBER
 
         /** Il segno davanti non si vede e l'editor ci disegna sopra (cerchio, numero, barra, emoji, linea). */
-        val hasMark: Boolean get() = isList || kind == Kind.QUOTE || kind == Kind.CALLOUT || kind == Kind.DIVIDER
+        val hasMark: Boolean get() = isList || kind == Kind.QUOTE || kind == Kind.CALLOUT || kind == Kind.DIVIDER || kind == Kind.TABLE
     }
 
     /** Il risultato di una modifica: testo nuovo e cursore (o selezione) nuovo. */
@@ -61,6 +61,8 @@ object NoteLines {
     /** Che riga è e quanto è lungo il suo segno. */
     fun kindOf(line: String): Triple<Kind, Boolean, Int> {
         if (line.trim() == DIVIDER) return Triple(Kind.DIVIDER, false, line.length)
+        // Una riga della tabella (1.588): "| a | b |", tutta nascosta; l'editor ci disegna sopra le caselle.
+        if (NoteTable.isRow(line)) return Triple(Kind.TABLE, false, line.length)
         if (line.startsWith(QUOTE)) return Triple(Kind.QUOTE, false, QUOTE.length)
         calloutRx.find(line)?.let { m -> return Triple(Kind.CALLOUT, false, m.value.length) }
         checkRx.find(line)?.let { m -> return Triple(Kind.CHECK, m.groupValues[1].equals("x", ignoreCase = true), m.value.length) }
@@ -106,7 +108,7 @@ object NoteLines {
         Kind.NUMBER -> "1. "
         Kind.QUOTE -> QUOTE
         Kind.CALLOUT -> CALLOUT
-        Kind.DIVIDER -> ""
+        Kind.DIVIDER, Kind.TABLE -> ""
     }
 
     /**
@@ -186,7 +188,7 @@ object NoteLines {
             new.regionMatches(0, old, 0, cursor) && new.regionMatches(cursor, old, cursor + 1, old.length - cursor - 1)
         ) {
             val line = lineAt(old, cursor)
-            if (line.hasMark && line.kind != Kind.DIVIDER && cursor >= line.start && cursor < line.contentStart) {
+            if (line.hasMark && line.kind != Kind.DIVIDER && line.kind != Kind.TABLE && cursor >= line.start && cursor < line.contentStart) {
                 return Edit(old.removeRange(line.start, line.contentStart), line.start)
             }
             // Indietro all'inizio della riga sotto una linea: se ne va la linea, non il testo.
@@ -368,6 +370,29 @@ object NoteLines {
         }
         val t = text + "\n" + pre
         return Edit(t, t.length)
+    }
+
+    /**
+     * Le righe che si chiudono (1.588): sotto un titolo chiuso (in [folded], per testo del titolo) si nascondono le righe
+     * fino al titolo dopo. Ogni intervallo comincia dal "\n" in fondo al titolo, così il titolo resta intero.
+     */
+    fun foldRanges(text: String, folded: Set<String>): List<IntRange> {
+        if (folded.isEmpty()) return emptyList()
+        val lines = parse(text)
+        val out = mutableListOf<IntRange>()
+        lines.forEachIndexed { i, l ->
+            if (l.kind != Kind.HEADING || plainLine(text.substring(l.start, l.end)) !in folded) return@forEachIndexed
+            val next = lines.drop(i + 1).firstOrNull { it.kind == Kind.HEADING }
+            val end = if (next != null) next.start - 1 else text.length
+            if (end > l.end) out += l.end until end
+        }
+        return out
+    }
+
+    /** Quante righe scritte stanno sotto il titolo che comincia alla riga [index], fino al titolo dopo. */
+    fun sectionSize(text: String, index: Int): Int {
+        val lines = parse(text)
+        return lines.drop(index + 1).takeWhile { it.kind != Kind.HEADING }.count { text.substring(it.start, it.end).isNotBlank() }
     }
 
     /** I titoli della nota (1.586), per l'indice in cima: dove comincia la riga e il testo. */

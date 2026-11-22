@@ -4,4 +4,5 @@
     <cache-path name="receipts" path="receipts/" />
     <cache-path name="shared" path="shared/" />
     <cache-path name="documents" path="documents/" />
+    <cache-path name="note-pdf" path="note-pdf/" />
 </paths>

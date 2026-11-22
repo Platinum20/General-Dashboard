@@ -71,6 +71,28 @@ object NoteText {
         return if (title.isBlank()) "" else "${title.trim()} (2)"
     }
 
+    /** Una riga intera (audio, 1.588) sotto la riga del cursore, o al suo posto se è vuota: testo e cursore dopo la riga. */
+    fun insertLine(text: String, at: Int, line: String): Pair<String, Int> {
+        val a = at.coerceIn(0, text.length)
+        val start = text.lastIndexOf('\n', a - 1) + 1
+        val end = text.indexOf('\n', a).let { if (it < 0) text.length else it }
+        if (text.substring(start, end).isBlank()) {
+            val t = text.substring(0, start) + line + text.substring(end)
+            return t to start + line.length
+        }
+        val t = text.substring(0, end) + "\n" + line + text.substring(end)
+        return t to end + 1 + line.length
+    }
+
+    /** Il sottotitolo di una versione precedente: la prima riga che oggi non c'è più (o è cambiata), su una riga sola. */
+    fun versionLine(old: String, now: String): String {
+        val current = now.lines().map { it.trim() }.toSet()
+        val changed = old.lines().map { it.trim() }.firstOrNull { it.isNotEmpty() && it !in current }
+            ?: old.lines().firstOrNull { it.isNotBlank() }.orEmpty()
+        val plain = NoteLines.plainLine(changed).ifEmpty { changed }
+        return "\"" + plain.take(60) + "\""
+    }
+
     fun join(title: String, body: String): String = if (body.isEmpty()) title else "$title\n$body"
 
     /** Inserisce il testo dettato dove sta il cursore, con lo spazio giusto prima e dopo; restituisce testo e cursore. */

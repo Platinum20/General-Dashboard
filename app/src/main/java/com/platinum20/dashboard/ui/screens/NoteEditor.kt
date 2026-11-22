@@ -74,6 +74,14 @@ import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.height
 import com.platinum20.dashboard.Routes
+import com.platinum20.dashboard.notes.NoteVersions
+import com.platinum20.dashboard.notes.NotePdf
+import com.platinum20.dashboard.notes.NoteAudio
+import androidx.compose.material.icons.outlined.PictureAsPdf
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.GraphicEq
+import androidx.compose.material.icons.outlined.Draw
+import androidx.compose.material.icons.outlined.DocumentScanner
 import androidx.compose.material.icons.filled.PushPin as PushPinFilled
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -259,6 +267,19 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                 haptic(Haptic.CONFIRM)
                 NotesStore.editNotePhotos(nid) { NotePhotos.toFront(it, path) }
             } else null,
+            // Testo da una foto (1.588): quello che c'è scritto nella foto va in fondo alla nota.
+            BubbleAction(Icons.Outlined.DocumentScanner, "Copia il testo nella nota", "quello scritto nella foto, in fondo") {
+                scope.launch {
+                    val rows = PhotoAttach.rows(context, android.net.Uri.fromFile(java.io.File(path)))
+                    if (rows.isEmpty()) { CaptureFeedback.tell(context, "Nella foto non ho trovato testo"); return@launch }
+                    val add = rows.joinToString("\n")
+                    val next = if (body.text.isBlank()) add else body.text.trimEnd('\n') + "\n" + add
+                    body = TextFieldValue(next, TextRange(next.length))
+                    save()
+                    haptic(Haptic.CONFIRM)
+                    CaptureFeedback.tell(context, "Testo copiato nella nota", Icons.Outlined.DocumentScanner)
+                }
+            },
             BubbleAction(Icons.Outlined.Rotate90DegreesCw, "Ruota", "di un quarto di giro") { rotatePhoto(path) },
             BubbleAction(Icons.Outlined.Share, "Condividi la foto", "solo questa foto") { NotePhotoFiles.share(context, "", listOf(path)) },
             BubbleAction(Icons.Outlined.Delete, "Togli dalla nota", "con Annulla", danger = true) { removePhoto(path) },
@@ -295,6 +316,76 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
         }
     }
 
+    // ---- Disegno a mano (1.588) ----
+    var drawing by remember { mutableStateOf(false) }
+    fun draw() { haptic(Haptic.TICK); drawing = true }
+
+    // ---- Audio nella nota (1.588): la riga-link va sotto la riga del cursore ----
+    val recordingSince by NoteAudio.recordingSince.collectAsStateWithLifecycle()
+    DisposableEffect(Unit) { onDispose { NoteAudio.cancel(); NoteAudio.stopPlaying() } }
+    fun startRecording() {
+        if (NoteAudio.start(context)) haptic(Haptic.TOGGLE_ON) else CaptureFeedback.tell(context, "Il microfono non si apre")
+    }
+    val recordPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> if (ok) startRecording() }
+    fun record() {
+        when {
+            recordingSince != null -> {
+                haptic(Haptic.TOGGLE_OFF)
+                val line = NoteAudio.stop()
+                if (line == null) { CaptureFeedback.tell(context, "Audio troppo corto"); return }
+                val e = NoteText.insertLine(body.text, body.selection.end, line)
+                body = TextFieldValue(e.first, TextRange(e.second))
+                save()
+            }
+            !dictation.hasPermission() -> recordPermission.launch(android.Manifest.permission.RECORD_AUDIO)
+            else -> startRecording()
+        }
+    }
+
+    // ---- PDF (1.588) ----
+    fun exportPdf() {
+        save()
+        scope.launch {
+            val file = runCatching { NotePdf.make(context, title.text, body.text, photos) }.getOrNull()
+            if (file == null) { CaptureFeedback.tell(context, "Il PDF non si è fatto"); return@launch }
+            val saved = NotePdf.saveToDownloads(context, file)
+            haptic(Haptic.CONFIRM)
+            CaptureFeedback.tell(context, if (saved) "PDF nei Download" else "PDF pronto", Icons.Outlined.PictureAsPdf, "Condividi") {
+                runCatching {
+                    val uri = androidx.core.content.FileProvider.getUriForFile(context, context.packageName + ".fileprovider", file)
+                    val send = android.content.Intent(android.content.Intent.ACTION_SEND).setType("application/pdf")
+                        .putExtra(android.content.Intent.EXTRA_STREAM, uri).addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    context.startActivity(android.content.Intent.createChooser(send, title.text.ifBlank { "Nota" }).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                }
+            }
+        }
+    }
+
+    // ---- Versioni precedenti (1.588): il testo di quando si è aperta la nota resta come versione se lo si cambia ----
+    NoteVersions.init(context)
+    val openedText = remember { noteId?.let { NotesStore.note(it)?.text } }
+    DisposableEffect(Unit) {
+        onDispose {
+            val nid = id
+            if (nid != null && !deleted && openedText != null && openedText != NoteText.join(title.text, body.text)) NoteVersions.keep(nid, openedText)
+        }
+    }
+    fun versions() {
+        val nid = id ?: return
+        val list = NoteVersions.of(nid)
+        haptic(Haptic.LONG_PRESS)
+        if (list.isEmpty()) { CaptureFeedback.tell(context, "Nessuna versione precedente: si tengono quando cambi la nota"); return }
+        ActionBubble.show(
+            *list.take(8).map { v ->
+                BubbleAction(Icons.Outlined.History, NoteText.moment(v.at, v.at), NoteText.versionLine(v.text, text)) {
+                    val before = text
+                    setText(v.text)
+                    CaptureFeedback.tell(context, "Versione rimessa", Icons.Outlined.History, "Annulla") { setText(before) }
+                }
+            }.toTypedArray(),
+        )
+    }
+
     fun add() {
         haptic(Haptic.LONG_PRESS)
         ActionBubble.show(
@@ -302,6 +393,8 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                 BubbleAction(Icons.Outlined.AddPhotoAlternate, "Foto", "dalla galleria, anche più insieme") { pickPhotos() },
                 BubbleAction(Icons.Outlined.PhotoCamera, "Scatta una foto", "con la fotocamera, va subito nella nota") { camera.launch(ReceiptReader.photoUri(context)) },
                 BubbleAction(Icons.Outlined.Mic, "Detta", "il testo va dove c'è il cursore") { dictate() },
+                BubbleAction(Icons.Outlined.Draw, "Disegna", "a mano, va fra le foto") { draw() },
+                BubbleAction(Icons.Outlined.GraphicEq, "Registra un audio", "si ascolta toccandolo nella nota") { record() },
             ).toTypedArray(),
         )
     }
@@ -374,6 +467,8 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     current?.emoji?.let { NotesStore.setNoteEmoji(nid, it) }
                     inApp?.openRoute(Routes.noteEdit(nid))
                 },
+                id?.takeIf { NoteVersions.of(it).isNotEmpty() }?.let { BubbleAction(Icons.Outlined.History, "Versioni precedenti", "rimetti com'era prima, con Annulla") { versions() } },
+                if (text.isBlank() && photos.isEmpty()) null else BubbleAction(Icons.Outlined.PictureAsPdf, "Esporta in PDF", "testo e foto su fogli A4, nei Download") { exportPdf() },
                 if (text.isBlank()) null else BubbleAction(Icons.Outlined.ContentCopy, "Copia il testo", "senza le foto") {
                     Clip.copy(context, "Nota", NoteFormat.plain(text), "Testo copiato")
                 },
@@ -394,6 +489,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
 
     val meta = when {
         dictation.listening -> dictation.partial.ifBlank { "Ti ascolto…" }
+        recordingSince != null -> "Registro l'audio… tocca Ferma"
         arranging -> "Trascina per cambiare l'ordine"
         else -> listOfNotNull(
             if (opened == null) "Nuova nota" else NoteText.moment(opened.createdAt, opened.updatedAt),
@@ -464,13 +560,15 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                 } else {
                     // Come in DetailPage: tasto tondo a sinistra col suo nome, "Altro" a destra.
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = place) {
-                        if (dictation.listening) {
+                        if (recordingSince != null) {
+                            HoldRoundButton(Icons.Outlined.Stop, "Ferma", tint = MaterialTheme.colorScheme.primary, onClick = { record() })
+                        } else if (dictation.listening) {
                             HoldRoundButton(Icons.Outlined.Stop, "Ferma", tint = MaterialTheme.colorScheme.primary, onClick = { dictate() })
                         } else {
                             HoldRoundButton(Icons.Outlined.Add, "Aggiungi", onClick = { add() }, onLongClick = { haptic(Haptic.LONG_PRESS); pickPhotos() })
                         }
                         Text(
-                            if (dictation.listening) "Ferma" else "Aggiungi",
+                            if (dictation.listening || recordingSince != null) "Ferma" else "Aggiungi",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
@@ -587,6 +685,8 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                         SlashItem(Icons.Outlined.AddPhotoAlternate, "Foto", "dalla galleria") { pickPhotos() },
                         SlashItem(Icons.Outlined.PhotoCamera, "Scatta", "con la fotocamera") { camera.launch(ReceiptReader.photoUri(context)) },
                         SlashItem(Icons.Outlined.Mic, "Detta", "dove c'è il cursore") { dictate() },
+                        SlashItem(Icons.Outlined.Draw, "Disegno", "a mano") { draw() },
+                        SlashItem(Icons.Outlined.GraphicEq, "Audio", "registra") { record() },
                     ),
                     // Con la tastiera aperta niente altezza minima: se no la pagina scorre per mostrarla tutta e titolo e foto
                     // finiscono fuori dallo schermo (1.559).
@@ -612,6 +712,15 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
         }
 
         // Le foto a tutto schermo, sopra l'editor: di lato fra le foto, giù per chiudere.
+        if (drawing) {
+            NoteDrawingLayer(
+                onDone = { strokes, size ->
+                    drawing = false
+                    scope.launch { saveDrawing(context, strokes, size)?.let { attach(listOf(it)) } }
+                },
+                onClose = { drawing = false },
+            )
+        }
         viewer?.let { start ->
             if (photos.isEmpty()) {
                 LaunchedEffect(Unit) { viewer = null }

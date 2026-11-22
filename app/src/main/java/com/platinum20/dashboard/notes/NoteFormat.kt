@@ -36,6 +36,7 @@ object NoteFormat {
     private val linkRx = Regex("""\[([^\]\n]+)]\(([^)\s]+)\)""")
     private val urlRx = Regex("""https?://[^\s)\]]+""")
     const val NOTE_LINK = "nota:"
+    const val APP_LINK = "app:"
 
     /** Un formato acceso senza ancora testo (G toccato senza niente di scelto): scrivendo, il testo nasce formattato. */
     private val emptyRx = Regex("""\*\*\*\*|~~~~|====|(?<![_\w])__(?![_\w])""")
@@ -105,9 +106,13 @@ object NoteFormat {
     }
 
     /** Un'altra nota dentro questa (scrivendo "@"): `[Titolo](nota:ID)` al posto di [from]..[to]. */
-    fun noteLink(text: String, from: Int, to: Int, title: String, id: Long): Edit {
+    fun noteLink(text: String, from: Int, to: Int, title: String, id: Long): Edit = mentionLink(text, from, to, title, "$NOTE_LINK$id")
+
+    /** "@" verso qualsiasi cosa dell'app (1.588): `[Titolo](app:pagina)`; l'indirizzo non ha spazi né parentesi. */
+    fun mentionLink(text: String, from: Int, to: Int, title: String, url: String): Edit {
         val clean = title.replace('[', '(').replace(']', ')').replace('\n', ' ').trim().ifEmpty { "Nota" }
-        val piece = "[$clean]($NOTE_LINK$id) "
+        val safe = url.replace(" ", "%20").replace("(", "%28").replace(")", "%29")
+        val piece = "[$clean]($safe) "
         return Edit(text.substring(0, from) + piece + text.substring(to), from + piece.length)
     }
 

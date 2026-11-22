@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.588.0
+**Editor delle note completo**
+- "@" collega anche promemoria, cose da fare, abitudini, pacchi, documenti e le sezioni (Meteo, SIM, Calendario, News, Musica…): un tocco le apre
+- Una data scritta nella riga ("venerdì alle 15 dentista"): nella barra compare il tasto per metterla nel Calendario, e la riga diventa il suo link
+- Testo da una foto: tieni premuta la foto → "Copia il testo nella nota"
+- Disegno a mano: da Aggiungi o da "/", si disegna col dito e va fra le foto
+- Righe che si chiudono: accanto a ogni titolo una freccetta chiude e apre le righe sotto, chiuso dice quante sono
+- Audio nella nota: "Registra un audio" da Aggiungi o "/"; nella nota resta una riga che si ascolta toccandola
+- Versioni precedenti: in Altro, rimetti la nota com'era prima (con Annulla)
+- Esporta in PDF: in Altro, testo e foto su fogli A4 nei Download, da condividere
+- Tabella semplice: da "/", si scrive nelle caselle; tocco per cambiarla, tieni premuto per aggiungere una riga o toglierla
 ## 1.587.0
 **Editor delle note più completo (parte 3)**
 - Righe un po' più ariose: il testo lungo si legge meglio
