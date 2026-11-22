@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.575.0
+**Foto della nota: la prima grande**
+- Nella nota la prima foto è grande, a destra due più piccole una sopra l'altra. Scorrendo a destra vedi tutte le altre, quattro alla volta in 2x2
+- Tocca una foto per aprirla, tienila premuta per il fumetto, tienila e trascinala per cambiare l'ordine come prima. Altre foto si aggiungono da "Aggiungi" in basso
+
 ## 1.574.0
 **Meno puntini, meno allarmi, meno codice**
 - Abitudini in Da fare: "Manca oggi" è grigio di giorno e diventa arancione solo dalle 20, se non l'hai ancora fatta. Prima usava il colore del tema: con Material You sembrava grigio anche la sera
