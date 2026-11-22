@@ -136,10 +136,19 @@ internal fun RichNoteField(
     var focused by remember { mutableStateOf(false) }
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
 
-    fun change(v: TextFieldValue) {
+    /** [typed] = l'ha cambiato la tastiera; falso = un tasto della barra, che sa già cosa fa. */
+    fun change(v: TextFieldValue, typed: Boolean = true) {
         val old = current
-        val fixed = if (v.text != old.text && v.selection.collapsed) NoteLines.afterEdit(old.text, v.text, v.selection.end) else null
-        val next = fixed?.let { TextFieldValue(it.text, TextRange(it.start, it.end)) } ?: v
+        var next = v
+        if (typed && v.text != old.text && v.selection.collapsed) {
+            NoteLines.afterEdit(old.text, v.text, v.selection.end)?.let { next = TextFieldValue(it.text, TextRange(it.start, it.end)) }
+            // I segni dei formati non si vedono (1.577): la tastiera non deve poterli rompere.
+            NoteFormat.afterEdit(old.text, old.selection.start, old.selection.end, next.text, next.selection.end)?.let {
+                next = TextFieldValue(it.text, TextRange(it.start, it.end))
+            }
+        }
+        // Un formato acceso e rimasto vuoto sparisce quando il cursore va altrove.
+        NoteFormat.tidy(next.text, next.selection.start, next.selection.end)?.let { next = TextFieldValue(it.text, TextRange(it.start, it.end)) }
         // Il cursore non resta mai dentro "[ ] ": scrivendo lì la voce si romperebbe.
         val safe = if (next.selection.collapsed) {
             val at = NoteLines.outOfPrefix(next.text, next.selection.start)
@@ -149,14 +158,13 @@ internal fun RichNoteField(
     }
 
     DisposableEffect(focused, readOnly) {
-        if (focused && !readOnly) RichBar.target = RichBar.Target(owner, { current }, ::change)
+        if (focused && !readOnly) RichBar.target = RichBar.Target(owner, { current }, { change(it, typed = false) })
         onDispose { if (RichBar.target?.owner == owner) RichBar.target = null }
     }
 
-    val mark = colors.onSurfaceVariant.copy(alpha = 0.45f)
     val faded = colors.onSurfaceVariant
-    val transformation = remember(value.selection, focused, mark, faded) {
-        VisualTransformation { input -> richText(input.text, value.selection, focused, mark, faded) }
+    val transformation = remember(faded) {
+        VisualTransformation { input -> richText(input.text, faded) }
     }
 
     // Il cursore resta sempre in vista sopra la barra e la tastiera, anche quando Invio fa una riga nuova (1.562):
@@ -176,7 +184,7 @@ internal fun RichNoteField(
     Box(modifier) {
         BasicTextField(
             value = value,
-            onValueChange = ::change,
+            onValueChange = { change(it) },
             readOnly = readOnly,
             textStyle = textStyle,
             cursorBrush = SolidColor(colors.primary),
@@ -204,7 +212,7 @@ internal fun RichNoteField(
         if (l != null) {
             // Gli stessi segni nascosti del testo disegnato, se no le posizioni scivolano di riga.
             val text = value.text
-            val shown = NoteLines.Shown(text, NoteFormat.hidden(text, value.selection.start.coerceIn(0, text.length), value.selection.end.coerceIn(0, text.length), focused))
+            val shown = NoteLines.Shown(text, NoteFormat.hidden(text))
             val density = LocalDensity.current
             val drawn = l.layoutInput.text.length
             shown.lines.filter { it.isList && shown.toShown(it.start) < drawn }.forEach { line -> androidx.compose.runtime.key(line.index) {
@@ -264,9 +272,9 @@ private fun LineMark(line: NoteLines.Line) {
 
 /**
  * Il testo disegnato: formati, titoletti, voci fatte barrate e sbiadite, il rientro di punti e voci. I segni dei formati
- * restano solo attorno al cursore ([NoteFormat.hidden]), quelli delle voci mai ([NoteLines.Shown]).
+ * ([NoteFormat.hidden]) e delle voci ([NoteLines.Shown]) non si vedono mai (1.577).
  */
-private fun richText(text: String, selection: TextRange, focused: Boolean, mark: androidx.compose.ui.graphics.Color, faded: androidx.compose.ui.graphics.Color): TransformedText {
+private fun richText(text: String, faded: androidx.compose.ui.graphics.Color): TransformedText {
     val styled = buildAnnotatedString {
         append(text)
         NoteFormat.spans(text).forEach { s ->
@@ -275,16 +283,15 @@ private fun richText(text: String, selection: TextRange, focused: Boolean, mark:
                 NoteFormat.Kind.ITALIC -> SpanStyle(fontStyle = FontStyle.Italic)
                 NoteFormat.Kind.STRIKE -> SpanStyle(textDecoration = TextDecoration.LineThrough)
                 NoteFormat.Kind.HEADING -> SpanStyle(fontWeight = FontWeight.SemiBold, fontSize = 19.sp)
-                NoteFormat.Kind.MARK -> SpanStyle(color = mark)
+                NoteFormat.Kind.MARK -> null
             }
-            addStyle(style, s.start, s.end)
+            if (style != null) addStyle(style, s.start, s.end)
         }
         NoteLines.parse(text).filter { it.kind == NoteLines.Kind.CHECK && it.done && it.end > it.contentStart }.forEach {
             addStyle(SpanStyle(textDecoration = TextDecoration.LineThrough, color = faded), it.contentStart, it.end)
         }
     }
-    val hidden = NoteFormat.hidden(text, selection.start.coerceIn(0, text.length), selection.end.coerceIn(0, text.length), focused)
-    val view = NoteLines.Shown(text, hidden)
+    val view = NoteLines.Shown(text, NoteFormat.hidden(text))
     if (view.cuts.isEmpty()) return TransformedText(styled, OffsetMapping.Identity)
     val shown = buildAnnotatedString {
         var at = 0

@@ -60,14 +60,11 @@ import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Stop
-import androidx.compose.material.icons.outlined.Title
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material.icons.outlined.VerticalAlignBottom
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.RemoveDone
-import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.filled.PushPin as PushPinFilled
-import androidx.compose.material.icons.outlined.Checklist as ChecklistIcon
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -139,8 +136,8 @@ import kotlin.math.roundToInt
  * Editor di una nota lunga (1.529, Antonio scelta B di /mnt/project-files/editor-note/): fatto come le altre schede.
  * In alto Indietro e una riga sola (quando, parole, foto); il titolo; le foto in fila sotto il titolo (tocca = grande,
  * tieni premuto = fumetto, tieni premuto e trascina = ordine); il testo. In basso "Aggiungi" a sinistra (foto, scatta,
- * detta, lista, titoletto; tenuto premuto = foto subito) e "Altro" a destra. Grassetto e gli altri formati compaiono solo
- * con del testo scelto. Si salva da sola.
+ * detta; tenuto premuto = foto subito) e "Altro" a destra. Punti, spunte, titoletti e grassetto stanno solo nella barra
+ * sopra la tastiera (1.577). Si salva da sola.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -272,30 +269,6 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
         }
     }
 
-    /**
-     * Punto, voce da spuntare o titoletto da "Aggiungi" (1.555): la riga del cursore cambia; senza cursore nel testo
-     * se ne aggiunge una nuova in fondo.
-     */
-    fun lineKind(kind: NoteLines.Kind) {
-        haptic(Haptic.TICK)
-        if (bodyFocused) {
-            val e = NoteLines.setKind(body.text, body.selection.min, body.selection.max, kind)
-            body = TextFieldValue(e.text, TextRange(e.start, e.end))
-        } else {
-            val prefix = when (kind) {
-                NoteLines.Kind.BULLET -> NoteLines.BULLET
-                NoteLines.Kind.CHECK -> NoteLines.CHECK
-                NoteLines.Kind.HEADING -> NoteLines.HEADING
-                NoteLines.Kind.TEXT -> ""
-            }
-            val base = body.text.trimEnd('\n')
-            val next = if (base.isEmpty()) prefix else base + "\n" + prefix
-            body = TextFieldValue(next, TextRange(next.length))
-        }
-        save()
-        bodyFocus.requestFocus()
-    }
-
     /** "Tutto fatto": l'ultima voce spuntata. Niente cambia da solo, si possono togliere le fatte. */
     fun allDone() {
         CaptureFeedback.tell(context, "Tutto fatto", Icons.Outlined.TaskAlt, "Togli le fatte") {
@@ -311,9 +284,6 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                 BubbleAction(Icons.Outlined.AddPhotoAlternate, "Foto", "dalla galleria, anche più insieme") { pickPhotos() },
                 BubbleAction(Icons.Outlined.PhotoCamera, "Scatta una foto") { camera.launch(ReceiptReader.photoUri(context)) },
                 BubbleAction(Icons.Outlined.Mic, "Detta", "il testo va dove c'è il cursore") { dictate() },
-                BubbleAction(Icons.AutoMirrored.Outlined.FormatListBulleted, "Elenco puntato") { lineKind(NoteLines.Kind.BULLET) },
-                BubbleAction(Icons.Outlined.ChecklistIcon, "Lista da spuntare") { lineKind(NoteLines.Kind.CHECK) },
-                BubbleAction(Icons.Outlined.Title, "Titoletto") { lineKind(NoteLines.Kind.HEADING) },
             ).toTypedArray(),
         )
     }

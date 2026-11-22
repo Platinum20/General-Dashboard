@@ -1,9 +1,10 @@
 package com.platinum20.dashboard.notes
 
 /**
- * I formati delle note lunghe (1.529): grassetto `**così**`, corsivo `*così*`, barrato `~~così~~` e titoletto `## ` a
- * inizio riga. Restano nel testo come segni (si condividono e si copiano ovunque); l'editor li disegna e li sbiadisce,
- * le righe della linea del tempo li tolgono ([plain]).
+ * I formati delle note lunghe: grassetto `**così**`, corsivo `_così_` (si legge anche il vecchio `*così*`), barrato
+ * `~~così~~` e titoletto `## ` a inizio riga. Restano nel testo come segni, così le note vecchie si aprono uguali, ma
+ * nell'editor non si vedono mai (1.577, Antonio: niente asterischi né cancelletti): si scrive come in un editor vero,
+ * e [afterEdit] fa in modo che cancellare o andare a capo non rompa mai un segno. Fuori dall'editor si usa [plain].
  */
 object NoteFormat {
     enum class Kind { BOLD, ITALIC, STRIKE, HEADING, MARK }
@@ -11,68 +12,71 @@ object NoteFormat {
     /** Un pezzo di testo da disegnare in un modo: [end] escluso. */
     data class Span(val start: Int, val end: Int, val kind: Kind)
 
+    /** Un formato con i suoi due segni: il testo formattato va da [contentStart] a [contentEnd] (escluso). */
+    private data class Format(val kind: Kind, val open: IntRange, val close: IntRange?) {
+        val contentStart get() = open.last + 1
+        val contentEnd get() = close?.first ?: Int.MAX_VALUE
+    }
+
     const val BOLD = "**"
-    const val ITALIC = "*"
+    const val ITALIC = "_"
     const val STRIKE = "~~"
     const val HEADING = "## "
 
-    private val boldRx = Regex("""\*\*(?=\S)(.+?)(?<=\S)\*\*""")
-    private val strikeRx = Regex("""~~(?=\S)(.+?)(?<=\S)~~""")
-    private val italicRx = Regex("""(?<![*\w])\*(?=[^\s*])(.+?)(?<=[^\s*])\*(?![*\w])""")
+    // La fine può avere spazi: mentre si scrive in grassetto la parola appena finita non deve far ricomparire i segni.
+    private val boldRx = Regex("""\*\*(?=\S)(.+?)\*\*""")
+    private val strikeRx = Regex("""~~(?=\S)(.+?)~~""")
+    private val italicRx = Regex("""(?<![_\w])_(?=[^\s_])(.+?)_(?![_\w])""")
+    private val oldItalicRx = Regex("""(?<![*\w])\*(?=[^\s*])(.+?)(?<=[^\s*])\*(?![*\w])""")
     private val headingRx = Regex("""(?m)^## (.*)$""")
 
-    /** Dove disegnare ogni formato e quali segni sbiadire. */
-    fun spans(text: String): List<Span> {
-        val out = mutableListOf<Span>()
-        fun wrapped(rx: Regex, kind: Kind, mark: Int) {
-            rx.findAll(text).forEach { m ->
-                out += Span(m.range.first, m.range.first + mark, Kind.MARK)
-                out += Span(m.range.first + mark, m.range.last + 1 - mark, kind)
-                out += Span(m.range.last + 1 - mark, m.range.last + 1, Kind.MARK)
+    /** Un formato acceso senza ancora testo (G toccato senza niente di scelto): scrivendo, il testo nasce formattato. */
+    private val emptyRx = Regex("""\*\*\*\*|~~~~|(?<![_\w])__(?![_\w])""")
+
+    private fun formats(text: String): List<Format> {
+        val out = mutableListOf<Format>()
+        headingRx.findAll(text).forEach { m -> out += Format(Kind.HEADING, m.range.first until m.range.first + HEADING.length, null) }
+        fun wrapped(rx: Regex, kind: Kind, mark: Int, where: String) {
+            rx.findAll(where).forEach { m ->
+                out += Format(kind, m.range.first until m.range.first + mark, m.range.last + 1 - mark..m.range.last)
             }
         }
-        headingRx.findAll(text).forEach { m ->
-            out += Span(m.range.first, m.range.first + HEADING.length, Kind.MARK)
-            out += Span(m.range.first + HEADING.length, m.range.last + 1, Kind.HEADING)
-        }
-        wrapped(boldRx, Kind.BOLD, BOLD.length)
-        wrapped(strikeRx, Kind.STRIKE, STRIKE.length)
-        // Il corsivo non deve prendere le stelle del grassetto: si cerca nel testo con il grassetto coperto.
-        val masked = boldRx.replace(text) { " ".repeat(it.value.length) }
-        italicRx.findAll(masked).forEach { m ->
-            out += Span(m.range.first, m.range.first + 1, Kind.MARK)
-            out += Span(m.range.first + 1, m.range.last, Kind.ITALIC)
-            out += Span(m.range.last, m.range.last + 1, Kind.MARK)
+        wrapped(boldRx, Kind.BOLD, BOLD.length, text)
+        wrapped(strikeRx, Kind.STRIKE, STRIKE.length, text)
+        // Il corsivo non deve prendere le stelle del grassetto: si cerca con i soli segni del grassetto coperti.
+        val masked = StringBuilder(text)
+        out.filter { it.kind == Kind.BOLD }.forEach { f -> (f.open + f.close!!).forEach { masked.setCharAt(it, '\u0001') } }
+        wrapped(italicRx, Kind.ITALIC, 1, masked.toString())
+        wrapped(oldItalicRx, Kind.ITALIC, 1, masked.toString())
+        return out
+    }
+
+    /** I segni di un formato acceso e ancora vuoto ([emptyRx]) che non fanno parte di un formato vero. */
+    private fun empties(text: String, marks: Set<Int>): List<IntRange> =
+        emptyRx.findAll(text).map { it.range }.filter { r -> r.none { it in marks } }.toList()
+
+    private fun markSet(fs: List<Format>): Set<Int> = fs.flatMap { f -> f.open.toList() + (f.close?.toList() ?: emptyList()) }.toSet()
+
+    /** Dove disegnare ogni formato e quali sono i segni. */
+    fun spans(text: String): List<Span> {
+        val out = mutableListOf<Span>()
+        formats(text).forEach { f ->
+            out += Span(f.open.first, f.open.last + 1, Kind.MARK)
+            out += Span(f.contentStart, f.close?.first ?: headingEnd(text, f), f.kind)
+            f.close?.let { out += Span(it.first, it.last + 1, Kind.MARK) }
         }
         return out.filter { it.end > it.start }.sortedBy { it.start }
     }
 
-    /**
-     * I segni da nascondere mentre si legge (1.552): `**` e compagni spariscono e resta solo il testo formattato.
-     * Tornano visibili (sbiaditi) solo attorno al formato dove sta il cursore, per poterli correggere; [focused] falso =
-     * nessun cursore, tutti nascosti. Ogni intervallo ha [IntRange.last] incluso; in ordine e senza sovrapposizioni.
-     */
-    fun hidden(text: String, selStart: Int, selEnd: Int, focused: Boolean): List<IntRange> {
-        val s = minOf(selStart, selEnd)
-        val e = maxOf(selStart, selEnd)
-        val all = spans(text)
-        val marks = all.filter { it.kind == Kind.MARK }
-        val formats = all.filter { it.kind != Kind.MARK }
+    private fun headingEnd(text: String, f: Format): Int = text.indexOf('\n', f.open.first).let { if (it < 0) text.length else it }
+
+    /** I segni da non disegnare mai: tutti, ovunque sia il cursore. In ordine, senza sovrapposizioni, [IntRange.last] incluso. */
+    fun hidden(text: String): List<IntRange> {
+        val marks = markSet(formats(text))
+        val all = (marks + empties(text, marks).flatMap { it.toList() }).sorted()
         val out = mutableListOf<IntRange>()
-        // Un formato = i suoi segni più il testo fra loro: se il cursore lo tocca (anche appena fuori), i segni restano.
-        formats.forEach { f ->
-            val open = marks.firstOrNull { it.end == f.start }
-            val close = if (f.kind == Kind.HEADING) null else marks.firstOrNull { it.start == f.end }
-            val first = open?.start ?: f.start
-            val last = close?.end ?: f.end
-            if (focused && s <= last && e >= first) return@forEach
-            open?.let { out += it.start until it.end }
-            close?.let { out += it.start until it.end }
-        }
-        return out.sortedBy { it.first }.fold(mutableListOf<IntRange>()) { acc, r ->
-            if (acc.isNotEmpty() && r.first <= acc.last().last) acc.apply { this[size - 1] = acc.last().first..maxOf(acc.last().last, r.last) }
-            else acc.apply { add(r) }
-        }
+        all.forEach { i -> if (out.isNotEmpty() && out.last().last + 1 == i) out[out.size - 1] = out.last().first..i else out += i..i }
+        return out
     }
 
     /** Dove cade un punto del testo vero nel testo disegnato senza i segni [hidden], e viceversa. */
@@ -86,46 +90,117 @@ object NoteFormat {
         }
     }
 
-    /** Il testo senza segni, per le righe e i titoli fuori dall'editor. */
+    /** Il testo senza segni, per le righe e i titoli fuori dall'editor (e per copiare e condividere). */
     fun plain(text: String): String {
-        var t = headingRx.replace(text) { it.groupValues[1] }
-        t = boldRx.replace(t) { it.groupValues[1] }
-        t = strikeRx.replace(t) { it.groupValues[1] }
-        t = italicRx.replace(t) { it.groupValues[1] }
-        return t
+        val gone = hidden(text).flatMap { it.toList() }.toSet()
+        if (gone.isEmpty()) return text
+        return buildString { text.forEachIndexed { i, c -> if (i !in gone) append(c) } }
     }
 
-    /** Il risultato di un tocco su un formato: testo nuovo e selezione nuova. */
-    data class Edit(val text: String, val start: Int, val end: Int)
+    /** Il risultato di un tocco su un formato o di una modifica: testo nuovo e selezione nuova. */
+    data class Edit(val text: String, val start: Int, val end: Int = start)
+
+    private fun kindOf(mark: String) = when (mark) {
+        BOLD -> Kind.BOLD
+        STRIKE -> Kind.STRIKE
+        else -> Kind.ITALIC
+    }
+
+    private fun markOf(kind: Kind) = when (kind) {
+        Kind.BOLD -> BOLD
+        Kind.STRIKE -> STRIKE
+        else -> ITALIC
+    }
+
+    /** Il testo senza i caratteri [drop]; [map] porta un punto del testo vecchio nel nuovo. */
+    private class Dropped(text: String, private val drop: Set<Int>) {
+        val text: String = buildString { text.forEachIndexed { i, c -> if (i !in drop) append(c) } }
+        fun map(o: Int): Int = o - drop.count { it < o }
+    }
 
     /**
-     * Mette o toglie [mark] attorno alla selezione: se è già dentro (o la selezione comprende i segni) li toglie,
-     * altrimenti li aggiunge. Con la selezione vuota mette i due segni e il cursore in mezzo.
+     * Il tasto G / C / B: con del testo scelto mette il formato, o lo toglie se è già tutto formattato così. Senza niente
+     * scelto: dentro una parola formattata la "spegne", altrimenti accende il formato e il testo che si scrive nasce così.
      */
     fun toggle(text: String, start: Int, end: Int, mark: String): Edit {
-        val s = minOf(start, end).coerceIn(0, text.length)
-        val e = maxOf(start, end).coerceIn(0, text.length)
-        val inner = text.substring(s, e)
-        // La selezione comprende già i segni.
-        if (inner.length >= 2 * mark.length && inner.startsWith(mark) && inner.endsWith(mark) && !(mark == ITALIC && inner.startsWith(BOLD) && !inner.startsWith("***"))) {
-            val bare = inner.substring(mark.length, inner.length - mark.length)
-            return Edit(text.substring(0, s) + bare + text.substring(e), s, s + bare.length)
+        val kind = kindOf(mark)
+        val write = markOf(kind)
+        val fs = formats(text)
+        val marks = markSet(fs)
+        val same = fs.filter { it.kind == kind }
+        var s = minOf(start, end).coerceIn(0, text.length)
+        var e = maxOf(start, end).coerceIn(0, text.length)
+        // I bordi della scelta non contano segni e spazi.
+        while (s < e && (s in marks || text[s].isWhitespace())) s++
+        while (e > s && (e - 1 in marks || text[e - 1].isWhitespace())) e--
+
+        if (s == e) {
+            // Già acceso e vuoto qui: si spegne.
+            empties(text, marks).firstOrNull { it.first + it.count() / 2 == s && kindOf(text.substring(it.first, it.first + it.count() / 2)) == kind }?.let { r ->
+                return Edit(text.removeRange(r), r.first)
+            }
+            same.firstOrNull { it.contentStart <= s && s <= it.contentEnd }?.let { f ->
+                val d = Dropped(text, (f.open + f.close!!).toSet())
+                return Edit(d.text, d.map(s))
+            }
+            val at = minOf(start, end).coerceIn(0, text.length)
+            return Edit(text.substring(0, at) + write + write + text.substring(at), at + write.length)
         }
-        // I segni stanno appena fuori dalla selezione.
-        val before = s >= mark.length && text.regionMatches(s - mark.length, mark, 0, mark.length)
-        val after = text.regionMatches(e, mark, 0, mark.length)
-        val boldAround = mark == ITALIC && (s >= 2 && text.regionMatches(s - 2, BOLD, 0, 2)) && !(s >= 3 && text.regionMatches(s - 3, "***", 0, 3))
-        if (before && after && !boldAround) {
-            val t = text.substring(0, s - mark.length) + inner + text.substring(e + mark.length)
-            return Edit(t, s - mark.length, e - mark.length)
+
+        // Tutta la scelta è già formattata così: il formato si toglie solo da lì, il resto lo tiene.
+        same.firstOrNull { it.contentStart <= s && e <= it.contentEnd }?.let { f ->
+            val o = text.substring(f.open.first, f.open.last + 1)
+            val c = text.substring(f.close!!.first, f.close.last + 1)
+            val left = text.substring(f.contentStart, s)
+            val right = text.substring(e, f.contentEnd)
+            val gap = right.takeWhile { it.isWhitespace() }
+            val rest = right.substring(gap.length)
+            val head = text.substring(0, f.open.first) + (if (left.isNotEmpty()) o + left + c else "")
+            val mid = text.substring(s, e) + gap
+            val t = head + mid + (if (rest.isNotEmpty()) o + rest + c else "") + text.substring(f.close.last + 1)
+            return Edit(t, head.length, head.length + e - s)
         }
-        // Gli spazi ai bordi restano fuori, altrimenti il formato non si riconosce.
-        val lead = inner.length - inner.trimStart().length
-        val trail = inner.length - inner.trimEnd().length
-        val a = s + lead
-        val b = maxOf(a, e - trail)
-        val t = text.substring(0, a) + mark + text.substring(a, b) + mark + text.substring(b)
-        return Edit(t, a + mark.length, b + mark.length)
+
+        var a = s
+        var b = e
+        // Il corsivo vale per parole intere, se no i segni non si riconoscono.
+        if (kind == Kind.ITALIC) {
+            while (a > 0 && text[a - 1].isLetterOrDigit()) a--
+            while (b < text.length && text[b].isLetterOrDigit()) b++
+        }
+        // Formati uguali dentro o a cavallo: si uniscono in uno solo.
+        var grown = true
+        while (grown) {
+            grown = false
+            same.filter { it.open.first < b && it.close!!.last >= a }.forEach { f ->
+                if (f.open.first < a) { a = f.open.first; grown = true }
+                if (f.close!!.last + 1 > b) { b = f.close.last + 1; grown = true }
+            }
+        }
+        val inner = same.filter { it.open.first >= a && it.close!!.last < b }.flatMap { (it.open + it.close!!) }.toSet()
+        val d = Dropped(text, inner)
+        val na = d.map(a)
+        val nb = d.map(b)
+        val t = d.text
+        // Riga per riga: un formato non va mai a capo.
+        val sb = StringBuilder(t.substring(0, na))
+        var first = -1
+        var last = na
+        t.substring(na, nb).split('\n').forEachIndexed { i, seg ->
+            if (i > 0) sb.append('\n')
+            val lead = seg.length - seg.trimStart().length
+            val core = seg.trim()
+            if (core.isEmpty()) { sb.append(seg); return@forEachIndexed }
+            sb.append(seg, 0, lead)
+            sb.append(write)
+            if (first < 0) first = sb.length
+            sb.append(core)
+            last = sb.length
+            sb.append(write)
+            sb.append(seg, lead + core.length, seg.length)
+        }
+        sb.append(t, nb, t.length)
+        return Edit(sb.toString(), if (first < 0) na else first, last)
     }
 
     /** Mette o toglie "## " all'inizio di ogni riga toccata dalla selezione. */
@@ -143,10 +218,134 @@ object NoteFormat {
         return Edit(t, (s + shift).coerceIn(first, t.length), (e + delta).coerceIn(0, t.length))
     }
 
-    /** Il formato che c'è già dove sta la selezione: i chip accesi. */
+    /** Il formato che c'è già dove sta la selezione (o acceso e vuoto sotto il cursore): i tasti accesi. */
     fun active(text: String, start: Int, end: Int): Set<Kind> {
-        val s = minOf(start, end)
-        val e = maxOf(start, end)
-        return spans(text).filter { it.kind != Kind.MARK && it.start <= s && it.end >= e && it.end > it.start }.map { it.kind }.toSet()
+        val fs = formats(text)
+        val marks = markSet(fs)
+        var s = minOf(start, end).coerceIn(0, text.length)
+        var e = maxOf(start, end).coerceIn(0, text.length)
+        while (s < e && s in marks) s++
+        while (e > s && e - 1 in marks) e--
+        val out = fs.filter { it.kind != Kind.HEADING && it.contentStart <= s && it.contentEnd >= e }.map { it.kind }.toMutableSet()
+        if (s == e) empties(text, marks).filter { it.first + it.count() / 2 == s }.forEach { out += kindOf(text.substring(it.first, it.first + it.count() / 2)) }
+        return out
+    }
+
+    /**
+     * Toglie i formati accesi e rimasti vuoti dove il cursore non c'è più (G toccato e poi si è andati altrove).
+     * Null = niente da togliere.
+     */
+    fun tidy(text: String, start: Int, end: Int): Edit? {
+        val marks = markSet(formats(text))
+        val gone = empties(text, marks).filter { !(start == end && it.first + it.count() / 2 == start) }
+        if (gone.isEmpty()) return null
+        val d = Dropped(text, gone.flatMap { it.toList() }.toSet())
+        return Edit(d.text, d.map(start), d.map(end))
+    }
+
+    /**
+     * Dopo che la tastiera ha cambiato il testo ([old] con la selezione [oldStart]..[oldEnd] → [new] col cursore
+     * [cursor]): i segni non si vedono, quindi la tastiera non deve poterli rompere.
+     * - Indietro (o Canc) su un segno invisibile cancella la lettera vera accanto; a inizio titoletto lo toglie.
+     * - Cancellando un pezzo che contiene segni, se ne vanno solo le lettere: i formati restano interi.
+     * - Andando a capo dentro un formato, il formato si chiude e riparte sulla riga nuova.
+     * - Uno spazio scritto all'inizio di un formato va fuori dal formato.
+     * Null = la modifica va bene così.
+     */
+    fun afterEdit(old: String, oldStart: Int, oldEnd: Int, new: String, cursor: Int): Edit? {
+        if (old == new) return null
+        val c = cursor.coerceIn(0, new.length)
+        var p = 0
+        val maxP = minOf(old.length, new.length, c)
+        while (p < maxP && old[p] == new[p]) p++
+        var q = 0
+        val maxQ = minOf(old.length, new.length) - p
+        while (q < maxQ && old[old.length - 1 - q] == new[new.length - 1 - q]) q++
+        val a = p
+        val oe = old.length - q
+        val ins = new.substring(a, new.length - q)
+
+        val fs = formats(old)
+        val marks = markSet(fs)
+        val empty = empties(old, marks)
+        val hiddenAll = marks + empty.flatMap { it.toList() }
+        val headings = fs.filter { it.kind == Kind.HEADING }
+        val opens = fs.filter { it.kind != Kind.HEADING }.flatMap { it.open.toList() }.toSet() + empty.flatMap { (it.first until it.first + it.count() / 2).toList() }
+
+        if (oe > a && (a until oe).none { it in hiddenAll }) {
+            // Niente segni toccati: conta solo l'andare a capo dentro un formato.
+            return if ('\n' in ins) breakLines(old, a, oe, ins, fs, empty) else null
+        }
+        if (oe > a && ins.isEmpty() && (a until oe).all { it in hiddenAll }) {
+            val forward = minOf(oldStart, oldEnd) == a && oldStart == oldEnd
+            if (!forward) {
+                // Indietro all'inizio di un titoletto: la riga torna testo.
+                headings.firstOrNull { h -> h.open.first <= a && (h.open.first until a).all { it in hiddenAll } }?.let { h ->
+                    return Edit(old.removeRange(h.open), oe - HEADING.length)
+                }
+                val i = (a - 1 downTo 0).firstOrNull { it !in hiddenAll } ?: return Edit(old, oldStart, oldEnd)
+                return Edit(old.removeRange(i, i + 1), i)
+            }
+            val i = (oe until old.length).firstOrNull { it !in hiddenAll } ?: return Edit(old, oldStart, oldEnd)
+            return Edit(old.removeRange(i, i + 1), a)
+        }
+        if (oe > a) {
+            // Un pezzo con dentro dei segni: via le lettere, i segni restano (il titoletto no, se se ne va la riga sopra).
+            val sb = StringBuilder(old.substring(0, a))
+            for (i in a until oe) {
+                if (i !in hiddenAll) continue
+                val h = headings.firstOrNull { i in it.open }
+                if (h != null && h.open.first > a) continue
+                sb.append(old[i])
+            }
+            sb.append(old, oe, old.length)
+            val t0 = sb.toString()
+            if ('\n' in ins) {
+                val f0 = formats(t0)
+                breakLines(t0, a, a, ins, f0, empties(t0, markSet(f0)))?.let { return it }
+            }
+            return Edit(t0.substring(0, a) + ins + t0.substring(a), a + ins.length)
+        }
+        // Solo testo in più.
+        if ('\n' in ins) return breakLines(old, a, a, ins, fs, empty)
+        val lead = ins.takeWhile { it == ' ' || it == '\t' }
+        if (lead.isNotEmpty() && a - 1 in opens) {
+            var rs = a
+            while (rs > 0 && rs - 1 in opens) rs--
+            val rest = ins.substring(lead.length)
+            val t = old.substring(0, rs) + lead + old.substring(rs, a) + rest + old.substring(a)
+            return Edit(t, a + ins.length)
+        }
+        return null
+    }
+
+    /**
+     * [ins] con dei "\n" al posto di [a]..[oe]: dentro un formato ogni riga nuova lo chiude e lo riapre (dopo il segno
+     * della voce, se la riga ne ha uno). Un formato acceso e vuoto lì si spegne.
+     */
+    private fun breakLines(text: String, a: Int, oe: Int, ins: String, fs: List<Format>, empty: List<IntRange>): Edit? {
+        val base = text.removeRange(a, oe)
+        empty.firstOrNull { oe == a && it.first + it.count() / 2 == a }?.let { r ->
+            val t = base.removeRange(r)
+            val at = r.first
+            return Edit(t.substring(0, at) + ins + t.substring(at), at + ins.length)
+        }
+        val around = fs.filter { it.kind != Kind.HEADING && it.contentStart <= a && a <= it.contentEnd && oe <= it.contentEnd }
+            .sortedBy { it.contentStart }
+        if (around.isEmpty()) return null
+        val open = around.joinToString("") { text.substring(it.open.first, it.open.last + 1) }
+        val close = around.reversed().joinToString("") { text.substring(it.close!!.first, it.close.last + 1) }
+        val parts = ins.split('\n')
+        val sb = StringBuilder(parts[0]).append(close)
+        parts.drop(1).forEachIndexed { i, part ->
+            sb.append('\n')
+            val pre = NoteLines.kindOf(part).third
+            sb.append(part, 0, pre).append(open).append(part, pre, part.length)
+            if (i < parts.size - 2) sb.append(close)
+        }
+        val piece = sb.toString()
+        val t = base.substring(0, a) + piece + base.substring(a)
+        val cleaned = tidy(t, a + piece.length, a + piece.length)
+        return cleaned ?: Edit(t, a + piece.length)
     }
 }

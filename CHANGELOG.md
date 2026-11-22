@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.577.0
+**Note: niente più asterischi**
+- Grassetto, corsivo, barrato e titoletti si vedono già formattati mentre scrivi: asterischi, trattini e cancelletti non compaiono mai, neanche col cursore sopra
+- Tocca G senza scegliere niente e quello che scrivi da lì nasce in grassetto; toccalo di nuovo (o dentro una parola in grassetto) e si spegne
+- Cancellare, andare a capo o scrivere uno spazio dentro un testo formattato non rompe più niente
+- "Aggiungi" in basso a sinistra ha solo foto, scatta e detta: punti, spunte, titoletti e formati stanno nella barra sopra la tastiera
 ## 1.576.0
 **Impostazioni riordinate**
 - La pagina principale è un menu corto: il tema in cima, poi Home, Calendario, News e Media nell'ordine della barra, poi Notifiche, Account, Rete e backup e Informazioni. Ogni riga dice com'è adesso
