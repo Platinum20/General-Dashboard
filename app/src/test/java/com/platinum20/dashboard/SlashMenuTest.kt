@@ -10,7 +10,7 @@ class SlashMenuTest {
     @Test
     fun searchPutsWordStartsFirst() {
         val labels = listOf("Titolo", "Tabella", "Scatta", "Nota o pagina di Canvas")
-        assertEquals(listOf(1, 2), slashOrder(labels, "ta"))
+        assertEquals(listOf(1, 2, 3), slashOrder(labels, "ta"))
         assertEquals(listOf(3), slashOrder(labels, "pag"))
         assertEquals(listOf(0, 1, 2, 3), slashOrder(labels, ""))
         assertEquals(emptyList<Int>(), slashOrder(labels, "zzz"))
