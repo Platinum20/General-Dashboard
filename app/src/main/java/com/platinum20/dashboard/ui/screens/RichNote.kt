@@ -1072,7 +1072,7 @@ internal fun mentionTargets(
     data.notes.filter { hit(it.plainTitle) }.sortedByDescending { it.updatedAt }.take(5)
         .forEach { out += MentionTarget(Icons.AutoMirrored.Outlined.Notes, it.title, NoteFormat.NOTE_LINK + it.id) }
     // Eventi: uno per evento (le ripetizioni no), prima i più vicini a oggi.
-    events.filter { hit(it.title) }.distinctBy { it.eventId }.sortedBy { kotlin.math.abs(it.begin - now) }.take(4)
+    events.filter { hit(it.title) }.sortedBy { kotlin.math.abs(it.begin - now) }.distinctBy { it.eventId }.take(4)
         .forEach { out += MentionTarget(Icons.Outlined.Event, it.title, NoteFormat.APP_LINK + Routes.calendarEvent(it.eventId, it.begin, it.end)) }
     data.tasks.filter { !it.done && hit(it.text) }.sortedBy { it.dueAt ?: Long.MAX_VALUE }.take(4)
         .forEach { out += MentionTarget(if (it.dueAt != null) Icons.Outlined.Event else Icons.Outlined.TaskAlt, it.text, NoteFormat.APP_LINK + Routes.noteItem(ItemKind.TASK, it.id)) }
