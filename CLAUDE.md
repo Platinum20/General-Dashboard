@@ -80,7 +80,9 @@ documents scan. `security/Vault.kt` = Keystore for tokens.
 
 **Other**: `search/` (Cerca ovunque),
 `work/` (Morning, Refresh, RainAlert, UpdateCheck), `update/` (self-update, `UpdateTrust`, `WhatsNew` from
-CHANGELOG), `SettingsScreen.kt` (`SettingsPageScreen(SettingsPage)`), `UpdatesScreen.kt`, `adblock/`, `backup/`.
+CHANGELOG), `SettingsScreen.kt` (`SettingsPageScreen(SettingsPage)`: main page = theme + menu rows Le sezioni / L'app),
+`AccountsUi.kt` + pure `AccountTiles.kt` (Account page: one row per account, bubble actions; rows live in SimUi/ShiftsUi/MailUi),
+`UpdatesScreen.kt`, `adblock/`, `backup/`.
 
 **Tests** `app/src/test/java/com/platinum20/dashboard/`: JVM/Robolectric, one `*Test.kt` per feature, class names
 unique. Tours (`ScreenshotTour`, `YouTubeTour`, …) and `LiveChecks` run only with `-Ptour=true` / `-Plive=true`.

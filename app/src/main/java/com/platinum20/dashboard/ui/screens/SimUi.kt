@@ -40,6 +40,7 @@ import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.SimCard
+import androidx.compose.material.icons.outlined.LinkOff
 import androidx.compose.material.icons.outlined.Sms
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -325,33 +326,38 @@ internal fun simPageRows(s: SimStatus, today: LocalDate = LocalDate.now()): List
  * WindTre in Impostazioni › Account: stato del collegamento, accesso (apre la pagina SIM, che parte
  * dall'accesso), "Condividi i dati letti" per correggere la lettura, "Esci".
  */
+/** WindTre nella pagina Account: tocco o tocco lungo = Apri la SIM, i dati letti, Esci. */
 @Composable
-internal fun WindTreAccountRows() {
+internal fun WindTreAccountRow(tile: AccountTile) {
     val context = LocalContext.current
     SimStore.init(context)
     val linked by SimStore.linked.collectAsStateWithLifecycle()
     val status by SimStore.status.collectAsStateWithLifecycle()
     val inApp = LocalInAppNav.current
+    val open: () -> Unit = { inApp?.openRoute?.invoke(Routes.SIM) }
+    val actions = {
+        ActionBubble.show(
+            BubbleAction(Icons.Outlined.SimCard, if (linked) "Apri la SIM" else "Accedi", detail = "Giga, minuti e credito") { open() },
+            *(if (linked) captureActions(context, "windtre-dati-letti") { SimStore.capturesText() } else emptyArray()),
+            *(if (linked) arrayOf(BubbleAction(Icons.Outlined.LinkOff, "Esci", danger = true) { WindTreLink.forget(context) }) else emptyArray()),
+        )
+    }
     SettingsItem(
         icon = Icons.Outlined.SimCard,
         accent = TileAccent.BLUE,
         title = "WindTre",
         subtitle = when {
-            !linked -> "Tocca per accedere: giga, minuti e credito in Home"
-            status != null -> "Collegato · letto " + relativeTime(Instant.ofEpochMilli(status!!.at))
+            !linked -> "Giga, minuti e credito in Home"
+            status != null -> (if (tile.state == AccountState.ATTENTION) "Dati vecchi · letti " else "Letti ") +
+                relativeTime(Instant.ofEpochMilli(status!!.at))
             else -> "Collegato"
         },
-        onClick = if (!linked) ({ inApp?.openRoute?.invoke(Routes.SIM) }) else null,
-        trailing = {
-            if (linked) DangerButton(onClick = { WindTreLink.forget(context) }) { Text("Esci") }
-            else FilledTonalButton(onClick = { inApp?.openRoute?.invoke(Routes.SIM) }) { Text("Accedi") }
-        },
+        attention = tile.state == AccountState.ATTENTION,
+        onClick = actions,
+        onLongClick = actions,
+        showChevron = tile.state == AccountState.OK,
+        trailing = { AccountTrailing(tile, open) },
     )
-    if (linked) {
-        RowDivider()
-        // Se un numero esce sbagliato, quello che WindTre ha mandato serve a correggere la lettura.
-        CaptureFileRow("Salva i dati letti di WindTre", "windtre-dati-letti") { SimStore.capturesText() }
-    }
 }
 
 

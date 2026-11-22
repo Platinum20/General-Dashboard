@@ -216,7 +216,7 @@ class ScreenshotTour {
             } else missing += p + "47_imp_media"
             visit("Notifiche", p + "48_imp_notifiche")
             visit("Account", p + "49_imp_account")
-            visit("Dati", p + "50_imp_dati")
+            visit("Rete e backup", p + "50_imp_dati")
             if (tap("Informazioni")) {
                 settle(1_000); shot(p + "51_imp_info")
                 visit("novità e aggiornamenti", p + "41_aggiornamenti", waitMs = 6_000, substring = true)

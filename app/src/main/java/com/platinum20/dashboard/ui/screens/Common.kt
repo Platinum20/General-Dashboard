@@ -1138,7 +1138,8 @@ fun LoadingPulse(modifier: Modifier = Modifier, color: Color = MaterialTheme.col
  * dialogo ("Salva", "Collega Spotify"); [TONAL] = azioni di riga ("Accedi", "Condividi"); [DANGER] = testo
  * rosso, per quello che toglie qualcosa ("Esci", "Elimina"). Niente link blu nelle righe.
  */
-enum class ButtonLevel { PRIMARY, TONAL, DANGER }
+/** [ATTENTION] = pieno arancione: c'è da sistemare ("Rientra"), l'arancione dell'attenzione. */
+enum class ButtonLevel { PRIMARY, TONAL, DANGER, ATTENTION }
 
 /**
  * Il bottone di Canvas (1.357): una pillola tonale per le azioni dentro card e pagine ("Riprova", "Accedi",
@@ -1167,6 +1168,18 @@ fun CanvasButton(
             androidx.compose.material3.Button(onClick = onClick, enabled = enabled, modifier = modifier.bouncyPress(), shape = CircleShape, content = content)
         ButtonLevel.TONAL ->
             androidx.compose.material3.FilledTonalButton(onClick = onClick, enabled = enabled, modifier = modifier.bouncyPress(), shape = CircleShape, content = content)
+        ButtonLevel.ATTENTION ->
+            androidx.compose.material3.Button(
+                onClick = onClick,
+                enabled = enabled,
+                modifier = modifier.bouncyPress(),
+                shape = CircleShape,
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = Urgent.color(MaterialTheme.colorScheme.background.luminance() < 0.5f),
+                    contentColor = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) Color.Black else Color.White,
+                ),
+                content = content,
+            )
         ButtonLevel.DANGER ->
             androidx.compose.material3.TextButton(
                 onClick = onClick,

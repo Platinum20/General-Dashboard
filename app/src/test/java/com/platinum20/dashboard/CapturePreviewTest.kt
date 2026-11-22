@@ -77,7 +77,7 @@ class AccountTilesTest {
         assertEquals("Creators Pro", t.first().name)
         assertEquals("Rientra", t.first().line)
         assertEquals("YouTube", t.last().name)
-        assertEquals("Collega", t.last().line)
+        assertEquals("Accedi", t.last().line)
     }
 }
 
