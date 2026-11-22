@@ -35,6 +35,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import com.platinum20.dashboard.media.CanvasPlayer
@@ -46,6 +47,9 @@ import com.platinum20.dashboard.capture.SavedLink
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.rounded.Bookmark
+import androidx.compose.material.icons.rounded.QueueMusic
+import androidx.compose.material.icons.rounded.Shuffle
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.filled.Favorite
 import com.platinum20.dashboard.media.spotify.SpItem
@@ -455,15 +459,22 @@ internal fun rememberSavedMedia(video: Boolean): List<com.platinum20.dashboard.c
 }
 
 /**
- * La tessera "Salvati · N", prima di tutte nella sua fila (1.490, Antonio: le cose salvate per dopo stanno in Media, e
- * la tessera sparisce quando non c'è niente). Stessa forma della fila: quadrata in Musica, larga in Video.
+ * La playlist "Salvati", sempre la prima della sua fila in Media (2026-11-22, Antonio: "i video e la musica salvati
+ * dovrebbero stare in una playlist nella loro sezione, sempre come prima cosa"). Stessa forma della fila: quadrata in
+ * Musica, larga in Video. Un tocco apre la pagina (niente parte da solo), tenendo premuto Riproduci/Casuale/Coda.
+ * Senza niente di salvato la tessera non c'è.
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 internal fun SavedTile(height: androidx.compose.ui.unit.Dp, saved: List<com.platinum20.dashboard.capture.SavedLinks.Later>, wide: Boolean, onClick: () -> Unit) {
-    // Le copertine di quello che hai salvato (1.503, Antonio: "metti un'icona per salvati"): una riempie, da 4 un
-    // mosaico; sopra, dove le altre hanno il tipo, il segnalibro. Senza copertine resta il segnalibro grande.
+    val context = LocalContext.current
+    // Le copertine di quello che hai salvato: una riempie, da 4 un mosaico; sopra il segnalibro.
     val art = savedArt(saved.map { it.item.coverImage() })
-    MediaTile(height, wide = wide, image = if (art.size in 1..3) art.first() else "", title = "Salvati · ${saved.size}", author = "Per dopo", date = null, mark = null, click = Modifier.clickable(onClick = onClick)) {
+    MediaTile(
+        height, wide = wide, image = if (art.size in 1..3) art.first() else "", title = "Salvati",
+        author = savedCountLine(saved.size, video = wide), date = null, mark = null,
+        click = Modifier.combinedClickable(onClick = onClick, onLongClick = { savedListActions(context, saved, video = wide, open = onClick) }),
+    ) {
         if (art.size >= 4) CoverMosaic(art.take(4), Modifier.matchParentSize())
         if (art.isEmpty()) androidx.compose.material3.Icon(
             androidx.compose.material.icons.Icons.Rounded.Bookmark, contentDescription = null,
@@ -481,75 +492,107 @@ internal fun SavedTile(height: androidx.compose.ui.unit.Dp, saved: List<com.plat
     }
 }
 
-/** Quanti salvati si vedono uno per uno in testa alla fila; oltre, la tessera "Salvati · N" apre l'elenco. */
-internal const val SAVED_IN_ROW = 6
+/** La riga sotto il nome della playlist Salvati: "1 video", "5 video", "1 salvato", "8 salvati". */
+internal fun savedCountLine(count: Int, video: Boolean): String = when {
+    video -> "$count video"
+    count == 1 -> "1 salvato"
+    else -> "$count salvati"
+}
 
-/** I salvati da mostrare uno per uno in testa alla fila, e se serve ancora la tessera dell'elenco intero. */
-internal fun savedRow(saved: List<com.platinum20.dashboard.capture.SavedLinks.Later>): Pair<List<com.platinum20.dashboard.capture.SavedLinks.Later>, Boolean> =
-    saved.take(SAVED_IN_ROW) to (saved.size > SAVED_IN_ROW)
+/** Quello che dei salvati entra nella coda così com'è (album, playlist e video del telefono no), nell'ordine dei salvati. */
+internal fun savedPlayable(items: List<ResumeItem>): List<ResumeItem> = items.filter { com.platinum20.dashboard.capture.SavedLinks.queueable(it) }
 
-/**
- * Un media salvato, con la sua copertina vera (2026-11-21, Antonio: prima stavano tutti dentro un'unica tessera
- * "Salvati"). In alto a sinistra il segnalibro; un tocco lo apre fermo, tenendo premuto le sue azioni.
- */
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
-@Composable
-internal fun SavedItemTile(height: androidx.compose.ui.unit.Dp, later: com.platinum20.dashboard.capture.SavedLinks.Later, wide: Boolean) {
-    val context = LocalContext.current
-    val inApp = LocalInAppNav.current
-    val route: (String) -> Unit = { inApp?.openRoute?.invoke(it) }
-    val item = later.item
-    MediaTile(
-        height, wide = wide, image = item.coverImage(), title = item.title, author = LaterText.subtitle(item), date = null,
-        mark = MediaMarks.of(item.kind, item.durationMs), round = item.kind == ResumeKind.RADIO,
-        click = Modifier.combinedClickable(
-            onClick = { com.platinum20.dashboard.capture.SavedLinks.open(context, SavedLink.Media(item), route) },
-            onLongClick = { savedMediaActions(context, later, route) },
-        ),
-    ) {
-        Box(
-            Modifier.align(Alignment.TopEnd).padding(6.dp).size(22.dp)
-                .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.66f), androidx.compose.foundation.shape.CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            androidx.compose.material3.Icon(
-                androidx.compose.material.icons.Icons.Rounded.Bookmark, contentDescription = "Salvato",
-                tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(14.dp),
-            )
-        }
-    }
+/** Fa partire tutti i salvati, dal primo o mescolati; se niente entra in coda, apre la pagina. */
+internal fun playSaved(context: android.content.Context, saved: List<com.platinum20.dashboard.capture.SavedLinks.Later>, shuffle: Boolean, open: () -> Unit) {
+    val items = savedPlayable(saved.map { it.item })
+    if (items.isEmpty()) open() else CanvasPlayer.playList(context, if (shuffle) items.shuffled() else items)
+}
+
+/** Tenendo premuta la playlist Salvati: le stesse azioni di una playlist (regola della pressione lunga). */
+internal fun savedListActions(context: android.content.Context, saved: List<com.platinum20.dashboard.capture.SavedLinks.Later>, video: Boolean, open: () -> Unit) {
+    val playable = savedPlayable(saved.map { it.item })
+    ActionBubble.show(
+        *listOfNotNull(
+            BubbleAction(androidx.compose.material.icons.Icons.Rounded.Bookmark, "Apri", detail = savedCountLine(saved.size, video), onClick = open),
+            if (playable.isEmpty()) null else BubbleAction(androidx.compose.material.icons.Icons.Rounded.PlayArrow, "Riproduci", detail = "Dal più recente") {
+                playSaved(context, saved, shuffle = false, open = open)
+            },
+            if (playable.size < 2) null else BubbleAction(androidx.compose.material.icons.Icons.Rounded.Shuffle, "Casuale", detail = "In ordine sparso") {
+                playSaved(context, saved, shuffle = true, open = open)
+            },
+            if (playable.isEmpty()) null else BubbleAction(androidx.compose.material.icons.Icons.Rounded.QueueMusic, "Aggiungi alla coda", detail = "Tutti in fondo") {
+                playable.forEach(CanvasPlayer::add)
+                com.platinum20.dashboard.capture.CaptureFeedback.tell(context, "In coda: ${playable.size} salvati", androidx.compose.material.icons.Icons.Rounded.QueueMusic)
+            },
+        ).toTypedArray(),
+    )
 }
 
 /** Le copertine utili per la tessera Salvati: senza vuote e senza doppioni, nell'ordine dei salvati. */
 internal fun savedArt(images: List<String>): List<String> = images.filter { it.isNotBlank() }.distinct()
 
 /**
- * "Salvati" (1.490): le cose salvate per dopo, una sotto l'altra dalla più recente. Un tocco la apre ferma, tenendo
- * premuto il fumetto dei media (riproduci, dopo, in coda, togli). Vuota, si torna indietro.
+ * La pagina della playlist "Salvati" (1.490, come playlist dal 2026-11-22): in cima le copertine con Riproduci e
+ * Casuale, sotto le cose salvate dalla più recente. Un tocco ne apre una ferma, tenendo premuto il fumetto dei media
+ * (riproduci, dopo, in coda, togli). Restano anche negli Appunti di Home: è la stessa lista.
  */
-@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun SavedMediaScreen(video: Boolean, onBack: () -> Unit, onOpenRoute: (String) -> Unit) {
     val context = LocalContext.current
     val saved = rememberSavedMedia(video)
-    val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
-    Scaffold(
-        modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
-        topBar = { TopLevelBar(title = "Salvati", subtitle = if (video) "Video da vedere dopo" else "Musica e podcast per dopo", scrollBehavior = bar, onBack = onBack) },
-    ) { inner ->
-        Column(Modifier.fillMaxSize().padding(inner)) {
-            FeedList(Loadable(data = saved), empty = "Niente di salvato") {
-                items(saved, key = { "s-" + it.note.id }) { l ->
-                    MediaLine(
-                        wide = video, image = l.item.coverImage(), title = l.item.title, author = LaterText.subtitle(l.item),
-                        mark = MediaMarks.of(l.item.kind, l.item.durationMs),
-                        click = Modifier.combinedClickable(
-                            onClick = { com.platinum20.dashboard.capture.SavedLinks.open(context, SavedLink.Media(l.item), onOpenRoute) },
-                            onLongClick = { savedMediaActions(context, l, onOpenRoute) },
-                        ),
-                        round = l.item.kind == ResumeKind.RADIO,
-                    )
-                }
+    val art = savedArt(saved.map { it.item.coverImage() })
+    val playable = remember(saved) { savedPlayable(saved.map { it.item }) }
+    val playingKey = rememberPlayingKey()
+    Column(Modifier.fillMaxSize()) {
+        val hero: @Composable () -> Unit = {
+            MediaHero(
+                title = "Salvati",
+                image = art.firstOrNull().orEmpty(),
+                onBack = onBack,
+                line = if (video) "Video da vedere dopo" else "Musica e podcast per dopo",
+                detail = savedCountLine(saved.size, video),
+                onPlay = if (playable.isEmpty()) null else ({ playSaved(context, saved, shuffle = false) {} }),
+                onShuffle = if (playable.size < 2) null else ({ playSaved(context, saved, shuffle = true) {} }),
+                picture = when {
+                    art.size >= 4 -> ({
+                        Box(Modifier.size(MediaPage.HERO_COVER).clip(MaterialTheme.shapes.large)) { CoverMosaic(art.take(4), Modifier.matchParentSize()) }
+                    })
+                    art.isEmpty() -> ({
+                        Box(
+                            Modifier.size(MediaPage.HERO_COVER).clip(MaterialTheme.shapes.large).background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            androidx.compose.material3.Icon(
+                                androidx.compose.material.icons.Icons.Rounded.Bookmark, contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(64.dp),
+                            )
+                        }
+                    })
+                    else -> null
+                },
+            )
+        }
+        FeedList(Loadable(data = saved), empty = "Niente di salvato", spacing = 0.dp, edge = 0.dp, top = 0.dp, header = hero) {
+            if (saved.isNotEmpty()) mediaGroup(
+                key = "saved",
+                title = "",
+                items = saved,
+                itemKey = { it.note.id },
+            ) { _, l ->
+                MediaRow(
+                    title = l.item.title,
+                    line = LaterText.subtitle(l.item),
+                    image = l.item.coverImage(),
+                    wide = video,
+                    round = l.item.kind == ResumeKind.RADIO,
+                    mark = MediaMarks.of(l.item.kind, l.item.durationMs),
+                    now = l.item.key == playingKey,
+                    click = Modifier.combinedClickable(
+                        onClick = { com.platinum20.dashboard.capture.SavedLinks.open(context, SavedLink.Media(l.item), onOpenRoute) },
+                        onLongClick = { savedMediaActions(context, l, onOpenRoute) },
+                    ),
+                )
             }
         }
     }

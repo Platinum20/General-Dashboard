@@ -234,10 +234,8 @@ internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOp
         OpenableHeader("Musica", onDiscover, Modifier.padding(horizontal = 16.dp)) { HistoryButton(onOpenAll) }
         LazyRow(state = rememberRowAtStart(), contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             // Le cose salvate per dopo, prima di tutto; senza niente di salvato la tessera non c'è (1.490, Antonio).
-            // Ognuno con la sua copertina (2026-11-21, Antonio); se sono tanti, in fondo l'elenco intero.
-            val (savedShown, savedMore) = savedRow(saved)
-            items(savedShown, key = { "saved-" + it.note.id }) { SavedItemTile(tile, it, wide = false) }
-            if (savedMore) item(key = "saved") { SavedTile(tile, saved, wide = false, onClick = onOpenSaved) }
+            // Dal 2026-11-22 (Antonio) tutti dentro la playlist "Salvati", sempre la prima della fila.
+            if (saved.isNotEmpty()) item(key = "saved") { SavedTile(tile, saved, wide = false, onClick = onOpenSaved) }
             items(entries.take(PER_TE_MAX), key = { it.key }) { e ->
                 when (e) {
                     // Un tocco su un mix apre la sua pagina con Riproduci, come una playlist (1.486, Antonio).

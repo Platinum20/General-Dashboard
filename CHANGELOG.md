@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.584.0
+**Salvati come playlist in Media**
+- In Media i video salvati stanno nella playlist "Salvati", sempre la prima della fila Video; la musica e i podcast salvati nella loro "Salvati", prima della fila Musica
+- Un tocco apre la playlist con Riproduci e Casuale; tenendo premuto: Apri, Riproduci, Casuale, Aggiungi alla coda
+- Restano anche negli Appunti di Home, come prima
 ## 1.583.0
 **Note: cerchi e pallini allineati**
 - Cerchi, pallini e numeri delle voci stanno sul bordo del testo, non sporgono più a sinistra; il testo della voce comincia subito dopo
