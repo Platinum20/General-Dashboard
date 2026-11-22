@@ -38,6 +38,7 @@ object NotePdf {
             NoteLines.Kind.PAGE -> NoteFormat.linkAt(body.substring(l.start, l.end), 1)?.second ?: ""
             NoteLines.Kind.BOOKMARK -> NoteLines.bookmarkUrl(body.substring(l.start, l.end)).orEmpty()
             NoteLines.Kind.BOARD -> "Bacheca"
+            NoteLines.Kind.IMAGE -> "🖼 Foto"
             NoteLines.Kind.CHECK -> pad + (if (l.done) "☑  " else if (l.doing) "◐  " else "☐  ") + text
             else -> text
         }

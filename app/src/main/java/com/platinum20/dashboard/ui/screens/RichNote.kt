@@ -33,6 +33,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.automirrored.outlined.Notes
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.ViewColumn
@@ -352,14 +353,20 @@ internal fun RichNoteField(
     // da solo il campo lo porta in vista prima che la riga nuova esista, e finiva sotto la tastiera.
     val follow = remember { BringIntoViewRequester() }
     val room = with(LocalDensity.current) { 32.dp.toPx() }
+    // Scrivendo (1.591): la riga sale in alto, sotto c'è lo spazio vuoto della pagina, mai sotto la tastiera.
+    var followedText by remember { mutableStateOf(value.text) }
     LaunchedEffect(value.text, value.selection, focused) {
         if (!focused || readOnly) return@LaunchedEffect
+        val typing = value.text != followedText
+        followedText = value.text
         withFrameNanos { }
         val l = layout ?: return@LaunchedEffect
         val at = transformation.filter(AnnotatedString(value.text)).offsetMapping.originalToTransformed(value.selection.end)
         if (at > l.layoutInput.text.length) return@LaunchedEffect
         val cursor = l.getCursorRect(at)
-        follow.bringIntoView(Rect(cursor.left, cursor.top - room / 2, cursor.right, cursor.bottom + room))
+        // Un rettangolo più alto dello schermo: la pagina scorre finché la riga sta in alto, con un po' di righe sopra.
+        if (typing) follow.bringIntoView(Rect(cursor.left, cursor.top - room * 3, cursor.right, cursor.top + room * 200))
+        else follow.bringIntoView(Rect(cursor.left, cursor.top - room / 2, cursor.right, cursor.bottom + room))
     }
 
     // La parola trovata resta in vista, anche senza tastiera.
@@ -701,7 +708,7 @@ internal fun RichNoteField(
                 run()
                 CaptureFeedback.tell(context, said, Icons.Outlined.Delete, "Annulla") { emit(before) }
             }
-            val newBlocks = setOf(NoteLines.Kind.COLUMNS, NoteLines.Kind.PAGE, NoteLines.Kind.BOOKMARK, NoteLines.Kind.BOARD)
+            val newBlocks = setOf(NoteLines.Kind.COLUMNS, NoteLines.Kind.PAGE, NoteLines.Kind.BOOKMARK, NoteLines.Kind.BOARD, NoteLines.Kind.IMAGE)
             shown.lines.filter { it.kind in newBlocks && !hiddenLine(it) && shown.toShown(it.start) < drawn }.forEach { line ->
                 val raw = text.substring(line.start, line.end)
                 val row = l.getLineForOffset(shown.toShown(line.start))
@@ -815,6 +822,19 @@ internal fun RichNoteField(
                                     )
                                 }),
                             )
+                        }
+                        NoteLines.Kind.IMAGE -> {
+                            val path = NoteLines.imagePath(raw).orEmpty()
+                            fun photoActions() {
+                                haptic(Haptic.LONG_PRESS)
+                                ActionBubble.show(
+                                    BubbleAction(Icons.Outlined.Share, "Condividi la foto", "solo questa foto") {
+                                        com.platinum20.dashboard.notes.NotePhotoFiles.share(context, "", listOf(path))
+                                    },
+                                    BubbleAction(Icons.Outlined.Delete, "Togli la foto", "con Annulla", danger = true) { undoable("Foto tolta") { replaceLine(line.index, null) } },
+                                )
+                            }
+                            NoteImageBlock(path, place, onTap = { if (!readOnly) photoActions() }, onLongPress = if (readOnly) null else ({ photoActions() }))
                         }
                         else -> {}
                     }

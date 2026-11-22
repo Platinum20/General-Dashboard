@@ -329,3 +329,19 @@ internal fun BoardTextDialog(title: String, start: String, onDone: (String) -> U
         dismissButton = { DismissButton(onClick = onDismiss) { Text("Annulla") } },
     )
 }
+
+/** Una foto dentro il testo (1.591): larga quanto la nota, alta quanto serve (al massimo un po' più di mezzo schermo). */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+internal fun NoteImageBlock(path: String, modifier: Modifier, onTap: () -> Unit, onLongPress: (() -> Unit)?) {
+    AsyncImage(
+        model = java.io.File(path),
+        contentDescription = "Foto",
+        contentScale = ContentScale.FillWidth,
+        modifier = modifier
+            .padding(vertical = 6.dp)
+            .heightIn(min = 60.dp, max = 420.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .combinedClickable(onClick = onTap, onLongClick = onLongPress),
+    )
+}

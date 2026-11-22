@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.593.0
+**Note: foto ovunque, la riga sempre in vista**
+- Foto nel testo: dal + o da "/" la foto va dove c'è il cursore, larga quanto la nota (tieni premuto per toglierla)
+- Scrivendo, la riga sale in alto sullo schermo con spazio vuoto sotto: non si scrive mai sotto la tastiera
 ## 1.592.0
 **Corretta la chiusura all'avvio della 1.590**
 - Canvas si chiudeva appena aperto: il segno dei colori nelle note non piaceva al telefono. Ora si apre di nuovo
