@@ -27,9 +27,12 @@ import androidx.compose.material.icons.outlined.FormatListNumbered
 import androidx.compose.material.icons.outlined.FormatQuote
 import androidx.compose.material.icons.outlined.HorizontalRule
 import androidx.compose.material.icons.outlined.Lightbulb
-import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
 import androidx.compose.material.icons.outlined.TableChart
 import androidx.compose.material.icons.outlined.Title
+import androidx.compose.material.icons.outlined.ViewColumn
+import androidx.compose.material.icons.outlined.ViewKanban
+import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -112,7 +115,7 @@ fun slashOrder(labels: List<String>, query: String): List<Int> {
 }
 
 /** Tutte le voci del menu, nei loro gruppi. */
-internal fun slashEntries(target: RichBar.Target): List<SlashEntry> {
+internal fun slashEntries(target: RichBar.Target, openPage: (Long, String) -> Unit = { _, _ -> }): List<SlashEntry> {
     fun kind(k: NoteLines.Kind): (TextFieldValue) -> Unit = { now ->
         val e = NoteLines.renumber(NoteLines.setKind(now.text, now.selection.min, now.selection.max, k))
         target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
@@ -124,7 +127,7 @@ internal fun slashEntries(target: RichBar.Target): List<SlashEntry> {
         SlashEntry("titolo", text, Icons.Outlined.Title, "Titolo", "#", kind(NoteLines.Kind.HEADING)),
         SlashEntry("punti", text, Icons.AutoMirrored.Outlined.FormatListBulleted, "Punti", "-", kind(NoteLines.Kind.BULLET)),
         SlashEntry("numeri", text, Icons.Outlined.FormatListNumbered, "Numeri", "1.", kind(NoteLines.Kind.NUMBER)),
-        SlashEntry("spunta", text, Icons.Outlined.RadioButtonUnchecked, "Spunta", "[ ]", kind(NoteLines.Kind.CHECK)),
+        SlashEntry("spunta", text, Icons.Outlined.CheckBoxOutlineBlank, "Spunta", "[ ]", kind(NoteLines.Kind.CHECK)),
         SlashEntry("citazione", text, Icons.Outlined.FormatQuote, "Citazione", ">", kind(NoteLines.Kind.QUOTE)),
         SlashEntry("riquadro", text, Icons.Outlined.Lightbulb, "Riquadro", "!!", kind(NoteLines.Kind.CALLOUT)),
         SlashEntry("linea", blocks, Icons.Outlined.HorizontalRule, "Linea", "---") { now ->
@@ -136,7 +139,24 @@ internal fun slashEntries(target: RichBar.Target): List<SlashEntry> {
             target.set(TextFieldValue(t, TextRange(now.selection.end.coerceAtMost(t.length))))
             RichBar.openTable = line
         },
+        SlashEntry("colonne", blocks, Icons.Outlined.ViewColumn, "Due colonne", "‖") { now ->
+            val e = NoteLines.insertBlock(now.text, now.selection.end, NoteLines.COLUMNS_NEW)
+            target.set(TextFieldValue(e.text, TextRange(e.start)))
+            RichBar.openTable = NoteLines.lineAt(e.text, e.start).index
+        },
+        SlashEntry("bacheca", blocks, Icons.Outlined.ViewKanban, "Bacheca", "") { now ->
+            val e = NoteLines.insertBlock(now.text, now.selection.end, NoteLines.BOARD)
+            target.set(TextFieldValue(e.text, TextRange(e.start)))
+        },
     ) + target.extras.map { x -> SlashEntry(x.label, "Media", x.icon, x.label, "") { x.run() } } + listOf(
+        SlashEntry("sottonota", "Collegamenti", Icons.Outlined.Description, "Sotto-nota", "") { now ->
+            // Una nota nuova dentro questa (1.590): la riga che la apre, e si apre subito per scriverci.
+            val title = "Nuova pagina"
+            val id = com.platinum20.dashboard.notes.NotesStore.saveNote(null, title) ?: return@SlashEntry
+            val e = NoteLines.insertBlock(now.text, now.selection.end, NoteLines.pageLine(title, id))
+            target.set(TextFieldValue(e.text, TextRange(e.start)))
+            openPage(id, title)
+        },
         SlashEntry("collega", "Collegamenti", Icons.Outlined.AlternateEmail, "Nota o pagina di Canvas", "@") { now ->
             val at = now.selection.end
             target.set(TextFieldValue(now.text.substring(0, at) + "@" + now.text.substring(at), TextRange(at + 1)))
@@ -164,7 +184,8 @@ internal fun SlashMenu(target: RichBar.Target, query: String) {
     val width = (LocalConfiguration.current.screenWidthDp - 40).coerceAtMost(340).dp
     LaunchedEffect(Unit) { SlashRecent.load(context) }
     val recent by SlashRecent.ids.collectAsState()
-    val entries = slashEntries(target)
+    val inApp = LocalInAppNav.current
+    val entries = slashEntries(target) { id, title -> openNoteLink(inApp, "${com.platinum20.dashboard.notes.NoteFormat.NOTE_LINK}$id", title) }
     val found = if (query.isEmpty()) null else slashOrder(entries.map { it.label }, query).map { entries[it] }
     fun pick(e: SlashEntry) {
         haptic(Haptic.TICK)

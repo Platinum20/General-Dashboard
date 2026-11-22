@@ -29,12 +29,16 @@ object NotePdf {
         l.kind to when (l.kind) {
             NoteLines.Kind.BULLET -> "$pad•  $text"
             NoteLines.Kind.NUMBER -> "$pad${l.number}.  $text"
-            NoteLines.Kind.CHECK -> pad + (if (l.done) "☑  " else "☐  ") + text
             NoteLines.Kind.CALLOUT -> NoteLines.calloutEmoji(body.substring(l.start, l.end)) + "  " + text
             NoteLines.Kind.QUOTE -> "“$text”"
             NoteLines.Kind.DIVIDER -> "────────────"
             NoteLines.Kind.TABLE -> NoteTable.cells(body.substring(l.start, l.end)).joinToString("   ·   ")
             NoteLines.Kind.AUDIO -> "🎙 " + (Regex("""\[([^\]]*)]""").find(body.substring(l.start, l.end))?.groupValues?.get(1)?.removePrefix("🎙 ") ?: "Audio")
+            NoteLines.Kind.COLUMNS -> NoteLines.columns(body.substring(l.start, l.end)).let { (a, b) -> (a + "   |   " + b).replace('\n', ' ') }
+            NoteLines.Kind.PAGE -> NoteFormat.linkAt(body.substring(l.start, l.end), 1)?.second ?: ""
+            NoteLines.Kind.BOOKMARK -> NoteLines.bookmarkUrl(body.substring(l.start, l.end)).orEmpty()
+            NoteLines.Kind.BOARD -> "Bacheca"
+            NoteLines.Kind.CHECK -> pad + (if (l.done) "☑  " else if (l.doing) "◐  " else "☐  ") + text
             else -> text
         }
     }

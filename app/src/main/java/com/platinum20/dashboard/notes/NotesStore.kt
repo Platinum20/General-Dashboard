@@ -243,6 +243,8 @@ data class Note(
     val archivedAt: Long? = null,
     /** L'emoji della nota (1.586): grande sopra il titolo nell'editor, piccola davanti al titolo ovunque. Null = nessuna. */
     val emoji: String? = null,
+    /** La copertina in cima alla nota nell'editor (1.590): un file nell'app. Null = nessuna. */
+    val cover: String? = null,
 ) {
     /** La copertina: quella che si vede sulla linea del tempo e in Per dopo. */
     val photo: String get() = photos.firstOrNull().orEmpty()
@@ -628,7 +630,7 @@ object NotesStore {
             val existing = d.notes.firstOrNull { it.id == noteId }
             if (existing != null && existing.text == text) return@update d
             val now = System.currentTimeMillis()
-            val note = Note(noteId, text, now, existing?.pinned ?: false, existing?.createdAt ?: now, existing?.photos.orEmpty(), emoji = existing?.emoji)
+            val note = Note(noteId, text, now, existing?.pinned ?: false, existing?.createdAt ?: now, existing?.photos.orEmpty(), emoji = existing?.emoji, cover = existing?.cover)
             d.copy(notes = listOf(note) + d.notes.filter { it.id != noteId })
         }
         return noteId
@@ -662,6 +664,11 @@ object NotesStore {
     }
 
     /** L'emoji della nota (1.586); null la toglie. */
+    /** La copertina della nota (1.590); null la toglie (il file resta, per Annulla). */
+    fun setNoteCover(id: Long, path: String?) = update { d ->
+        d.copy(notes = d.notes.map { if (it.id == id) it.copy(cover = path?.takeIf { p -> p.isNotBlank() }) else it })
+    }
+
     fun setNoteEmoji(id: Long, emoji: String?) = update { d ->
         d.copy(notes = d.notes.map { if (it.id == id) it.copy(emoji = emoji?.takeIf { e -> e.isNotBlank() }) else it })
     }
@@ -747,7 +754,8 @@ object NotesStore {
                     // "photo" = la copertina, per i backup letti da versioni vecchie; "photos" = tutte.
                     .apply { if (it.photos.isNotEmpty()) put("photo", it.photo).put("photos", JSONArray(it.photos)) }
                     .apply { it.archivedAt?.let { at -> put("archivedAt", at) } }
-                    .apply { it.emoji?.let { e -> put("emoji", e) } })
+                    .apply { it.emoji?.let { e -> put("emoji", e) } }
+                    .apply { it.cover?.let { c -> put("cover", c) } })
             }
         })
         .put("habits", JSONArray().apply {
@@ -816,7 +824,8 @@ object NotesStore {
                 val o = notes.getJSONObject(i)
                 o.optLong("updatedAt").let { updated ->
                     Note(o.getLong("id"), o.optString("text"), updated, o.optBoolean("pinned"), o.optLong("createdAt", updated), notePhotos(o),
-                        o.optLong("archivedAt", 0L).takeIf { it > 0L }, o.optString("emoji").takeIf { it.isNotBlank() })
+                        o.optLong("archivedAt", 0L).takeIf { it > 0L }, o.optString("emoji").takeIf { it.isNotBlank() },
+                        o.optString("cover").takeIf { it.isNotBlank() })
                 }
             },
             habits = (0 until habits.length()).map { i ->

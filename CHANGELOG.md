@@ -5,6 +5,16 @@
 - Tutte le spunte ora sono quadratini con gli angoli arrotondati, come in Notion: vuoti col bordo, pieni con la ✓ quando è fatto
 - Ovunque: Da fare e abitudini in Home, Calendario, archivi, pagina dell'abitudine e widget Da fare
 
+## 1.590.0
+**Note: sette idee prese da Notion**
+- Trasforma in: tieni premuta una voce (o scegli del testo, tasto nella barra) e diventa testo, titolo, punti, numeri, spunta, citazione o riquadro
+- Colori: testo o sfondo rosso, arancio, verde, blu o viola sulle parole scelte
+- Due colonne: "/" → Due colonne, si scrive in tutte e due affiancate
+- Sotto-note: "/" → Sotto-nota crea una pagina dentro la nota, un tocco la apre
+- Anteprima dei link: un indirizzo da solo sulla riga e Invio diventa una scheda con titolo e immagine
+- Copertina: una foto in cima alla nota (Altro → Aggiungi una copertina)
+- Bacheca: "/" → Bacheca, le cose da fare in tre colonne Da fare, In corso, Fatto
+- Le voci da spuntare ora sono quadrati, come su Notion
 ## 1.589.0
 **Note come su Notion: tabella, menu "/", vocali, elenchi compatti**
 - Tolto lo spazio enorme fra le voci di punti e numeri (e sopra l'elenco) arrivato con la 1.587
