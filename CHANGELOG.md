@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.596.0
+**Note: icone nei tag @ e spunte che non restano sole**
+- Ogni cosa taggata con @ ha la sua icona: nota (o la sua emoji), promemoria, cosa da fare, abitudine, pacco, documento, sezione
+- Due tag @ vicini non si sovrappongono più: ogni bolla ha il suo spazio
+- Una parola lunga in una voce non lascia più la spunta o il pallino da soli sulla riga sopra
 ## 1.595.0
 **Video in Media: mai più una fila vuota**
 - Mentre i video delle iscrizioni arrivano, al loro posto ci sono tessere grigie invece del vuoto

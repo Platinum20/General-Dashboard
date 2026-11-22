@@ -116,6 +116,16 @@ object NoteFormat {
     /** Un link messo con "@" (1.589): verso un'altra nota o una pagina di Canvas. Si comporta come un pezzo unico. */
     fun isMention(url: String): Boolean = url.startsWith(NOTE_LINK) || url.startsWith(APP_LINK)
 
+    /** Il posto dell'icona davanti a un link "@" (1.596), al posto della "[": uno spazio stretto senza "a capo". */
+    const val MENTION_OPEN = "\u202F"
+
+    /** Il posto in fondo a un link "@", al posto di "](…)": un po' d'aria prima della fine della bolla. */
+    const val MENTION_CLOSE = "\u202F"
+
+    /** I segni dei link "@" che l'editor disegna come posti (icona davanti, aria in fondo), per [NoteLines.Shown]. */
+    fun mentionSlots(text: String): Map<Int, String> = linkRx.findAll(text).filter { isMention(it.groupValues[2]) }
+        .flatMap { m -> listOf(m.range.first to MENTION_OPEN, m.groups[1]!!.range.last + 1 to MENTION_CLOSE) }.toMap()
+
     /** Dove stanno i link "@" nel testo, da "[" a ")". */
     fun mentions(text: String): List<IntRange> = linkRx.findAll(text).filter { isMention(it.groupValues[2]) }.map { it.range }.toList()
 

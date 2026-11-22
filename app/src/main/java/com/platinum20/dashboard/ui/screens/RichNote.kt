@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -78,6 +79,14 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.material.icons.outlined.WbSunny
+import androidx.compose.material.icons.outlined.SimCard
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Newspaper
+import androidx.compose.material.icons.outlined.MusicNote
+import androidx.compose.material.icons.outlined.Radio
+import androidx.compose.material.icons.outlined.Podcasts
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.ParagraphStyle
 import androidx.compose.ui.text.style.TextIndent
@@ -198,6 +207,14 @@ private val BREATH_SIZE = 25.sp
 
 /** L'ultima riga della tabella mentre ci si scrive (1.590): la riga più lo spazio per il + sotto. */
 private val TALL_SIZE = 42.sp
+
+/** Lo spazio dell'icona davanti a un link "@" (1.596) e l'aria in fondo alla bolla. */
+private val MENTION_ICON_SPACE = 19.sp
+private val MENTION_END_SPACE = 5.sp
+
+/** Il testo come lo disegna l'editor: segni nascosti, righe chiuse, aria fra le righe, posti dei link "@". */
+internal fun editorShown(text: String, folds: List<IntRange>) =
+    NoteLines.Shown(text, NoteFormat.hidden(text) + folds, breathe = true, slots = NoteFormat.mentionSlots(text))
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -435,7 +452,7 @@ internal fun RichNoteField(
         // Lo sfondo dei riquadri "da non dimenticare", sotto il testo (1.584).
         layout?.let { l ->
             val text = value.text
-            val shown = NoteLines.Shown(text, NoteFormat.hidden(text) + folds, breathe = true)
+            val shown = editorShown(text, folds)
             val drawn = l.layoutInput.text.length
             val density = LocalDensity.current
             shown.lines.filter { it.kind == NoteLines.Kind.CALLOUT && !hiddenLine(it) && shown.toShown(it.start) < drawn }.forEach { line ->
@@ -460,7 +477,8 @@ internal fun RichNoteField(
                 if (s0 >= e0) return@forEach
                 val firstRow = l.getLineForOffset(s0)
                 val lastRow = l.getLineForOffset((e0 - 1).coerceAtLeast(s0))
-                val pad = with(density) { 5.dp.toPx() }
+                // Le bolle hanno già l'aria dentro (i posti dell'icona e della fine): fra due bolle vicine resta uno spiraglio.
+                val pad = with(density) { (-1).dp.toPx() }
                 val fontPx = with(density) { if (textStyle.fontSize.isSp) textStyle.fontSize.toPx() else 16.sp.toPx() }
                 for (row in firstRow..lastRow) {
                     val x0 = (if (row == firstRow) l.getHorizontalPosition(s0, true) else l.getLineLeft(row)) - pad
@@ -474,6 +492,29 @@ internal fun RichNoteField(
                             .clip(RoundedCornerShape(50))
                             .background(colors.primary.copy(alpha = 0.14f)),
                     )
+                    // L'icona di cosa è (1.596): nota (o la sua emoji), promemoria, abitudine, pacco, documento, sezione.
+                    if (row == firstRow && shown.shown.getOrNull(s0)?.toString() == NoteFormat.MENTION_OPEN && s0 + 1 <= drawn &&
+                        l.getLineForOffset(s0 + 1) == row) {
+                        val url = NoteFormat.linkAt(text, r.first)?.first
+                        val mark = url?.let { mentionMark(it, notesData) }
+                        val a = l.getHorizontalPosition(s0, true)
+                        val b = l.getHorizontalPosition(s0 + 1, true)
+                        val size = with(density) { (fontPx * 0.95f).toDp() }
+                        val cx = (a + b) / 2f
+                        val cy = base - fontPx * 0.35f
+                        val half = with(density) { size.toPx() / 2f }
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .offset { IntOffset((cx - half).toInt(), (cy - half).toInt()) }
+                                .size(size),
+                        ) {
+                            when {
+                                mark?.emoji != null -> Text(mark.emoji, fontSize = (textStyle.fontSize.value * 0.8f).sp, maxLines = 1)
+                                else -> Icon(mark?.icon ?: Icons.AutoMirrored.Outlined.Notes, contentDescription = null, tint = colors.primary, modifier = Modifier.fillMaxSize())
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -508,7 +549,7 @@ internal fun RichNoteField(
         if (l != null) {
             // Gli stessi segni nascosti del testo disegnato, se no le posizioni scivolano di riga.
             val text = value.text
-            val shown = NoteLines.Shown(text, NoteFormat.hidden(text) + folds, breathe = true)
+            val shown = editorShown(text, folds)
             val density = LocalDensity.current
             val drawn = l.layoutInput.text.length
             shown.lines.filter { it.isList && !hiddenLine(it) && shown.toShown(it.start) < drawn }.forEach { line -> androidx.compose.runtime.key(line.index) {
@@ -1023,7 +1064,7 @@ internal fun mentionTargets(data: com.platinum20.dashboard.notes.NotesData, docs
     docs.filter { hit(it.title) }.take(2)
         .forEach { out += MentionTarget(Icons.Outlined.Badge, it.title, NoteFormat.APP_LINK + Routes.document(it.id)) }
     MENTION_PAGES.filter { (name, _) -> query.isNotEmpty() && hit(name) }
-        .forEach { (name, route) -> out += MentionTarget(Icons.Outlined.Apps, name, NoteFormat.APP_LINK + route) }
+        .forEach { (name, route) -> out += MentionTarget(pageIcon(route), name, NoteFormat.APP_LINK + route) }
     return out.take(10)
 }
 
@@ -1033,6 +1074,46 @@ private val MENTION_PAGES = listOf(
     "Media" to Routes.MEDIA, "Musica" to Routes.MUSIC_ALL, "Radio" to Routes.RADIO, "Podcast" to Routes.PODCAST,
     "Da fare" to Routes.LATER_ARCHIVE, "Appunti" to Routes.JOTTINGS_ARCHIVE, "Cerca" to Routes.SEARCH,
 )
+
+/** L'icona di ogni sezione collegabile con "@" (1.596). */
+private fun pageIcon(route: String): ImageVector = when (route) {
+    Routes.WEATHER -> Icons.Outlined.WbSunny
+    Routes.SIM -> Icons.Outlined.SimCard
+    Routes.NOTES -> Icons.Outlined.CalendarMonth
+    Routes.NEWS -> Icons.Outlined.Newspaper
+    Routes.MEDIA, Routes.MUSIC_ALL -> Icons.Outlined.MusicNote
+    Routes.RADIO -> Icons.Outlined.Radio
+    Routes.PODCAST -> Icons.Outlined.Podcasts
+    Routes.LATER_ARCHIVE -> Icons.Outlined.TaskAlt
+    Routes.JOTTINGS_ARCHIVE -> Icons.AutoMirrored.Outlined.Notes
+    Routes.SEARCH -> Icons.Outlined.Search
+    else -> Icons.Outlined.Apps
+}
+
+/** Cosa si disegna davanti a un link "@": l'emoji della nota se ce l'ha, se no l'icona del tipo. */
+internal class MentionMark(val icon: ImageVector, val emoji: String? = null)
+
+/** L'icona di un link "@" dal suo indirizzo (1.596): nota, promemoria o data, cosa da fare, abitudine, pacco, documento, sezione. */
+internal fun mentionMark(url: String, data: com.platinum20.dashboard.notes.NotesData): MentionMark {
+    if (url.startsWith(NoteFormat.NOTE_LINK)) {
+        val id = url.removePrefix(NoteFormat.NOTE_LINK).toLongOrNull()
+        return MentionMark(Icons.AutoMirrored.Outlined.Notes, data.notes.firstOrNull { it.id == id }?.emoji)
+    }
+    val route = url.removePrefix(NoteFormat.APP_LINK)
+    val item = Regex("""notes/item/(\w+)/(-?\d+)""").find(route)
+    if (item != null) {
+        val id = item.groupValues[2].toLongOrNull()
+        return MentionMark(
+            when (item.groupValues[1]) {
+                ItemKind.HABIT.name -> Icons.Outlined.LocalFireDepartment
+                ItemKind.PARCEL.name -> Icons.Outlined.LocalShipping
+                else -> if (data.tasks.firstOrNull { it.id == id }?.dueAt != null) Icons.Outlined.Event else Icons.Outlined.TaskAlt
+            },
+        )
+    }
+    if (route.startsWith("home/document/")) return MentionMark(Icons.Outlined.Badge)
+    return MentionMark(pageIcon(route))
+}
 
 /** Il fumetto del tieni premuto su citazione, riquadro o linea. */
 private fun markActions(
@@ -1146,7 +1227,7 @@ internal fun richText(
         }
         marks.forEach { (r, style) -> if (r.last < text.length) addStyle(style, r.first, r.last + 1) }
     }
-    val view = NoteLines.Shown(text, NoteFormat.hidden(text) + folds, breathe = true)
+    val view = editorShown(text, folds)
     val drawn = buildAnnotatedString {
         var at = 0
         view.cuts.forEach { c ->
@@ -1155,6 +1236,14 @@ internal fun richText(
             at = c.end
         }
         append(styled.subSequence(at, text.length))
+        // I link "@" (1.596): il posto dell'icona davanti e un po' d'aria in fondo, dentro la bolla.
+        NoteFormat.mentionSlots(text).forEach { (at0, slot) ->
+            val at = view.toShown(at0)
+            if (at < length && view.shown.getOrNull(at)?.toString() == slot) {
+                val open = text.getOrNull(at0) == '['
+                addStyle(SpanStyle(letterSpacing = if (open) MENTION_ICON_SPACE else MENTION_END_SPACE), at, at + 1)
+            }
+        }
         // L'aria fra le righe (1.589): il carattere invisibile in cima a ogni riga è più grande del testo, così la riga
         // dopo un Invio ha più spazio sopra; le righe che vanno a capo da sole restano strette.
         view.lines.filter { folds.none { f -> it.start in f } }.forEach { line ->

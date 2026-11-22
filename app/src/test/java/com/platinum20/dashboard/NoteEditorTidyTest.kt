@@ -15,6 +15,14 @@ import com.platinum20.dashboard.notes.NoteLines
 import com.platinum20.dashboard.ui.screens.RichNoteField
 import com.platinum20.dashboard.ui.screens.keepLineDelta
 import com.platinum20.dashboard.ui.screens.richText
+import com.platinum20.dashboard.ui.screens.editorShown
+import com.platinum20.dashboard.ui.screens.mentionMark
+import com.platinum20.dashboard.notes.NoteFormat
+import com.platinum20.dashboard.notes.NotesData
+import com.platinum20.dashboard.notes.Note
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.LocalFireDepartment
+import androidx.compose.material.icons.outlined.WbSunny
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -94,10 +102,34 @@ class NoteEditorTidyTest {
     }
 
     @Test
+    fun markNeverAloneOnItsLine() {
+        // Il posto del cerchio non ha punti dove andare a capo: una parola lunga resta sulla riga del cerchio.
+        assertFalse(NoteLines.PLACE.contains('\u2009') || NoteLines.PLACE.contains('\u200B') || NoteLines.PLACE.contains(' '))
+    }
+
+    @Test
+    fun mentionsGetIconAndEndSlots() {
+        val t = "a [Spesa](nota:7)[Corsa](app:notes/item/HABIT/3) b"
+        val slots = NoteFormat.mentionSlots(t)
+        assertEquals(4, slots.size)
+        val v = editorShown(t, emptyList())
+        // Si vede: a ␣[icona]Spesa[aria][icona]Corsa[aria] b, senza segni.
+        val o = NoteFormat.MENTION_OPEN
+        val c = NoteFormat.MENTION_CLOSE
+        assertEquals("a ${o}Spesa${c}${o}Corsa${c} b", v.shown.replace(NoteLines.BREATH, ""))
+        // Ogni posto ha la sua posizione: il cursore e le icone li trovano.
+        slots.forEach { (at, slot) -> assertEquals(slot, v.shown[v.toShown(at)].toString()) }
+        val data = NotesData(notes = listOf(Note(7, "Spesa", emoji = "🛒")))
+        assertEquals("🛒", mentionMark("nota:7", data).emoji)
+        assertEquals(Icons.Outlined.LocalFireDepartment, mentionMark("app:notes/item/HABIT/3", data).icon)
+        assertEquals(Icons.Outlined.WbSunny, mentionMark("app:" + com.platinum20.dashboard.Routes.WEATHER, data).icon)
+    }
+
+    @Test
     fun fieldDrawsListsAndQuotesWithoutCrashing() {
         compose.setContent {
             MaterialTheme {
-                var v by remember { mutableStateOf(TextFieldValue(sample + "1. numero\n> " + "lunga ".repeat(40), TextRange(3))) }
+                var v by remember { mutableStateOf(TextFieldValue(sample + "1. numero\n> " + "lunga ".repeat(40) + "\n[ ] [Spesa](nota:7)[Meteo](app:home/weather) " + "papa".repeat(30), TextRange(3))) }
                 RichNoteField(value = v, onValueChange = { v = it }, textStyle = MaterialTheme.typography.bodyLarge, placeholder = "Scrivi")
             }
         }
