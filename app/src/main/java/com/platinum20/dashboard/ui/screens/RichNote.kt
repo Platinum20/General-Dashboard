@@ -158,6 +158,9 @@ object RichBar {
 
     /** La riga di una tabella appena messa dal menu "/": il campo la apre per scriverci (1.588). */
     var openTable by mutableStateOf<Int?>(null)
+
+    /** Il menu "/" aperto (1.589): Invio sceglie la sua prima voce. Null = menu chiuso o niente da scegliere. */
+    var slashFirst: (() -> Unit)? = null
 }
 
 /** Una voce del menu "/" (1.584): scrivendo "/" a inizio riga. */
@@ -243,6 +246,12 @@ internal fun RichNoteField(
     /** [typed] = l'ha cambiato la tastiera; falso = un tasto della barra, che sa già cosa fa. */
     fun change(v: TextFieldValue, typed: Boolean = true) {
         val old = current
+        // Invio con il menu "/" aperto sceglie la prima voce (1.589), non va a capo.
+        val enter = typed && v.text.length == old.text.length + 1 && old.selection.collapsed &&
+            v.text == old.text.substring(0, old.selection.end) + "\n" + old.text.substring(old.selection.end)
+        if (enter && slashQuery(old.text, old.selection.end) != null) {
+            RichBar.slashFirst?.let { it(); return }
+        }
         var next = v
         // Un link "@" si cancella tutto insieme (1.589): basta togliere una lettera.
         // Tabella, linea e vocale sono pezzi unici (1.589): la tastiera non li rompe.
@@ -639,6 +648,18 @@ internal fun RichNoteField(
                         if (closed) Text("$count", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
                     }
                 }
+            }
+            // Il menu "/" come su Notion (1.589): sotto la riga del cursore.
+            val slashTarget = RichBar.target
+            val slashQ = if (focused && !readOnly && value.selection.collapsed) slashQuery(text, value.selection.end) else null
+            if (slashQ != null && slashTarget != null && slashTarget.owner == owner) {
+                val rect = l.getCursorRect(shown.toShown(value.selection.end).coerceIn(0, drawn))
+                Box(
+                    Modifier
+                        .offset { IntOffset(0, rect.top.toInt()) }
+                        .fillMaxWidth()
+                        .height(with(density) { (rect.bottom - rect.top).toDp() }),
+                ) { SlashMenu(slashTarget, slashQ) }
             }
             // Il vocale (1.589): una barra larga quanto la nota, alta una riga. Play/pausa, avanzamento (si tocca per andare
             // a un punto), durata. Tieni premuto = le scelte.
@@ -1062,37 +1083,6 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
         modifier = modifier.horizontalScroll(rememberScrollState()),
     ) {
         when {
-            slash != null -> {
-                // Il menu "/" (1.584): si toglie quello scritto e si fa la cosa scelta sulla riga.
-                fun pick(run: () -> Unit) {
-                    val now = target.value()
-                    val l = NoteLines.lineAt(now.text, now.selection.end)
-                    val t = now.text.removeRange(l.contentStart, now.selection.end.coerceAtLeast(l.contentStart))
-                    val clean = TextFieldValue(t, TextRange(l.contentStart))
-                    target.set(clean)
-                    slashBase = clean
-                    try { run() } finally { slashBase = null }
-                }
-                val all = listOf(
-                    SlashItem(Icons.AutoMirrored.Outlined.FormatListBulleted, "Punti", "elenco puntato") { kind(NoteLines.Kind.BULLET) },
-                    SlashItem(Icons.Outlined.FormatListNumbered, "Numeri", "1, 2, 3") { kind(NoteLines.Kind.NUMBER) },
-                    SlashItem(Icons.Outlined.RadioButtonUnchecked, "Spunta", "lista da spuntare") { kind(NoteLines.Kind.CHECK) },
-                    SlashItem(Icons.Outlined.Title, "Titolo", "testo grande") { kind(NoteLines.Kind.HEADING) },
-                    SlashItem(Icons.Outlined.FormatQuote, "Citazione", "con la barra a sinistra") { kind(NoteLines.Kind.QUOTE) },
-                    SlashItem(Icons.Outlined.Lightbulb, "Riquadro", "con una emoji davanti") { kind(NoteLines.Kind.CALLOUT) },
-                    SlashItem(Icons.Outlined.HorizontalRule, "Linea", "separa due parti") { divider() },
-                    SlashItem(Icons.Outlined.TableChart, "Tabella", "righe e colonne") {
-                        val now = slashBase ?: target.value()
-                        val (t, line) = NoteTable.insert(now.text, now.selection.end)
-                        target.set(TextFieldValue(t, TextRange(now.selection.end.coerceAtMost(t.length))))
-                        RichBar.openTable = line
-                    },
-                ) + target.extras
-                val shown = all.filter { slash.isEmpty() || it.label.lowercase().startsWith(slash) || it.label.lowercase().contains(slash) }
-                if (shown.isEmpty()) BarLabel(Icons.Outlined.Close, "Niente con \"$slash\"") {} else shown.forEach { item ->
-                    BarLabel(item.icon, item.label) { pick(item.run) }
-                }
-            }
             mention != null -> {
                 // "@" (1.584, tutta l'app dalla 1.588): note, promemoria e cose da fare, abitudini, pacchi, documenti,
                 // sezioni. Diventa un link che si apre con un tocco.

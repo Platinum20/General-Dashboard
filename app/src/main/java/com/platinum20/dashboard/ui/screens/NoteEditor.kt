@@ -686,7 +686,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                         SlashItem(Icons.Outlined.PhotoCamera, "Scatta", "con la fotocamera") { camera.launch(ReceiptReader.photoUri(context)) },
                         SlashItem(Icons.Outlined.Mic, "Detta", "dove c'è il cursore") { dictate() },
                         SlashItem(Icons.Outlined.Draw, "Disegno", "a mano") { draw() },
-                        SlashItem(Icons.Outlined.GraphicEq, "Audio", "registra") { record() },
+                        SlashItem(Icons.Outlined.GraphicEq, "Vocale", "registra") { record() },
                     ),
                     // Con la tastiera aperta niente altezza minima: se no la pagina scorre per mostrarla tutta e titolo e foto
                     // finiscono fuori dallo schermo (1.559).

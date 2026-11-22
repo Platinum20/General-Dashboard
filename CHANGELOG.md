@@ -9,6 +9,7 @@
 - Tabella, linea e vocali non si rompono più: il cursore non ci entra, scrivere va nella riga sotto, Indietro li toglie interi (con Annulla)
 - I vocali sono una barra larga quanto la nota: play/pausa all'inizio, l'avanzamento che si tocca per andare a un punto, la durata
 - Tabella come su Notion: niente più finestra, si scrive direttamente nelle caselle; + a destra per una colonna, + sotto per una riga; tieni premuta una casella per aggiungere o togliere la sua riga o colonna
+- Il menu "/" come su Notion: un riquadro sotto la riga, con le voci usate di recente in cima, i gruppi (Testo, Linee e tabelle, Media, Collegamenti) e la scorciatoia accanto a ogni voce; scrivendo dopo la "/" restano quelle giuste e Invio sceglie la prima
 ## 1.588.0
 **Editor delle note completo**
 - "@" collega anche promemoria, cose da fare, abitudini, pacchi, documenti e le sezioni (Meteo, SIM, Calendario, News, Musica…): un tocco le apre
