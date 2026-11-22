@@ -112,16 +112,12 @@ class NoteEditorPhotosTest {
     }
 
     @Test
-    fun marksHideUnlessCursorTouchesThem() {
+    fun marksAlwaysHidden() {
         val text = "Esatto **lui**!"
-        // Senza cursore spariscono i due "**".
-        assertEquals(listOf(7..8, 12..13), NoteFormat.hidden(text, 0, 0, focused = false))
-        // Cursore lontano: nascosti; cursore dentro o appena dopo: visibili.
-        assertEquals(2, NoteFormat.hidden(text, 2, 2, focused = true).size)
-        assertTrue(NoteFormat.hidden(text, 10, 10, focused = true).isEmpty())
-        assertTrue(NoteFormat.hidden(text, 14, 14, focused = true).isEmpty())
-        assertEquals(listOf(0..2), NoteFormat.hidden("## Titolo\nx", 11, 11, focused = true))
-        val c = NoteFormat.Collapse(NoteFormat.hidden(text, 0, 0, focused = false))
+        // I segni non si vedono mai, ovunque sia il cursore (1.577).
+        assertEquals(listOf(7..8, 12..13), NoteFormat.hidden(text))
+        assertEquals(listOf(0..2), NoteFormat.hidden("## Titolo\nx"))
+        val c = NoteFormat.Collapse(NoteFormat.hidden(text))
         // "Esatto lui!": la "l" sta al 7 nel disegno e al 9 nel testo.
         assertEquals(7, c.toShown(9))
         assertEquals(9, c.toText(7))
