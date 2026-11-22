@@ -1,41 +1,17 @@
 package com.platinum20.dashboard.ui.screens
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-
-/** Lo stato di un collegamento, come lo dice la sua tessera. */
+/** Lo stato di un collegamento, come lo dice la sua riga. */
 enum class AccountState { OK, ATTENTION, OFF }
 
-/** Dove porta il tocco su una tessera: la pagina Account, la SIM o l'accesso ai turni. */
-enum class AccountTarget { ACCOUNTS, SIM, SHIFTS }
+/** Quale account è: decide la riga e le azioni del fumetto. */
+enum class AccountKind { WINDTRE, CREATORS, GMAIL, SPOTIFY, YOUTUBE }
 
-data class AccountTile(val name: String, val state: AccountState, val line: String, val target: AccountTarget)
+/** [line] = il tasto quando c'è da fare ("Rientra", "Collega"). */
+data class AccountTile(val name: String, val state: AccountState, val line: String, val kind: AccountKind)
 
 /**
- * Le tessere degli account in cima alle Impostazioni (1.528, Antonio scelta B): una per collegamento, con lo stato
- * vero; quelle da sistemare per prime, in arancione. Pura, per i test.
+ * Gli account (1.576, Antonio giro 4): una riga "Account" in L'app che apre la pagina con una riga per
+ * collegamento; quelli da sistemare per primi, in arancione. Pura, per i test.
  */
 object AccountTiles {
     fun build(
@@ -49,59 +25,41 @@ object AccountTiles {
         shiftsExpired: Boolean,
     ): List<AccountTile> = listOf(
         when {
-            sim && simStale -> AccountTile("WindTre", AccountState.ATTENTION, "Da aggiornare", AccountTarget.SIM)
-            sim -> AccountTile("WindTre", AccountState.OK, "Collegato", AccountTarget.SIM)
-            else -> AccountTile("WindTre", AccountState.OFF, "Collega", AccountTarget.SIM)
+            sim && simStale -> AccountTile("WindTre", AccountState.ATTENTION, "Aggiorna", AccountKind.WINDTRE)
+            sim -> AccountTile("WindTre", AccountState.OK, "Collegato", AccountKind.WINDTRE)
+            else -> AccountTile("WindTre", AccountState.OFF, "Collega", AccountKind.WINDTRE)
         },
         when {
-            shifts && shiftsExpired -> AccountTile("Creators Pro", AccountState.ATTENTION, "Rientra", AccountTarget.SHIFTS)
-            shifts -> AccountTile("Creators Pro", AccountState.OK, "Collegato", AccountTarget.SHIFTS)
-            else -> AccountTile("Creators Pro", AccountState.OFF, "Collega", AccountTarget.SHIFTS)
+            shifts && shiftsExpired -> AccountTile("Creators Pro", AccountState.ATTENTION, "Rientra", AccountKind.CREATORS)
+            shifts -> AccountTile("Creators Pro", AccountState.OK, "Collegato", AccountKind.CREATORS)
+            else -> AccountTile("Creators Pro", AccountState.OFF, "Collega", AccountKind.CREATORS)
         },
         when {
-            gmail && gmailBroken -> AccountTile("Gmail", AccountState.ATTENTION, "Ricollega", AccountTarget.ACCOUNTS)
-            gmail -> AccountTile("Gmail", AccountState.OK, "Collegato", AccountTarget.ACCOUNTS)
-            else -> AccountTile("Gmail", AccountState.OFF, "Collega", AccountTarget.ACCOUNTS)
+            gmail && gmailBroken -> AccountTile("Gmail", AccountState.ATTENTION, "Ricollega", AccountKind.GMAIL)
+            gmail -> AccountTile("Gmail", AccountState.OK, "Collegato", AccountKind.GMAIL)
+            else -> AccountTile("Gmail", AccountState.OFF, "Collega", AccountKind.GMAIL)
         },
-        AccountTile("Spotify", if (spotify) AccountState.OK else AccountState.OFF, if (spotify) "Collegato" else "Collega", AccountTarget.ACCOUNTS),
-        AccountTile("YouTube", if (youtube) AccountState.OK else AccountState.OFF, if (youtube) "Collegato" else "Collega", AccountTarget.ACCOUNTS),
-    ).sortedBy { it.state.ordinal.let { o -> if (it.state == AccountState.ATTENTION) -1 else o } }
-}
+        AccountTile("Spotify", if (spotify) AccountState.OK else AccountState.OFF, if (spotify) "Collegato" else "Accedi", AccountKind.SPOTIFY),
+        AccountTile("YouTube", if (youtube) AccountState.OK else AccountState.OFF, if (youtube) "Collegato" else "Accedi", AccountKind.YOUTUBE),
+    ).sortedBy { if (it.state == AccountState.ATTENTION) -1 else it.state.ordinal }
 
-/** La fila delle tessere: tocca per rientrare o aprire il collegamento; scorre di lato se non ci stanno. */
-@Composable
-fun AccountTilesRow(tiles: List<AccountTile>, onOpen: (AccountTile) -> Unit) {
-    val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val orange = Color(if (dark) TileAccent.ORANGE.dark else TileAccent.ORANGE.light)
-    Row(
-        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        tiles.forEach { tile ->
-            CanvasCard(
-                modifier = Modifier.widthIn(min = 112.dp).bouncyPress(0.96f),
-                onClick = { onOpen(tile) },
-            ) {
-                Column(Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
-                    Text(tile.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 3.dp)) {
-                        if (tile.state == AccountState.ATTENTION) {
-                            Box(Modifier.size(7.dp).background(orange, CircleShape))
-                            Spacer(Modifier.width(6.dp))
-                        }
-                        Text(
-                            tile.line,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = when (tile.state) {
-                                AccountState.ATTENTION -> orange
-                                AccountState.OK -> MaterialTheme.colorScheme.onSurfaceVariant
-                                AccountState.OFF -> MaterialTheme.colorScheme.primary
-                            },
-                            maxLines = 1,
-                        )
-                    }
-                }
-            }
+    /** I gruppi della pagina Account, nell'ordine: da sistemare, collegati, da collegare (quelli vuoti spariscono). */
+    fun groups(tiles: List<AccountTile>): List<Pair<String, List<AccountTile>>> = listOf(
+        "Da sistemare" to tiles.filter { it.state == AccountState.ATTENTION },
+        "Collegati" to tiles.filter { it.state == AccountState.OK },
+        "Da collegare" to tiles.filter { it.state == AccountState.OFF },
+    ).filter { it.second.isNotEmpty() }
+
+    /** La riga "Account" delle Impostazioni, in una riga: prima quello che c'è da sistemare. */
+    fun summary(tiles: List<AccountTile>): String {
+        val fix = tiles.filter { it.state == AccountState.ATTENTION }
+        val on = tiles.count { it.state != AccountState.OFF }
+        return when {
+            fix.size == 1 -> "${fix[0].name} da sistemare"
+            fix.size > 1 -> "${fix.size} account da sistemare"
+            on == 0 -> "Nessun account collegato"
+            on == 1 -> "1 collegato su ${tiles.size}"
+            else -> "$on collegati su ${tiles.size}"
         }
     }
 }

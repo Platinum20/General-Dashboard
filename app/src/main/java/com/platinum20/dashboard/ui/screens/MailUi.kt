@@ -293,9 +293,9 @@ internal fun GmailPasswordDialog(onDismiss: () -> Unit, onLinked: () -> Unit) {
     )
 }
 
-/** Impostazioni > Account > Posta: collega con la password per app, leggi adesso, scollega (righe dentro un SettingsBlock). */
+/** Gmail nella pagina Account: tocco o tocco lungo = Leggi adesso, password per app, Scollega. */
 @Composable
-internal fun GmailAccountRows() {
+internal fun GmailAccountRow(tile: AccountTile) {
     val context = LocalContext.current
     MailStore.init(context)
     val oauth by GmailAuth.connected.collectAsStateWithLifecycle()
@@ -349,65 +349,46 @@ internal fun GmailAccountRows() {
         if (imap || !oauth) askPassword = true else connect.start()
     }
 
-    run {
-        SettingsItem(
-            icon = Icons.Outlined.Mail,
-            title = if (connected) "Gmail collegato" else "Collega Gmail",
-            subtitle = connect.problem ?: when {
-                !connected -> "Con la password per app: legge le mail intere"
-                imap && rejected -> "Gmail non accetta più la password: inseriscila di nuovo"
-                !imap && needsConsent -> "Google chiede di ricollegarlo"
-                syncing -> "Leggo le mail…"
-                result != null -> result
-                lastSync > 0 -> "Letta " + relativeTime(Instant.ofEpochMilli(lastSync)) + " · ogni ora e a ogni mail"
-                imap -> address
-                else -> "Sola lettura · niente lascia il telefono"
-            },
-            onClick = { if (!connected || broken) fix() else if (!syncing) syncNow() },
-            trailing = {
-                if (!connected || broken) {
-                    FilledTonalButton(enabled = !connect.busy, onClick = { fix() }) {
-                        Text(if (connected) "Ricollega" else "Collega")
+    val actions = {
+        ActionBubble.show(
+            *listOfNotNull(
+                if (!connected || broken) BubbleAction(Icons.Outlined.Mail, if (connected) "Ricollega" else "Collega", detail = "Con la password per app") { fix() } else null,
+                if (connected && !broken) BubbleAction(Icons.Outlined.Refresh, "Leggi adesso", detail = "Pacchi e prenotazioni") { if (!syncing) syncNow() } else null,
+                if (oauth && !imap) BubbleAction(Icons.Outlined.Key, "Usa la password per app", detail = "Mai più da ricollegare") { askPassword = true } else null,
+                if (connected) {
+                    BubbleAction(Icons.Outlined.LinkOff, "Scollega Gmail", detail = "Smette di leggere le mail", danger = true) {
+                        scope.launch {
+                            MailWorker.cancel(context)
+                            GmailImap.unlink(context)
+                            if (GmailAuth.connected.value) GmailAuth.disconnect(context)
+                            MailStore.forget()
+                            result = null
+                        }
                     }
-                }
-            },
+                } else null,
+            ).toTypedArray(),
         )
-        if (oauth && !imap) {
-            RowDivider()
-            SettingsItem(
-                icon = Icons.Outlined.Key,
-                title = "Usa la password per app",
-                subtitle = "Mai più da ricollegare",
-                onClick = { askPassword = true },
-            )
-        }
-        if (connected && !broken) {
-            RowDivider()
-            SettingsItem(
-                icon = Icons.Outlined.Refresh,
-                title = "Leggi adesso",
-                subtitle = "Pacchi e prenotazioni",
-                onClick = { if (!syncing) syncNow() },
-            )
-        }
-        if (connected) {
-            RowDivider()
-            SettingsItem(
-                icon = Icons.Outlined.LinkOff,
-                title = "Scollega Gmail",
-                subtitle = "Smette di leggere le mail",
-                onClick = {
-                    scope.launch {
-                        MailWorker.cancel(context)
-                        GmailImap.unlink(context)
-                        if (GmailAuth.connected.value) GmailAuth.disconnect(context)
-                        MailStore.forget()
-                        result = null
-                    }
-                },
-            )
-        }
     }
+    SettingsItem(
+        icon = Icons.Outlined.Mail,
+        accent = TileAccent.NEUTRAL,
+        title = "Gmail",
+        subtitle = connect.problem ?: when {
+            !connected -> "Biglietti e turni dalla posta"
+            imap && rejected -> "La password non va più"
+            !imap && needsConsent -> "Google chiede di ricollegarlo"
+            syncing -> "Leggo le mail…"
+            result != null -> result
+            lastSync > 0 -> "Letta " + relativeTime(Instant.ofEpochMilli(lastSync))
+            imap -> address
+            else -> "Sola lettura"
+        },
+        attention = tile.state == AccountState.ATTENTION,
+        onClick = actions,
+        onLongClick = actions,
+        showChevron = tile.state == AccountState.OK,
+        trailing = { if (!connect.busy) AccountTrailing(tile) { fix() } },
+    )
 }
 
 /**

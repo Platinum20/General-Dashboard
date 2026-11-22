@@ -55,6 +55,8 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -156,7 +158,8 @@ enum class SettingsPage(val title: String) {
     MEDIA("Media"),
     ALERTS("Notifiche"),
     ACCOUNTS("Account"),
-    DATA("Dati"),
+    /** Il nome resta DATA: è nei collegamenti già salvati. */
+    DATA("Rete e backup"),
     INFO("Informazioni"),
     /** Non sta nel menu: si apre dalla riga SponsorBlock di Media, i tipi di segmento sono tanti. */
     SPONSORBLOCK("SponsorBlock"),
@@ -196,20 +199,11 @@ internal object SettingsSummary {
         }
         return line.replaceFirstChar { it.uppercase() }
     }
-
-    /** Tutti gli account (1.402): non solo YouTube e Spotify. Oltre due nomi il conto, così la riga non si taglia. */
-    fun accounts(connected: List<String>): String = when (connected.size) {
-        0 -> "Nessun account collegato"
-        1 -> "${connected[0]} collegato"
-        2 -> "${connected[0]} e ${connected[1]} collegati"
-        else -> "${connected.size} account collegati"
-    }
 }
 
 /**
- * Impostazioni: in cima il tema, poi un menu di righe che aprono ognuna la sua pagina.
- * Le sezioni hanno l'ordine della barra in basso (Note apre subito "Compila le note", l'unica
- * cosa che ha); sotto quelle dell'app: notifiche, account, dati, informazioni.
+ * Impostazioni (1.576, Antonio giro 4): in cima il tema, poi solo righe che aprono la loro pagina e dicono
+ * com'è adesso. Le sezioni nell'ordine della barra in basso; sotto l'app: notifiche, account, rete e backup, informazioni.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -224,15 +218,7 @@ fun SettingsScreen(
     val theme by AppSettings.theme.collectAsState()
     val layout by AppSettings.homeLayout.collectAsState()
     val haptic = rememberHaptic()
-    val loggedIn by Accounts.loggedIn.collectAsState()
-    remember { YouTubeAuth.init(context); SpotifyAuth.init(context); RadioAlarm.init(context); VoiceStore.init(context) }
-    val youTubeOfficial by YouTubeAuth.connected.collectAsState()
-    val spotifyOfficial by SpotifyAuth.connected.collectAsState()
-    remember { SimStore.init(context); ShiftStore.init(context); GmailImap.init(context); GmailAuth.init(context) }
-    val simLinked by SimStore.linked.collectAsState()
-    val shiftsLinked by ShiftStore.linked.collectAsState()
-    val gmailImap by GmailImap.linked.collectAsState()
-    val gmailApi by GmailAuth.connected.collectAsState()
+    remember { RadioAlarm.init(context); VoiceStore.init(context) }
     AutoFill.init(context)
     val autoFillOn by AutoFill.enabled.collectAsState()
     val morning by AppSettings.morning.collectAsState()
@@ -242,12 +228,10 @@ fun SettingsScreen(
     val alarm by RadioAlarm.settings.collectAsState()
     val voice by AppSettings.readingVoice.collectAsState()
     val wifiOnly by AppSettings.wifiOnlyDownloads.collectAsState()
+    val adBlock by AppSettings.adBlock.collectAsState()
     // La località si legge dalle preferenze: si rilegge tornando dalla scelta della città.
     var place by remember { mutableStateOf(WeatherStore.manualPlace(context)) }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-        Accounts.refresh()
-        place = WeatherStore.manualPlace(context)
-    }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { place = WeatherStore.manualPlace(context) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
@@ -264,37 +248,6 @@ fun SettingsScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
-            // Gli account in cima (1.528, Antonio scelta B): una tessera per collegamento con lo stato vero; quella da
-            // sistemare è arancione e il tocco fa rientrare subito.
-            item(key = "accounts") {
-                val shiftsExpired by ShiftStore.expired.collectAsState()
-                val gmailRejected by GmailImap.rejected.collectAsState()
-                val gmailConsent by GmailAuth.needsConsent.collectAsState()
-                val simStatus by SimStore.status.collectAsState()
-                val inApp = LocalInAppNav.current
-                val tiles = AccountTiles.build(
-                    spotify = spotifyOfficial || MediaService.SPOTIFY in loggedIn,
-                    youtube = youTubeOfficial || MediaService.YOUTUBE in loggedIn,
-                    gmail = gmailImap || gmailApi,
-                    gmailBroken = (gmailImap && gmailRejected) || (!gmailImap && gmailApi && gmailConsent),
-                    sim = simLinked,
-                    simStale = simStatus != null && SimStore.isStale(within = 3 * SimStore.STALE_MS),
-                    shifts = shiftsLinked,
-                    shiftsExpired = shiftsExpired,
-                )
-                Column {
-                    SectionHeader("Account")
-                    Spacer(Modifier.height(4.dp))
-                    AccountTilesRow(tiles) { tile ->
-                        haptic(Haptic.TICK)
-                        when (tile.target) {
-                            AccountTarget.SIM -> inApp?.openRoute?.invoke(com.platinum20.dashboard.Routes.SIM)
-                            AccountTarget.SHIFTS -> inApp?.openRoute?.invoke(com.platinum20.dashboard.Routes.SHIFTS)
-                            AccountTarget.ACCOUNTS -> onOpenPage(SettingsPage.ACCOUNTS)
-                        }
-                    }
-                }
-            }
             item(key = "look") {
                 SettingsBlock("Aspetto") {
                     ThemePicker(theme) { option ->
@@ -303,10 +256,12 @@ fun SettingsScreen(
                     }
                 }
             }
-            // Home e Dati sono gruppi di questa pagina, non pagine con due righe (punto 50).
-            item(key = "home") { HomePage(onOpenCustomize, onPickPlace) }
+            // Le sezioni nell'ordine della barra in basso, ognuna una riga che apre la sua pagina (1.576).
             item(key = "sections") {
                 SettingsBlock("Le sezioni") {
+                    MenuRow(Icons.Outlined.Dashboard, TileAccent.BLUE, "Home",
+                        SettingsSummary.home(layout.visible.size, HomeCard.entries.size, place?.name)) { onOpenPage(SettingsPage.HOME) }
+                    RowDivider()
                     // La sezione Note non c'è più dalla 1.314: la riga porta il nome del calendario unico (1.357).
                     MenuRow(Icons.Outlined.AutoAwesome, TileAccent.GREEN, "Calendario",
                         if (autoFillOn) "Pacchi e scadenze da soli" else "Compilazione automatica spenta",
@@ -315,16 +270,17 @@ fun SettingsScreen(
                     val hiddenNews = AppSettings.hiddenNewsSources.collectAsState().value.size
                     MenuRow(
                         Icons.Outlined.RecordVoiceOver, TileAccent.PURPLE, "News",
-                        "Voce: ${voice.label}" + when (hiddenNews) { 0 -> ", tutte le fonti"; 1 -> ", 1 fonte nascosta"; else -> ", $hiddenNews fonti nascoste" },
+                        "Voce ${voice.label} · " + when (hiddenNews) { 0 -> "tutte le fonti"; 1 -> "1 fonte nascosta"; else -> "$hiddenNews fonti nascoste" },
                     ) {
                         onOpenPage(SettingsPage.NEWS)
                     }
                     RowDivider()
-                    MenuRow(Icons.Outlined.PlayCircle, TileAccent.ORANGE, "Media", "Coda, video e pubblicità") {
+                    MenuRow(Icons.Outlined.PlayCircle, TileAccent.ORANGE, "Media", "Musica, video e salvati") {
                         onOpenPage(SettingsPage.MEDIA)
                     }
                 }
             }
+            // L'app: Account è una riga come le altre (Antonio, giro 4), arancione se un collegamento è da sistemare.
             item(key = "app") {
                 SettingsBlock("L'app") {
                     MenuRow(Icons.Outlined.NotificationsActive, TileAccent.ORANGE, "Notifiche",
@@ -334,20 +290,26 @@ fun SettingsScreen(
                             radio = alarm.timeLabel.takeIf { alarm.enabled },
                             updates = updates && canNotify,
                         )) { onOpenPage(SettingsPage.ALERTS) }
-                }
-            }
-            item(key = "data") {
-                SettingsBlock("I tuoi dati") {
-                    WifiOnlySetting()
                     RowDivider()
-                    BackupSettings()
-                }
-            }
-            // In fondo: la versione.
-            item(key = "about") {
-                SettingsBlock("Canvas") {
-                    MenuRow(Icons.Outlined.Info, TileAccent.NEUTRAL, "Informazioni",
-                        "Versione ${BuildConfig.VERSION_NAME} · novità e licenze") { onOpenPage(SettingsPage.INFO) }
+                    val tiles = rememberAccountTiles()
+                    SettingsItem(
+                        icon = Icons.Outlined.AccountCircle,
+                        accent = if (tiles.any { it.state == AccountState.ATTENTION }) TileAccent.ORANGE else TileAccent.BLUE,
+                        title = "Account",
+                        subtitle = AccountTiles.summary(tiles),
+                        attention = tiles.any { it.state == AccountState.ATTENTION },
+                        showChevron = true,
+                        onClick = { onOpenPage(SettingsPage.ACCOUNTS) },
+                    )
+                    RowDivider()
+                    MenuRow(Icons.Outlined.Wifi, TileAccent.BLUE, "Rete e backup",
+                        (if (wifiOnly) "Solo Wi-Fi" else "Ogni rete") + " · " + (if (adBlock) "pubblicità bloccate" else "pubblicità visibili")) {
+                        onOpenPage(SettingsPage.DATA)
+                    }
+                    RowDivider()
+                    MenuRow(Icons.Outlined.Info, TileAccent.NEUTRAL, "Informazioni", "Novità, aggiornamenti e licenze") {
+                        onOpenPage(SettingsPage.INFO)
+                    }
                 }
             }
         }
@@ -391,18 +353,13 @@ fun SettingsPageScreen(
                     item { SettingsBlock("Voce di lettura") { VoicePicker() } }
                     item { SettingsBlock("Fonti · nelle News e nella Home") { NewsSourcesSettings() } }
                 }
+                // Musica, video, salvati (1.576): il blocco pubblicità sta in Rete e backup, lavora anche negli articoli.
                 SettingsPage.MEDIA -> {
-                    item {
-                        SettingsBlock("Riproduzione") {
-                            QueueFillSetting()
-                            RowDivider()
-                            AutoplaySetting()
-                            RowDivider()
-                            SavedDownloadSetting()
-                        }
-                    }
+                    item { SettingsBlock("Musica") { QueueFillSetting(); RowDivider(); LastFmSetting(); RowDivider(); SongIdSetting() } }
                     item {
                         SettingsBlock("Video") {
+                            AutoplaySetting()
+                            RowDivider()
                             VideoFilterSettings()
                             RowDivider()
                             DislikeSettings()
@@ -410,34 +367,19 @@ fun SettingsPageScreen(
                             SponsorBlockRow { onOpenPage(SettingsPage.SPONSORBLOCK) }
                         }
                     }
-                    item { SettingsBlock("Altro") { SongIdSetting(); RowDivider(); LastFmSetting(); RowDivider(); AdBlockSettings() } }
+                    item { SettingsBlock("Salvati") { SavedDownloadSetting() } }
                 }
-                SettingsPage.ALERTS -> item {
-                    SettingsBlock("Cosa ti avvisa") {
-                        MorningSettings()
-                        RowDivider()
-                        RainAlertSetting()
-                        RowDivider()
-                        LiveTripSettings()
-                        RowDivider()
-                        RadioAlarmSetting()
-                        RowDivider()
-                        UpdateNotifySetting()
-                    }
+                // Divise per quando arrivano (1.576); le prove si fanno tenendo premuta la riga.
+                SettingsPage.ALERTS -> {
+                    item { SettingsBlock("Ogni giorno") { MorningSettings(); RowDivider(); RadioAlarmSetting() } }
+                    item { SettingsBlock("Quando serve") { RainAlertSetting(); RowDivider(); LiveTripSettings() } }
+                    item { SettingsBlock("Canvas") { UpdateNotifySetting() } }
                 }
-                SettingsPage.ACCOUNTS -> {
-                    item { AccountsPage(onLogin) }
-                    // Il collegamento WindTre sta qui, non nella pagina SIM (Antonio): là restano solo i dati.
-                    item { SettingsBlock("SIM") { WindTreAccountRows() } }
-                    item { SettingsBlock("Lavoro") { ShiftAccountRows() } }
-                    item { SettingsBlock("Posta") { GmailAccountRows() } }
-                }
-                SettingsPage.DATA -> item {
-                    SettingsBlock("I tuoi dati") {
-                        WifiOnlySetting()
-                        RowDivider()
-                        BackupSettings()
-                    }
+                // Il collegamento WindTre sta qui, non nella pagina SIM (Antonio): là restano solo i dati.
+                SettingsPage.ACCOUNTS -> item { AccountsPage(onLogin) }
+                SettingsPage.DATA -> {
+                    item { SettingsBlock("Rete") { WifiOnlySetting(); RowDivider(); AdBlockSettings() } }
+                    item { SettingsBlock("Backup") { BackupSettings() } }
                 }
                 SettingsPage.SPONSORBLOCK -> item { SettingsBlock("Salta i pezzi") { SponsorBlockSettings() } }
                 SettingsPage.INFO -> {
@@ -478,131 +420,6 @@ private fun HomePage(onCustomize: () -> Unit, onPickPlace: () -> Unit) {
     }
 }
 
-@Composable
-private fun AccountsPage(onLogin: (MediaService) -> Unit) {
-    val context = LocalContext.current
-    val haptic = rememberHaptic()
-    val scope = rememberCoroutineScope()
-    val loggedIn by Accounts.loggedIn.collectAsState()
-    remember { YouTubeAuth.init(context); SpotifyAuth.init(context) }
-    val youTubeOfficial by YouTubeAuth.connected.collectAsState()
-    val spotifyOfficial by SpotifyAuth.connected.collectAsState()
-    val youTubeSync by com.platinum20.dashboard.media.youtube.YtSync.status.collectAsState()
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
-    SettingsBlock("Musica e video") {
-        // Un solo accesso per servizio: serve sia al player sia al feed nell'app.
-        MediaService.entries.forEachIndexed { index, service ->
-            val official = when (service) {
-                MediaService.YOUTUBE -> youTubeOfficial
-                MediaService.SPOTIFY -> spotifyOfficial
-            }
-            val connected = service in loggedIn || official
-            val connectOfficial = rememberOfficialConnect(service)
-            if (index > 0) RowDivider()
-            SettingsItem(
-                icon = when (service) {
-                    MediaService.YOUTUBE -> Icons.Outlined.OndemandVideo
-                    MediaService.SPOTIFY -> Icons.Outlined.GraphicEq
-                },
-                accent = when (service) {
-                    MediaService.YOUTUBE -> TileAccent.ORANGE
-                    MediaService.SPOTIFY -> TileAccent.GREEN
-                },
-                title = service.label,
-                subtitle = when {
-                    // Con l'accesso fatto nell'app, YouTube si tiene uguale al PC: qui si vede com'è andata.
-                    service == MediaService.YOUTUBE && service in loggedIn && youTubeSync != null -> youTubeSync!!
-                    official -> "Collegamento ufficiale · feed e player"
-                    else -> "Tocca per il collegamento ufficiale"
-                },
-                // Il collegamento ufficiale si rifà sempre da qui, anche dopo «Esci».
-                onClick = if (!official) connectOfficial else null,
-                trailing = {
-                    if (connected) {
-                        DangerButton(onClick = {
-                            haptic(Haptic.TICK)
-                            Accounts.logout(service)
-                            when (service) {
-                                MediaService.YOUTUBE -> {
-                                    scope.launch { YouTubeAuth.disconnect(context) }
-                                    YouTubeStore.clear()
-                                }
-                                MediaService.SPOTIFY -> {
-                                    SpotifyAuth.disconnect()
-                                    SpotifyWebSession.clear()
-                                    SpotifyStore.clear()
-                                }
-                            }
-                        }) { Text("Esci") }
-                    } else {
-                        FilledTonalButton(onClick = { onLogin(service) }) { Text("Accedi") }
-                    }
-                },
-            )
-        }
-        RowDivider()
-        SpotifyKeyRow()
-    }
-
-}
-
-/** La chiave di Spotify, sotto gli account di musica e video. */
-@Composable
-private fun SpotifyKeyRow() {
-    val spotifyClientId by SpotifyAuth.clientId.collectAsState()
-    var editSpotifyKey by remember { mutableStateOf(false) }
-    SettingsItem(
-        icon = Icons.Outlined.Key,
-        accent = TileAccent.GREEN,
-        title = "Chiave di Spotify",
-        subtitle = "Client ID della tua app Spotify",
-        value = if (spotifyClientId == SpotifyAuth.DEFAULT_CLIENT_ID) "Predefinita" else "Tua",
-        showChevron = true,
-        onClick = { editSpotifyKey = true },
-    )
-    if (editSpotifyKey) {
-        var value by remember { mutableStateOf(spotifyClientId) }
-        val valid = SpotifyAuth.normalizeClientId(value)
-        CanvasDialog(
-            onDismissRequest = { editSpotifyKey = false },
-            title = { Text("Chiave di Spotify") },
-            text = {
-                Column {
-                    Text(
-                        "Il Client ID dell'app creata su developer.spotify.com. Vuoto = quella predefinita di Canvas. " +
-                            "Se la cambi, ricollega Spotify dalla riga sopra.",
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    OutlinedTextField(
-                        value = value,
-                        onValueChange = { value = it },
-                        singleLine = true,
-                        isError = valid == null,
-                        label = { Text("Client ID") },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            },
-            confirmButton = {
-                ConfirmButton(
-                    enabled = valid != null,
-                    onClick = { valid?.let(SpotifyAuth::setClientId); editSpotifyKey = false },
-                ) { Text("Salva") }
-            },
-            dismissButton = {
-                DismissButton(onClick = { SpotifyAuth.setClientId(SpotifyAuth.DEFAULT_CLIENT_ID); editSpotifyKey = false }) {
-                    Text("Ripristina")
-                }
-            },
-        )
-    }
-}
-
-/**
- * La chiave di Last.fm (1.491): da lì vengono i brani e gli artisti simili (Discover Weekly, Daily Mix, radio di un
- * brano, Scopri) e le classifiche. Senza, resta il Release Radar. Si incolla qui e resta sul telefono.
- */
 @Composable
 private fun LastFmSetting() {
     val context = LocalContext.current
@@ -778,7 +595,7 @@ private fun InfoBlock() {
 
 /** Titolo del gruppo fuori, righe dentro una card. */
 @Composable
-private fun SettingsBlock(title: String, content: @Composable () -> Unit) {
+internal fun SettingsBlock(title: String, content: @Composable () -> Unit) {
     Column {
         SectionHeader(title)
         Spacer(Modifier.height(4.dp))
@@ -957,6 +774,7 @@ internal fun SettingsGroup(content: @Composable () -> Unit) {
  * Riga delle impostazioni: icona nel quadratino colorato, titolo, una riga di descrizione,
  * il valore attuale a destra (o un comando) e la freccia se apre un'altra pagina.
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 internal fun SettingsItem(
     icon: ImageVector,
@@ -967,11 +785,21 @@ internal fun SettingsItem(
     onClick: (() -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
     accent: TileAccent = TileAccent.BLUE,
+    /** Tenendo premuto: il fumetto con le azioni della riga (regola del tocco lungo). */
+    onLongClick: (() -> Unit)? = null,
+    /** Il sottotitolo in arancione: qui c'è qualcosa da sistemare. */
+    attention: Boolean = false,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (onClick != null) Modifier.bouncyPress(0.98f).clickable(onClick = onClick) else Modifier)
+            .then(
+                when {
+                    onLongClick != null -> Modifier.bouncyPress(0.98f).combinedClickable(onClick = onClick ?: onLongClick, onLongClick = onLongClick)
+                    onClick != null -> Modifier.bouncyPress(0.98f).clickable(onClick = onClick)
+                    else -> Modifier
+                },
+            )
             .heightIn(min = 60.dp)
             .padding(start = 14.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -984,7 +812,7 @@ internal fun SettingsItem(
                 Text(
                     subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (attention) Urgent.color(MaterialTheme.colorScheme.background.luminance() < 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -1043,44 +871,34 @@ private fun MorningSettings() {
                 enable(!morning.enabled)
             }
         }
+        val sendTest = {
+            if (!MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33) {
+                testPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                MorningWorker.sendTest(context)
+            }
+        }
+        // L'orario sta a destra della riga; la prova col tocco lungo (1.576), non più due righe a parte.
+        val actions = {
+            ActionBubble.show(
+                BubbleAction(Icons.Outlined.Send, "Invia una prova", detail = "Arriva subito quella di oggi") { sendTest() },
+                BubbleAction(Icons.Outlined.Schedule, "Cambia orario", detail = "Adesso alle ${morning.timeLabel}") { pickTime = true },
+            )
+        }
         SettingsItem(
             icon = Icons.Outlined.NotificationsActive,
             accent = TileAccent.ORANGE,
             title = "Notifica del mattino",
-            subtitle = if (morning.enabled) "Ogni giorno alle ${morning.timeLabel}" else "Meteo, impegni, cose da fare e notizie",
+            subtitle = if (morning.enabled) "Meteo, impegni e notizie" else "Spenta",
             onClick = toggle,
-            trailing = { Switch(checked = morning.enabled, onCheckedChange = hapticToggle { toggle() }) },
+            onLongClick = actions,
+            trailing = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (morning.enabled) TextButton(onClick = { pickTime = true }) { Text(morning.timeLabel) }
+                    Switch(checked = morning.enabled, onCheckedChange = hapticToggle { toggle() })
+                }
+            },
         )
-        // Orario e prova compaiono scivolando solo quando la notifica è accesa.
-        AnimatedVisibility(
-            visible = morning.enabled,
-            enter = expandVertically(tween(Motion.ENTER_MS, easing = Motion.Decelerate)) + fadeIn(tween(Motion.ENTER_MS)),
-            exit = shrinkVertically(tween(Motion.ENTER_MS - 80, easing = Motion.Accelerate)) + fadeOut(tween(Motion.EXIT_MS)),
-        ) { Column {
-            RowDivider()
-            SettingsItem(
-                icon = Icons.Outlined.Schedule,
-                accent = TileAccent.NEUTRAL,
-                title = "Orario",
-                value = morning.timeLabel,
-                showChevron = true,
-                onClick = { pickTime = true },
-            )
-            RowDivider()
-            SettingsItem(
-                icon = Icons.Outlined.Send,
-                accent = TileAccent.NEUTRAL,
-                title = "Invia una prova",
-                subtitle = "Arriva subito quella di oggi",
-                onClick = {
-                    if (!MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33) {
-                        testPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    } else {
-                        MorningWorker.sendTest(context)
-                    }
-                },
-            )
-        } }
     }
 
     if (pickTime) {
@@ -1252,7 +1070,7 @@ private fun WifiOnlySetting() {
         icon = Icons.Outlined.Wifi,
         accent = TileAccent.BLUE,
         title = "Scarica solo col Wi-Fi",
-        subtitle = if (enabled) "Voci, aggiornamenti e salvati aspettano il Wi-Fi" else "Voci, aggiornamenti e salvati con qualunque rete",
+        subtitle = if (enabled) "Voci, salvati e aggiornamenti" else "Scarica con qualunque rete",
         onClick = toggle,
         trailing = { Switch(checked = enabled, onCheckedChange = hapticToggle { toggle() }) },
     )
@@ -1373,16 +1191,37 @@ private fun LiveTripSettings() {
             permission.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else done()
     }
+    // La prova (Antonio, 2026-11-20): un treno finto che in un minuto e mezzo passa attesa, ritardo, viaggio
+    // senza rete e arrivo, con la notifica vera. Dalla 1.576 sta nel tocco lungo della riga, non in una riga sua.
+    val demo by com.platinum20.dashboard.work.TripLiveDemo.running.collectAsState()
+    val toggleDemo = {
+        val start = { com.platinum20.dashboard.work.TripLiveDemo.toggle(context) }
+        if (needsPermission && !demo) {
+            pending = start
+            permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else start()
+    }
+    val trainActions = {
+        ActionBubble.show(
+            BubbleAction(
+                Icons.Outlined.PlayCircle,
+                if (demo) "Ferma la prova" else "Prova con un treno finto",
+                detail = if (demo) "Il treno finto sta viaggiando" else "Dalla partenza all'arrivo",
+            ) { toggleDemo() },
+        )
+    }
     SettingsItem(
         icon = Icons.Outlined.Train,
         accent = TileAccent.BLUE,
         title = "Viaggio dal vivo",
         subtitle = when {
-            trains && needsPermission -> "Notifiche bloccate: tocca per consentirle"
-            trains -> "Un'ora prima del treno: ritardo, binario e biglietto"
-            else -> "Una notifica che segue il treno fino all'arrivo"
+            demo -> "Prova: il treno finto viaggia"
+            trains && needsPermission -> "Notifiche bloccate · tocca"
+            trains -> "Ritardo, binario e biglietto"
+            else -> "Segue il treno fino all'arrivo"
         },
         onClick = { change(!trains || needsPermission, AppSettings::setLiveTrips) },
+        onLongClick = trainActions,
         trailing = { Switch(checked = trains && !needsPermission, onCheckedChange = hapticToggle { change(it, AppSettings::setLiveTrips) }) },
     )
     RowDivider()
@@ -1393,23 +1232,6 @@ private fun LiveTripSettings() {
         subtitle = if (shifts) SHIFT_LIVE_ON else SHIFT_LIVE_OFF,
         onClick = { change(!shifts, AppSettings::setLiveShifts) },
         trailing = { Switch(checked = shifts && !needsPermission, onCheckedChange = hapticToggle { change(it, AppSettings::setLiveShifts) }) },
-    )
-    RowDivider()
-    // La prova (Antonio, 2026-11-20): un treno finto che in un minuto e mezzo passa attesa, ritardo, viaggio
-    // senza rete e arrivo, con la notifica vera. Toccata di nuovo si ferma.
-    val demo by com.platinum20.dashboard.work.TripLiveDemo.running.collectAsState()
-    SettingsItem(
-        icon = Icons.Outlined.PlayCircle,
-        accent = TileAccent.BLUE,
-        title = if (demo) "Ferma la prova" else "Prova la notifica",
-        subtitle = if (demo) "Il treno finto sta viaggiando" else "Un treno finto, dalla partenza all'arrivo",
-        onClick = {
-            val start = { com.platinum20.dashboard.work.TripLiveDemo.toggle(context) }
-            if (needsPermission) {
-                pending = start
-                permission.launch(Manifest.permission.POST_NOTIFICATIONS)
-            } else start()
-        },
     )
 }
 
@@ -1647,7 +1469,7 @@ private fun AdBlockSettings() {
         icon = Icons.Outlined.Shield,
         accent = TileAccent.PURPLE,
         title = "Blocco pubblicità",
-        subtitle = if (enabled) "Attivo nei player · $blocked richieste bloccate" else "Spento",
+        subtitle = if (enabled) "Player e articoli · $blocked bloccate" else "Spento",
         onClick = { toggle(!enabled) },
         trailing = { Switch(checked = enabled, onCheckedChange = hapticToggle(toggle)) },
     )

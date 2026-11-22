@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.576.0
+**Impostazioni riordinate**
+- La pagina principale è un menu corto: il tema in cima, poi Home, Calendario, News e Media nell'ordine della barra, poi Notifiche, Account, Rete e backup e Informazioni. Ogni riga dice com'è adesso
+- Account: una riga sola. Se un collegamento è da sistemare diventa arancione e dice quale. Nella sua pagina, in cima quelli da sistemare col tasto arancione, sotto gli altri; tocco o tieni premuto per aprire, la chiave di Spotify, i dati letti, Esci
+- Media divisa in Musica, Video e Salvati. Notifiche divise in Ogni giorno, Quando serve e Canvas: l'orario del mattino sta a destra della riga, le prove si fanno tenendo premuto
+- Nuova pagina Rete e backup: solo Wi-Fi, blocco pubblicità (lavora anche negli articoli) e backup
 ## 1.575.0
 **Foto della nota: la prima grande**
 - Nella nota la prima foto è grande, a destra due più piccole una sopra l'altra. Scorrendo a destra vedi tutte le altre, quattro alla volta in 2x2

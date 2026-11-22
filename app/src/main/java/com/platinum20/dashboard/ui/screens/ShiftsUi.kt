@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Work
+import androidx.compose.material.icons.outlined.LinkOff
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -48,8 +49,9 @@ internal fun shiftsLine(shifts: List<Shift>, now: Long = System.currentTimeMilli
 }
 
 /** Il collegamento in Impostazioni › Account: i turni di Creators Pro nel calendario. */
+/** Creators Pro nella pagina Account: tocco o tocco lungo = Rientra, i dati letti, Esci. */
 @Composable
-internal fun ShiftAccountRows() {
+internal fun ShiftAccountRow(tile: AccountTile) {
     val context = LocalContext.current
     ShiftStore.init(context)
     val linked by ShiftStore.linked.collectAsStateWithLifecycle()
@@ -58,31 +60,31 @@ internal fun ShiftAccountRows() {
     val shifts by ShiftStore.shifts.collectAsStateWithLifecycle()
     val hasData by ShiftStore.hasData.collectAsStateWithLifecycle()
     val inApp = LocalInAppNav.current
-    val open = { inApp?.openRoute?.invoke(Routes.SHIFTS) }
+    val open: () -> Unit = { inApp?.openRoute?.invoke(Routes.SHIFTS) }
+    val actions = {
+        ActionBubble.show(
+            BubbleAction(Icons.Outlined.Work, when { !linked -> "Accedi"; expired -> "Rientra"; else -> "Accedi di nuovo" }, detail = "I turni nel calendario") { open() },
+            // Anche se nessun turno è stato riconosciuto: è proprio allora che serve mandare i dati (Antonio, 1.378).
+            *(if (linked || hasData) captureActions(context, "turni-dati-letti") { ShiftStore.capturesText() } else emptyArray()),
+            *(if (linked) arrayOf(BubbleAction(Icons.Outlined.LinkOff, "Esci", danger = true) { CreatorsLink.forget(context) }) else emptyArray()),
+        )
+    }
     SettingsItem(
         icon = Icons.Outlined.Work,
         accent = TileAccent.BLUE,
-        title = "Turni Creators Pro",
+        title = "Creators Pro",
         subtitle = when {
-            !linked -> "Tocca per accedere: i tuoi turni nel calendario"
-            expired -> "Accesso scaduto · tocca per rientrare"
+            !linked -> "I tuoi turni nel calendario"
+            expired -> "Accesso scaduto"
             readAt > 0 -> shiftsLine(shifts) + " · letto " + relativeTime(Instant.ofEpochMilli(readAt))
             else -> "Collegato"
         },
-        onClick = if (!linked || expired) ({ open() }) else null,
-        trailing = {
-            when {
-                !linked -> FilledTonalButton(onClick = { open() }) { Text("Accedi") }
-                expired -> FilledTonalButton(onClick = { open() }) { Text("Rientra") }
-                else -> DangerButton(onClick = { CreatorsLink.forget(context) }) { Text("Esci") }
-            }
-        },
+        attention = tile.state == AccountState.ATTENTION,
+        onClick = actions,
+        onLongClick = actions,
+        showChevron = tile.state == AccountState.OK,
+        trailing = { AccountTrailing(tile, open) },
     )
-    // Anche se nessun turno è stato riconosciuto: è proprio allora che serve mandare i dati (Antonio, 1.378).
-    if (linked || hasData) {
-        RowDivider()
-        CaptureFileRow("Salva i dati letti dei turni", "turni-dati-letti") { ShiftStore.capturesText() }
-    }
 }
 
 /**
