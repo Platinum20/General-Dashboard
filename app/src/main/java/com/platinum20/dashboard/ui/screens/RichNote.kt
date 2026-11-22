@@ -163,7 +163,9 @@ internal fun RichNoteField(
     }
 
     val faded = colors.onSurfaceVariant
-    val transformation = remember(faded) {
+    // Una trasformazione nuova a ogni testo nuovo (1.578): con due formati sulla stessa parola il disegno restava
+    // quello vecchio finché non si muoveva il cursore.
+    val transformation = remember(faded, value.text) {
         VisualTransformation { input -> richText(input.text, faded) }
     }
 
@@ -361,12 +363,15 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
     val line = NoteLines.lineAt(v.text, v.selection.min.coerceIn(0, v.text.length))
     fun kind(k: NoteLines.Kind) {
         haptic(Haptic.TICK)
-        val e = NoteLines.setKind(v.text, v.selection.min, v.selection.max, k)
+        val now = target.value()
+        val e = NoteLines.setKind(now.text, now.selection.min, now.selection.max, k)
         target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
     }
     fun mark(m: String) {
         haptic(Haptic.TICK)
-        val e = NoteFormat.toggle(v.text, v.selection.min, v.selection.max, m)
+        // Il valore di adesso, non quello di quando la barra si è disegnata: due tocchi di fila (G poi C) si sommano.
+        val now = target.value()
+        val e = NoteFormat.toggle(now.text, now.selection.min, now.selection.max, m)
         target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
     }
     Row(
@@ -379,7 +384,6 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
             BarChip(null, "G", "Grassetto", NoteFormat.Kind.BOLD in active, SpanStyle(fontWeight = FontWeight.Bold)) { mark(NoteFormat.BOLD) }
             BarChip(null, "C", "Corsivo", NoteFormat.Kind.ITALIC in active, SpanStyle(fontStyle = FontStyle.Italic)) { mark(NoteFormat.ITALIC) }
             BarChip(null, "B", "Barrato", NoteFormat.Kind.STRIKE in active, SpanStyle(textDecoration = TextDecoration.LineThrough)) { mark(NoteFormat.STRIKE) }
-            BarChip(Icons.Outlined.Title, "Titolo", "Titoletto", line.kind == NoteLines.Kind.HEADING) { kind(NoteLines.Kind.HEADING) }
             BarChip(Icons.Outlined.Close, null, "Torna a punti e spunte", false) {
                 haptic(Haptic.TICK)
                 formats = false
