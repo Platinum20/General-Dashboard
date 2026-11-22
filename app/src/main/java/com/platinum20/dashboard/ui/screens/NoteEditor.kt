@@ -582,7 +582,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
         ) { inner ->
             @OptIn(ExperimentalLayoutApi::class)
             val imeOpen = WindowInsets.isImeVisible
-            val bodyStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface, lineHeight = 29.sp)
+            val bodyStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface, lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified)
             val titleStyle = MaterialTheme.typography.headlineSmall.copy(color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
             val faint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             Column(
@@ -686,7 +686,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                         SlashItem(Icons.Outlined.PhotoCamera, "Scatta", "con la fotocamera") { camera.launch(ReceiptReader.photoUri(context)) },
                         SlashItem(Icons.Outlined.Mic, "Detta", "dove c'è il cursore") { dictate() },
                         SlashItem(Icons.Outlined.Draw, "Disegno", "a mano") { draw() },
-                        SlashItem(Icons.Outlined.GraphicEq, "Audio", "registra") { record() },
+                        SlashItem(Icons.Outlined.GraphicEq, "Vocale", "registra") { record() },
                     ),
                     // Con la tastiera aperta niente altezza minima: se no la pagina scorre per mostrarla tutta e titolo e foto
                     // finiscono fuori dallo schermo (1.559).

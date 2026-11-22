@@ -105,6 +105,25 @@ object NoteFormat {
         return Edit(text.substring(0, s) + piece + text.substring(e), s + piece.length)
     }
 
+    /** Un link messo con "@" (1.589): verso un'altra nota o una pagina di Canvas. Si comporta come un pezzo unico. */
+    fun isMention(url: String): Boolean = url.startsWith(NOTE_LINK) || url.startsWith(APP_LINK)
+
+    /** Dove stanno i link "@" nel testo, da "[" a ")". */
+    fun mentions(text: String): List<IntRange> = linkRx.findAll(text).filter { isMention(it.groupValues[2]) }.map { it.range }.toList()
+
+    /**
+     * Cancellato un solo carattere di un link "@" o di un vocale (1.589): se ne va tutto il link, e lo spazio dopo se c'era.
+     * [old] prima, [new] dopo, [cursor] dove sta il cursore dopo; null = non era un link "@".
+     */
+    fun deleteMention(old: String, new: String, cursor: Int): Edit? {
+        if (new.length != old.length - 1 || cursor !in 0..new.length) return null
+        if (!new.regionMatches(0, old, 0, cursor) || !new.regionMatches(cursor, old, cursor + 1, old.length - cursor - 1)) return null
+        val r = linkRx.findAll(old).filter { isMention(it.groupValues[2]) || it.groupValues[2].startsWith(NoteAudio.SCHEME) }
+            .map { it.range }.firstOrNull { cursor in it } ?: return null
+        val end = if (old.getOrNull(r.last + 1) == ' ') r.last + 2 else r.last + 1
+        return Edit(old.removeRange(r.first, end), r.first)
+    }
+
     /** Un'altra nota dentro questa (scrivendo "@"): `[Titolo](nota:ID)` al posto di [from]..[to]. */
     fun noteLink(text: String, from: Int, to: Int, title: String, id: Long): Edit = mentionLink(text, from, to, title, "$NOTE_LINK$id")
 

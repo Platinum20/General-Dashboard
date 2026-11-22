@@ -7,15 +7,18 @@ package com.platinum20.dashboard.notes
  * pallini. Funzioni pure: si provano senza telefono.
  */
 object NoteLines {
-    enum class Kind { TEXT, BULLET, CHECK, HEADING, NUMBER, QUOTE, CALLOUT, DIVIDER, TABLE }
+    enum class Kind { TEXT, BULLET, CHECK, HEADING, NUMBER, QUOTE, CALLOUT, DIVIDER, TABLE, AUDIO }
 
     /** Una riga: [start]..[end] ([end] = dove sta il "\n" o la fine), il segno davanti lungo [prefix]. */
     data class Line(val index: Int, val start: Int, val end: Int, val kind: Kind, val done: Boolean, val prefix: Int, val level: Int = 0, val number: Int = 0) {
         val contentStart: Int get() = start + prefix
         val isList: Boolean get() = kind == Kind.BULLET || kind == Kind.CHECK || kind == Kind.NUMBER
 
+        /** Un pezzo unico (1.589): tabella, linea, vocale. Il cursore non ci entra, Indietro lo toglie tutto. */
+        val isBlock: Boolean get() = kind == Kind.DIVIDER || kind == Kind.TABLE || kind == Kind.AUDIO
+
         /** Il segno davanti non si vede e l'editor ci disegna sopra (cerchio, numero, barra, emoji, linea). */
-        val hasMark: Boolean get() = isList || kind == Kind.QUOTE || kind == Kind.CALLOUT || kind == Kind.DIVIDER || kind == Kind.TABLE
+        val hasMark: Boolean get() = isList || kind == Kind.QUOTE || kind == Kind.CALLOUT || kind == Kind.DIVIDER || kind == Kind.TABLE || kind == Kind.AUDIO
     }
 
     /** Il risultato di una modifica: testo nuovo e cursore (o selezione) nuovo. */
@@ -26,6 +29,7 @@ object NoteLines {
     const val BULLET = "- "
     const val HEADING = "## "
 
+    private val audioRx = Regex("""^\s*\[[^\]\n]*]\(audio:[^)\n]+\)\s*$""")
     private val checkRx = Regex("""^\s*\[([ xX]?)](?: |$)""")
     private val bulletRx = Regex("""^\s*[-•*] """)
     private val numberRx = Regex("""^\s*(\d{1,3})[.)] """)
@@ -63,6 +67,8 @@ object NoteLines {
         if (line.trim() == DIVIDER) return Triple(Kind.DIVIDER, false, line.length)
         // Una riga della tabella (1.588): "| a | b |", tutta nascosta; l'editor ci disegna sopra le caselle.
         if (NoteTable.isRow(line)) return Triple(Kind.TABLE, false, line.length)
+        // Un vocale da solo sulla riga (1.589): l'editor ci disegna sopra la barra con play e avanzamento.
+        if (audioRx.matches(line)) return Triple(Kind.AUDIO, false, line.length)
         if (line.startsWith(QUOTE)) return Triple(Kind.QUOTE, false, QUOTE.length)
         calloutRx.find(line)?.let { m -> return Triple(Kind.CALLOUT, false, m.value.length) }
         checkRx.find(line)?.let { m -> return Triple(Kind.CHECK, m.groupValues[1].equals("x", ignoreCase = true), m.value.length) }
@@ -108,7 +114,7 @@ object NoteLines {
         Kind.NUMBER -> "1. "
         Kind.QUOTE -> QUOTE
         Kind.CALLOUT -> CALLOUT
-        Kind.DIVIDER, Kind.TABLE -> ""
+        Kind.DIVIDER, Kind.TABLE, Kind.AUDIO -> ""
     }
 
     /**
@@ -188,7 +194,7 @@ object NoteLines {
             new.regionMatches(0, old, 0, cursor) && new.regionMatches(cursor, old, cursor + 1, old.length - cursor - 1)
         ) {
             val line = lineAt(old, cursor)
-            if (line.hasMark && line.kind != Kind.DIVIDER && line.kind != Kind.TABLE && cursor >= line.start && cursor < line.contentStart) {
+            if (line.hasMark && !line.isBlock && cursor >= line.start && cursor < line.contentStart) {
                 return Edit(old.removeRange(line.start, line.contentStart), line.start)
             }
             // Indietro all'inizio della riga sotto una linea: se ne va la linea, non il testo.
@@ -425,15 +431,21 @@ object NoteLines {
      */
     const val PLACE = "\u2009\u200B"
 
+    /** L'aria sopra ogni riga scritta (1.589): un carattere invisibile che l'editor disegna più grande. */
+    const val BREATH = "\u200B"
+
     /**
      * Il testo come lo disegna l'editor: i segni dei formati [hidden] (da [NoteFormat.hidden]) spariscono, il segno di
      * ogni voce diventa [PLACE]. Il cursore non può finire dentro un segno: da lì va sempre dopo.
      */
-    class Shown(val text: String, hidden: List<IntRange> = emptyList()) {
+    class Shown(val text: String, hidden: List<IntRange> = emptyList(), breathe: Boolean = false) {
         data class Cut(val start: Int, val end: Int, val with: String)
 
         val lines: List<Line> = parse(text)
         val cuts: List<Cut> = (lines.filter { it.hasMark && it.prefix > 0 }.map { Cut(it.start, it.contentStart, PLACE) } +
+            // [breathe] (1.589): uno spazio di larghezza zero all'inizio di ogni riga scritta, che l'editor fa più alto: così
+            // c'è aria fra una riga e l'altra (Invio), ma non dentro la stessa riga che va a capo da sola.
+            (if (breathe) lines.filter { !(it.hasMark && it.prefix > 0) }.map { Cut(it.start, it.start, BREATH) } else emptyList()) +
             hidden.map { Cut(it.first, it.last + 1, "") })
             .sortedBy { it.start }
             .fold(mutableListOf<Cut>()) { acc, c -> if (acc.isNotEmpty() && c.start < acc.last().end) acc else acc.apply { add(c) } }
@@ -498,9 +510,78 @@ object NoteLines {
         return out
     }
 
-    /** Un cursore finito dentro il segno di una voce va subito dopo il segno. */
+    /**
+     * Un cursore finito dentro il segno di una voce va subito dopo il segno. Su un pezzo unico (tabella, linea,
+     * vocale) va in fondo a tutto il pezzo: da lì Invio apre una riga sotto, scrivere va nella riga sotto.
+     */
     fun outOfPrefix(text: String, offset: Int): Int {
         val line = lineAt(text, offset)
+        if (line.isBlock && offset >= line.start && offset <= line.end) return blockOf(text, line).last
         return if (line.hasMark && offset >= line.start && offset < line.contentStart) line.contentStart else offset
+    }
+
+    /** Il pezzo unico che contiene [line]: da dove comincia a dove finisce (prima del suo "\n"). Più righe di tabella di fila = una. */
+    fun blockOf(text: String, line: Line): IntRange {
+        if (line.kind != Kind.TABLE) return line.start..line.end
+        val lines = parse(text)
+        var a = line.index
+        var b = line.index
+        while (a > 0 && lines[a - 1].kind == Kind.TABLE) a--
+        while (b < lines.size - 1 && lines[b + 1].kind == Kind.TABLE) b++
+        return lines[a].start..lines[b].end
+    }
+
+    /** Tutti i pezzi unici del testo, [blockOf] di ognuno. */
+    fun blocks(text: String): List<IntRange> {
+        val out = mutableListOf<IntRange>()
+        parse(text).filter { it.isBlock }.forEach { l -> if (out.none { l.start in it }) out += blockOf(text, l) }
+        return out
+    }
+
+    /**
+     * La tastiera non rompe i pezzi unici (1.589). Scrivere attaccato a una tabella, una linea o un vocale va in una
+     * riga nuova sotto; cancellare anche un solo carattere (o Indietro a inizio della riga sotto) toglie tutto il pezzo;
+     * Indietro all'inizio del pezzo non lo incolla alla riga sopra. Null = la modifica non li tocca.
+     */
+    fun guardBlocks(old: String, new: String): Edit? {
+        val blocks = blocks(old)
+        if (blocks.isEmpty() || old == new) return null
+        var a = 0
+        val max = minOf(old.length, new.length)
+        while (a < max && old[a] == new[a]) a++
+        var s = 0
+        while (s < max - a && old[old.length - 1 - s] == new[new.length - 1 - s]) s++
+        val b = old.length - s
+        val ins = new.substring(a, new.length - s)
+        if (a == b) {
+            // Solo testo in più, in [a].
+            val blk = blocks.firstOrNull { a > it.first && a <= it.last } ?: blocks.firstOrNull { a == it.first && ins.any { c -> c != '\n' } } ?: return null
+            if (a == blk.last && ins.startsWith("\n")) return null
+            if (a == blk.first) {
+                // Davanti al pezzo: il testo va in una riga sua, sopra.
+                val piece = if (ins.endsWith("\n")) ins else ins + "\n"
+                val t = old.substring(0, a) + piece + old.substring(a)
+                return Edit(t, a + ins.trimEnd('\n').length)
+            }
+            val piece = if (ins.startsWith("\n")) ins else "\n" + ins
+            val t = old.substring(0, blk.last) + piece + old.substring(blk.last)
+            return Edit(t, blk.last + piece.length)
+        }
+        // Qualcosa tolto (o sostituito) fra [a] e [b].
+        val hit = blocks.filter { a <= it.last && b > it.first }
+        if (hit.isEmpty()) {
+            // Indietro all'inizio del pezzo: la riga sopra resta dov'è (se era vuota se ne va lei).
+            val blk = blocks.firstOrNull { b == it.first && a == it.first - 1 && ins.isEmpty() } ?: return null
+            val prevEmpty = a == 0 || old[a - 1] == '\n'
+            return if (prevEmpty) null else Edit(old, a)
+        }
+        if (ins.isNotEmpty()) return Edit(old, hit.first().last)
+        if (hit.all { a <= it.first && b >= it.last }) return null
+        var from = minOf(a, hit.minOf { it.first })
+        val end = hit.maxOf { it.last }
+        var to = maxOf(b, end)
+        // Con il pezzo se ne va anche il suo "\n" (quello dopo, o quello prima se è l'ultima riga).
+        if (to == end) { if (to < old.length) to++ else if (from > 0) from-- }
+        return Edit(old.removeRange(from, to), from.coerceAtMost(old.length - (to - from)))
     }
 }
