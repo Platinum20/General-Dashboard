@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.583.0
+**Note: cerchi e pallini allineati**
+- Cerchi, pallini e numeri delle voci stanno sul bordo del testo, non sporgono più a sinistra; il testo della voce comincia subito dopo
+- Le sotto-voci scalano di un rientro preciso a ogni livello
 ## 1.582.0
 **Editor delle note più completo (parte 1)**
 - La barra sopra la tastiera è fatta di icone tonde, in gruppi: Annulla e Ripeti, punti, numeri, spunte, rientro e Aa

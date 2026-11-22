@@ -132,7 +132,10 @@ internal fun richBarShown(): Boolean = RichBar.target != null && WindowInsets.is
  * Il posto di cerchio e pallino: lo spazio sottile al posto del segno, allargato con la spaziatura delle lettere.
  * Niente ParagraphStyle (1.556): ogni voce diventava un paragrafo a sé e fra le righe compariva una riga vuota.
  */
-private val INDENT = 32.sp
+private val INDENT = 30.sp
+
+/** Il posto del cerchio (19 dp) e del pallino, allineato al bordo del testo. */
+private val MARK_SLOT = 20.dp
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -291,18 +294,21 @@ internal fun RichNoteField(
             val drawn = l.layoutInput.text.length
             shown.lines.filter { it.isList && shown.toShown(it.start) < drawn }.forEach { line -> androidx.compose.runtime.key(line.index) {
                 val at = shown.toShown(line.start)
-                val place = l.getBoundingBox(at)
                 val row = l.getLineForOffset(at)
                 val top = l.getLineTop(row)
                 val height = with(density) { (l.getLineBottom(row) - top).toDp() }
-                // Tutto il rientro fino al testo: il riquadro del solo spazio sottile è largo un filo e schiacciava i cerchi (1.559).
-                val width = with(density) { (l.getHorizontalPosition(at + 1, true) - place.left).coerceAtLeast(place.width).toDp() }
+                // Il segno si misura da dove comincia il testo della voce (1.583): un rientro prima del testo. Così il cerchio
+                // di una voce sta sul bordo del testo normale, non fuori a sinistra, e le sotto-voci scalano di un rientro.
+                val textX = l.getHorizontalPosition(shown.toShown(line.contentStart).coerceAtMost(drawn), true)
+                val indentPx = with(density) { INDENT.toPx() }
+                val left = (textX - indentPx).coerceAtLeast(0f)
+                val width = with(density) { (textX - left).coerceAtLeast(1f).toDp() }
                 val rowPx = (l.getLineBottom(row) - top).coerceAtLeast(1f)
                 val lineNow by rememberUpdatedState(line)
                 Box(
-                    contentAlignment = Alignment.CenterEnd,
+                    contentAlignment = Alignment.CenterStart,
                     modifier = Modifier
-                        .offset { IntOffset(place.left.toInt(), top.toInt()) }
+                        .offset { IntOffset(left.toInt(), top.toInt()) }
                         .size(width, height)
                         .pointerInput(readOnly) {
                             if (readOnly) return@pointerInput
@@ -364,8 +370,8 @@ internal fun RichNoteField(
                             },
                         ),
                 ) {
-                    // Il segno sta sempre accanto al testo, anche nelle sotto-voci più rientrate.
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.width(with(density) { INDENT.toDp() }).fillMaxHeight()) {
+                    // Il segno nel suo posto largo quanto il cerchio, sul bordo sinistro del rientro.
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.width(MARK_SLOT).fillMaxHeight()) {
                         LineMark(line, lifted = dragging == line.index)
                     }
                 }
@@ -387,7 +393,7 @@ private fun LineMark(line: NoteLines.Line, lifted: Boolean = false) {
             color = if (lifted) colors.primary else colors.onSurfaceVariant,
             maxLines = 1,
             softWrap = false,
-            modifier = Modifier.wrapContentWidth(unbounded = true),
+            modifier = Modifier.wrapContentWidth(Alignment.Start, unbounded = true),
         )
         // requiredSize: tondi sempre, anche se il posto è più stretto.
         line.kind == NoteLines.Kind.BULLET -> Box(Modifier.requiredSize(if (lifted) 9.dp else 6.dp).clip(CircleShape).background(ink))
