@@ -7,30 +7,41 @@ package com.platinum20.dashboard.notes
  * pallini. Funzioni pure: si provano senza telefono.
  */
 object NoteLines {
-    enum class Kind { TEXT, BULLET, CHECK, HEADING, NUMBER, QUOTE, CALLOUT, DIVIDER, TABLE, AUDIO }
+    enum class Kind { TEXT, BULLET, CHECK, HEADING, NUMBER, QUOTE, CALLOUT, DIVIDER, TABLE, AUDIO, COLUMNS, PAGE, BOOKMARK, BOARD }
 
     /** Una riga: [start]..[end] ([end] = dove sta il "\n" o la fine), il segno davanti lungo [prefix]. */
-    data class Line(val index: Int, val start: Int, val end: Int, val kind: Kind, val done: Boolean, val prefix: Int, val level: Int = 0, val number: Int = 0) {
+    data class Line(val index: Int, val start: Int, val end: Int, val kind: Kind, val done: Boolean, val prefix: Int, val level: Int = 0, val number: Int = 0, val doing: Boolean = false) {
         val contentStart: Int get() = start + prefix
         val isList: Boolean get() = kind == Kind.BULLET || kind == Kind.CHECK || kind == Kind.NUMBER
 
-        /** Un pezzo unico (1.589): tabella, linea, vocale. Il cursore non ci entra, Indietro lo toglie tutto. */
-        val isBlock: Boolean get() = kind == Kind.DIVIDER || kind == Kind.TABLE || kind == Kind.AUDIO
+        /**
+         * Un pezzo unico (1.589): tabella, linea, vocale; dalla 1.590 anche due colonne, sotto-nota, anteprima di un link e
+         * bacheca. Il cursore non ci entra, Indietro lo toglie tutto, l'editor ci disegna sopra.
+         */
+        val isBlock: Boolean get() = kind == Kind.DIVIDER || kind == Kind.TABLE || kind == Kind.AUDIO || kind == Kind.COLUMNS ||
+            kind == Kind.PAGE || kind == Kind.BOOKMARK || kind == Kind.BOARD
 
         /** Il segno davanti non si vede e l'editor ci disegna sopra (cerchio, numero, barra, emoji, linea). */
-        val hasMark: Boolean get() = isList || kind == Kind.QUOTE || kind == Kind.CALLOUT || kind == Kind.DIVIDER || kind == Kind.TABLE || kind == Kind.AUDIO
+        val hasMark: Boolean get() = isList || kind == Kind.QUOTE || kind == Kind.CALLOUT || isBlock
     }
 
     /** Il risultato di una modifica: testo nuovo e cursore (o selezione) nuovo. */
     data class Edit(val text: String, val start: Int, val end: Int = start)
 
     const val CHECK = "[ ] "
+    /** Una voce cominciata (1.590): "In corso" nella bacheca. */
+    const val DOING = "[-] "
+    /** La bacheca (1.590): da sola sulla riga, le spunte sotto sono le sue schede. */
+    const val BOARD = "[bacheca]"
     const val DONE = "[x] "
     const val BULLET = "- "
     const val HEADING = "## "
 
     private val audioRx = Regex("""^\s*\[[^\]\n]*]\(audio:[^)\n]+\)\s*$""")
-    private val checkRx = Regex("""^\s*\[([ xX]?)](?: |$)""")
+    private val columnsRx = Regex("""^‖ ([^\n]*) ‖ ([^\n]*) ‖\s*$""")
+    private val pageRx = Regex("""^\[📄 [^\]\n]*]\(nota:\d+\)\s*$""")
+    private val bookmarkRx = Regex("""^\[🔗[^\]\n]*]\(https?://[^)\s]+\)\s*$""")
+    private val checkRx = Regex("""^\s*\[([ xX\-]?)](?: |$)""")
     private val bulletRx = Regex("""^\s*[-•*] """)
     private val numberRx = Regex("""^\s*(\d{1,3})[.)] """)
 
@@ -69,6 +80,12 @@ object NoteLines {
         if (NoteTable.isRow(line)) return Triple(Kind.TABLE, false, line.length)
         // Un vocale da solo sulla riga (1.589): l'editor ci disegna sopra la barra con play e avanzamento.
         if (audioRx.matches(line)) return Triple(Kind.AUDIO, false, line.length)
+        // 1.590: due colonne "‖ a ‖ b ‖", una sotto-nota "[📄 Titolo](nota:12)", l'anteprima "[🔗 sito](https://…)",
+        // la bacheca "[bacheca]" (le spunte subito sotto diventano le sue schede).
+        if (columnsRx.matches(line)) return Triple(Kind.COLUMNS, false, line.length)
+        if (pageRx.matches(line)) return Triple(Kind.PAGE, false, line.length)
+        if (bookmarkRx.matches(line)) return Triple(Kind.BOOKMARK, false, line.length)
+        if (line.trim() == BOARD) return Triple(Kind.BOARD, false, line.length)
         if (line.startsWith(QUOTE)) return Triple(Kind.QUOTE, false, QUOTE.length)
         calloutRx.find(line)?.let { m -> return Triple(Kind.CALLOUT, false, m.value.length) }
         checkRx.find(line)?.let { m -> return Triple(Kind.CHECK, m.groupValues[1].equals("x", ignoreCase = true), m.value.length) }
@@ -89,7 +106,8 @@ object NoteLines {
             val (kind, done, prefix) = kindOf(raw)
             val level = if (kind == Kind.BULLET || kind == Kind.CHECK || kind == Kind.NUMBER) levelOf(raw) else 0
             val number = if (kind == Kind.NUMBER) numberRx.find(raw)?.groupValues?.get(1)?.toIntOrNull() ?: 1 else 0
-            out += Line(index, start, end, kind, done, prefix, level, number)
+            val doing = kind == Kind.CHECK && raw.trimStart().startsWith(DOING)
+            out += Line(index, start, end, kind, done, prefix, level, number, doing)
             if (nl < 0) break
             start = nl + 1
             index++
@@ -114,7 +132,7 @@ object NoteLines {
         Kind.NUMBER -> "1. "
         Kind.QUOTE -> QUOTE
         Kind.CALLOUT -> CALLOUT
-        Kind.DIVIDER, Kind.TABLE, Kind.AUDIO -> ""
+        Kind.DIVIDER, Kind.TABLE, Kind.AUDIO, Kind.COLUMNS, Kind.PAGE, Kind.BOOKMARK, Kind.BOARD -> ""
     }
 
     /**
@@ -515,13 +533,15 @@ object NoteLines {
      * vocale) va in fondo a tutto il pezzo: da lì Invio apre una riga sotto, scrivere va nella riga sotto.
      */
     fun outOfPrefix(text: String, offset: Int): Int {
+        blocks(text).firstOrNull { offset >= it.first && offset <= it.last }?.let { return it.last }
         val line = lineAt(text, offset)
-        if (line.isBlock && offset >= line.start && offset <= line.end) return blockOf(text, line).last
         return if (line.hasMark && offset >= line.start && offset < line.contentStart) line.contentStart else offset
     }
 
     /** Il pezzo unico che contiene [line]: da dove comincia a dove finisce (prima del suo "\n"). Più righe di tabella di fila = una. */
     fun blockOf(text: String, line: Line): IntRange {
+        // La bacheca (1.590) si porta dietro le sue schede.
+        if (line.kind == Kind.BOARD) return line.start..(boardItems(text, line.index).lastOrNull()?.end ?: line.end)
         if (line.kind != Kind.TABLE) return line.start..line.end
         val lines = parse(text)
         var a = line.index
@@ -583,5 +603,126 @@ object NoteLines {
         // Con il pezzo se ne va anche il suo "\n" (quello dopo, o quello prima se è l'ultima riga).
         if (to == end) { if (to < old.length) to++ else if (from > 0) from-- }
         return Edit(old.removeRange(from, to), from.coerceAtMost(old.length - (to - from)))
+    }
+
+    // ---- 1.590: le idee prese da Notion ----
+
+    /**
+     * "Trasforma in": le righe toccate diventano [kind] (Testo = senza segno). A differenza dei tasti della barra non fa
+     * avanti e indietro: se lo sono già, restano così.
+     */
+    fun transform(text: String, selStart: Int, selEnd: Int, kind: Kind): Edit {
+        val s = minOf(selStart, selEnd).coerceIn(0, text.length)
+        val e = maxOf(selStart, selEnd).coerceIn(0, text.length)
+        val touched = parse(text).filter { it.end >= s && it.start <= e }
+        if (touched.isEmpty() || touched.any { it.isBlock } || touched.all { it.kind == kind }) return Edit(text, selStart, selEnd)
+        if (kind != Kind.TEXT) return setKind(text, selStart, selEnd, kind)
+        // Prima tutte uguali, poi lo stesso tasto le riporta a testo.
+        val same = setKind(text, selStart, selEnd, Kind.BULLET)
+        return setKind(same.text, same.start, same.end, Kind.BULLET)
+    }
+
+    /** Una riga-pezzo ([line], senza "\n") sotto la riga di [offset], o al suo posto se è vuota; il cursore in fondo al pezzo. */
+    fun insertBlock(text: String, offset: Int, line: String): Edit {
+        val l = lineAt(text, offset.coerceIn(0, text.length))
+        if (text.substring(l.start, l.end).isBlank()) {
+            val t = text.substring(0, l.start) + line + text.substring(l.end)
+            return Edit(t, l.start + line.length)
+        }
+        val t = text.substring(0, l.end) + "\n" + line + text.substring(l.end)
+        return Edit(t, l.end + 1 + line.length)
+    }
+
+    // Due colonne: "‖ sinistra ‖ destra ‖"; un a capo dentro una colonna si tiene come U+2028.
+    const val COLUMNS_NEW = "‖  ‖  ‖"
+    private val columnsParts = Regex("""^‖ ([^\n]*) ‖ ([^\n]*) ‖\s*$""")
+
+    fun columns(line: String): Pair<String, String> {
+        val m = columnsParts.find(line) ?: return "" to ""
+        return m.groupValues[1].replace('\u2028', '\n') to m.groupValues[2].replace('\u2028', '\n')
+    }
+
+    fun columnsLine(left: String, right: String): String {
+        fun clean(c: String) = c.replace('‖', '|').replace('\n', '\u2028')
+        return "‖ ${clean(left)} ‖ ${clean(right)} ‖"
+    }
+
+    /** Le due colonne tornano righe normali: prima quelle di sinistra, poi quelle di destra. */
+    fun uncolumn(text: String, index: Int): String {
+        val l = parse(text).getOrNull(index)?.takeIf { it.kind == Kind.COLUMNS } ?: return text
+        val (a, b) = columns(text.substring(l.start, l.end))
+        val lines = (a.split('\n') + b.split('\n')).filter { it.isNotBlank() }.joinToString("\n")
+        return text.substring(0, l.start) + lines + text.substring(l.end)
+    }
+
+    /** Una sotto-nota: la riga che la apre. */
+    fun pageLine(title: String, id: Long): String = "[📄 ${title.replace('[', '(').replace(']', ')').replace('\n', ' ').trim().ifEmpty { "Pagina" }}](nota:$id)"
+
+    fun pageId(line: String): Long? = Regex("""\(nota:(\d+)\)""").find(line)?.groupValues?.get(1)?.toLongOrNull()
+
+    /** L'anteprima di un link: `[🔗 sito](https://…)`. */
+    fun bookmarkLine(url: String): String = "[🔗 ${host(url)}]($url)"
+
+    fun bookmarkUrl(line: String): String? = Regex("""\((https?://[^)\s]+)\)""").find(line)?.groupValues?.get(1)
+
+    /** "www.corriere.it/x" → "corriere.it". */
+    fun host(url: String): String = url.substringAfter("://").substringBefore('/').substringBefore('?').removePrefix("www.")
+
+    private val bareUrl = Regex("""^https?://[^\s)\]]+$""")
+
+    /**
+     * Un indirizzo da solo sulla riga e poi Invio (1.590): la riga diventa la sua anteprima (titolo e immagine).
+     * Null = non è questo caso.
+     */
+    fun autoBookmark(old: String, new: String, cursor: Int): Edit? {
+        if (new.length != old.length + 1 || cursor < 1 || cursor > new.length || new[cursor - 1] != '\n') return null
+        if (!new.regionMatches(0, old, 0, cursor - 1) || !new.regionMatches(cursor, old, cursor - 1, old.length - cursor + 1)) return null
+        val p = cursor - 1
+        val line = lineAt(old, p)
+        if (line.kind != Kind.TEXT || p != line.end) return null
+        val url = old.substring(line.start, line.end).trim()
+        if (!bareUrl.matches(url)) return null
+        val piece = bookmarkLine(url)
+        val t = old.substring(0, line.start) + piece + "\n" + old.substring(line.end)
+        return Edit(t, line.start + piece.length + 1)
+    }
+
+    /** Le schede della bacheca alla riga [index]: le spunte subito sotto. */
+    fun boardItems(text: String, index: Int): List<Line> {
+        val lines = parse(text)
+        if (lines.getOrNull(index)?.kind != Kind.BOARD) return emptyList()
+        return lines.drop(index + 1).takeWhile { it.kind == Kind.CHECK }
+    }
+
+    /** Le righe nascoste sotto ogni bacheca: si vedono come schede. */
+    fun boardRanges(text: String): List<IntRange> = parse(text).filter { it.kind == Kind.BOARD }.mapNotNull { b ->
+        val items = boardItems(text, b.index)
+        if (items.isEmpty()) null else b.end until items.last().end
+    }
+
+    /** La colonna della bacheca: 0 = da fare, 1 = in corso, 2 = fatto. */
+    fun stateOf(line: Line): Int = if (line.done) 2 else if (line.doing) 1 else 0
+
+    /** La voce alla riga [index] va in [state] (0 da fare, 1 in corso, 2 fatto). */
+    fun setState(text: String, index: Int, state: Int): String {
+        val line = parse(text).getOrNull(index)?.takeIf { it.kind == Kind.CHECK } ?: return text
+        val indent = text.substring(line.start, line.contentStart).takeWhile { it == ' ' || it == '\t' }
+        val prefix = when (state) { 1 -> DOING; 2 -> DONE; else -> CHECK }
+        return text.substring(0, line.start) + indent + prefix + text.substring(line.contentStart)
+    }
+
+    /** Il testo della riga [index] (senza il segno) diventa [content]. */
+    fun setContent(text: String, index: Int, content: String): String {
+        val line = parse(text).getOrNull(index) ?: return text
+        return text.substring(0, line.contentStart) + content.replace('\n', ' ') + text.substring(line.end)
+    }
+
+    /** Una scheda nuova in fondo alla bacheca della riga [index], in [state]. */
+    fun boardAdd(text: String, index: Int, title: String, state: Int = 0): String {
+        val lines = parse(text)
+        val board = lines.getOrNull(index)?.takeIf { it.kind == Kind.BOARD } ?: return text
+        val at = boardItems(text, index).lastOrNull()?.end ?: board.end
+        val prefix = when (state) { 1 -> DOING; 2 -> DONE; else -> CHECK }
+        return text.substring(0, at) + "\n" + prefix + title.replace('\n', ' ').trim() + text.substring(at)
     }
 }

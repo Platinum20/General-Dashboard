@@ -33,12 +33,21 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.automirrored.outlined.Notes
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.ViewColumn
+import androidx.compose.material.icons.outlined.SwapHoriz
+import androidx.compose.material.icons.outlined.FormatColorReset
+import androidx.compose.material.icons.outlined.FormatColorFill
+import androidx.compose.material.icons.outlined.FormatColorText
+import androidx.compose.material.icons.outlined.Transform
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material.icons.outlined.Title
 import androidx.compose.material3.Icon
@@ -229,7 +238,21 @@ internal fun RichNoteField(
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
     // Le righe che si chiudono (1.588): i titoli chiusi, per testo del titolo; e la tabella che si sta cambiando.
     var folded by remember { mutableStateOf(setOf<String>()) }
-    val folds = remember(value.text, folded) { NoteLines.foldRanges(value.text, folded) }
+    // Le righe nascoste: sotto i titoli chiusi e, dalla 1.590, le spunte di una bacheca (si vedono come schede).
+    val folds = remember(value.text, folded) { NoteLines.foldRanges(value.text, folded) + NoteLines.boardRanges(value.text) }
+    // Quanto deve essere alta la riga nascosta sotto due colonne, sotto-nota, anteprima, bacheca (1.590): la misura il
+    // pezzo disegnato sopra, la chiave è il testo della riga.
+    var blockSp by remember { mutableStateOf(mapOf<String, Float>()) }
+    fun fit(key: String, linePx: Float, needPx: Int) {
+        if (needPx <= 0 || linePx <= 0f || kotlin.math.abs(needPx - linePx) < 3f) return
+        val cur = blockSp[key] ?: BREATH_SIZE.value
+        val next = (cur * needPx / linePx).coerceIn(8f, 4000f)
+        if (kotlin.math.abs(next - cur) > 0.3f) blockSp = blockSp.filterKeys { it in value.text } + (key to next)
+    }
+    var boardDialog by remember { mutableStateOf<Triple<Int, Int, String>?>(null) }
+    val notesData by NotesStore.data.collectAsStateWithLifecycle()
+    val previews by com.platinum20.dashboard.notes.LinkPreview.cards.collectAsStateWithLifecycle()
+    val fieldClipboard = LocalClipboardManager.current
     // La tabella in cui si sta scrivendo (riga di testo della sua prima riga) e la casella da aprire subito (1.590).
     var activeTable by remember { mutableStateOf<Int?>(null) }
     var wantCell by remember { mutableStateOf<Triple<Int, Int, Int>?>(null) }
@@ -260,7 +283,10 @@ internal fun RichNoteField(
         if (guard != null) next = TextFieldValue(guard.text, TextRange(guard.start))
         else if (mention != null) next = TextFieldValue(mention.text, TextRange(mention.start))
         else if (typed && v.text != old.text && v.selection.collapsed) {
-            NoteLines.afterEdit(old.text, v.text, v.selection.end)?.let { next = TextFieldValue(it.text, TextRange(it.start, it.end)) }
+            // Un indirizzo da solo sulla riga e Invio: diventa la sua anteprima (1.590).
+            val bookmark = NoteLines.autoBookmark(old.text, v.text, v.selection.end)
+            if (bookmark != null) next = TextFieldValue(bookmark.text, TextRange(bookmark.start))
+            else NoteLines.afterEdit(old.text, v.text, v.selection.end)?.let { next = TextFieldValue(it.text, TextRange(it.start, it.end)) }
             // I segni dei formati non si vedono (1.577): la tastiera non deve poterli rompere.
             NoteFormat.afterEdit(old.text, old.selection.start, old.selection.end, next.text, next.selection.end)?.let {
                 next = TextFieldValue(it.text, TextRange(it.start, it.end))
@@ -315,9 +341,9 @@ internal fun RichNoteField(
     val marker = androidx.compose.ui.graphics.Color(0x66FFD54F)
     // Mentre si scrive in una tabella la sua ultima riga è più alta: sotto ci sta il + per una riga nuova (1.590).
     val tallAt = activeTable?.let { NoteTable.blockAt(value.text, it) }?.let { NoteLines.parse(value.text)[it.last].start }
-    val transformation = remember(faded, value.text, found, findAt, accent, folds, tallAt) {
+    val transformation = remember(faded, value.text, found, findAt, accent, folds, tallAt, blockSp) {
         VisualTransformation { input ->
-            richText(input.text, faded, found.mapIndexed { i, r -> r to if (i == findAt) foundNow else foundStyle }, accent, marker = marker, folds = folds, tall = tallAt)
+            richText(input.text, faded, found.mapIndexed { i, r -> r to if (i == findAt) foundNow else foundStyle }, accent, marker = marker, folds = folds, tall = tallAt, sizes = blockSp)
         }
     }
     fun hiddenLine(line: NoteLines.Line) = folds.any { line.start in it }
@@ -365,6 +391,19 @@ internal fun RichNoteField(
     var dragPull by remember { mutableFloatStateOf(0f) }
     var dragEndedAt by remember { mutableLongStateOf(0L) }
 
+    boardDialog?.let { (board, item, start) ->
+        BoardTextDialog(
+            title = if (item < 0) "Nuova scheda" else "Cambia la scheda",
+            start = start,
+            onDone = { t ->
+                boardDialog = null
+                val now = current.text
+                val next = if (item < 0) NoteLines.boardAdd(now, board, t) else NoteLines.setContent(now, item, t)
+                change(TextFieldValue(next, current.selection), typed = false)
+            },
+            onDismiss = { boardDialog = null },
+        )
+    }
     // Una tabella appena messa dal menu "/": si scrive subito nella prima casella.
     LaunchedEffect(RichBar.openTable) {
         val at = RichBar.openTable ?: return@LaunchedEffect
@@ -395,7 +434,7 @@ internal fun RichNoteField(
                 )
             }
             // Le bolle dei link "@" (1.589), sotto il testo: una per riga se il link va a capo.
-            NoteFormat.mentions(text).filter { r -> folds.none { r.first in it } }.forEach { r ->
+            NoteFormat.mentions(text).filter { r -> folds.none { r.first in it } && !NoteLines.lineAt(text, r.first).isBlock }.forEach { r ->
                 val s0 = shown.toShown(r.first)
                 val e0 = shown.toShown(r.last + 1).coerceAtMost(drawn)
                 if (s0 >= e0) return@forEach
@@ -539,7 +578,7 @@ internal fun RichNoteField(
                 }
             } }
             // Citazione, riquadro e linea (1.584): la barra, l'emoji, la linea. Tieni premuto per le scelte.
-            shown.lines.filter { it.hasMark && !it.isList && it.kind != NoteLines.Kind.TABLE && it.kind != NoteLines.Kind.AUDIO && !hiddenLine(it) && shown.toShown(it.start) < drawn }.forEach { line -> androidx.compose.runtime.key("m${line.index}") {
+            shown.lines.filter { (it.kind == NoteLines.Kind.QUOTE || it.kind == NoteLines.Kind.CALLOUT || it.kind == NoteLines.Kind.DIVIDER) && !hiddenLine(it) && shown.toShown(it.start) < drawn }.forEach { line -> androidx.compose.runtime.key("m${line.index}") {
                 val at = shown.toShown(line.start)
                 val first = l.getLineForOffset(at)
                 val last = l.getLineForOffset(shown.toShown(line.end).coerceAtMost(drawn))
@@ -577,7 +616,7 @@ internal fun RichNoteField(
                 }
             } }
             // I link si toccano (1.586): un tocco apre la nota collegata con "@" o la pagina; tieni premuto = le scelte.
-            if (!readOnly) NoteFormat.spans(text).filter { (it.kind == NoteFormat.Kind.LINK || it.kind == NoteFormat.Kind.URL) && folds.none { f -> it.start in f } && NoteLines.lineAt(text, it.start).kind != NoteLines.Kind.AUDIO }.forEach { span ->
+            if (!readOnly) NoteFormat.spans(text).filter { (it.kind == NoteFormat.Kind.LINK || it.kind == NoteFormat.Kind.URL) && folds.none { f -> it.start in f } && !NoteLines.lineAt(text, it.start).isBlock }.forEach { span ->
                 val (url, label) = NoteFormat.linkAt(text, span.start) ?: return@forEach
                 val s0 = shown.toShown(span.start)
                 val e0 = shown.toShown(span.end).coerceAtMost(drawn)
@@ -646,6 +685,138 @@ internal fun RichNoteField(
                             modifier = Modifier.size(20.dp),
                         )
                         if (closed) Text("$count", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
+                    }
+                }
+            }
+            // ---- 1.590: due colonne, sotto-note, anteprime dei link, bacheca ----
+            fun replaceLine(index: Int, with: String?) {
+                val now = current.text
+                val ln = NoteLines.parse(now).getOrNull(index) ?: return
+                val t = if (with == null) NoteLines.remove(now, index) else now.substring(0, ln.start) + with + now.substring(ln.end)
+                val at = if (with == null) ln.start else ln.start + with.length
+                change(TextFieldValue(t, TextRange(at.coerceIn(0, t.length))), typed = false)
+            }
+            fun undoable(said: String, run: () -> Unit) {
+                val before = current
+                run()
+                CaptureFeedback.tell(context, said, Icons.Outlined.Delete, "Annulla") { emit(before) }
+            }
+            val newBlocks = setOf(NoteLines.Kind.COLUMNS, NoteLines.Kind.PAGE, NoteLines.Kind.BOOKMARK, NoteLines.Kind.BOARD)
+            shown.lines.filter { it.kind in newBlocks && !hiddenLine(it) && shown.toShown(it.start) < drawn }.forEach { line ->
+                val raw = text.substring(line.start, line.end)
+                val row = l.getLineForOffset(shown.toShown(line.start))
+                val top = l.getLineTop(row)
+                val bottom = l.getLineBottom(row)
+                val place = Modifier
+                    .offset { IntOffset(0, top.toInt()) }
+                    .fillMaxWidth()
+                    .onSizeChanged { fit(raw, bottom - top, it.height) }
+                androidx.compose.runtime.key("b${line.index}:${line.kind}") {
+                    when (line.kind) {
+                        NoteLines.Kind.COLUMNS -> {
+                            val (a, b) = NoteLines.columns(raw)
+                            NoteColumnsBlock(
+                                left = a, right = b, readOnly = readOnly,
+                                want = wantCell?.takeIf { it.first == line.index }?.third,
+                                modifier = place,
+                                onWanted = { wantCell = null },
+                                onChange = { x, y -> replaceLine(line.index, NoteLines.columnsLine(x, y)) },
+                                onLongPress = {
+                                    haptic(Haptic.LONG_PRESS)
+                                    ActionBubble.show(
+                                        BubbleAction(Icons.AutoMirrored.Outlined.Notes, "Diventa testo normale", "prima la sinistra, poi la destra") {
+                                            change(TextFieldValue(NoteLines.uncolumn(current.text, line.index), TextRange(line.start)), typed = false)
+                                        },
+                                        BubbleAction(Icons.Outlined.SwapHoriz, "Scambia le colonne", "la destra va a sinistra") { replaceLine(line.index, NoteLines.columnsLine(b, a)) },
+                                        BubbleAction(Icons.Outlined.Delete, "Togli le colonne", "con Annulla", danger = true) { undoable("Colonne tolte") { replaceLine(line.index, null) } },
+                                    )
+                                },
+                            )
+                        }
+                        NoteLines.Kind.PAGE -> {
+                            val id = NoteLines.pageId(raw)
+                            val note = notesData.notes.firstOrNull { it.id == id }
+                            val label = NoteFormat.linkAt(raw, 1)?.second?.removePrefix("📄 ") ?: "Pagina"
+                            val name = note?.plainTitle?.ifEmpty { null } ?: label
+                            NotePageRow(
+                                emoji = note?.emoji ?: "📄",
+                                title = name,
+                                modifier = place,
+                                onOpen = { haptic(Haptic.TICK); openNoteLink(inApp, "${NoteFormat.NOTE_LINK}$id", name) },
+                                onLongPress = if (readOnly) null else ({
+                                    haptic(Haptic.LONG_PRESS)
+                                    ActionBubble.show(
+                                        BubbleAction(Icons.AutoMirrored.Outlined.OpenInNew, "Apri la sotto-nota", "la pagina dentro questa nota") { openNoteLink(inApp, "${NoteFormat.NOTE_LINK}$id", name) },
+                                        BubbleAction(Icons.Outlined.Delete, "Togli da questa nota", "resta fra le note, con Annulla", danger = true) { undoable("Tolta dalla nota") { replaceLine(line.index, null) } },
+                                    )
+                                }),
+                            )
+                        }
+                        NoteLines.Kind.BOOKMARK -> {
+                            val url = NoteLines.bookmarkUrl(raw).orEmpty()
+                            LaunchedEffect(url) { if (url.isNotEmpty()) com.platinum20.dashboard.notes.LinkPreview.fetch(context, url) }
+                            val card = previews[url]
+                            NoteBookmarkCard(
+                                url = url, card = card, fallback = NoteLines.host(url), modifier = place,
+                                onOpen = { haptic(Haptic.TICK); openNoteLink(inApp, url, card?.title ?: url) },
+                                onLongPress = if (readOnly) null else ({
+                                    haptic(Haptic.LONG_PRESS)
+                                    ActionBubble.show(
+                                        BubbleAction(Icons.AutoMirrored.Outlined.OpenInNew, "Apri", "la pagina, dentro Canvas") { openNoteLink(inApp, url, card?.title ?: url) },
+                                        BubbleAction(Icons.Outlined.Link, "Diventa un link nel testo", "solo il titolo, sottolineato") {
+                                            val title = (card?.title ?: NoteLines.host(url)).replace('[', '(').replace(']', ')')
+                                            replaceLine(line.index, "[$title]($url)")
+                                        },
+                                        BubbleAction(Icons.Outlined.ContentCopy, "Copia l'indirizzo", "per incollarlo altrove") {
+                                            fieldClipboard.setText(androidx.compose.ui.text.AnnotatedString(url))
+                                        },
+                                        BubbleAction(Icons.Outlined.Delete, "Togli l'anteprima", "con Annulla", danger = true) { undoable("Anteprima tolta") { replaceLine(line.index, null) } },
+                                    )
+                                }),
+                            )
+                        }
+                        NoteLines.Kind.BOARD -> {
+                            val cards = NoteLines.boardItems(text, line.index).map {
+                                BoardCard(it.index, NoteLines.plainLine(text.substring(it.start, it.end)), NoteLines.stateOf(it))
+                            }
+                            NoteBoard(
+                                cards = cards, readOnly = readOnly, modifier = place,
+                                onCard = { c ->
+                                    haptic(Haptic.LONG_PRESS)
+                                    ActionBubble.show(
+                                        BubbleAction(
+                                            Icons.Outlined.ViewColumn, "Sposta in", "la colonna della scheda",
+                                            chips = listOf("Da fare", "In corso", "Fatto").mapIndexed { i, n ->
+                                                BubbleChip(n, selected = c.state == i) { change(TextFieldValue(NoteLines.setState(current.text, c.line, i), current.selection), typed = false) }
+                                            },
+                                        ),
+                                        BubbleAction(Icons.Outlined.Edit, "Cambia il testo", "della scheda") { boardDialog = Triple(line.index, c.line, c.title) },
+                                        BubbleAction(Icons.Outlined.Delete, "Togli la scheda", "con Annulla", danger = true) {
+                                            undoable("Scheda tolta") { change(TextFieldValue(NoteLines.remove(current.text, c.line), current.selection), typed = false) }
+                                        },
+                                    )
+                                },
+                                onAdd = { haptic(Haptic.TICK); boardDialog = Triple(line.index, -1, "") },
+                                onLongPress = if (readOnly) null else ({
+                                    haptic(Haptic.LONG_PRESS)
+                                    ActionBubble.show(
+                                        BubbleAction(Icons.Outlined.Add, "Aggiungi una scheda", "in Da fare") { boardDialog = Triple(line.index, -1, "") },
+                                        BubbleAction(Icons.AutoMirrored.Outlined.FormatListBulleted, "Diventa una lista", "le schede tornano voci da spuntare") { replaceLine(line.index, null) },
+                                        BubbleAction(Icons.Outlined.Delete, "Togli la bacheca", "con le sue schede, con Annulla", danger = true) {
+                                            undoable("Bacheca tolta") {
+                                                val now = current.text
+                                                val bl = NoteLines.parse(now).getOrNull(line.index) ?: return@undoable
+                                                val r = NoteLines.blockOf(now, bl)
+                                                val to = if (r.last < now.length) r.last + 1 else r.last
+                                                val from = if (to == r.last && r.first > 0) r.first - 1 else r.first
+                                                change(TextFieldValue(now.removeRange(from, to), TextRange(from)), typed = false)
+                                            }
+                                        },
+                                    )
+                                }),
+                            )
+                        }
+                        else -> {}
                     }
                 }
             }
@@ -852,9 +1023,7 @@ private fun markActions(
                     BubbleChip(e, selected = NoteLines.calloutEmoji(text.substring(line.start, line.end)) == e) { set(NoteLines.setCalloutEmoji(text, line.index, e), line.end) }
                 },
             ) else null,
-            BubbleAction(Icons.AutoMirrored.Outlined.Notes, "Diventa testo", if (line.kind == NoteLines.Kind.QUOTE) "senza la barra" else "senza il riquadro") {
-                set(NoteLines.setLineKind(text, line.index, NoteLines.Kind.TEXT))
-            },
+            transformAction(line.kind) { k -> set(NoteLines.renumber(NoteLines.transform(text, line.start, line.start, k)).text) },
             BubbleAction(Icons.Outlined.Delete, "Togli la riga", "con Annulla", danger = true) {
                 set(NoteLines.remove(text, line.index))
                 CaptureFeedback.tell(context, "Riga tolta", Icons.Outlined.Delete, "Annulla") { emit(TextFieldValue(text, value.selection)) }
@@ -866,7 +1035,7 @@ private fun markActions(
 /** Le emoji da scegliere per il riquadro. */
 private val CALLOUT_EMOJIS = listOf("💡", "⚠️", "📌", "❗", "✅", "🔑", "📞", "❤️")
 
-/** Il cerchio vuoto, il cerchio pieno con la spunta, o il pallino del punto. */
+/** Il quadrato vuoto, il quadrato pieno con la spunta (come su Notion, 1.590), o il pallino del punto. */
 @Composable
 private fun LineMark(line: NoteLines.Line, lifted: Boolean = false) {
     val colors = MaterialTheme.colorScheme
@@ -883,10 +1052,15 @@ private fun LineMark(line: NoteLines.Line, lifted: Boolean = false) {
         )
         // requiredSize: tondi sempre, anche se il posto è più stretto.
         line.kind == NoteLines.Kind.BULLET -> Box(Modifier.requiredSize(if (lifted) 9.dp else 6.dp).clip(CircleShape).background(ink))
-        line.done -> Box(contentAlignment = Alignment.Center, modifier = Modifier.requiredSize(19.dp).clip(CircleShape).background(colors.primary)) {
+        // Quadrati come su Notion (1.590), non più cerchi.
+        line.done -> Box(contentAlignment = Alignment.Center, modifier = Modifier.requiredSize(18.dp).clip(RoundedCornerShape(4.dp)).background(colors.primary)) {
             Icon(Icons.Outlined.Check, contentDescription = null, tint = colors.onPrimary, modifier = Modifier.size(13.dp))
         }
-        else -> Box(Modifier.requiredSize(19.dp).border(1.6.dp, if (lifted) colors.primary else colors.onSurfaceVariant, CircleShape))
+        // In corso (1.590, dalla bacheca): il quadrato blu con un quadratino dentro.
+        line.doing -> Box(contentAlignment = Alignment.Center, modifier = Modifier.requiredSize(18.dp).border(1.6.dp, colors.primary, RoundedCornerShape(4.dp))) {
+            Box(Modifier.requiredSize(8.dp).clip(RoundedCornerShape(2.dp)).background(colors.primary))
+        }
+        else -> Box(Modifier.requiredSize(18.dp).border(1.6.dp, if (lifted) colors.primary else colors.onSurfaceVariant, RoundedCornerShape(4.dp)))
     }
 }
 
@@ -904,6 +1078,8 @@ private fun richText(
     marker: androidx.compose.ui.graphics.Color = faded,
     /** La riga (dove comincia) da fare più alta: l'ultima della tabella in cui si scrive. */
     tall: Int? = null,
+    /** L'altezza (in sp del carattere invisibile) delle righe-pezzo, per il loro testo (1.590). */
+    sizes: Map<String, Float> = emptyMap(),
 ): TransformedText {
     val styled = buildAnnotatedString {
         append(text)
@@ -914,6 +1090,10 @@ private fun richText(
                 NoteFormat.Kind.STRIKE -> SpanStyle(textDecoration = TextDecoration.LineThrough)
                 NoteFormat.Kind.HEADING -> SpanStyle(fontWeight = FontWeight.SemiBold, fontSize = 19.sp)
                 NoteFormat.Kind.MARK -> null
+                // I colori (1.590): minuscola = testo, maiuscola = sfondo.
+                NoteFormat.Kind.COLOR -> NoteFormat.colorAt(text, s.start)?.let { c ->
+                    if (c.isUpperCase()) SpanStyle(background = noteColor(c)) else SpanStyle(color = noteColor(c))
+                }
                 // Evidenziatore (1.584): uno sfondo giallo chiaro, l'unico colore che non vuol dire niente altro.
                 NoteFormat.Kind.HIGHLIGHT -> SpanStyle(background = marker)
                 // I link "@" stanno in una bolla (disegnata sotto il testo), senza sottolineatura (1.589).
@@ -953,7 +1133,8 @@ private fun richText(
         // dopo un Invio ha più spazio sopra; le righe che vanno a capo da sole restano strette.
         view.lines.filter { folds.none { f -> it.start in f } }.forEach { line ->
             val at = view.toShown(line.start) + if (line.hasMark && line.prefix > 0) 1 else 0
-            if (at < length) addStyle(SpanStyle(fontSize = if (line.start == tall) TALL_SIZE else BREATH_SIZE), at, at + 1)
+            val size = if (line.start == tall) TALL_SIZE else if (line.isBlock) sizes[text.substring(line.start, line.end)]?.sp ?: BREATH_SIZE else BREATH_SIZE
+            if (at < length) addStyle(SpanStyle(fontSize = size), at, at + 1)
         }
     }
     val mapping = object : OffsetMapping {
@@ -976,9 +1157,7 @@ private fun lineActions(
     fun set(next: String) = emit(TextFieldValue(next, TextRange(NoteLines.parse(next).getOrNull(line.index)?.end ?: next.length)))
     val words = NoteLines.plainLine(text.substring(line.start, line.end))
     return listOfNotNull(
-        if (line.kind == NoteLines.Kind.CHECK) BubbleAction(Icons.AutoMirrored.Outlined.FormatListBulleted, "Diventa un punto", "il cerchio diventa un pallino") { set(NoteLines.setLineKind(text, line.index, NoteLines.Kind.BULLET)) }
-        else BubbleAction(Icons.Outlined.RadioButtonUnchecked, "Diventa da spuntare", "il pallino diventa un cerchio") { set(NoteLines.setLineKind(text, line.index, NoteLines.Kind.CHECK)) },
-        BubbleAction(Icons.AutoMirrored.Outlined.Notes, "Diventa testo", "senza pallino né cerchio") { set(NoteLines.setLineKind(text, line.index, NoteLines.Kind.TEXT)) },
+        transformAction(line.kind) { k -> set(NoteLines.renumber(NoteLines.transform(text, line.start, line.start, k)).text) },
         if (line.index > 0) BubbleAction(Icons.Outlined.ArrowUpward, "Sposta su", "scambia con la riga sopra") { set(NoteLines.move(text, line.index, up = true)) } else null,
         if (line.index < count - 1) BubbleAction(Icons.Outlined.ArrowDownward, "Sposta giù", "scambia con la riga sotto") { set(NoteLines.move(text, line.index, up = false)) } else null,
         if (sendToTodo && words.isNotEmpty()) BubbleAction(Icons.Outlined.TaskAlt, "Manda in Da fare", "la trovi nella card della Home") {
@@ -1107,7 +1286,24 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                 BarIcon(Icons.Outlined.StrikethroughS, "Barrato", on = NoteFormat.Kind.STRIKE in active) { mark(NoteFormat.STRIKE) }
                 BarIcon(Icons.Outlined.BorderColor, "Evidenzia", on = NoteFormat.Kind.HIGHLIGHT in active) { mark(NoteFormat.HIGHLIGHT) }
                 BarIcon(Icons.Outlined.Link, "Link (copia prima l'indirizzo)", on = NoteFormat.Kind.LINK in active) { link() }
+                BarIcon(Icons.Outlined.Palette, "Colore del testo o dello sfondo", on = NoteFormat.Kind.COLOR in active) {
+                    haptic(Haptic.TICK)
+                    ActionBubble.show(*colorActions { code ->
+                        val now = target.value()
+                        val e = NoteFormat.color(now.text, now.selection.min, now.selection.max, code)
+                        target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
+                    }.toTypedArray())
+                }
                 BarSeparator()
+                BarIcon(Icons.Outlined.Transform, "Trasforma in") {
+                    haptic(Haptic.TICK)
+                    val now = target.value()
+                    ActionBubble.show(transformAction(NoteLines.lineAt(now.text, now.selection.min).kind) { k ->
+                        val n = target.value()
+                        val e = NoteLines.renumber(NoteLines.transform(n.text, n.selection.min, n.selection.max, k))
+                        target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
+                    })
+                }
                 BarIcon(Icons.Outlined.Title, "Titolo", on = line.kind == NoteLines.Kind.HEADING) { kind(NoteLines.Kind.HEADING) }
                 BarIcon(Icons.Outlined.FormatQuote, "Citazione", on = line.kind == NoteLines.Kind.QUOTE) { kind(NoteLines.Kind.QUOTE) }
                 BarIcon(Icons.Outlined.Lightbulb, "Riquadro con emoji", on = line.kind == NoteLines.Kind.CALLOUT) { kind(NoteLines.Kind.CALLOUT) }
@@ -1135,7 +1331,7 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                 BarSeparator()
                 BarIcon(Icons.AutoMirrored.Outlined.FormatListBulleted, "Elenco puntato", on = line.kind == NoteLines.Kind.BULLET) { kind(NoteLines.Kind.BULLET) }
                 BarIcon(Icons.Outlined.FormatListNumbered, "Elenco numerato", on = line.kind == NoteLines.Kind.NUMBER) { kind(NoteLines.Kind.NUMBER) }
-                BarIcon(Icons.Outlined.RadioButtonUnchecked, "Voce da spuntare", on = line.kind == NoteLines.Kind.CHECK) { kind(NoteLines.Kind.CHECK) }
+                BarIcon(Icons.Outlined.CheckBoxOutlineBlank, "Voce da spuntare", on = line.kind == NoteLines.Kind.CHECK) { kind(NoteLines.Kind.CHECK) }
                 BarIcon(Icons.AutoMirrored.Outlined.FormatIndentIncrease, "Sotto-voce", enabled = NoteLines.canIndent(v.text, v.selection.min, 1)) { indent(1) }
                 BarIcon(Icons.AutoMirrored.Outlined.FormatIndentDecrease, "Su di un livello", enabled = NoteLines.canIndent(v.text, v.selection.min, -1)) { indent(-1) }
                 BarSeparator()
@@ -1304,3 +1500,35 @@ private fun AudioPill(path: String, label: String, modifier: Modifier, onLongPre
         Text(shownTime, style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant, maxLines = 1)
     }
 }
+
+/** "Trasforma in" (1.590): la riga diventa un'altra cosa; il chip acceso è quello che è adesso. */
+internal fun transformAction(now: NoteLines.Kind, to: (NoteLines.Kind) -> Unit): BubbleAction = BubbleAction(
+    Icons.Outlined.Transform, "Trasforma in", "la riga diventa un'altra cosa",
+    chips = listOf(
+        "Testo" to NoteLines.Kind.TEXT, "Titolo" to NoteLines.Kind.HEADING, "Punti" to NoteLines.Kind.BULLET,
+        "Numeri" to NoteLines.Kind.NUMBER, "Spunta" to NoteLines.Kind.CHECK, "Citazione" to NoteLines.Kind.QUOTE,
+        "Riquadro" to NoteLines.Kind.CALLOUT,
+    ).map { (label, k) -> BubbleChip(label, selected = now == k) { to(k) } },
+)
+
+/** I colori del testo (1.590): lettera del segno, nome. Uno per riga: rosso, arancio, verde, blu, viola. */
+internal val NOTE_COLORS = listOf('r' to "Rosso", 'a' to "Arancio", 'v' to "Verde", 'b' to "Blu", 'p' to "Viola")
+
+/** Il colore vero di una lettera: minuscola = testo, maiuscola = sfondo (più chiaro). */
+internal fun noteColor(code: Char): androidx.compose.ui.graphics.Color {
+    val c = when (code.lowercaseChar()) {
+        'r' -> androidx.compose.ui.graphics.Color(0xFFE5534B)
+        'a' -> androidx.compose.ui.graphics.Color(0xFFF0883E)
+        'v' -> androidx.compose.ui.graphics.Color(0xFF3FB950)
+        'b' -> androidx.compose.ui.graphics.Color(0xFF4C8DF6)
+        else -> androidx.compose.ui.graphics.Color(0xFFA371F7)
+    }
+    return if (code.isUpperCase()) c.copy(alpha = 0.28f) else c
+}
+
+/** Il fumetto dei colori: testo o sfondo, e Togli. */
+internal fun colorActions(apply: (Char?) -> Unit): List<BubbleAction> = listOf(
+    BubbleAction(Icons.Outlined.FormatColorText, "Colore del testo", "sulle parole scelte", chips = NOTE_COLORS.map { (c, n) -> BubbleChip(n) { apply(c) } }),
+    BubbleAction(Icons.Outlined.FormatColorFill, "Colore dello sfondo", "come un evidenziatore", chips = NOTE_COLORS.map { (c, n) -> BubbleChip(n) { apply(c.uppercaseChar()) } }),
+    BubbleAction(Icons.Outlined.FormatColorReset, "Togli il colore", "il testo torna normale") { apply(null) },
+)
