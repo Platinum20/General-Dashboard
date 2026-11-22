@@ -10,6 +10,9 @@ import com.platinum20.dashboard.notes.NoteVersions
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /** Le ultime cose dell'editor (1.588): tabella, righe che si chiudono, "@" per tutta l'app, audio, versioni, PDF. */
 class NoteEditorExtrasTest {
@@ -69,7 +72,6 @@ class NoteEditorExtrasTest {
         repeat(20) { list = NoteVersions.add(list, "v$it", 10L + it) }
         assertEquals(NoteVersions.MAX, list.size)
         assertEquals("v19", list.first().text)
-        assertEquals(list, NoteVersions.parse(NoteVersions.write(mapOf(7L to list)))[7L])
     }
 
     @Test
@@ -84,5 +86,16 @@ class NoteEditorExtrasTest {
         val rows = NotePdf.rows("## Titolo\n- uno\n[x] fatto\n1. primo\n| a | b |")
         assertEquals(listOf("Titolo", "•  uno", "☑  fatto", "1.  primo", "a   ·   b"), rows.map { it.second })
         assertEquals("Spesa casa.pdf", NotePdf.fileName("Spesa/casa"))
+    }
+}
+
+/** Le versioni si salvano in JSON (org.json vero solo con Robolectric). */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
+class NoteVersionsJsonTest {
+    @Test
+    fun versionsSurviveSaving() {
+        val list = listOf(NoteVersions.Version(2, "b"), NoteVersions.Version(1, "a\n\"x\""))
+        assertEquals(list, NoteVersions.parse(NoteVersions.write(mapOf(7L to list)))[7L])
     }
 }
