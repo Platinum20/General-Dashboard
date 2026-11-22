@@ -7,12 +7,15 @@ package com.platinum20.dashboard.notes
  * pallini. Funzioni pure: si provano senza telefono.
  */
 object NoteLines {
-    enum class Kind { TEXT, BULLET, CHECK, HEADING, NUMBER }
+    enum class Kind { TEXT, BULLET, CHECK, HEADING, NUMBER, QUOTE, CALLOUT, DIVIDER }
 
     /** Una riga: [start]..[end] ([end] = dove sta il "\n" o la fine), il segno davanti lungo [prefix]. */
     data class Line(val index: Int, val start: Int, val end: Int, val kind: Kind, val done: Boolean, val prefix: Int, val level: Int = 0, val number: Int = 0) {
         val contentStart: Int get() = start + prefix
         val isList: Boolean get() = kind == Kind.BULLET || kind == Kind.CHECK || kind == Kind.NUMBER
+
+        /** Il segno davanti non si vede e l'editor ci disegna sopra (cerchio, numero, barra, emoji, linea). */
+        val hasMark: Boolean get() = isList || kind == Kind.QUOTE || kind == Kind.CALLOUT || kind == Kind.DIVIDER
     }
 
     /** Il risultato di una modifica: testo nuovo e cursore (o selezione) nuovo. */
@@ -26,6 +29,22 @@ object NoteLines {
     private val checkRx = Regex("""^\s*\[([ xX]?)](?: |$)""")
     private val bulletRx = Regex("""^\s*[-•*] """)
     private val numberRx = Regex("""^\s*(\d{1,3})[.)] """)
+
+    /** Citazione (1.584): "> " davanti. Riquadro "da non dimenticare": "!!" più la sua emoji. Linea: "---" da sola. */
+    const val QUOTE = "> "
+    const val CALLOUT = "!! "
+    const val DIVIDER = "---"
+    const val CALLOUT_EMOJI = "💡"
+    private val calloutRx = Regex("""^!!(\S{0,8}) """)
+
+    /** L'emoji del riquadro: quella scritta dopo "!!", o la lampadina. */
+    fun calloutEmoji(line: String): String = calloutRx.find(line)?.groupValues?.get(1)?.takeIf { it.isNotEmpty() } ?: CALLOUT_EMOJI
+
+    /** Cambia l'emoji del riquadro alla riga [index]. */
+    fun setCalloutEmoji(text: String, index: Int, emoji: String): String {
+        val l = parse(text).getOrNull(index)?.takeIf { it.kind == Kind.CALLOUT } ?: return text
+        return text.substring(0, l.start) + "!!$emoji " + text.substring(l.contentStart)
+    }
 
     /** Un livello di rientro (1.579): due spazi davanti al segno. */
     const val INDENT = "  "
@@ -41,6 +60,9 @@ object NoteLines {
 
     /** Che riga è e quanto è lungo il suo segno. */
     fun kindOf(line: String): Triple<Kind, Boolean, Int> {
+        if (line.trim() == DIVIDER) return Triple(Kind.DIVIDER, false, line.length)
+        if (line.startsWith(QUOTE)) return Triple(Kind.QUOTE, false, QUOTE.length)
+        calloutRx.find(line)?.let { m -> return Triple(Kind.CALLOUT, false, m.value.length) }
         checkRx.find(line)?.let { m -> return Triple(Kind.CHECK, m.groupValues[1].equals("x", ignoreCase = true), m.value.length) }
         bulletRx.find(line)?.let { m -> return Triple(Kind.BULLET, false, m.value.length) }
         numberRx.find(line)?.let { m -> return Triple(Kind.NUMBER, false, m.value.length) }
@@ -82,6 +104,9 @@ object NoteLines {
         Kind.CHECK -> if (done) DONE else CHECK
         Kind.HEADING -> HEADING
         Kind.NUMBER -> "1. "
+        Kind.QUOTE -> QUOTE
+        Kind.CALLOUT -> CALLOUT
+        Kind.DIVIDER -> ""
     }
 
     /**
@@ -160,8 +185,13 @@ object NoteLines {
             new.regionMatches(0, old, 0, cursor) && new.regionMatches(cursor, old, cursor + 1, old.length - cursor - 1)
         ) {
             val line = lineAt(old, cursor)
-            if (line.isList && cursor >= line.start && cursor < line.contentStart) {
+            if (line.hasMark && line.kind != Kind.DIVIDER && cursor >= line.start && cursor < line.contentStart) {
                 return Edit(old.removeRange(line.start, line.contentStart), line.start)
+            }
+            // Indietro all'inizio della riga sotto una linea: se ne va la linea, non il testo.
+            if (cursor >= 1 && old[cursor] == '\n') {
+                val above = lineAt(old, cursor)
+                if (above.kind == Kind.DIVIDER && above.end == cursor) return Edit(old.removeRange(above.start, above.end + 1), above.start)
             }
         }
         return null
@@ -328,7 +358,7 @@ object NoteLines {
         data class Cut(val start: Int, val end: Int, val with: String)
 
         val lines: List<Line> = parse(text)
-        val cuts: List<Cut> = (lines.filter { it.isList && it.prefix > 0 }.map { Cut(it.start, it.contentStart, PLACE) } +
+        val cuts: List<Cut> = (lines.filter { it.hasMark && it.prefix > 0 }.map { Cut(it.start, it.contentStart, PLACE) } +
             hidden.map { Cut(it.first, it.last + 1, "") })
             .sortedBy { it.start }
             .fold(mutableListOf<Cut>()) { acc, c -> if (acc.isNotEmpty() && c.start < acc.last().end) acc else acc.apply { add(c) } }
@@ -365,6 +395,21 @@ object NoteLines {
         }
     }
 
+    /** Una linea sotto la riga del cursore (1.584); il cursore va nella riga dopo la linea. */
+    fun insertDivider(text: String, offset: Int): Edit {
+        val l = lineAt(text, offset.coerceIn(0, text.length))
+        val blank = text.substring(l.contentStart, l.end).isBlank() && l.kind == Kind.TEXT
+        if (blank) {
+            // Su una riga vuota la linea va lì.
+            val t = text.substring(0, l.start) + DIVIDER + "\n" + text.substring(l.end)
+            return Edit(t, l.start + DIVIDER.length + 1)
+        }
+        // Sotto la riga: se dopo c'è già una riga il cursore va lì, se no se ne apre una nuova.
+        val rest = text.substring(l.end)
+        val t = text.substring(0, l.end) + "\n" + DIVIDER + (if (rest.isEmpty()) "\n" else "") + rest
+        return Edit(t, (l.end + DIVIDER.length + 2).coerceAtMost(t.length))
+    }
+
     /** "Cerca nella nota" (1.579): dove compare [query], senza badare a maiuscole. Vuota = niente. */
     fun matches(text: String, query: String): List<IntRange> {
         val q = query.trim()
@@ -381,6 +426,6 @@ object NoteLines {
     /** Un cursore finito dentro il segno di una voce va subito dopo il segno. */
     fun outOfPrefix(text: String, offset: Int): Int {
         val line = lineAt(text, offset)
-        return if (line.isList && offset >= line.start && offset < line.contentStart) line.contentStart else offset
+        return if (line.hasMark && offset >= line.start && offset < line.contentStart) line.contentStart else offset
     }
 }

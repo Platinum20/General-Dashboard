@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.585.0
+**Editor delle note più completo (parte 2)**
+- Scrivi "/" per aggiungere un blocco: punti, numeri, spunte, titolo, citazione, riquadro, linea, foto, scatta, detta
+- Scrivi "@" e il nome di un'altra nota: diventa un link che la apre
+- Nella barra Aa: Evidenzia (sfondo giallo) e Link (incolla l'indirizzo copiato sul testo scelto). Gli indirizzi scritti nella nota si colorano e con il cursore sopra compare il tasto per aprirli
+- Citazione con la barra a sinistra, riquadro con un'emoji che cambi tenendolo premuto, linea per separare due parti
 ## 1.584.0
 **Salvati come playlist in Media**
 - In Media i video salvati stanno nella playlist "Salvati", sempre la prima della fila Video; la musica e i podcast salvati nella loro "Salvati", prima della fila Musica

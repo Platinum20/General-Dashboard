@@ -7,7 +7,7 @@ package com.platinum20.dashboard.notes
  * e [afterEdit] fa in modo che cancellare o andare a capo non rompa mai un segno. Fuori dall'editor si usa [plain].
  */
 object NoteFormat {
-    enum class Kind { BOLD, ITALIC, STRIKE, HEADING, MARK }
+    enum class Kind { BOLD, ITALIC, STRIKE, HEADING, MARK, HIGHLIGHT, LINK, URL }
 
     /** Un pezzo di testo da disegnare in un modo: [end] escluso. */
     data class Span(val start: Int, val end: Int, val kind: Kind)
@@ -21,6 +21,7 @@ object NoteFormat {
     const val BOLD = "**"
     const val ITALIC = "_"
     const val STRIKE = "~~"
+    const val HIGHLIGHT = "=="
     const val HEADING = "## "
 
     // La fine può avere spazi: mentre si scrive in grassetto la parola appena finita non deve far ricomparire i segni.
@@ -29,9 +30,15 @@ object NoteFormat {
     private val italicRx = Regex("""(?<![_\w])_(?=[^\s_])(.+?)_(?![_\w])""")
     private val oldItalicRx = Regex("""(?<![*\w])\*(?=[^\s*])(.+?)(?<=[^\s*])\*(?![*\w])""")
     private val headingRx = Regex("""(?m)^## (.*)$""")
+    private val highlightRx = Regex("""==(?=\S)(.+?)==""")
+
+    /** Un link col suo testo (1.584): `[testo](https://…)` o `[Titolo](nota:12)` per un'altra nota. */
+    private val linkRx = Regex("""\[([^\]\n]+)]\(([^)\s]+)\)""")
+    private val urlRx = Regex("""https?://[^\s)\]]+""")
+    const val NOTE_LINK = "nota:"
 
     /** Un formato acceso senza ancora testo (G toccato senza niente di scelto): scrivendo, il testo nasce formattato. */
-    private val emptyRx = Regex("""\*\*\*\*|~~~~|(?<![_\w])__(?![_\w])""")
+    private val emptyRx = Regex("""\*\*\*\*|~~~~|====|(?<![_\w])__(?![_\w])""")
 
     private fun formats(text: String): List<Format> {
         val out = mutableListOf<Format>()
@@ -43,6 +50,11 @@ object NoteFormat {
         }
         wrapped(boldRx, Kind.BOLD, BOLD.length, text)
         wrapped(strikeRx, Kind.STRIKE, STRIKE.length, text)
+        wrapped(highlightRx, Kind.HIGHLIGHT, HIGHLIGHT.length, text)
+        linkRx.findAll(text).forEach { m ->
+            val label = m.groups[1]!!.range
+            out += Format(Kind.LINK, m.range.first..m.range.first, label.last + 1..m.range.last)
+        }
         // Il corsivo non deve prendere le stelle del grassetto: si cerca con i soli segni del grassetto coperti.
         val masked = StringBuilder(text)
         out.filter { it.kind == Kind.BOLD }.forEach { f -> (f.open + f.close!!).forEach { masked.setCharAt(it, '\u0001') } }
@@ -55,6 +67,50 @@ object NoteFormat {
     private fun empties(text: String, marks: Set<Int>): List<IntRange> =
         emptyRx.findAll(text).map { it.range }.filter { r -> r.none { it in marks } }.toList()
 
+    /** L'indirizzo del link (o dell'indirizzo scritto così com'è) dove sta [offset]; null = nessuno. */
+    fun linkAt(text: String, offset: Int): Pair<String, String>? {
+        linkRx.findAll(text).forEach { m ->
+            if (offset >= m.range.first && offset <= m.range.last + 1) return m.groupValues[2] to m.groupValues[1]
+        }
+        urlRx.findAll(text).forEach { m ->
+            if (offset >= m.range.first && offset <= m.range.last + 1) return m.value to m.value
+        }
+        return null
+    }
+
+    /** Gli indirizzi scritti così come sono, fuori dai link col testo: si colorano come link. */
+    private fun bareUrls(text: String): List<IntRange> {
+        val inLinks = linkRx.findAll(text).map { it.range }.toList()
+        return urlRx.findAll(text).map { it.range }.filter { r -> inLinks.none { r.first in it } }.toList()
+    }
+
+    /**
+     * Il tasto Link della barra Aa: il testo scelto diventa un link a [url]. Senza testo scelto, l'indirizzo va dove
+     * sta il cursore. Un link già lì si toglie (resta il testo).
+     */
+    fun link(text: String, start: Int, end: Int, url: String?): Edit {
+        val s = minOf(start, end).coerceIn(0, text.length)
+        val e = maxOf(start, end).coerceIn(0, text.length)
+        linkRx.findAll(text).firstOrNull { s >= it.range.first && s <= it.range.last }?.let { m ->
+            val label = m.groupValues[1]
+            val t = text.substring(0, m.range.first) + label + text.substring(m.range.last + 1)
+            return Edit(t, m.range.first, m.range.first + label.length)
+        }
+        val u = url?.trim().orEmpty()
+        if (u.isEmpty()) return Edit(text, start, end)
+        if (s == e) return Edit(text.substring(0, s) + u + text.substring(s), s + u.length)
+        val label = text.substring(s, e).trim().replace('\n', ' ')
+        val piece = "[$label]($u)"
+        return Edit(text.substring(0, s) + piece + text.substring(e), s + piece.length)
+    }
+
+    /** Un'altra nota dentro questa (scrivendo "@"): `[Titolo](nota:ID)` al posto di [from]..[to]. */
+    fun noteLink(text: String, from: Int, to: Int, title: String, id: Long): Edit {
+        val clean = title.replace('[', '(').replace(']', ')').replace('\n', ' ').trim().ifEmpty { "Nota" }
+        val piece = "[$clean]($NOTE_LINK$id) "
+        return Edit(text.substring(0, from) + piece + text.substring(to), from + piece.length)
+    }
+
     private fun markSet(fs: List<Format>): Set<Int> = fs.flatMap { f -> f.open.toList() + (f.close?.toList() ?: emptyList()) }.toSet()
 
     /** Dove disegnare ogni formato e quali sono i segni. */
@@ -65,6 +121,7 @@ object NoteFormat {
             out += Span(f.contentStart, f.close?.first ?: headingEnd(text, f), f.kind)
             f.close?.let { out += Span(it.first, it.last + 1, Kind.MARK) }
         }
+        bareUrls(text).forEach { out += Span(it.first, it.last + 1, Kind.URL) }
         return out.filter { it.end > it.start }.sortedBy { it.start }
     }
 
@@ -103,12 +160,14 @@ object NoteFormat {
     private fun kindOf(mark: String) = when (mark) {
         BOLD -> Kind.BOLD
         STRIKE -> Kind.STRIKE
+        HIGHLIGHT -> Kind.HIGHLIGHT
         else -> Kind.ITALIC
     }
 
     private fun markOf(kind: Kind) = when (kind) {
         Kind.BOLD -> BOLD
         Kind.STRIKE -> STRIKE
+        Kind.HIGHLIGHT -> HIGHLIGHT
         else -> ITALIC
     }
 
