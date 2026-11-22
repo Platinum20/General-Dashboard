@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.isImeVisible
@@ -35,6 +36,7 @@ import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.ViewColumn
 import androidx.compose.material.icons.outlined.SwapHoriz
@@ -77,6 +79,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.ParagraphStyle
+import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
@@ -133,7 +137,6 @@ import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.BorderColor
 import androidx.compose.material.icons.outlined.EmojiEmotions
 import androidx.compose.material.icons.outlined.FormatQuote
-import androidx.compose.material.icons.outlined.HorizontalRule
 import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -181,20 +184,14 @@ class SlashItem(val icon: ImageVector, val label: String, val detail: String, va
 @Composable
 internal fun richBarShown(): Boolean = RichBar.target.let { t -> t != null && (WindowInsets.isImeVisible || !t.value().selection.collapsed) }
 
-/**
- * Il posto di cerchio e pallino: lo spazio sottile al posto del segno, allargato con la spaziatura delle lettere.
- * Niente ParagraphStyle (1.556): ogni voce diventava un paragrafo a sé e fra le righe compariva una riga vuota.
- */
+/** Il posto di cerchio, pallino e barra della citazione: il rientro di ogni livello prima del testo. */
 private val INDENT = 30.sp
+
+/** Quanto è largo lo spazio sottile al posto del segno ([NoteLines.PLACE]) nel testo delle note. */
+private val THIN_SPACE = 3.sp
 
 /** Il posto del cerchio (19 dp) e del pallino, allineato al bordo del testo. */
 private val MARK_SLOT = 20.dp
-
-/**
- * Lo spazio fra lettere sul posto del segno (1.589): il telefono ne usa circa sei decimi (metà va prima della prima
- * lettera della riga e si perde), quindi 46 sp danno circa 28 dp: il cerchio da 20 dp e un po' d'aria prima del testo.
- */
-private val MARK_SPACE = 46.sp
 
 /** Quanto è alto il carattere invisibile in cima a ogni riga (1.589): l'aria dopo un Invio. */
 private val BREATH_SIZE = 25.sp
@@ -227,6 +224,11 @@ internal fun RichNoteField(
     slashExtras: List<SlashItem> = emptyList(),
     /** L'indice dei titoli (1.586): la riga che comincia a first va in cima alla pagina; second cambia a ogni tocco. */
     revealAt: Pair<Int, Int>? = null,
+    /**
+     * Chi scorre la pagina (1.594): riceve la riga del cursore (alto e basso, sullo schermo) a ogni cambio e quando la
+     * tastiera si apre, e la tiene sopra la tastiera. Senza, il campo chiede da solo di restare in vista.
+     */
+    keepInView: ((top: Float, bottom: Float, typing: Boolean) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val haptic = rememberHaptic()
@@ -355,7 +357,11 @@ internal fun RichNoteField(
     val room = with(LocalDensity.current) { 32.dp.toPx() }
     // Scrivendo (1.591): la riga sale in alto, sotto c'è lo spazio vuoto della pagina, mai sotto la tastiera.
     var followedText by remember { mutableStateOf(value.text) }
-    LaunchedEffect(value.text, value.selection, focused) {
+    var fieldAt by remember { mutableStateOf<androidx.compose.ui.layout.LayoutCoordinates?>(null) }
+    val keep by rememberUpdatedState(keepInView)
+    // La tastiera che si apre (o cresce) rifà il conto: la riga del cursore non resta sotto.
+    val imeBottom = WindowInsets.ime.getBottom(LocalDensity.current)
+    LaunchedEffect(value.text, value.selection, focused, imeBottom) {
         if (!focused || readOnly) return@LaunchedEffect
         val typing = value.text != followedText
         followedText = value.text
@@ -364,6 +370,13 @@ internal fun RichNoteField(
         val at = transformation.filter(AnnotatedString(value.text)).offsetMapping.originalToTransformed(value.selection.end)
         if (at > l.layoutInput.text.length) return@LaunchedEffect
         val cursor = l.getCursorRect(at)
+        val pager = keep
+        val where = fieldAt
+        if (pager != null && where != null && where.isAttached) {
+            val top = where.localToRoot(androidx.compose.ui.geometry.Offset(0f, cursor.top)).y
+            pager(top, top + cursor.height, typing)
+            return@LaunchedEffect
+        }
         // Un rettangolo più alto dello schermo: la pagina scorre finché la riga sta in alto, con un po' di righe sopra.
         if (typing) follow.bringIntoView(Rect(cursor.left, cursor.top - room * 3, cursor.right, cursor.top + room * 200))
         else follow.bringIntoView(Rect(cursor.left, cursor.top - room / 2, cursor.right, cursor.bottom + room))
@@ -481,6 +494,7 @@ internal fun RichNoteField(
             },
             modifier = Modifier
                 .fillMaxWidth()
+                .onGloballyPositioned { fieldAt = it }
                 .bringIntoViewRequester(follow)
                 .heightIn(min = minHeight)
                 .focusRequester(mainFocus)
@@ -1088,7 +1102,7 @@ private fun LineMark(line: NoteLines.Line, lifted: Boolean = false) {
  * Il testo disegnato: formati, titoletti, voci fatte barrate e sbiadite, il rientro di punti e voci. I segni dei formati
  * ([NoteFormat.hidden]) e delle voci ([NoteLines.Shown]) non si vedono mai (1.577).
  */
-private fun richText(
+internal fun richText(
     text: String,
     faded: androidx.compose.ui.graphics.Color,
     marks: List<Pair<IntRange, SpanStyle>> = emptyList(),
@@ -1133,8 +1147,7 @@ private fun richText(
         marks.forEach { (r, style) -> if (r.last < text.length) addStyle(style, r.first, r.last + 1) }
     }
     val view = NoteLines.Shown(text, NoteFormat.hidden(text) + folds, breathe = true)
-    if (view.cuts.isEmpty()) return TransformedText(styled, OffsetMapping.Identity)
-    val shown = buildAnnotatedString {
+    val drawn = buildAnnotatedString {
         var at = 0
         view.cuts.forEach { c ->
             append(styled.subSequence(at, c.start))
@@ -1142,13 +1155,6 @@ private fun richText(
             at = c.end
         }
         append(styled.subSequence(at, text.length))
-        view.lines.filter { it.hasMark && it.prefix > 0 && !it.isBlock && folds.none { f -> it.start in f } }.forEach { line ->
-            val s = view.toShown(line.start)
-            // Ogni livello di sotto-voce sposta il testo di un altro rientro (1.579); citazione e riquadro uno solo.
-            // Spazio fra lettere sul posto del segno, mai ParagraphStyle: ogni voce diventava un paragrafo con una riga
-            // vuota sotto (1.556, di nuovo nella 1.587).
-            if (s < length) addStyle(SpanStyle(letterSpacing = (MARK_SPACE.value * (1 + line.level)).sp), s, s + 1)
-        }
         // L'aria fra le righe (1.589): il carattere invisibile in cima a ogni riga è più grande del testo, così la riga
         // dopo un Invio ha più spazio sopra; le righe che vanno a capo da sole restano strette.
         view.lines.filter { folds.none { f -> it.start in f } }.forEach { line ->
@@ -1157,6 +1163,23 @@ private fun richText(
             if (at < length) addStyle(SpanStyle(fontSize = size), at, at + 1)
         }
     }
+    // Il rientro sospeso: ogni riga scritta è un paragrafo con il suo rientro, così il testo di voci, sotto-voci e
+    // citazioni che va a capo resta allineato al testo, non torna al bordo né finisce sulla barra. L'"a capo" fra un
+    // paragrafo e l'altro diventa uno spazio di larghezza zero (stessa lunghezza, posizioni uguali): con l'"a capo"
+    // dentro, ogni voce aveva una riga vuota sotto (1.556, 1.587).
+    val paras = view.paragraphs { line -> folds.any { line.start in it } }
+    val chars = drawn.text.toCharArray()
+    paras.dropLast(1).forEach { p -> if (p.end > 0 && chars[p.end - 1] == '\n') chars[p.end - 1] = '\u200B' }
+    val shown = AnnotatedString(
+        String(chars),
+        spanStyles = drawn.spanStyles,
+        paragraphStyles = paras.filter { it.end > it.start }.map { p ->
+            val first = (INDENT.value * p.indents).sp
+            // Le righe dopo la prima partono dove comincia il testo: dopo il rientro e lo spazio sottile del segno.
+            val rest = if (p.indents > 0) (INDENT.value * p.indents + THIN_SPACE.value).sp else 0.sp
+            AnnotatedString.Range(ParagraphStyle(textIndent = TextIndent(firstLine = first, restLine = rest)), p.start, p.end)
+        },
+    )
     val mapping = object : OffsetMapping {
         override fun originalToTransformed(offset: Int) = view.toShown(offset).coerceIn(0, shown.length)
         override fun transformedToOriginal(offset: Int) = view.toText(offset).coerceIn(0, text.length)
@@ -1270,12 +1293,6 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
         val e = NoteFormat.link(now.text, now.selection.min, now.selection.max, copied)
         target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
     }
-    fun divider() {
-        haptic(Haptic.TICK)
-        val now = slashBase ?: target.value()
-        val e = NoteLines.insertDivider(now.text, now.selection.end)
-        target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
-    }
     Row(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -1327,7 +1344,6 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                 BarIcon(Icons.Outlined.Title, "Titolo", on = line.kind == NoteLines.Kind.HEADING) { kind(NoteLines.Kind.HEADING) }
                 BarIcon(Icons.Outlined.FormatQuote, "Citazione", on = line.kind == NoteLines.Kind.QUOTE) { kind(NoteLines.Kind.QUOTE) }
                 BarIcon(Icons.Outlined.Lightbulb, "Riquadro con emoji", on = line.kind == NoteLines.Kind.CALLOUT) { kind(NoteLines.Kind.CALLOUT) }
-                BarIcon(Icons.Outlined.HorizontalRule, "Linea") { divider() }
                 BarSeparator()
                 BarIcon(Icons.Outlined.Close, "Torna a punti e spunte") {
                     haptic(Haptic.TICK)
@@ -1355,7 +1371,7 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                 BarIcon(Icons.AutoMirrored.Outlined.FormatIndentIncrease, "Sotto-voce", enabled = NoteLines.canIndent(v.text, v.selection.min, 1)) { indent(1) }
                 BarIcon(Icons.AutoMirrored.Outlined.FormatIndentDecrease, "Su di un livello", enabled = NoteLines.canIndent(v.text, v.selection.min, -1)) { indent(-1) }
                 BarSeparator()
-                BarIcon(Icons.Outlined.TextFormat, "Formati, citazione, riquadro, linea, link") {
+                BarIcon(Icons.Outlined.TextFormat, "Formati, colori, link, titolo, citazione, riquadro") {
                     haptic(Haptic.TICK)
                     formats = true
                 }

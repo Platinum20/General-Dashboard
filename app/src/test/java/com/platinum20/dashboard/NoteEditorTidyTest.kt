@@ -1,0 +1,106 @@
+package com.platinum20.dashboard
+
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextIndent
+import androidx.compose.ui.unit.sp
+import com.platinum20.dashboard.notes.NoteLines
+import com.platinum20.dashboard.ui.screens.RichNoteField
+import com.platinum20.dashboard.ui.screens.keepLineDelta
+import com.platinum20.dashboard.ui.screens.richText
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+
+/**
+ * Pulizia dell'editor (1.594): rientro sospeso di voci, sotto-voci e citazioni (le righe che vanno a capo restano
+ * allineate al testo), nessuna riga vuota fra le voci, la riga in cui si scrive sempre sopra la tastiera.
+ */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
+class NoteEditorTidyTest {
+    @get:Rule
+    val compose = createComposeRule()
+
+    private val sample = "Titoletto\n- uno\n  - sotto voce lunga che va a capo\n> una citazione lunga\n[ ] spunta\ntesto\n"
+
+    @Test
+    fun oneParagraphPerLineWithItsIndent() {
+        val view = NoteLines.Shown(sample, breathe = true)
+        val paras = view.paragraphs()
+        // Sette righe, anche l'ultima vuota (il suo carattere invisibile).
+        assertEquals(7, paras.size)
+        assertEquals(listOf(0, 1, 2, 1, 1, 0, 0), paras.map { it.indents })
+        // I paragrafi si toccano e coprono tutto il testo.
+        assertEquals(0, paras.first().start)
+        assertEquals(view.shown.length, paras.last().end)
+        paras.zipWithNext().forEach { (a, b) -> assertEquals(a.end, b.start) }
+    }
+
+    @Test
+    fun drawnTextKeepsLengthAndHasNoNewlinesBetweenParagraphs() {
+        val t = richText(sample, Color.Gray)
+        val drawn = t.text
+        val view = NoteLines.Shown(sample, breathe = true)
+        assertEquals(view.shown.length, drawn.length)
+        // Nessun "a capo" fra i paragrafi: diventerebbero righe vuote fra le voci.
+        assertEquals(0, drawn.text.count { it == '\n' })
+        val styles = drawn.paragraphStyles
+        assertEquals(7, styles.size)
+        styles.zipWithNext().forEach { (a, b) -> assertTrue(a.end <= b.start) }
+        // La sotto-voce: la prima riga e quelle a capo partono allineate al testo, due rientri dentro.
+        val sub = styles[2].item.textIndent ?: TextIndent.None
+        assertEquals(60f, sub.firstLine.value, 0.01f)
+        assertEquals(63f, sub.restLine.value, 0.01f)
+        val quote = styles[3].item.textIndent ?: TextIndent.None
+        assertTrue(quote.restLine.value > 30f)
+        // Il testo normale non si sposta.
+        assertEquals(0.sp, (styles[5].item.textIndent ?: TextIndent.None).restLine)
+        // Le posizioni del cursore restano le stesse.
+        for (o in 0..sample.length) assertEquals(view.toShown(o), t.offsetMapping.originalToTransformed(o))
+    }
+
+    @Test
+    fun textWithoutTrailingNewline() {
+        val t = richText("- uno\n- due", Color.Gray).text
+        assertFalse(t.text.contains('\n'))
+        assertEquals(2, t.paragraphStyles.size)
+        assertEquals("", richText("", Color.Gray).text.text.replace("\u200B", ""))
+    }
+
+    @Test
+    fun typingLineGoesUpNeverUnderTheKeyboard() {
+        // Parte visibile da 100 a 500 (sopra la tastiera).
+        assertEquals(0f, keepLineDelta(200f, 224f, typing = true, visTop = 100f, visBottom = 500f, margin = 24f), 0.01f)
+        // Scrivendo oltre metà: la riga torna a un terzo.
+        assertEquals(400f - 220f, keepLineDelta(400f, 424f, typing = true, visTop = 100f, visBottom = 500f, margin = 24f), 0.01f)
+        // Sotto la tastiera (fuori dalla parte visibile): sale.
+        assertTrue(keepLineDelta(700f, 724f, typing = true, visTop = 100f, visBottom = 500f, margin = 24f) > 400f)
+        // Muovendo solo il cursore basta che si veda.
+        assertEquals(0f, keepLineDelta(400f, 424f, typing = false, visTop = 100f, visBottom = 500f, margin = 24f), 0.01f)
+        assertEquals(700f + 24f - 476f, keepLineDelta(700f, 724f, typing = false, visTop = 100f, visBottom = 500f, margin = 24f), 0.01f)
+    }
+
+    @Test
+    fun fieldDrawsListsAndQuotesWithoutCrashing() {
+        compose.setContent {
+            MaterialTheme {
+                var v by remember { mutableStateOf(TextFieldValue(sample + "1. numero\n> " + "lunga ".repeat(40), TextRange(3))) }
+                RichNoteField(value = v, onValueChange = { v = it }, textStyle = MaterialTheme.typography.bodyLarge, placeholder = "Scrivi")
+            }
+        }
+        compose.waitForIdle()
+    }
+}

@@ -481,6 +481,31 @@ object NoteLines {
             append(text, at, text.length)
         }
 
+        /** Un paragrafo del testo disegnato: una riga scritta, da [start] a [end] (con il suo "a capo"), e i suoi rientri. */
+        data class Para(val start: Int, val end: Int, val indents: Int)
+
+        /**
+         * Un paragrafo per ogni riga scritta (fra un "a capo" e l'altro), con quanti rientri ha il testo: così anche le
+         * righe che vanno a capo da sole restano allineate al testo di voci, sotto-voci e citazioni (rientro sospeso).
+         * L'ultimo "a capo" del testo resta nell'ultimo paragrafo (la riga vuota in fondo). [skip] = righe nascoste.
+         */
+        fun paragraphs(skip: (Line) -> Boolean = { false }): List<Para> {
+            val byStart = HashMap<Int, Line>()
+            lines.forEach { if (!skip(it)) byStart.putIfAbsent(toShown(it.start), it) }
+            val out = mutableListOf<Para>()
+            var at = 0
+            while (true) {
+                val nl = shown.indexOf('\n', at)
+                val end = if (nl < 0 || nl + 1 >= shown.length) shown.length else nl + 1
+                val line = byStart[at]
+                val indents = if (line != null && line.hasMark && line.prefix > 0 && !line.isBlock) 1 + line.level else 0
+                out += Para(at, end, indents)
+                if (end >= shown.length) break
+                at = end
+            }
+            return out
+        }
+
         fun toShown(offset: Int): Int {
             var delta = 0
             for (c in cuts) {
