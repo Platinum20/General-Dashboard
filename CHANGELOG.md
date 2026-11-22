@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.580.0
+**Calendario in Home: sempre le prossime 3 cose**
+- Dopo oggi la card mostra tutto domani e comunque i prossimi 3 impegni, anche se sono fra qualche giorno: con oggi e domani vuoti vedi lo stesso cosa arriva
+
 ## 1.579.0
 **Meteo: Alba e Tramonto largo**
 - La casella Alba · Tramonto prende tutta la riga, larga come due caselle

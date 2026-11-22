@@ -150,7 +150,7 @@ fun DueText(dueAt: Long, repeat: Repeat? = null) {
 /**
  * Il calendario in Home (Antonio): un'unica card con il mese, poi Oggi sempre in cima
  * (gli impegni, le cose in ritardo, i promemoria e le note senza data), poi le
- * cose di domani. Oggi si mostra tutto, anche se è tanto. Toccando la card si apre il calendario intero.
+ * cose di domani e comunque le prossime 3. Oggi si mostra tutto, anche se è tanto. Toccando la card si apre il calendario intero.
  */
 @Composable
 internal fun CalendarCard(
@@ -172,7 +172,7 @@ internal fun CalendarCard(
     val trains by com.platinum20.dashboard.trips.TrainLive.statuses.collectAsState()
     val all = remember(pending, today, trains) { timelineEntries(pending.withoutLoose(), today) }
     val todayCount = all.count { it.second.day == today && !it.first.past }
-    // Dopo oggi solo domani (Antonio, 2026-11-11); il resto del mese è a un tocco, "Altre N a novembre".
+    // Dopo oggi tutto domani e sempre le prossime 3 cose, anche più avanti (Antonio, 2026-11-22).
     val (later, _) = calendarCardCut(all.drop(todayCount).map { it.second.day }, today)
     val shown = all.take(todayCount + later)
     // In fondo a OGGI, come nella pagina: le abitudini in una riga (punto 19, il tocco apre il fumetto per segnarle).
