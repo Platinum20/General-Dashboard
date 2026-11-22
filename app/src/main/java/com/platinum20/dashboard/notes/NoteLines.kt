@@ -517,6 +517,17 @@ object NoteLines {
             return out
         }
 
+        /** Dove sta nel testo disegnato il posto che comincia a [offset] (un segno diventato visibile); null = non c'è. */
+        fun slotAt(offset: Int): Int? {
+            var delta = 0
+            for (c in cuts) {
+                if (c.start > offset) break
+                if (c.start == offset && c.end > c.start && c.with.isNotEmpty()) return c.start + delta
+                delta += c.with.length - (c.end - c.start)
+            }
+            return null
+        }
+
         fun toShown(offset: Int): Int {
             var delta = 0
             for (c in cuts) {

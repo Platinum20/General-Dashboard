@@ -126,6 +126,26 @@ object NoteFormat {
     fun mentionSlots(text: String): Map<Int, String> = linkRx.findAll(text).filter { isMention(it.groupValues[2]) }
         .flatMap { m -> listOf(m.range.first to MENTION_OPEN, m.groups[1]!!.range.last + 1 to MENTION_CLOSE) }.toMap()
 
+    /**
+     * L'emoji scritta all'inizio del nome di un link "@" (1.597), con lo spazio dopo: l'editor non la scrive, la usa come
+     * icona della bolla. Così ogni bolla ha una sola icona, sempre allo stesso posto.
+     */
+    fun mentionEmojis(text: String): List<Pair<IntRange, String>> = linkRx.findAll(text).filter { isMention(it.groupValues[2]) }.mapNotNull { m ->
+        val label = m.groups[1]!!
+        val sp = label.value.indexOf(' ')
+        if (sp <= 0 || sp >= label.value.length - 1) return@mapNotNull null
+        val head = label.value.substring(0, sp)
+        if (!isEmoji(head)) null else (label.range.first..label.range.first + sp) to head
+    }.toList()
+
+    /** Solo emoji (con i loro modificatori), niente lettere o numeri. */
+    fun isEmoji(s: String): Boolean {
+        if (s.isEmpty()) return false
+        val cps = s.codePoints().toArray()
+        fun symbol(cp: Int) = Character.getType(cp) == Character.OTHER_SYMBOL.toInt()
+        return symbol(cps[0]) && cps.all { cp -> symbol(cp) || cp == 0xFE0F || cp == 0x200D || cp in 0x1F3FB..0x1F3FF || cp in 0xE0020..0xE007F }
+    }
+
     /** Dove stanno i link "@" nel testo, da "[" a ")". */
     fun mentions(text: String): List<IntRange> = linkRx.findAll(text).filter { isMention(it.groupValues[2]) }.map { it.range }.toList()
 

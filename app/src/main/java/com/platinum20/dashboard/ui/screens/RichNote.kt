@@ -209,12 +209,17 @@ private val BREATH_SIZE = 25.sp
 private val TALL_SIZE = 42.sp
 
 /** Lo spazio dell'icona davanti a un link "@" (1.596) e l'aria in fondo alla bolla. */
-private val MENTION_ICON_SPACE = 19.sp
+private val MENTION_ICON_SPACE = 17.sp
 private val MENTION_END_SPACE = 5.sp
 
 /** Il testo come lo disegna l'editor: segni nascosti, righe chiuse, aria fra le righe, posti dei link "@". */
 internal fun editorShown(text: String, folds: List<IntRange>) =
-    NoteLines.Shown(text, NoteFormat.hidden(text) + folds, breathe = true, slots = NoteFormat.mentionSlots(text))
+    NoteLines.Shown(
+        text,
+        NoteFormat.hidden(text) + NoteFormat.mentionEmojis(text).map { it.first } + folds,
+        breathe = true,
+        slots = NoteFormat.mentionSlots(text),
+    )
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -471,8 +476,11 @@ internal fun RichNoteField(
                 )
             }
             // Le bolle dei link "@" (1.589), sotto il testo: una per riga se il link va a capo.
+            val labelEmojis = NoteFormat.mentionEmojis(text).associate { it.first.first - 1 to it.second }
             NoteFormat.mentions(text).filter { r -> folds.none { r.first in it } && !NoteLines.lineAt(text, r.first).isBlock }.forEach { r ->
-                val s0 = shown.toShown(r.first)
+                // Il posto dell'icona (1.597): anche a inizio riga, dove prima c'è il carattere dell'aria.
+                val slot = shown.slotAt(r.first)
+                val s0 = slot ?: shown.toShown(r.first)
                 val e0 = shown.toShown(r.last + 1).coerceAtMost(drawn)
                 if (s0 >= e0) return@forEach
                 val firstRow = l.getLineForOffset(s0)
@@ -493,15 +501,16 @@ internal fun RichNoteField(
                             .background(colors.primary.copy(alpha = 0.14f)),
                     )
                     // L'icona di cosa è (1.596): nota (o la sua emoji), promemoria, abitudine, pacco, documento, sezione.
-                    if (row == firstRow && shown.shown.getOrNull(s0)?.toString() == NoteFormat.MENTION_OPEN && s0 + 1 <= drawn &&
+                    if (row == firstRow && slot != null && shown.shown.getOrNull(s0)?.toString() == NoteFormat.MENTION_OPEN && s0 + 1 <= drawn &&
                         l.getLineForOffset(s0 + 1) == row) {
                         val url = NoteFormat.linkAt(text, r.first)?.first
-                        val mark = url?.let { mentionMark(it, notesData) }
+                        // Una sola icona: l'emoji della nota, se no quella scritta nel nome, se no l'icona del tipo.
+                        val mark = url?.let { mentionMark(it, notesData) }?.let { m -> if (m.emoji == null && labelEmojis[r.first] != null) MentionMark(m.icon, labelEmojis[r.first]) else m }
                         val a = l.getHorizontalPosition(s0, true)
-                        val b = l.getHorizontalPosition(s0 + 1, true)
-                        val size = with(density) { (fontPx * 0.95f).toDp() }
-                        val cx = (a + b) / 2f
-                        val cy = base - fontPx * 0.35f
+                        val size = with(density) { fontPx.toDp() }
+                        // Sempre allo stesso posto: dal bordo della bolla, un filo d'aria, poi l'icona.
+                        val cx = a + with(density) { 3.dp.toPx() } + fontPx / 2f
+                        val cy = base - fontPx * 0.36f
                         val half = with(density) { size.toPx() / 2f }
                         Box(
                             contentAlignment = Alignment.Center,
@@ -510,7 +519,7 @@ internal fun RichNoteField(
                                 .size(size),
                         ) {
                             when {
-                                mark?.emoji != null -> Text(mark.emoji, fontSize = (textStyle.fontSize.value * 0.8f).sp, maxLines = 1)
+                                mark?.emoji != null -> Text(mark.emoji, fontSize = with(density) { (fontPx * 0.82f).toSp() }, maxLines = 1)
                                 else -> Icon(mark?.icon ?: Icons.AutoMirrored.Outlined.Notes, contentDescription = null, tint = colors.primary, modifier = Modifier.fillMaxSize())
                             }
                         }
@@ -1238,7 +1247,7 @@ internal fun richText(
         append(styled.subSequence(at, text.length))
         // I link "@" (1.596): il posto dell'icona davanti e un po' d'aria in fondo, dentro la bolla.
         NoteFormat.mentionSlots(text).forEach { (at0, slot) ->
-            val at = view.toShown(at0)
+            val at = view.slotAt(at0) ?: return@forEach
             if (at < length && view.shown.getOrNull(at)?.toString() == slot) {
                 val open = text.getOrNull(at0) == '['
                 addStyle(SpanStyle(letterSpacing = if (open) MENTION_ICON_SPACE else MENTION_END_SPACE), at, at + 1)

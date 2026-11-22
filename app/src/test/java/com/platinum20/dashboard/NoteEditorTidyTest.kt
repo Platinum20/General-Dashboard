@@ -126,6 +126,36 @@ class NoteEditorTidyTest {
     }
 
     @Test
+    fun mentionAtLineStartHasItsSlot() {
+        // A inizio riga prima del posto c'è il carattere dell'aria: il posto si trova lo stesso (1.597).
+        val t = "a\n[Claude Pro termina](app:notes/item/TASK/2) \n[Compleanno](app:notes/item/TASK/3)"
+        val v = editorShown(t, emptyList())
+        NoteFormat.mentionSlots(t).forEach { (at, slot) ->
+            val p = v.slotAt(at)
+            assertTrue(p != null)
+            assertEquals(slot, v.shown[p!!].toString())
+        }
+        val drawn = richText(t, Color.Gray).text
+        val open = v.slotAt(t.indexOf('['))!!
+        assertTrue(drawn.spanStyles.any { it.start == open && it.item.letterSpacing.value > 10f })
+    }
+
+    @Test
+    fun emojiInMentionNameBecomesTheIcon() {
+        val t = "[💡 PEPPE](nota:4) e [Ciao](nota:5)"
+        val e = NoteFormat.mentionEmojis(t)
+        assertEquals(1, e.size)
+        assertEquals("💡", e[0].second)
+        val v = editorShown(t, emptyList())
+        // L'emoji non si scrive due volte: resta solo come icona.
+        assertFalse(v.shown.contains("💡"))
+        assertTrue(v.shown.contains("PEPPE"))
+        assertTrue(NoteFormat.isEmoji("⭐"))
+        assertFalse(NoteFormat.isEmoji("Ciao"))
+        assertTrue(NoteFormat.mentionEmojis("[💡](nota:4)").isEmpty())
+    }
+
+    @Test
     fun fieldDrawsListsAndQuotesWithoutCrashing() {
         compose.setContent {
             MaterialTheme {

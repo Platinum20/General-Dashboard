@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.597.0
+**Tag @: un'icona per tutti, sempre allo stesso posto**
+- Ogni tag @ ha la sua icona all'inizio, anche quelli a inizio riga che prima ne erano senza
+- Un'emoji scritta nel nome diventa l'icona: niente più due lampadine
+- Icona attaccata al nome, con la stessa aria in ogni bolla
 ## 1.596.0
 **Note: icone nei tag @ e spunte che non restano sole**
 - Ogni cosa taggata con @ ha la sua icona: nota (o la sua emoji), promemoria, cosa da fare, abitudine, pacco, documento, sezione
