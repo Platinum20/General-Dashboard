@@ -80,6 +80,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import com.platinum20.dashboard.today.Greeting
+import com.platinum20.dashboard.weather.WeatherText
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.graphics.graphicsLayer
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,6 +97,7 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
     val context = LocalContext.current
     WeatherStore.init(context)
     val state by WeatherStore.state.collectAsStateWithLifecycle()
+    val haptic = rememberHaptic()
     val pull = rememberPullRefresh(state.loading)
     LaunchedEffect(Unit) { WeatherStore.refresh(context) }
 
@@ -95,10 +106,13 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
         // Il blocco Adesso della Home si allarga fino a diventare questa pagina (1.357).
         modifier = Modifier.sharedItem(SharedKeys.WEATHER, rounded = true).nestedScroll(barScroll.nestedScrollConnection),
         topBar = {
+            // Il titolo è la città: toccandola si cambia (revisione Meteo 2026-11-22, al posto di "ADESSO · ROMA").
             TopLevelBar(
-                title = "Meteo",
+                title = state.forecast?.place ?: "Meteo",
+                subtitle = if (state.forecast != null) "Meteo" else null,
                 scrollBehavior = barScroll,
                 onBack = onBack,
+                onTitleClick = onPickPlace.takeIf { state.forecast != null },
             )
         },
     ) { inner ->
@@ -169,6 +183,26 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // Il dato vecchio lo dice in cima, con "Aggiorna" accanto (al posto della riga rossa).
+            item {
+                val now by produceState(System.currentTimeMillis(), forecast.fetchedAt) {
+                    while (true) {
+                        value = System.currentTimeMillis()
+                        delay(60_000L)
+                    }
+                }
+                val stale = !state.loading && WeatherText.isStale(forecast.fetchedAt, now, state.error != null)
+                val age = Freshness.label(forecast.fetchedAt, LocalDateTime.now())
+                StatusLine(
+                    LinkStatus(
+                        if (stale) LinkStatus.Kind.STALE else LinkStatus.Kind.OK,
+                        if (stale) age?.let { WeatherText.staleLine(it) } ?: "Aggiornamento non riuscito" else null,
+                    ),
+                    action = "Aggiorna",
+                    onAction = { WeatherStore.refresh(context, force = true) },
+                    start = 4.dp,
+                )
+            }
             item {
                 // Lo stesso blocco colorato di "Adesso" in Oggi: chi tocca la card ritrova la stessa cosa.
                 CanvasCard(
@@ -180,43 +214,42 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
                     ),
                 ) {
                     WeatherNowHeader(forecast, state.loading)
-                    Text(
-                        "Percepita ${forecast.current.apparent.asTemp()}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = androidx.compose.material3.LocalContentColor.current.copy(alpha = 0.75f),
-                        modifier = Modifier.padding(start = 18.dp, end = 18.dp, bottom = if (forecast.rainAlert == null) 16.dp else 10.dp),
-                    )
                     // La pioggia sta dentro l'eroe (punto 45): un solo blocco colorato, la stessa frase di Adesso.
                     forecast.rainAlert?.let { alert -> HeroRainLine(alert) }
-                    // La curva delle prossime 24 ore con la pioggia (1.528, Antonio scelta B).
+                    // La curva delle prossime 24 ore con massima, minima e pioggia (1.528 scelta B, numeri 2026-11-22).
                     TempCurve(forecast, Modifier.padding(start = 18.dp, end = 18.dp, bottom = 16.dp))
-                }
-            }
-            if (state.error != null) {
-                item {
-                    Text(
-                        "Ultimo aggiornamento non riuscito: ${state.error}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    )
                 }
             }
             // Prima i giorni, poi i dettagli come tessere (1.528, scelta B): la pagina sta quasi in uno schermo.
             item {
                 val low = forecast.daily.minOfOrNull { it.min }?.takeIf { !it.isNaN() } ?: 0.0
                 val high = forecast.daily.maxOfOrNull { it.max }?.takeIf { !it.isNaN() } ?: 1.0
+                // Un giorno aperto alla volta: tocco = le sue ore sotto, nella stessa card (2026-11-22).
+                var open by rememberSaveable { mutableStateOf<String?>(null) }
                 CanvasCard(shape = MaterialTheme.shapes.extraLarge) {
                     CardTitle("Prossimi giorni")
                     Column(Modifier.padding(bottom = 8.dp)) {
-                        forecast.daily.forEach { DayRow(it, low, high) }
+                        forecast.daily.forEach { day ->
+                            val key = day.date.toString()
+                            val hours = WeatherText.dayHours(forecast.allHourly, day.date)
+                            DayRow(day, low, high, expanded = open == key, canOpen = hours.isNotEmpty()) {
+                                haptic(Haptic.TICK)
+                                open = if (open == key) null else key
+                            }
+                            AnimatedVisibility(
+                                open == key,
+                                enter = fadeIn(Motion.settle()) + expandVertically(Motion.settle()),
+                                exit = fadeOut(Motion.settle()) + shrinkVertically(Motion.settle()),
+                            ) { DayHours(day, hours) }
+                        }
                     }
                 }
             }
             item { DetailTiles(weatherDetails(forecast)) }
             item {
+                // Solo la fonte: da quando è il dato lo dice la riga in cima, quando conta.
                 Text(
-                    "Dati meteo: Open-Meteo.com · aggiornati ${relativeTime(java.time.Instant.ofEpochMilli(forecast.fetchedAt))}",
+                    "Dati: Open-Meteo.com",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 4.dp),
@@ -242,30 +275,78 @@ private fun HeroRainLine(alert: String) {
 
 /**
  * I dettagli come tessere, due per riga (1.528; prima una card a righe, punto 45). Niente pressione né "pioggia oggi"
- * (la striscia delle ore la dice già); l'UV solo quando conta, da 3 in su.
+ * (la curva la dice già); l'UV solo quando conta, da 3 in su. Sotto ogni numero una parola che lo spiega (2026-11-22).
  */
-internal fun weatherDetails(forecast: Forecast): List<Pair<String, String>> {
+internal fun weatherDetails(forecast: Forecast): List<WeatherDetail> {
     val c = forecast.current
     val today = forecast.today
     val time = DateTimeFormatter.ofPattern("HH:mm")
     return listOfNotNull(
-        "Umidità" to "${c.humidity}%",
-        "Vento" to "${c.windSpeed.roundToInt()} km/h ${WeatherCodes.windDirection(c.windDirection)}",
-        forecast.air?.let { "Qualità dell'aria" to "${it.label} (${it.europeanAqi})" },
-        today?.uvMax?.takeIf { !it.isNaN() && it >= 3.0 }?.let { "Indice UV" to "%.0f".format(Locale.ITALIAN, it) },
-        today?.let { "Alba · Tramonto" to "${it.sunrise?.format(time) ?: "–"} · ${it.sunset?.format(time) ?: "–"}" },
+        WeatherDetail("Umidità", "${c.humidity}%", WeatherText.humidity(c.humidity)),
+        WeatherDetail("Vento", "${c.windSpeed.roundToInt()} km/h", WeatherText.wind(c.windSpeed, c.windDirection)),
+        forecast.air?.let { WeatherDetail("Qualità dell'aria", it.label, "Indice europeo ${it.europeanAqi}") },
+        today?.uvMax?.takeIf { !it.isNaN() && it >= 3.0 }?.let {
+            WeatherDetail("Indice UV", "%.0f".format(Locale.ITALIAN, it), WeatherText.uv(it))
+        },
+        today?.let {
+            WeatherDetail(
+                "Alba · Tramonto",
+                "${it.sunrise?.format(time) ?: "–"} · ${it.sunset?.format(time) ?: "–"}",
+                WeatherText.daylight(it.sunrise, it.sunset),
+            )
+        },
     )
 }
 
+/** Le ore di un giorno aperto (6, 9, 12…) e una frase: per sapere a che ora piove mercoledì. */
 @Composable
-private fun DayRow(day: DailyPoint, low: Double, high: Double) {
+private fun DayHours(day: DailyPoint, hours: List<HourlyPoint>) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 2.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 10.dp, vertical = 10.dp),
+    ) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            hours.forEach { p ->
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("${p.time.hour}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(weatherIcon(p.code, p.isDay), contentDescription = null, modifier = Modifier.padding(vertical = 3.dp).size(18.dp))
+                    Text(p.temperature.asTemp(), style = MaterialTheme.typography.labelLarge)
+                    Text(
+                        if (p.precipitationProbability >= 20) "${p.precipitationProbability}%" else "",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+        Text(
+            WeatherText.dayPhrase(day),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+        )
+    }
+}
+
+@Composable
+private fun DayRow(day: DailyPoint, low: Double, high: Double, expanded: Boolean, canOpen: Boolean, onClick: () -> Unit) {
     val name = when (day.date) {
         LocalDate.now() -> "Oggi"
         LocalDate.now().plusDays(1) -> "Domani"
         else -> day.date.format(DateTimeFormatter.ofPattern("EEE d", Locale.ITALIAN)).replaceFirstChar { it.uppercase() }
     }
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = canOpen, onClick = onClick)
+            .padding(start = 16.dp, end = 10.dp, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.width(72.dp))
@@ -279,6 +360,14 @@ private fun DayRow(day: DailyPoint, low: Double, high: Double) {
         Text(day.min.asTemp(), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         TempBar(day.min, day.max, low, high, Modifier.weight(1f).padding(horizontal = 10.dp))
         Text(day.max.asTemp(), style = MaterialTheme.typography.bodyLarge)
+        // La freccia dice che il giorno si apre; girata quando è aperto.
+        val turn by androidx.compose.animation.core.animateFloatAsState(if (expanded) 90f else 0f, Motion.settle(), label = "dayArrow")
+        Icon(
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = if (expanded) "Chiudi" else "Apri le ore",
+            tint = MaterialTheme.colorScheme.outline.copy(alpha = if (canOpen) 1f else 0f),
+            modifier = Modifier.padding(start = 4.dp).size(20.dp).graphicsLayer { rotationZ = turn },
+        )
     }
 }
 
@@ -342,17 +431,30 @@ internal fun WeatherNowCompact(forecast: Forecast, loading: Boolean, bottom: Dp 
         )
         Spacer(Modifier.size(12.dp))
         val today = forecast.today
-        Text(
-            Greeting.weatherLine(
+        // Cielo sopra, "max 19° · min 10°" sotto (2026-11-22); la sera la minima di stanotte, domani sta in una riga.
+        val now = LocalDateTime.now()
+        val second = when {
+            now.hour >= com.platinum20.dashboard.today.Briefing.EVENING_HOUR ->
+                WeatherText.tonightMin(forecast.hourly, now)?.let { "stanotte min ${it.asTemp()}" }
+            today != null -> WeatherText.range(today.max, today.min)
+            else -> null
+        } ?: "percepita ${forecast.current.apparent.asTemp()}"
+        Column(Modifier.weight(1f)) {
+            Text(
                 WeatherCodes.description(forecast.current.code),
-                if (today != null) "${today.max.asTemp()} / ${today.min.asTemp()}" else "percepita ${forecast.current.apparent.asTemp()}",
-            ),
-            style = MaterialTheme.typography.bodyMedium,
-            color = content.copy(alpha = 0.8f),
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
+                style = MaterialTheme.typography.bodyMedium,
+                color = content.copy(alpha = 0.8f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                second,
+                style = MaterialTheme.typography.bodyMedium,
+                color = content.copy(alpha = 0.8f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
         var slow by remember { mutableStateOf(false) }
         LaunchedEffect(loading) {
             slow = false
@@ -383,20 +485,17 @@ internal fun WeatherNowCompact(forecast: Forecast, loading: Boolean, bottom: Dp 
 private fun WeatherNowFull(forecast: Forecast, loading: Boolean) {
     Row(
         modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 16.dp, bottom = 10.dp),
-        verticalAlignment = Alignment.Top,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         val content = LocalContentColor.current
         Column(Modifier.weight(1f)) {
+            // Niente "ADESSO · ROMA": la città è il titolo della pagina; il dato vecchio lo dice la riga in cima.
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "ADESSO · " + forecast.place.uppercase(),
-                    style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.8.sp, fontWeight = FontWeight.SemiBold),
-                    color = content.copy(alpha = 0.6f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false),
+                    forecast.current.temperature.asTemp(),
+                    style = MaterialTheme.typography.displayMedium.copy(fontSize = 52.sp, lineHeight = 58.sp),
                 )
-                // La rotella resta al massimo 10 secondi: poi si dice da quando è il dato che si vede.
+                // La rotella resta al massimo 10 secondi.
                 var slow by remember { mutableStateOf(false) }
                 LaunchedEffect(loading) {
                     slow = false
@@ -406,36 +505,18 @@ private fun WeatherNowFull(forecast: Forecast, loading: Boolean) {
                     }
                 }
                 if (loading && !slow) {
-                    Spacer(Modifier.size(8.dp))
+                    Spacer(Modifier.size(10.dp))
                     LoadingPulse(color = content.copy(alpha = 0.6f), size = 8.dp)
-                } else {
-                    val minute by produceState(LocalDateTime.now(), forecast.fetchedAt) {
-                        while (true) {
-                            value = LocalDateTime.now()
-                            delay(60_000L)
-                        }
-                    }
-                    Freshness.label(forecast.fetchedAt, minute)?.let { age ->
-                        Text(
-                            " · " + age.uppercase(),
-                            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.8.sp, fontWeight = FontWeight.SemiBold),
-                            color = content.copy(alpha = 0.6f),
-                            maxLines = 1,
-                        )
-                    }
                 }
             }
-            Text(
-                forecast.current.temperature.asTemp(),
-                style = MaterialTheme.typography.displayMedium.copy(fontSize = 52.sp, lineHeight = 58.sp),
-            )
             val today = forecast.today
             // L'avviso di pioggia delle prossime ore sta già sotto: qui solo la probabilità del giorno.
             val rain = today?.precipitationProbability?.takeIf { it >= 30 && forecast.rainAlert == null }?.let { "pioggia $it%" }
+            // Percepita accanto al cielo; massima e minima sono scritte sulla curva.
             Text(
                 Greeting.weatherLine(
                     WeatherCodes.description(forecast.current.code),
-                    if (today != null) "${today.max.asTemp()} / ${today.min.asTemp()}" else "percepita ${forecast.current.apparent.asTemp()}",
+                    "percepita ${forecast.current.apparent.asTemp()}",
                     rain,
                 ),
                 style = MaterialTheme.typography.bodyMedium,
@@ -447,7 +528,7 @@ private fun WeatherNowFull(forecast: Forecast, loading: Boolean) {
         Icon(
             weatherIcon(forecast.current.code, forecast.current.isDay),
             contentDescription = null,
-            modifier = Modifier.padding(top = 4.dp).size(44.dp),
+            modifier = Modifier.size(48.dp),
         )
     }
 }

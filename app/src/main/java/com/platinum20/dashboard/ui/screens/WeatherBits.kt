@@ -26,6 +26,10 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.platinum20.dashboard.weather.Forecast
@@ -38,12 +42,6 @@ import java.time.format.DateTimeFormatter
  * di pioggia, in frazioni 0..1, così il disegno e i test leggono gli stessi numeri.
  */
 object WeatherChart {
-    /** Ore mostrate nella striscia della Home: "Ora" e le cinque dopo. */
-    const val STRIP = 6
-
-    /** Le ore della striscia: dalla prima che non è già passata, [count] in tutto. */
-    fun strip(hours: List<HourlyPoint>, count: Int = STRIP): List<HourlyPoint> = hours.take(count)
-
     /** Altezza di ogni punto della curva: 0 = la più fredda (in basso), 1 = la più calda. Tutte uguali = a metà. */
     fun levels(temps: List<Double>): List<Float> {
         val clean = temps.filter { !it.isNaN() }
@@ -59,46 +57,24 @@ object WeatherChart {
     /** Altezza della barra di pioggia: la probabilità in frazione, niente barra sotto il 20% (rumore). */
     fun rain(probability: Int): Float = if (probability < 20) 0f else (probability / 100f).coerceIn(0f, 1f)
 
+    /** Dove scrivere massima e minima sulla curva: il primo punto più caldo e il primo più freddo; null se piatta. */
+    fun extremes(temps: List<Double>): Pair<Int, Int>? {
+        val clean = temps.withIndex().filter { !it.value.isNaN() }
+        if (clean.size < 2) return null
+        val hi = clean.maxBy { it.value }
+        val lo = clean.minBy { it.value }
+        return if (hi.value - lo.value < 1.0) null else hi.index to lo.index
+    }
+
+    /** L'ora con la pioggia più probabile, per scriverne la percentuale sopra la barra: solo da 30% in su. */
+    fun rainPeak(probabilities: List<Int>): Int? =
+        probabilities.withIndex().filter { it.value >= 30 }.maxByOrNull { it.value }?.index
+
     /** Le etichette sotto il grafico: un'ora ogni [step], la prima detta "Ora". */
     fun labels(hours: List<HourlyPoint>, step: Int = 3): List<Pair<Int, String>> =
         hours.indices.filter { it % step == 0 }.map { i ->
             i to (if (i == 0) "Ora" else hours[i].time.format(DateTimeFormatter.ofPattern("H")))
         }
-}
-
-/**
- * La striscia delle prossime ore dentro "Adesso" in Home (1.528, Antonio scelta B): ora, icona, temperatura;
- * il meteo si legge senza aprire la pagina. Prende il colore del blocco in cui sta.
- */
-@Composable
-fun HourStrip(hours: List<HourlyPoint>, modifier: Modifier = Modifier) {
-    val points = WeatherChart.strip(hours)
-    if (points.isEmpty()) return
-    val content = LocalContentColor.current
-    Row(
-        modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        points.forEachIndexed { i, p ->
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.semantics(mergeDescendants = true) {
-                    contentDescription = "${if (i == 0) "Ora" else "Alle " + p.time.hour}: ${p.temperature.asTemp()}" +
-                        if (p.precipitationProbability >= 20) ", pioggia ${p.precipitationProbability}%" else ""
-                },
-            ) {
-                Text(
-                    if (i == 0) "Ora" else p.time.format(DateTimeFormatter.ofPattern("H")),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = content.copy(alpha = 0.65f),
-                )
-                Spacer(Modifier.height(4.dp))
-                Icon(weatherIcon(p.code, p.isDay), contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.height(4.dp))
-                Text(p.temperature.asTemp(), style = MaterialTheme.typography.labelLarge)
-            }
-        }
-    }
 }
 
 /**
@@ -113,16 +89,22 @@ fun TempCurve(forecast: Forecast, modifier: Modifier = Modifier) {
     val accent = content
     val rainColor = MaterialTheme.colorScheme.primary
     val levels = WeatherChart.levels(hours.map { it.temperature })
+    val extremes = WeatherChart.extremes(hours.map { it.temperature })
+    val peak = WeatherChart.rainPeak(hours.map { it.precipitationProbability })
+    val measurer = rememberTextMeasurer()
+    val tempStyle = MaterialTheme.typography.labelMedium.copy(color = content, fontWeight = FontWeight.SemiBold)
+    val rainStyle = MaterialTheme.typography.labelSmall.copy(color = content.copy(alpha = 0.75f))
     Column(modifier.fillMaxWidth()) {
         Canvas(
             Modifier
                 .fillMaxWidth()
-                .height(72.dp)
+                .padding(top = 16.dp)
+                .height(84.dp)
                 .semantics { contentDescription = "Temperatura e pioggia delle prossime 24 ore" },
         ) {
             val step = size.width / (hours.size - 1)
             val top = 6.dp.toPx()
-            val curveH = size.height * 0.55f
+            val curveH = size.height * 0.5f
             // Le barre della pioggia dal fondo: alte quanto la probabilità.
             val barW = (step * 0.55f).coerceAtMost(8.dp.toPx())
             hours.forEachIndexed { i, h ->
@@ -146,6 +128,28 @@ fun TempCurve(forecast: Forecast, modifier: Modifier = Modifier) {
             drawPath(path, accent, style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
             // Il pallino su "ora".
             drawCircle(accent, radius = 4.dp.toPx(), center = Offset(0f, top + (1f - levels[0]) * curveH))
+            // Massima e minima scritte sulla curva, la percentuale sopra la barra più alta (revisione 2026-11-22).
+            fun label(text: String, x: Float, y: Float, style: TextStyle) {
+                val m = measurer.measure(text, style)
+                val left = (x - m.size.width / 2f).coerceIn(0f, size.width - m.size.width)
+                drawText(m, topLeft = Offset(left, y))
+            }
+            extremes?.let { (hi, lo) ->
+                listOf(hi to true, lo to false).forEach { (i, high) ->
+                    val x = i * step
+                    val y = top + (1f - levels[i]) * curveH
+                    if (i != 0) drawCircle(accent, radius = 3.dp.toPx(), center = Offset(x, y))
+                    val text = hours[i].temperature.asTemp()
+                    val h = measurer.measure(text, tempStyle).size.height
+                    label(text, x, if (high) y - h - 3.dp.toPx() else y + 4.dp.toPx(), tempStyle)
+                }
+            }
+            peak?.let { i ->
+                val bh = (size.height * 0.45f) * WeatherChart.rain(hours[i].precipitationProbability)
+                val text = "${hours[i].precipitationProbability}%"
+                val h = measurer.measure(text, rainStyle).size.height
+                label(text, i * step, size.height - bh - h - 1.dp.toPx(), rainStyle)
+            }
         }
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -168,18 +172,21 @@ internal val WIDE_DETAILS = setOf("Alba · Tramonto")
  * Le righe delle tessere: due per riga, ma quelle in [WIDE_DETAILS] stanno da sole e una tessera rimasta sola
  * prende tutta la larghezza, così non resta mai mezza riga vuota.
  */
-internal fun detailRows(details: List<Pair<String, String>>): List<List<Pair<String, String>>> {
-    val wide = details.filter { it.first in WIDE_DETAILS }
-    return details.filterNot { it.first in WIDE_DETAILS }.chunked(2) + wide.map { listOf(it) }
+internal fun detailRows(details: List<WeatherDetail>): List<List<WeatherDetail>> {
+    val wide = details.filter { it.label in WIDE_DETAILS }
+    return details.filterNot { it.label in WIDE_DETAILS }.chunked(2) + wide.map { listOf(it) }
 }
 
-/** I dettagli del meteo come tessere piccole, due per riga (1.528, scelta B): etichetta sopra, valore sotto. */
+/** Una tessera: etichetta, valore e una parola che dice se è tanto o poco (revisione 2026-11-22). */
+data class WeatherDetail(val label: String, val value: String, val note: String? = null)
+
+/** I dettagli del meteo come tessere piccole, due per riga (1.528, scelta B): etichetta, valore, spiegazione. */
 @Composable
-fun DetailTiles(details: List<Pair<String, String>>, modifier: Modifier = Modifier) {
+internal fun DetailTiles(details: List<WeatherDetail>, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         detailRows(details).forEach { pair ->
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                pair.forEach { (label, value) ->
+                pair.forEach { (label, value, note) ->
                     CanvasCard(
                         shape = RoundedCornerShape(20.dp),
                         modifier = Modifier.weight(1f),
@@ -194,6 +201,15 @@ fun DetailTiles(details: List<Pair<String, String>>, modifier: Modifier = Modifi
                             )
                             Spacer(Modifier.height(4.dp))
                             Text(value, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            if (note != null) {
+                                Text(
+                                    note,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
                         }
                     }
                 }

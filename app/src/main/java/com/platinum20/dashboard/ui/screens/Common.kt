@@ -76,6 +76,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.AcUnit
 import androidx.compose.material.icons.outlined.Cloud
@@ -426,6 +427,8 @@ fun TopLevelBar(
     collapsed: Boolean? = null,
     /** Il titolo da ridotto, se diverso (la Home: "Martedì 10"). */
     collapsedTitle: String = title,
+    /** Titolo che si tocca (Meteo: la città, tocco = cambia località): accanto una piccola freccia in giù. */
+    onTitleClick: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val density = androidx.compose.ui.platform.LocalDensity.current
@@ -501,7 +504,20 @@ fun TopLevelBar(
                     transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0f)
                 }) {
                     val style = MaterialTheme.typography.headlineLarge
-                    if (collapsedTitle == title) {
+                    if (onTitleClick != null) {
+                        Row(
+                            Modifier.clickable(onClickLabel = "Cambia", onClick = onTitleClick),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(title, style = style, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                            Icon(
+                                Icons.Filled.KeyboardArrowDown,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.padding(start = 2.dp).size(26.dp),
+                            )
+                        }
+                    } else if (collapsedTitle == title) {
                         Text(title, style = style, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     } else {
                         Text(title, style = style, maxLines = 1, overflow = TextOverflow.Ellipsis,

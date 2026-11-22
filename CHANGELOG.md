@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.581.0
+**Meteo rifatto: card più corta, pagina più chiara**
+- Card in Home: una riga sola, con il cielo e sotto "max 19° · min 10°"; le ore si leggono aprendo la pagina
+- La sera la card dice la minima di stanotte e una riga "Domani sereno · max 19° · min 9°"
+- Tieni premuta la card: Apri meteo, Aggiorna, Cambia località
+- Pagina: il titolo è la città, toccala per cambiarla; "percepita" accanto al cielo
+- Sulla curva delle 24 ore sono scritte la massima, la minima e la pioggia più probabile
+- Tocca un giorno della settimana per vedere le sue ore (6, 9, 12…) e una frase su pioggia e vento
+- Ogni casella dice cosa vuol dire il numero ("Brezza da nord-ovest", "9 ore e 44 minuti di luce")
+- Dato vecchio: in cima la riga grigia "Dati delle 9:05" con Aggiorna accanto, niente più scritta rossa
+
 ## 1.580.0
 **Calendario in Home: sempre le prossime 3 cose**
 - Dopo oggi la card mostra tutto domani e comunque i prossimi 3 impegni, anche se sono fra qualche giorno: con oggi e domani vuoti vedi lo stesso cosa arriva
