@@ -79,6 +79,21 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.IntOffset
+import com.platinum20.dashboard.notes.QuickParse
+import com.platinum20.dashboard.notes.NoteTable
+import com.platinum20.dashboard.notes.NoteAudio
+import androidx.compose.material.icons.outlined.Draw
+import androidx.compose.material.icons.outlined.TableChart
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.foundation.layout.Column
+import com.platinum20.dashboard.docs.DocumentsStore
+import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.Badge
+import androidx.compose.material.icons.outlined.LocalShipping
+import androidx.compose.material.icons.outlined.LocalFireDepartment
+import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.LinkOff
 import androidx.compose.ui.unit.dp
@@ -138,6 +153,9 @@ object RichBar {
 
     var target by mutableStateOf<Target?>(null)
         internal set
+
+    /** La riga di una tabella appena messa dal menu "/": il campo la apre per scriverci (1.588). */
+    var openTable by mutableStateOf<Int?>(null)
 }
 
 /** Una voce del menu "/" (1.584): scrivendo "/" a inizio riga. */
@@ -192,6 +210,10 @@ internal fun RichNoteField(
     val emit by rememberUpdatedState(onValueChange)
     var focused by remember { mutableStateOf(false) }
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
+    // Le righe che si chiudono (1.588): i titoli chiusi, per testo del titolo; e la tabella che si sta cambiando.
+    var folded by remember { mutableStateOf(setOf<String>()) }
+    val folds = remember(value.text, folded) { NoteLines.foldRanges(value.text, folded) }
+    var tableEdit by remember { mutableStateOf<IntRange?>(null) }
     val history = remember { NoteHistory() }
     var historyTick by remember { mutableIntStateOf(0) }
     fun snap(v: TextFieldValue) = NoteHistory.Snap(v.text, v.selection.start, v.selection.end)
@@ -226,6 +248,14 @@ internal fun RichNoteField(
             val at = NoteLines.outOfPrefix(next.text, next.selection.start)
             if (at != next.selection.start) next.copy(selection = TextRange(at)) else next
         } else next
+        // Scrivendo dentro una parte chiusa (Invio in fondo al titolo, Annulla…), quella parte si riapre.
+        if (folded.isNotEmpty() && safe.text != old.text) {
+            val c = safe.selection.end
+            NoteLines.foldRanges(safe.text, folded).filter { c > it.first && c <= it.last + 1 }.forEach { r ->
+                val h = NoteLines.lineAt(safe.text, r.first)
+                folded = folded - NoteLines.plainLine(safe.text.substring(h.start, h.end))
+            }
+        }
         emit(safe)
     }
 
@@ -251,11 +281,12 @@ internal fun RichNoteField(
     val foundNow = SpanStyle(background = colors.primary.copy(alpha = 0.5f))
     val accent = colors.primary
     val marker = androidx.compose.ui.graphics.Color(0x66FFD54F)
-    val transformation = remember(faded, value.text, found, findAt, accent) {
+    val transformation = remember(faded, value.text, found, findAt, accent, folds) {
         VisualTransformation { input ->
-            richText(input.text, faded, found.mapIndexed { i, r -> r to if (i == findAt) foundNow else foundStyle }, accent, marker)
+            richText(input.text, faded, found.mapIndexed { i, r -> r to if (i == findAt) foundNow else foundStyle }, accent, marker = marker, folds = folds)
         }
     }
+    fun hiddenLine(line: NoteLines.Line) = folds.any { line.start in it }
 
     // Il cursore resta sempre in vista sopra la barra e la tastiera, anche quando Invio fa una riga nuova (1.562):
     // da solo il campo lo porta in vista prima che la riga nuova esista, e finiva sotto la tastiera.
@@ -300,14 +331,34 @@ internal fun RichNoteField(
     var dragPull by remember { mutableFloatStateOf(0f) }
     var dragEndedAt by remember { mutableLongStateOf(0L) }
 
+    tableEdit?.let { block ->
+        val ok = block.last < NoteLines.parse(value.text).size && com.platinum20.dashboard.notes.NoteTable.blockAt(value.text, block.first) == block
+        if (!ok) { LaunchedEffect(Unit) { tableEdit = null } } else {
+            TableEditorDialog(
+                start = com.platinum20.dashboard.notes.NoteTable.grid(value.text, block),
+                onDone = { g ->
+                    tableEdit = null
+                    emit(TextFieldValue(com.platinum20.dashboard.notes.NoteTable.replace(current.text, block, g), current.selection))
+                },
+                onDismiss = { tableEdit = null },
+            )
+        }
+    }
+    // Una tabella appena messa dal menu "/" si apre subito per scriverci.
+    LaunchedEffect(RichBar.openTable) {
+        val at = RichBar.openTable ?: return@LaunchedEffect
+        if (RichBar.target?.owner != owner) return@LaunchedEffect
+        RichBar.openTable = null
+        com.platinum20.dashboard.notes.NoteTable.blockAt(current.text, at)?.let { tableEdit = it }
+    }
     Box(modifier) {
         // Lo sfondo dei riquadri "da non dimenticare", sotto il testo (1.584).
         layout?.let { l ->
             val text = value.text
-            val shown = NoteLines.Shown(text, NoteFormat.hidden(text))
+            val shown = NoteLines.Shown(text, NoteFormat.hidden(text) + folds)
             val drawn = l.layoutInput.text.length
             val density = LocalDensity.current
-            shown.lines.filter { it.kind == NoteLines.Kind.CALLOUT && shown.toShown(it.start) < drawn }.forEach { line ->
+            shown.lines.filter { it.kind == NoteLines.Kind.CALLOUT && !hiddenLine(it) && shown.toShown(it.start) < drawn }.forEach { line ->
                 val first = l.getLineForOffset(shown.toShown(line.start))
                 val last = l.getLineForOffset(shown.toShown(line.end).coerceAtMost(drawn))
                 val top = l.getLineTop(first)
@@ -353,10 +404,10 @@ internal fun RichNoteField(
         if (l != null) {
             // Gli stessi segni nascosti del testo disegnato, se no le posizioni scivolano di riga.
             val text = value.text
-            val shown = NoteLines.Shown(text, NoteFormat.hidden(text))
+            val shown = NoteLines.Shown(text, NoteFormat.hidden(text) + folds)
             val density = LocalDensity.current
             val drawn = l.layoutInput.text.length
-            shown.lines.filter { it.isList && shown.toShown(it.start) < drawn }.forEach { line -> androidx.compose.runtime.key(line.index) {
+            shown.lines.filter { it.isList && !hiddenLine(it) && shown.toShown(it.start) < drawn }.forEach { line -> androidx.compose.runtime.key(line.index) {
                 val at = shown.toShown(line.start)
                 val row = l.getLineForOffset(at)
                 val top = l.getLineTop(row)
@@ -441,7 +492,7 @@ internal fun RichNoteField(
                 }
             } }
             // Citazione, riquadro e linea (1.584): la barra, l'emoji, la linea. Tieni premuto per le scelte.
-            shown.lines.filter { it.hasMark && !it.isList && shown.toShown(it.start) < drawn }.forEach { line -> androidx.compose.runtime.key("m${line.index}") {
+            shown.lines.filter { it.hasMark && !it.isList && it.kind != NoteLines.Kind.TABLE && !hiddenLine(it) && shown.toShown(it.start) < drawn }.forEach { line -> androidx.compose.runtime.key("m${line.index}") {
                 val at = shown.toShown(line.start)
                 val first = l.getLineForOffset(at)
                 val last = l.getLineForOffset(shown.toShown(line.end).coerceAtMost(drawn))
@@ -479,7 +530,7 @@ internal fun RichNoteField(
                 }
             } }
             // I link si toccano (1.586): un tocco apre la nota collegata con "@" o la pagina; tieni premuto = le scelte.
-            if (!readOnly) NoteFormat.spans(text).filter { it.kind == NoteFormat.Kind.LINK || it.kind == NoteFormat.Kind.URL }.forEach { span ->
+            if (!readOnly) NoteFormat.spans(text).filter { (it.kind == NoteFormat.Kind.LINK || it.kind == NoteFormat.Kind.URL) && folds.none { f -> it.start in f } }.forEach { span ->
                 val (url, label) = NoteFormat.linkAt(text, span.start) ?: return@forEach
                 val s0 = shown.toShown(span.start)
                 val e0 = shown.toShown(span.end).coerceAtMost(drawn)
@@ -517,16 +568,158 @@ internal fun RichNoteField(
                     )
                 }
             }
+            // Le righe che si chiudono (1.588): accanto a ogni titolo con qualcosa sotto, la freccetta; chiuso dice quante righe.
+            shown.lines.filter { it.kind == NoteLines.Kind.HEADING && !hiddenLine(it) && shown.toShown(it.start) < drawn }.forEach { line ->
+                val count = NoteLines.sectionSize(text, line.index)
+                if (count == 0) return@forEach
+                val name = NoteLines.plainLine(text.substring(line.start, line.end))
+                val closed = name in folded
+                val row = l.getLineForOffset(shown.toShown(line.end).coerceAtMost(drawn))
+                val top = l.getLineTop(row)
+                val x = l.getLineRight(row)
+                val h = with(density) { (l.getLineBottom(row) - top).toDp() }
+                androidx.compose.runtime.key("f${line.index}") {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .offset { IntOffset(x.toInt(), top.toInt()) }
+                            .height(h)
+                            .padding(start = 6.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable(enabled = name.isNotEmpty()) {
+                                haptic(Haptic.TICK)
+                                folded = if (closed) folded - name else folded + name
+                            }
+                            .padding(horizontal = 4.dp),
+                    ) {
+                        Icon(
+                            if (closed) Icons.AutoMirrored.Outlined.KeyboardArrowRight else Icons.Outlined.KeyboardArrowDown,
+                            contentDescription = if (closed) "Apri la parte" else "Chiudi la parte",
+                            tint = colors.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        if (closed) Text("$count", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
+                    }
+                }
+            }
+            // La tabella (1.588): le righe "| a | b |" sono nascoste, qui sopra le caselle. Tocco = si cambia; tieni premuto = scelte.
+            val tableLines = shown.lines.filter { it.kind == NoteLines.Kind.TABLE && !hiddenLine(it) && shown.toShown(it.start) < drawn }
+            val blocks = tableLines.fold(mutableListOf<MutableList<NoteLines.Line>>()) { acc, line ->
+                if (acc.isNotEmpty() && acc.last().last().index == line.index - 1) acc.last() += line else acc += mutableListOf(line)
+                acc
+            }
+            blocks.forEach { rows ->
+                val block = rows.first().index..rows.last().index
+                val firstRow = l.getLineForOffset(shown.toShown(rows.first().start))
+                val top = l.getLineTop(firstRow)
+                val bottom = l.getLineBottom(l.getLineForOffset(shown.toShown(rows.last().start)))
+                androidx.compose.runtime.key("t${block.first}") {
+                    Column(
+                        Modifier
+                            .offset { IntOffset(0, top.toInt()) }
+                            .fillMaxWidth()
+                            .height(with(density) { (bottom - top).toDp() })
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(colors.card)
+                            .border(cardBorder(), RoundedCornerShape(10.dp))
+                            .combinedClickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                enabled = !readOnly,
+                                onLongClick = {
+                                    haptic(Haptic.LONG_PRESS)
+                                    ActionBubble.show(
+                                        BubbleAction(Icons.Outlined.Edit, "Cambia la tabella", "caselle, righe e colonne") { tableEdit = block },
+                                        BubbleAction(Icons.Outlined.Add, "Aggiungi una riga", "vuota, in fondo") {
+                                            val g = com.platinum20.dashboard.notes.NoteTable.grid(current.text, block)
+                                            emit(TextFieldValue(com.platinum20.dashboard.notes.NoteTable.replace(current.text, block, g + listOf(List(g.first().size) { "" })), current.selection))
+                                        },
+                                        BubbleAction(Icons.Outlined.Delete, "Togli la tabella", "con Annulla", danger = true) {
+                                            val before = current
+                                            emit(TextFieldValue(com.platinum20.dashboard.notes.NoteTable.replace(before.text, block, emptyList()), TextRange(0)))
+                                            CaptureFeedback.tell(context, "Tabella tolta", Icons.Outlined.Delete, "Annulla") { emit(before) }
+                                        },
+                                    )
+                                },
+                            ) { haptic(Haptic.TICK); tableEdit = block },
+                    ) {
+                        rows.forEachIndexed { i, line ->
+                            val rTop = l.getLineTop(l.getLineForOffset(shown.toShown(line.start)))
+                            val rBottom = l.getLineBottom(l.getLineForOffset(shown.toShown(line.start)))
+                            val cells = com.platinum20.dashboard.notes.NoteTable.cells(text.substring(line.start, line.end))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(with(density) { (rBottom - rTop).toDp() })
+                                    .then(if (i > 0) Modifier.background(colors.outlineVariant.copy(alpha = 0.0f)) else Modifier),
+                            ) {
+                                cells.forEach { c ->
+                                    Text(
+                                        c,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = if (i == 0) FontWeight.SemiBold else FontWeight.Normal,
+                                        color = if (i == 0) colors.onSurface else colors.onSurface.copy(alpha = 0.9f),
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f).padding(horizontal = 10.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
 
-/** Apre un link della nota: "nota:ID" = l'altra nota, il resto dentro Canvas. */
+/** Apre un link della nota: "nota:ID" = l'altra nota, "app:" = una pagina di Canvas, "audio:" = lo suona, il resto dentro Canvas. */
 internal fun openNoteLink(inApp: InAppNav?, url: String, label: String) {
     val id = url.removePrefix(NoteFormat.NOTE_LINK).toLongOrNull()
-    if (url.startsWith(NoteFormat.NOTE_LINK) && id != null) inApp?.openRoute?.invoke(Routes.noteEdit(id))
-    else inApp?.openWeb?.invoke(url, label)
+    when {
+        url.startsWith(NoteFormat.NOTE_LINK) && id != null -> inApp?.openRoute?.invoke(Routes.noteEdit(id))
+        url.startsWith(NoteFormat.APP_LINK) ->
+            inApp?.openRoute?.invoke(url.removePrefix(NoteFormat.APP_LINK).replace("%20", " ").replace("%28", "(").replace("%29", ")"))
+        url.startsWith(NoteAudio.SCHEME) -> NoteAudio.toggle(url.removePrefix(NoteAudio.SCHEME))
+        else -> inApp?.openWeb?.invoke(url, label)
+    }
 }
+
+/** "ven 28 nov, 15:00" per il tasto Calendario della barra; a mezzanotte solo il giorno. */
+internal fun dueLabel(due: java.time.LocalDateTime): String {
+    val day = due.format(java.time.format.DateTimeFormatter.ofPattern("EEE d MMM", java.util.Locale.ITALIAN))
+    return if (due.toLocalTime() == java.time.LocalTime.MIDNIGHT) day else "$day, %d:%02d".format(due.hour, due.minute)
+}
+
+/** Una cosa dell'app che si può mettere nella nota con "@". */
+internal class MentionTarget(val icon: ImageVector, val title: String, val url: String)
+
+/** Le cose che corrispondono a quello scritto dopo "@": prima le note, poi il resto; al massimo 10. */
+internal fun mentionTargets(data: com.platinum20.dashboard.notes.NotesData, docs: List<com.platinum20.dashboard.docs.Document>, query: String): List<MentionTarget> {
+    fun hit(t: String) = t.isNotBlank() && t.contains(query, ignoreCase = true)
+    val out = mutableListOf<MentionTarget>()
+    data.notes.filter { hit(it.plainTitle) }.sortedByDescending { it.updatedAt }.take(5)
+        .forEach { out += MentionTarget(Icons.AutoMirrored.Outlined.Notes, it.title, NoteFormat.NOTE_LINK + it.id) }
+    data.tasks.filter { !it.done && hit(it.text) }.sortedBy { it.dueAt ?: Long.MAX_VALUE }.take(4)
+        .forEach { out += MentionTarget(if (it.dueAt != null) Icons.Outlined.Event else Icons.Outlined.TaskAlt, it.text, NoteFormat.APP_LINK + Routes.noteItem(ItemKind.TASK, it.id)) }
+    data.habits.filter { hit(it.title) }.take(3)
+        .forEach { out += MentionTarget(Icons.Outlined.LocalFireDepartment, it.title, NoteFormat.APP_LINK + Routes.noteItem(ItemKind.HABIT, it.id)) }
+    data.parcels.filter { hit(it.title) }.take(2)
+        .forEach { out += MentionTarget(Icons.Outlined.LocalShipping, it.title, NoteFormat.APP_LINK + Routes.noteItem(ItemKind.PARCEL, it.id)) }
+    docs.filter { hit(it.title) }.take(2)
+        .forEach { out += MentionTarget(Icons.Outlined.Badge, it.title, NoteFormat.APP_LINK + Routes.document(it.id)) }
+    MENTION_PAGES.filter { (name, _) -> query.isNotEmpty() && hit(name) }
+        .forEach { (name, route) -> out += MentionTarget(Icons.Outlined.Apps, name, NoteFormat.APP_LINK + route) }
+    return out.take(10)
+}
+
+/** Le sezioni di Canvas che si possono collegare con "@". */
+private val MENTION_PAGES = listOf(
+    "Meteo" to Routes.WEATHER, "SIM" to Routes.SIM, "Calendario" to Routes.NOTES, "News" to Routes.NEWS,
+    "Media" to Routes.MEDIA, "Musica" to Routes.MUSIC_ALL, "Radio" to Routes.RADIO, "Podcast" to Routes.PODCAST,
+    "Da fare" to Routes.LATER_ARCHIVE, "Appunti" to Routes.JOTTINGS_ARCHIVE, "Cerca" to Routes.SEARCH,
+)
 
 /** Il fumetto del tieni premuto su citazione, riquadro o linea. */
 private fun markActions(
@@ -598,6 +791,8 @@ private fun richText(
     faded: androidx.compose.ui.graphics.Color,
     marks: List<Pair<IntRange, SpanStyle>> = emptyList(),
     accent: androidx.compose.ui.graphics.Color = faded,
+    /** Le righe sotto i titoli chiusi (1.588): non si disegnano. */
+    folds: List<IntRange> = emptyList(),
     marker: androidx.compose.ui.graphics.Color = faded,
 ): TransformedText {
     val styled = buildAnnotatedString {
@@ -624,7 +819,7 @@ private fun richText(
         }
         marks.forEach { (r, style) -> if (r.last < text.length) addStyle(style, r.first, r.last + 1) }
     }
-    val view = NoteLines.Shown(text, NoteFormat.hidden(text))
+    val view = NoteLines.Shown(text, NoteFormat.hidden(text) + folds)
     if (view.cuts.isEmpty()) return TransformedText(styled, OffsetMapping.Identity)
     val shown = buildAnnotatedString {
         var at = 0
@@ -634,7 +829,7 @@ private fun richText(
             at = c.end
         }
         append(styled.subSequence(at, text.length))
-        view.lines.filter { it.hasMark && it.prefix > 0 && it.kind != NoteLines.Kind.DIVIDER }.forEach { line ->
+        view.lines.filter { it.hasMark && it.prefix > 0 && it.kind != NoteLines.Kind.DIVIDER && it.kind != NoteLines.Kind.TABLE && folds.none { f -> it.start in f } }.forEach { line ->
             val s = view.toShown(line.start)
             // Il paragrafo comprende il suo "\n", come vuole Compose: se no il solo "\n" diventa un paragrafo vuoto in più.
             val e = (view.toShown(line.end) + if (line.end < text.length) 1 else 0).coerceAtMost(length)
@@ -731,9 +926,24 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
     val linkHere = if (selecting) null else NoteFormat.linkAt(v.text, cursor)
     fun openLink(url: String, label: String) {
         haptic(Haptic.TICK)
-        val id = url.removePrefix(NoteFormat.NOTE_LINK).toLongOrNull()
-        if (url.startsWith(NoteFormat.NOTE_LINK) && id != null) inApp?.openRoute?.invoke(Routes.noteEdit(id))
-        else inApp?.openWeb?.invoke(url, label)
+        openNoteLink(inApp, url, label)
+    }
+    // Una data scritta nella riga del cursore (1.588): "venerdì alle 15 dentista" → il tasto per metterla nel Calendario.
+    val lineText = v.text.substring(line.start, line.end)
+    val dated = remember(lineText) {
+        if (line.kind == NoteLines.Kind.TABLE || NoteFormat.linkAt(lineText, 0) != null || lineText.contains("](")) null
+        else NoteLines.plainLine(lineText).takeIf { it.length >= 4 }?.let { p -> QuickParse.parse(p).due?.let { p to it } }
+    }
+    fun toCalendar() {
+        val (plain, due) = dated ?: return
+        haptic(Haptic.CONFIRM)
+        val task = NotesStore.addTask(plain) ?: return
+        val now = target.value()
+        val l = NoteLines.lineAt(now.text, now.selection.end)
+        val e = NoteFormat.mentionLink(now.text, l.contentStart, l.end, plain, NoteFormat.APP_LINK + Routes.noteItem(ItemKind.TASK, task.id))
+        val t = e.text.let { if (it.getOrNull(e.start - 1) == ' ') it.removeRange(e.start - 1, e.start) else it }
+        target.set(TextFieldValue(t, TextRange((e.start - 1).coerceIn(0, t.length))))
+        CaptureFeedback.tell(context, "Nel Calendario: " + dueLabel(due), Icons.Outlined.Event)
     }
     fun link() {
         haptic(Haptic.TICK)
@@ -778,6 +988,12 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                     SlashItem(Icons.Outlined.FormatQuote, "Citazione", "con la barra a sinistra") { kind(NoteLines.Kind.QUOTE) },
                     SlashItem(Icons.Outlined.Lightbulb, "Riquadro", "con una emoji davanti") { kind(NoteLines.Kind.CALLOUT) },
                     SlashItem(Icons.Outlined.HorizontalRule, "Linea", "separa due parti") { divider() },
+                    SlashItem(Icons.Outlined.TableChart, "Tabella", "righe e colonne") {
+                        val now = slashBase ?: target.value()
+                        val (t, line) = NoteTable.insert(now.text, now.selection.end)
+                        target.set(TextFieldValue(t, TextRange(now.selection.end.coerceAtMost(t.length))))
+                        RichBar.openTable = line
+                    },
                 ) + target.extras
                 val shown = all.filter { slash.isEmpty() || it.label.lowercase().startsWith(slash) || it.label.lowercase().contains(slash) }
                 if (shown.isEmpty()) BarLabel(Icons.Outlined.Close, "Niente con \"$slash\"") {} else shown.forEach { item ->
@@ -785,17 +1001,18 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                 }
             }
             mention != null -> {
-                // "@" (1.584): un'altra nota dentro questa, come link che la apre.
-                val notes by NotesStore.data.collectAsStateWithLifecycle()
-                val hits = notes.notes.filter { it.plainTitle.isNotBlank() && it.plainTitle.contains(mention.second, ignoreCase = true) }
-                    .sortedByDescending { it.updatedAt }.take(8)
-                if (hits.isEmpty()) BarLabel(Icons.Outlined.Close, if (mention.second.isEmpty()) "Scrivi il nome della nota" else "Nessuna nota \"${mention.second}\"") {}
-                hits.forEach { n ->
-                    BarLabel(Icons.AutoMirrored.Outlined.Notes, n.title.take(28)) {
+                // "@" (1.584, tutta l'app dalla 1.588): note, promemoria e cose da fare, abitudini, pacchi, documenti,
+                // sezioni. Diventa un link che si apre con un tocco.
+                val data by NotesStore.data.collectAsStateWithLifecycle()
+                val docs by DocumentsStore.docs.collectAsStateWithLifecycle()
+                val hits = remember(data, docs, mention.second) { mentionTargets(data, docs, mention.second) }
+                if (hits.isEmpty()) BarLabel(Icons.Outlined.Close, if (mention.second.isEmpty()) "Scrivi un nome" else "Niente con \"${mention.second}\"") {}
+                hits.forEach { h ->
+                    BarLabel(h.icon, h.title.take(28)) {
                         haptic(Haptic.TICK)
                         val now = target.value()
                         val m = mentionQuery(now.text, now.selection.end) ?: return@BarLabel
-                        val e = NoteFormat.noteLink(now.text, m.first, now.selection.end, n.plainTitle, n.id)
+                        val e = NoteFormat.mentionLink(now.text, m.first, now.selection.end, h.title, h.url)
                         target.set(TextFieldValue(e.text, TextRange(e.start)))
                     }
                 }
@@ -820,6 +1037,11 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                 }
             }
             else -> {
+                // Una data nella riga: per primo il tasto che la mette nel Calendario (1.588).
+                dated?.let { (_, due) ->
+                    BarLabel(Icons.Outlined.Event, dueLabel(due)) { toCalendar() }
+                    BarSeparator()
+                }
                 // Il cursore su un link: per primo il tasto che lo apre.
                 linkHere?.let { (url, label) ->
                     BarIcon(Icons.AutoMirrored.Outlined.OpenInNew, "Apri il link", on = true) { openLink(url, label) }
