@@ -7,7 +7,7 @@ package com.platinum20.dashboard.notes
  * e [afterEdit] fa in modo che cancellare o andare a capo non rompa mai un segno. Fuori dall'editor si usa [plain].
  */
 object NoteFormat {
-    enum class Kind { BOLD, ITALIC, STRIKE, HEADING, MARK, HIGHLIGHT, LINK, URL }
+    enum class Kind { BOLD, ITALIC, STRIKE, HEADING, MARK, HIGHLIGHT, LINK, URL, COLOR }
 
     /** Un pezzo di testo da disegnare in un modo: [end] escluso. */
     data class Span(val start: Int, val end: Int, val kind: Kind)
@@ -32,6 +32,13 @@ object NoteFormat {
     private val headingRx = Regex("""(?m)^## (.*)$""")
     private val highlightRx = Regex("""==(?=\S)(.+?)==""")
 
+    /**
+     * I colori (1.590): `{r:testo}` colora il testo, la lettera maiuscola `{R:testo}` lo sfondo. r rosso, a arancio,
+     * v verde, b blu, p viola. Il colore si legge dal carattere due prima del testo ([colorAt]).
+     */
+    const val COLORS = "ravbp"
+    private val colorRx = Regex("""\{([ravbpRAVBP]):(?=\S)([^{}\n]+?)}""")
+
     /** Un link col suo testo (1.584): `[testo](https://…)` o `[Titolo](nota:12)` per un'altra nota. */
     private val linkRx = Regex("""\[([^\]\n]+)]\(([^)\s]+)\)""")
     private val urlRx = Regex("""https?://[^\s)\]]+""")
@@ -52,6 +59,7 @@ object NoteFormat {
         wrapped(boldRx, Kind.BOLD, BOLD.length, text)
         wrapped(strikeRx, Kind.STRIKE, STRIKE.length, text)
         wrapped(highlightRx, Kind.HIGHLIGHT, HIGHLIGHT.length, text)
+        colorRx.findAll(text).forEach { m -> out += Format(Kind.COLOR, m.range.first..m.range.first + 2, m.range.last..m.range.last) }
         linkRx.findAll(text).forEach { m ->
             val label = m.groups[1]!!.range
             out += Format(Kind.LINK, m.range.first..m.range.first, label.last + 1..m.range.last)
@@ -430,5 +438,46 @@ object NoteFormat {
         val t = base.substring(0, a) + piece + base.substring(a)
         val cleaned = tidy(t, a + piece.length, a + piece.length)
         return cleaned ?: Edit(t, a + piece.length)
+    }
+
+    /** La lettera del colore di uno [Span] COLOR che comincia a [contentStart] ('r', 'R'…), null se non lo è. */
+    fun colorAt(text: String, contentStart: Int): Char? =
+        text.getOrNull(contentStart - 3)?.takeIf { it == '{' }?.let { text.getOrNull(contentStart - 2) }?.takeIf { it.lowercaseChar() in COLORS }
+
+    /**
+     * Il colore sul testo scelto (1.590): [code] = la lettera ('r' testo rosso, 'R' sfondo rosso…), null = toglie il colore.
+     * Un colore che c'è già dove sta la scelta si cambia o si toglie; il resto prende il colore riga per riga.
+     */
+    fun color(text: String, start: Int, end: Int, code: Char?): Edit {
+        var s = minOf(start, end).coerceIn(0, text.length)
+        var e = maxOf(start, end).coerceIn(0, text.length)
+        val there = colorRx.findAll(text).firstOrNull { m -> s >= m.range.first && s <= m.range.last + 1 && e <= m.range.last + 1 }
+        if (there != null) {
+            val inner = there.groupValues[2]
+            val piece = if (code == null) inner else "{$code:$inner}"
+            val t = text.substring(0, there.range.first) + piece + text.substring(there.range.last + 1)
+            val a = there.range.first + if (code == null) 0 else 3
+            return Edit(t, a, a + inner.length)
+        }
+        if (code == null || s == e) return Edit(text, start, end)
+        while (s < e && text[s].isWhitespace()) s++
+        while (e > s && text[e - 1].isWhitespace()) e--
+        if (s == e) return Edit(text, start, end)
+        val sb = StringBuilder(text.substring(0, s))
+        var first = -1
+        var last = s
+        text.substring(s, e).split('\n').forEachIndexed { i, seg ->
+            if (i > 0) sb.append('\n')
+            val core = seg.trim()
+            if (core.isEmpty()) { sb.append(seg); return@forEachIndexed }
+            val lead = seg.length - seg.trimStart().length
+            sb.append(seg, 0, lead).append('{').append(code).append(':')
+            if (first < 0) first = sb.length
+            sb.append(core.replace('{', '(').replace('}', ')'))
+            last = sb.length
+            sb.append('}').append(seg, lead + core.length, seg.length)
+        }
+        sb.append(text, e, text.length)
+        return Edit(sb.toString(), first, last)
     }
 }

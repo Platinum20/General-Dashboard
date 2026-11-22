@@ -39,6 +39,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -65,7 +66,7 @@ import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Stop
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material.icons.outlined.VerticalAlignBottom
-import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
 import androidx.compose.material.icons.outlined.RemoveDone
 import androidx.compose.material.icons.outlined.SortByAlpha
 import androidx.compose.material.icons.outlined.FileCopy
@@ -237,6 +238,27 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
         if (ok) scope.launch { PhotoAttach.keep(context, ReceiptReader.photoUri(context))?.let { attach(listOf(it)) } }
     }
     fun pickPhotos() = gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+
+    // ---- La copertina (1.590): una foto in cima alla nota ----
+    val coverPick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        val nid = id
+        if (uri != null && nid != null) scope.launch {
+            PhotoAttach.keep(context, uri)?.let { path ->
+                NotesStore.setNoteCover(nid, path)
+                haptic(Haptic.CONFIRM)
+            }
+        }
+    }
+    fun pickCover() = coverPick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    fun coverActions(nid: Long, now: String?): Array<BubbleAction> = listOfNotNull(
+        BubbleAction(Icons.Outlined.Image, if (now == null) "Aggiungi una copertina" else "Cambia la copertina", "una foto in cima alla nota") { pickCover() },
+        now?.let {
+            BubbleAction(Icons.Outlined.Delete, "Togli la copertina", "con Annulla", danger = true) {
+                NotesStore.setNoteCover(nid, null)
+                CaptureFeedback.tell(context, "Copertina tolta", Icons.Outlined.Delete, "Annulla") { NotesStore.setNoteCover(nid, it) }
+            }
+        },
+    ).toTypedArray()
 
     fun removePhoto(path: String) {
         val nid = id ?: return
@@ -421,6 +443,11 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     }
                 },
                 id?.takeIf { current != null }?.let { nid -> emojiAction(nid, current?.emoji) },
+                id?.takeIf { current != null }?.let { nid ->
+                    BubbleAction(Icons.Outlined.Image, if (current?.cover == null) "Aggiungi una copertina" else "Copertina", "una foto in cima alla nota") {
+                        if (current?.cover == null) pickCover() else ActionBubble.show(*coverActions(nid, current?.cover))
+                    }
+                },
                 if (body.text.isBlank()) null else BubbleAction(Icons.Outlined.Search, "Cerca nella nota", "le parole trovate si colorano") {
                     findAt = 0
                     finding = ""
@@ -446,7 +473,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                         ).toTypedArray(),
                     )
                 },
-                if (!NoteLines.hasDone(body.text)) null else BubbleAction(Icons.Outlined.RadioButtonUnchecked, "Togli tutte le spunte", "per rifare la stessa lista") {
+                if (!NoteLines.hasDone(body.text)) null else BubbleAction(Icons.Outlined.CheckBoxOutlineBlank, "Togli tutte le spunte", "per rifare la stessa lista") {
                     body = TextFieldValue(NoteLines.uncheckAll(body.text))
                     save()
                 },
@@ -592,6 +619,23 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     .verticalScroll(rememberScrollState())
                     .padding(vertical = 12.dp),
             ) {
+                // La copertina (1.590): in cima, larga quanto la pagina; tocco o tieni premuto = cambiala o toglila.
+                current?.cover?.let { path ->
+                    coil3.compose.AsyncImage(
+                        model = java.io.File(path),
+                        contentDescription = "Copertina",
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 14.dp)
+                            .fillMaxWidth()
+                            .height(150.dp)
+                            .clip(RoundedCornerShape(18.dp))
+                            .combinedClickable(
+                                onLongClick = { id?.let { nid -> haptic(Haptic.LONG_PRESS); ActionBubble.show(*coverActions(nid, path)) } },
+                            ) { id?.let { nid -> haptic(Haptic.TICK); ActionBubble.show(*coverActions(nid, path)) } },
+                    )
+                }
                 // L'emoji della nota (1.586): grande sopra il titolo; tocco o tieni premuto = cambiala.
                 current?.emoji?.let { e ->
                     Text(
