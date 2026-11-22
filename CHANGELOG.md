@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.595.0
+**Video in Media: mai più una fila vuota**
+- Mentre i video delle iscrizioni arrivano, al loro posto ci sono tessere grigie invece del vuoto
+- Se non arrivano lo dice, con Riprova accanto (o Rientra se l'accesso a YouTube è scaduto)
+
 ## 1.594.0
 **Note: la riga sopra la tastiera, rientri giusti, menu in vista**
 - Scrivendo, la riga sale davvero in alto: la pagina la porta sopra la barra e la tastiera, anche quando la tastiera si apre
