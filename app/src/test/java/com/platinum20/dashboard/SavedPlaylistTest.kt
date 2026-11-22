@@ -6,8 +6,13 @@ import com.platinum20.dashboard.ui.screens.savedCountLine
 import com.platinum20.dashboard.ui.screens.savedPlayable
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 
 /** La playlist "Salvati" in Media: la riga sotto il nome e cosa parte con Riproduci. */
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [35])
 class SavedPlaylistTest {
     @Test
     fun rigaDelConteggio() {
