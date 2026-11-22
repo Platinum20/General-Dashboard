@@ -106,7 +106,7 @@ class NoteLinesTest {
 
     @Test fun testoDisegnato() {
         val v = NoteLines.Shown("a\n[ ] latte\n- **uova**", listOf(14..15, 20..21))
-        assertEquals("a\n\u2009\u200Blatte\n\u2009\u200Buova", v.shown)
+        assertEquals("a\n" + NoteLines.PLACE + "latte\n" + NoteLines.PLACE + "uova", v.shown)
         // Il cursore dopo "[ ] " sta dopo il posto del cerchio; da lì torna dopo il segno.
         assertEquals(4, v.toShown(6))
         assertEquals(6, v.toText(4))

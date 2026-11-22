@@ -448,9 +448,10 @@ object NoteLines {
     /**
      * Al posto del segno di una voce: uno spazio sottile (allargato dall'editor, sopra ci va il cerchio o il pallino) e
      * uno spazio di larghezza zero. Così il posto non è mai l'ultimo carattere della riga e su una voce vuota il cursore
-     * sta dopo il cerchio, non in mezzo (1.562).
+     * sta dopo il cerchio, non in mezzo (1.562). Tutti e due senza "a capo" (1.596): una parola lunga non lascia più il
+     * cerchio da solo sulla riga.
      */
-    const val PLACE = "\u2009\u200B"
+    const val PLACE = "\u202F\u2060"
 
     /** L'aria sopra ogni riga scritta (1.589): un carattere invisibile che l'editor disegna più grande. */
     const val BREATH = "\u200B"
@@ -459,7 +460,13 @@ object NoteLines {
      * Il testo come lo disegna l'editor: i segni dei formati [hidden] (da [NoteFormat.hidden]) spariscono, il segno di
      * ogni voce diventa [PLACE]. Il cursore non può finire dentro un segno: da lì va sempre dopo.
      */
-    class Shown(val text: String, hidden: List<IntRange> = emptyList(), breathe: Boolean = false) {
+    class Shown(
+        val text: String,
+        hidden: List<IntRange> = emptyList(),
+        breathe: Boolean = false,
+        /** I segni nascosti che diventano un posto visibile (1.596): indice dentro il segno → carattere al suo posto. */
+        slots: Map<Int, String> = emptyMap(),
+    ) {
         data class Cut(val start: Int, val end: Int, val with: String)
 
         val lines: List<Line> = parse(text)
@@ -467,7 +474,11 @@ object NoteLines {
             // [breathe] (1.589): uno spazio di larghezza zero all'inizio di ogni riga scritta, che l'editor fa più alto: così
             // c'è aria fra una riga e l'altra (Invio), ma non dentro la stessa riga che va a capo da sola.
             (if (breathe) lines.filter { !(it.hasMark && it.prefix > 0) }.map { Cut(it.start, it.start, BREATH) } else emptyList()) +
-            hidden.map { Cut(it.first, it.last + 1, "") })
+            // Un segno nascosto che contiene dei posti si spezza lì: ogni posto è un pezzo a sé, con la sua posizione.
+            hidden.flatMap { r ->
+                val from = listOf(r.first) + slots.keys.filter { it in r && it != r.first }.sorted()
+                from.mapIndexed { i, b -> Cut(b, if (i + 1 < from.size) from[i + 1] else r.last + 1, slots[b] ?: "") }
+            })
             .sortedBy { it.start }
             .fold(mutableListOf<Cut>()) { acc, c -> if (acc.isNotEmpty() && c.start < acc.last().end) acc else acc.apply { add(c) } }
 
