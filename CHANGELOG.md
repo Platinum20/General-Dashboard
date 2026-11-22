@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.598.0
+**Tag @ anche per gli eventi del calendario**
+- Scrivendo @ trovi anche gli eventi del calendario del telefono (dal mese scorso ai prossimi tre), con l'icona del calendario
+- Un tocco sul tag apre l'evento
 ## 1.597.0
 **Tag @: un'icona per tutti, sempre allo stesso posto**
 - Ogni tag @ ha la sua icona all'inizio, anche quelli a inizio riga che prima ne erano senza

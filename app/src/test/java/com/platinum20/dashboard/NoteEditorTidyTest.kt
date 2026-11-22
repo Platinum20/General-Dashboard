@@ -23,6 +23,7 @@ import com.platinum20.dashboard.notes.Note
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material.icons.outlined.WbSunny
+import androidx.compose.material.icons.outlined.Event
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -153,6 +154,17 @@ class NoteEditorTidyTest {
         assertTrue(NoteFormat.isEmoji("⭐"))
         assertFalse(NoteFormat.isEmoji("Ciao"))
         assertTrue(NoteFormat.mentionEmojis("[💡](nota:4)").isEmpty())
+    }
+
+    @Test
+    fun phoneEventsCanBeTagged() {
+        val ev = com.platinum20.dashboard.calendar.CalendarEvent(9, "Cena da Sara", 1_000L, 2_000L, false, "", 0)
+        val again = ev.copy(begin = 9_000_000L, end = 9_001_000L)
+        val hits = com.platinum20.dashboard.ui.screens.mentionTargets(NotesData(), emptyList(), "sara", listOf(again, ev), now = 0L)
+        assertEquals(1, hits.size)
+        assertEquals("Cena da Sara", hits[0].title)
+        assertTrue(hits[0].url.contains("id=9&begin=1000"))
+        assertEquals(androidx.compose.material.icons.Icons.Outlined.Event, mentionMark(hits[0].url, NotesData()).icon)
     }
 
     @Test
