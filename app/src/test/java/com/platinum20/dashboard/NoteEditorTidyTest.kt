@@ -168,6 +168,18 @@ class NoteEditorTidyTest {
     }
 
     @Test
+    fun tickingASubItemKeepsItsIndent() {
+        val t = "[ ] a\n  [ ] b\n    [ ] c"
+        val once = NoteLines.toggle(t, 1)
+        assertEquals("[ ] a\n  [x] b\n    [ ] c", once)
+        assertEquals(1, NoteLines.parse(once)[1].level)
+        assertEquals(t, NoteLines.toggle(once, 1))
+        assertEquals(2, NoteLines.parse(NoteLines.toggle(t, 2))[2].level)
+        // Anche spuntata dalla Home o dal widget.
+        assertEquals("Lista\n  [x] b", com.platinum20.dashboard.notes.Checklist.toggle("Lista\n  [ ] b", 1))
+    }
+
+    @Test
     fun fieldDrawsListsAndQuotesWithoutCrashing() {
         compose.setContent {
             MaterialTheme {

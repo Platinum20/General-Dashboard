@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.599.0
+**Sotto-voci spuntate restano al loro posto**
+- Spuntando una voce rientrata (sotto un'altra) resta rientrata, non torna più al bordo: nella nota, in Home e nel widget
 ## 1.598.0
 **Tag @ anche per gli eventi del calendario**
 - Scrivendo @ trovi anche gli eventi del calendario del telefono (dal mese scorso ai prossimi tre), con l'icona del calendario
