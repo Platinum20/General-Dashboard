@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -255,8 +256,6 @@ internal fun RichNoteField(
     val emit by rememberUpdatedState(onValueChange)
     var focused by remember { mutableStateOf(false) }
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
-    // Per le icone dei link "@" (1.596): che cosa è la cosa collegata.
-    val notesData by NotesStore.data.collectAsStateWithLifecycle()
     // Le righe che si chiudono (1.588): i titoli chiusi, per testo del titolo; e la tabella che si sta cambiando.
     var folded by remember { mutableStateOf(setOf<String>()) }
     // Le righe nascoste: sotto i titoli chiusi e, dalla 1.590, le spunte di una bacheca (si vedono come schede).
