@@ -37,13 +37,13 @@ class NoteEditorPhotosTest {
 
     @Test
     fun mosaicBigTwoStackedThenGridPages() {
-        // Larghezza 308, spazio 8: grande 200, piccole 96 (due impilate = 200).
-        val s = NotePhotos.slots(8, 308f, 8f)
+        // Larghezza 304, spazio 8: grande 200, piccole 96 (due impilate = 200).
+        val s = NotePhotos.slots(8, 304f, 8f)
         assertEquals(NotePhotos.Slot(0f, 0f, 200f), s[0])
         assertEquals(NotePhotos.Slot(208f, 0f, 96f), s[1])
         assertEquals(NotePhotos.Slot(208f, 104f, 96f), s[2])
         // Prima le tre giuste nello schermo.
-        assertEquals(308f, s[2].x + s[2].size, 0.01f)
+        assertEquals(304f, s[2].x + s[2].size, 0.01f)
         // Pagina 2x2: 3 e 4 in alto, 5 e 6 sotto; la 7 apre la pagina dopo.
         assertEquals(NotePhotos.Slot(312f, 0f, 96f), s[3])
         assertEquals(NotePhotos.Slot(416f, 0f, 96f), s[4])
