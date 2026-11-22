@@ -46,6 +46,42 @@ object NotePhotos {
         else -> 0
     }
 
+    /** Un posto nel mosaico dell'editor: angolo in alto a sinistra e lato, in pixel. */
+    data class Slot(val x: Float, val y: Float, val size: Float) {
+        val cx get() = x + size / 2
+        val cy get() = y + size / 2
+    }
+
+    /**
+     * Il mosaico (1.575): la prima grande, a destra due più piccole una sopra l'altra (alte insieme quanto la grande);
+     * scorrendo a destra tutte le altre a pagine 2x2, larghe quanto la grande. [width] = larghezza visibile: le prime
+     * tre la riempiono giusta.
+     */
+    fun slots(count: Int, width: Float, gap: Float): List<Slot> {
+        val big = (width - gap / 2) / 1.5f
+        val small = (big - gap) / 2
+        val gridStart = big + gap + small + gap
+        return List(count) { i ->
+            when (i) {
+                0 -> Slot(0f, 0f, big)
+                1 -> Slot(big + gap, 0f, small)
+                2 -> Slot(big + gap, small + gap, small)
+                else -> {
+                    val k = i - 3
+                    val x = gridStart + (k / 4) * (big + gap) + (k % 2) * (small + gap)
+                    Slot(x, ((k % 4) / 2) * (small + gap), small)
+                }
+            }
+        }
+    }
+
+    /** Larghezza di tutto il mosaico, per lo scorrimento. */
+    fun mosaicWidth(slots: List<Slot>): Float = slots.maxOfOrNull { it.x + it.size } ?: 0f
+
+    /** Il posto più vicino al dito (il centro della foto trascinata). */
+    fun nearest(slots: List<Slot>, x: Float, y: Float): Int =
+        slots.indices.minByOrNull { val s = slots[it]; (s.cx - x) * (s.cx - x) + (s.cy - y) * (s.cy - y) } ?: 0
+
     /** "1 foto", "3 foto": nella riga in alto dell'editor. */
     fun label(n: Int): String? = if (n <= 0) null else "$n foto"
 }

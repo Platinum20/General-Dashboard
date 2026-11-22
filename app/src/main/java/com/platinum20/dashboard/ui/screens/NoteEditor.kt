@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -132,6 +133,7 @@ import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.ReceiptReader
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /**
  * Editor di una nota lunga (1.529, Antonio scelta B di /mnt/project-files/editor-note/): fatto come le altre schede.
@@ -481,7 +483,6 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                         onMenu = { path -> haptic(Haptic.LONG_PRESS); ActionBubble.show(*photoActions(path, open = true)) },
                         onMove = { from, to -> id?.let { nid -> NotesStore.editNotePhotos(nid) { NotePhotos.move(it, from, to) } } },
                         onArranging = { arranging = it },
-                        onAdd = { pickPhotos() },
                     )
                 }
                 Spacer(Modifier.size(12.dp))
@@ -547,8 +548,9 @@ private fun HoldRoundButton(icon: ImageVector, label: String, tint: Color = Mate
 }
 
 /**
- * Le foto in fila sotto il titolo. Tocca = a tutto schermo; tieni premuto e lascia = fumetto; tieni premuto e trascina
- * = cambia l'ordine (le altre si fanno da parte, una vibrazione a ogni posto). L'ultima casella aggiunge altre foto.
+ * Le foto sotto il titolo (1.575): la prima grande, a destra due più piccole una sopra l'altra; scorrendo a destra le
+ * altre a pagine 2x2. Tocca = a tutto schermo; tieni premuto e lascia = fumetto; tieni premuto e trascina = cambia
+ * l'ordine (le altre si fanno da parte, una vibrazione a ogni posto). Per aggiungerne: "Aggiungi" in basso.
  */
 @Composable
 private fun PhotoStrip(
@@ -557,32 +559,29 @@ private fun PhotoStrip(
     onMenu: (String) -> Unit,
     onMove: (Int, Int) -> Unit,
     onArranging: (Boolean) -> Unit,
-    onAdd: () -> Unit,
 ) {
     BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = 24.dp)) {
-        // Tre foto riempiono giuste la larghezza fra i margini della pagina (1.552): niente foto tagliata dal bordo.
-        PhotoRow(photos, (maxWidth - PHOTO_GAP * 2) / 3, onOpen, onMenu, onMove, onArranging, onAdd)
+        PhotoMosaic(photos, maxWidth, onOpen, onMenu, onMove, onArranging)
     }
 }
 
 private val PHOTO_GAP = 8.dp
 
 @Composable
-private fun PhotoRow(
+private fun PhotoMosaic(
     photos: List<String>,
-    tile: androidx.compose.ui.unit.Dp,
+    width: androidx.compose.ui.unit.Dp,
     onOpen: (Int) -> Unit,
     onMenu: (String) -> Unit,
     onMove: (Int, Int) -> Unit,
     onArranging: (Boolean) -> Unit,
-    onAdd: () -> Unit,
 ) {
     val haptic = rememberHaptic()
     val density = LocalDensity.current
-    val gap = PHOTO_GAP
-    val step = with(density) { (tile + gap).toPx() }
+    val slots = with(density) { NotePhotos.slots(photos.size, width.toPx(), PHOTO_GAP.toPx()) }
     val slop = with(density) { 12.dp.toPx() }
     val current by rememberUpdatedState(photos)
+    val places by rememberUpdatedState(slots)
     // I gesti restano accesi fra una foto e l'altra: leggono sempre le azioni di adesso.
     val open by rememberUpdatedState(onOpen)
     val menu by rememberUpdatedState(onMenu)
@@ -590,93 +589,96 @@ private fun PhotoRow(
     val arrange by rememberUpdatedState(onArranging)
     var dragFrom by remember { mutableStateOf<Int?>(null) }
     var dragX by remember { mutableFloatStateOf(0f) }
+    var dragY by remember { mutableFloatStateOf(0f) }
     var lastTarget by remember { mutableIntStateOf(-1) }
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(gap),
-        modifier = Modifier
+    fun targetOf(from: Int): Int {
+        val s = places.getOrNull(from) ?: return from
+        return NotePhotos.nearest(places, s.cx + dragX, s.cy + dragY)
+    }
+    val totalW = with(density) { NotePhotos.mosaicWidth(slots).toDp() }
+    val totalH = with(density) { (slots.firstOrNull()?.size ?: 0f).toDp() }
+    Box(
+        Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState(), enabled = dragFrom == null),
     ) {
-        photos.forEachIndexed { i, path ->
-            key(path) {
-                val from = dragFrom
-                val to = from?.let { NotePhotos.target(it, dragX, step, photos.size) }
-                val shift = if (from != null && to != null) NotePhotos.shift(i, from, to) else 0
-                val slide by animateFloatAsState(shift * step, Motion.settle(), label = "fila")
-                val held = from == i
-                val lift by animateFloatAsState(if (held) 1.06f else 1f, Motion.lively(), label = "presa")
-                Box(
-                    Modifier
-                        .size(tile)
-                        .zIndex(if (held) 1f else 0f)
-                        .graphicsLayer {
-                            translationX = if (held) dragX else slide
-                            scaleX = lift
-                            scaleY = lift
-                        }
-                        .clip(RoundedCornerShape(16.dp))
-                        .pointerInput(path) {
-                            awaitEachGesture {
-                                val down = awaitFirstDown(requireUnconsumed = false)
-                                // 0 = tenuto premuto, 1 = lasciato subito (tocco), 2 = scorrimento della fila.
-                                var outcome = 0
-                                withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
-                                    outcome = if (waitForUpOrCancellation() != null) 1 else 2
-                                }
-                                val index = current.indexOf(path)
-                                when (outcome) {
-                                    1 -> open(index)
-                                    0 -> {
-                                        haptic(Haptic.GRAB)
-                                        dragFrom = index
-                                        dragX = 0f
-                                        lastTarget = index
-                                        var moved = 0f
-                                        drag(down.id) { change ->
-                                            val dx = change.positionChange().x
-                                            change.consume()
-                                            dragX += dx
-                                            moved += abs(dx)
-                                            if (moved > slop) arrange(true)
-                                            val t = NotePhotos.target(index, dragX, step, current.size)
-                                            if (t != lastTarget) {
-                                                lastTarget = t
-                                                haptic(Haptic.TICK)
+        Box(Modifier.size(width = totalW, height = totalH)) {
+            photos.forEachIndexed { i, path ->
+                key(path) {
+                    val from = dragFrom
+                    val to = from?.let { targetOf(it) }
+                    val shift = if (from != null && to != null) NotePhotos.shift(i, from, to) else 0
+                    val held = from == i
+                    // Ogni foto va (animata) al posto che le tocca: anche la misura cambia fra grande e piccola.
+                    val slot = slots.getOrNull(if (held) i else i + shift) ?: slots[i]
+                    val x by animateFloatAsState(slot.x, Motion.settle(), label = "x")
+                    val y by animateFloatAsState(slot.y, Motion.settle(), label = "y")
+                    val side by animateFloatAsState(slot.size, Motion.settle(), label = "lato")
+                    val lift by animateFloatAsState(if (held) 1.06f else 1f, Motion.lively(), label = "presa")
+                    Box(
+                        Modifier
+                            .offset { androidx.compose.ui.unit.IntOffset(x.roundToInt(), y.roundToInt()) }
+                            .size(with(density) { side.toDp() })
+                            .zIndex(if (held) 1f else 0f)
+                            .graphicsLayer {
+                                translationX = if (held) dragX else 0f
+                                translationY = if (held) dragY else 0f
+                                scaleX = lift
+                                scaleY = lift
+                            }
+                            .clip(RoundedCornerShape(16.dp))
+                            .pointerInput(path) {
+                                awaitEachGesture {
+                                    val down = awaitFirstDown(requireUnconsumed = false)
+                                    // 0 = tenuto premuto, 1 = lasciato subito (tocco), 2 = scorrimento della fila.
+                                    var outcome = 0
+                                    withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                                        outcome = if (waitForUpOrCancellation() != null) 1 else 2
+                                    }
+                                    val index = current.indexOf(path)
+                                    when (outcome) {
+                                        1 -> open(index)
+                                        0 -> {
+                                            haptic(Haptic.GRAB)
+                                            dragFrom = index
+                                            dragX = 0f
+                                            dragY = 0f
+                                            lastTarget = index
+                                            var moved = 0f
+                                            drag(down.id) { change ->
+                                                val d = change.positionChange()
+                                                change.consume()
+                                                dragX += d.x
+                                                dragY += d.y
+                                                moved += abs(d.x) + abs(d.y)
+                                                if (moved > slop) arrange(true)
+                                                val t = targetOf(index)
+                                                if (t != lastTarget) {
+                                                    lastTarget = t
+                                                    haptic(Haptic.TICK)
+                                                }
                                             }
-                                        }
-                                        val t = NotePhotos.target(index, dragX, step, current.size)
-                                        dragFrom = null
-                                        dragX = 0f
-                                        arrange(false)
-                                        when {
-                                            moved <= slop -> menu(path)
-                                            t != index -> {
-                                                haptic(Haptic.SNAP)
-                                                move(index, t)
+                                            val t = targetOf(index)
+                                            dragFrom = null
+                                            dragX = 0f
+                                            dragY = 0f
+                                            arrange(false)
+                                            when {
+                                                moved <= slop -> menu(path)
+                                                t != index -> {
+                                                    haptic(Haptic.SNAP)
+                                                    move(index, t)
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }
-                        },
-                ) {
-                    NotePhoto(path, Modifier.fillMaxSize(), crop = true)
+                            },
+                    ) {
+                        NotePhoto(path, Modifier.fillMaxSize(), crop = true)
+                    }
                 }
             }
-        }
-        // "+ Foto": aggiunge dalla galleria, anche più d'una.
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier
-                .size(width = 84.dp, height = tile)
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.card)
-                .border(cardBorder(), RoundedCornerShape(16.dp))
-                .clickable(onClickLabel = "Aggiungi foto", onClick = onAdd),
-        ) {
-            Icon(Icons.Outlined.Add, contentDescription = null)
-            Text("Foto", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
