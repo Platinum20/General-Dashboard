@@ -206,9 +206,9 @@ fun ReaderScreen(
             }
         },
         more = listOf(
-            if (saved) BubbleAction(Icons.Filled.Bookmark, "Togli da Da leggere") { SavedLinks.remove(context, link) }
-            else BubbleAction(Icons.Outlined.BookmarkAdd, "Leggi dopo") { SavedLinks.save(context, link) },
-            BubbleAction(Icons.Outlined.Share, "Condividi il link") {
+            if (saved) BubbleAction(Icons.Filled.Bookmark, "Togli da Da leggere", "sparisce dagli Appunti") { SavedLinks.remove(context, link) }
+            else BubbleAction(Icons.Outlined.BookmarkAdd, "Leggi dopo", "lo trovi negli Appunti") { SavedLinks.save(context, link) },
+            BubbleAction(Icons.Outlined.Share, "Condividi il link", "con le app del telefono") {
                 val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, url).putExtra(Intent.EXTRA_SUBJECT, title)
                 runCatching { context.startActivity(Intent.createChooser(send, null)) }
             },

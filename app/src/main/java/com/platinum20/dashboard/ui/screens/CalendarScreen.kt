@@ -223,7 +223,7 @@ fun EventDetailScreen(
         } else null,
         more =
             // Condividi, che prima stava tenendo premuta la riga (Antonio, 2026-11-11).
-            listOfNotNull(current?.let { ev -> BubbleAction(Icons.Outlined.Share, "Condividi") { shareText(context, eventShareText(ev.title, ev.begin)) } }),
+            listOfNotNull(current?.let { ev -> BubbleAction(Icons.Outlined.Share, "Condividi", "titolo, giorno e ora") { shareText(context, eventShareText(ev.title, ev.begin)) } }),
         onEdit = if (writable) ({ withWrite { current?.let { onEdit(it.id) } } }) else null,
         // Eliminare dal calendario non si può annullare: si conferma nel solito fumetto in basso.
         onDelete = if (writable) ({
