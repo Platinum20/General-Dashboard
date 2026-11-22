@@ -86,7 +86,7 @@ import com.platinum20.dashboard.notes.NotesStore
 
 /**
  * Il testo con le righe (1.555, Antonio scelta A di /mnt/project-files/editor-note-2/): punti, voci da spuntare e
- * titoletti mescolati nella stessa nota, la barra Punti · Spunta · Titolo · Aa sopra la tastiera. Lo usano le note
+ * titoletti mescolati nella stessa nota, la barra Punti · Spunta · Aa sopra la tastiera. Lo usano le note
  * lunghe e il campo "Note" di eventi, promemoria e date.
  */
 object RichBar {
@@ -350,8 +350,8 @@ private fun lineActions(
 }
 
 /**
- * La barra sopra la tastiera: Punti, Spunta, Titolo (acceso = com'è la riga del cursore) e Aa. Con del testo scelto, o
- * dopo Aa, diventa grassetto, corsivo, barrato; la X torna alla barra delle righe.
+ * La barra sopra la tastiera: Punti, Spunta (accesi = com'è la riga del cursore) e Aa. Con del testo scelto, o
+ * dopo Aa, diventa grassetto, corsivo, barrato, titolo; la X torna alla barra delle righe.
  */
 @Composable
 internal fun RichToolbar(modifier: Modifier = Modifier) {
@@ -384,6 +384,7 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
             BarChip(null, "G", "Grassetto", NoteFormat.Kind.BOLD in active, SpanStyle(fontWeight = FontWeight.Bold)) { mark(NoteFormat.BOLD) }
             BarChip(null, "C", "Corsivo", NoteFormat.Kind.ITALIC in active, SpanStyle(fontStyle = FontStyle.Italic)) { mark(NoteFormat.ITALIC) }
             BarChip(null, "B", "Barrato", NoteFormat.Kind.STRIKE in active, SpanStyle(textDecoration = TextDecoration.LineThrough)) { mark(NoteFormat.STRIKE) }
+            BarChip(Icons.Outlined.Title, "Titolo", "Titoletto", line.kind == NoteLines.Kind.HEADING) { kind(NoteLines.Kind.HEADING) }
             BarChip(Icons.Outlined.Close, null, "Torna a punti e spunte", false) {
                 haptic(Haptic.TICK)
                 formats = false
@@ -392,8 +393,7 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
         } else {
             BarChip(Icons.AutoMirrored.Outlined.FormatListBulleted, "Punti", "Elenco puntato", line.kind == NoteLines.Kind.BULLET) { kind(NoteLines.Kind.BULLET) }
             BarChip(Icons.Outlined.RadioButtonUnchecked, "Spunta", "Voce da spuntare", line.kind == NoteLines.Kind.CHECK) { kind(NoteLines.Kind.CHECK) }
-            BarChip(Icons.Outlined.Title, "Titolo", "Titoletto", line.kind == NoteLines.Kind.HEADING) { kind(NoteLines.Kind.HEADING) }
-            BarChip(null, "Aa", "Grassetto, corsivo, barrato", false) {
+            BarChip(null, "Aa", "Grassetto, corsivo, barrato, titolo", false) {
                 haptic(Haptic.TICK)
                 formats = true
             }

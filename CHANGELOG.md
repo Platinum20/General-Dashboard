@@ -3,7 +3,7 @@
 ## 1.578.0
 **Note: più formati insieme**
 - Grassetto e corsivo (o barrato) sulla stessa parola si vedono subito, senza dover spostare il cursore
-- Nella barra Aa non c'è più Titolo: sta solo nella barra principale, accanto a Punti e Spunta
+- Titolo ora sta solo nella barra Aa, insieme a grassetto, corsivo e barrato; nella barra principale restano Punti e Spunta
 ## 1.577.0
 **Note: niente più asterischi**
 - Grassetto, corsivo, barrato e titoletti si vedono già formattati mentre scrivi: asterischi, trattini e cancelletti non compaiono mai, neanche col cursore sopra
