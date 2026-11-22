@@ -80,6 +80,23 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.platinum20.dashboard.capture.CaptureFeedback
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.material.icons.automirrored.outlined.FormatIndentDecrease
+import androidx.compose.material.icons.automirrored.outlined.FormatIndentIncrease
+import androidx.compose.material.icons.automirrored.outlined.Redo
+import androidx.compose.material.icons.automirrored.outlined.Undo
+import androidx.compose.material.icons.outlined.FormatBold
+import androidx.compose.material.icons.outlined.FormatItalic
+import androidx.compose.material.icons.outlined.FormatListNumbered
+import androidx.compose.material.icons.outlined.StrikethroughS
+import androidx.compose.material.icons.outlined.TextFormat
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.ui.input.pointer.pointerInput
+import com.platinum20.dashboard.notes.NoteHistory
 import com.platinum20.dashboard.notes.NoteFormat
 import com.platinum20.dashboard.notes.NoteLines
 import com.platinum20.dashboard.notes.NotesStore
@@ -91,7 +108,16 @@ import com.platinum20.dashboard.notes.NotesStore
  */
 object RichBar {
     /** Il campo che sta scrivendo adesso: la barra lavora su di lui. */
-    class Target(val owner: Any, val value: () -> TextFieldValue, val set: (TextFieldValue) -> Unit)
+    class Target(
+        val owner: Any,
+        val value: () -> TextFieldValue,
+        val set: (TextFieldValue) -> Unit,
+        /** Annulla e Ripeti (1.579): leggerli in composizione fa ridisegnare la barra quando cambiano. */
+        val canUndo: () -> Boolean = { false },
+        val canRedo: () -> Boolean = { false },
+        val undo: () -> Unit = {},
+        val redo: () -> Unit = {},
+    )
 
     var target by mutableStateOf<Target?>(null)
         internal set
@@ -126,6 +152,9 @@ internal fun RichNoteField(
     onAllDone: (() -> Unit)? = null,
     /** L'altezza minima del campo: toccando sotto il testo si scrive lo stesso. */
     minHeight: androidx.compose.ui.unit.Dp = 0.dp,
+    /** "Cerca nella nota" (1.579): le parole trovate si colorano, [findAt] è quella in vista. */
+    find: String? = null,
+    findAt: Int = 0,
 ) {
     val context = LocalContext.current
     val haptic = rememberHaptic()
@@ -135,6 +164,14 @@ internal fun RichNoteField(
     val emit by rememberUpdatedState(onValueChange)
     var focused by remember { mutableStateOf(false) }
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
+    val history = remember { NoteHistory() }
+    var historyTick by remember { mutableIntStateOf(0) }
+    fun snap(v: TextFieldValue) = NoteHistory.Snap(v.text, v.selection.start, v.selection.end)
+    fun restore(s: NoteHistory.Snap?) {
+        s ?: return
+        historyTick++
+        emit(TextFieldValue(s.text, TextRange(s.start.coerceIn(0, s.text.length), s.end.coerceIn(0, s.text.length))))
+    }
 
     /** [typed] = l'ha cambiato la tastiera; falso = un tasto della barra, che sa già cosa fa. */
     fun change(v: TextFieldValue, typed: Boolean = true) {
@@ -149,6 +186,13 @@ internal fun RichNoteField(
         }
         // Un formato acceso e rimasto vuoto sparisce quando il cursore va altrove.
         NoteFormat.tidy(next.text, next.selection.start, next.selection.end)?.let { next = TextFieldValue(it.text, TextRange(it.start, it.end)) }
+        // Le liste numerate restano 1, 2, 3 (1.579).
+        if (next.text != old.text) {
+            val r = NoteLines.renumber(NoteLines.Edit(next.text, next.selection.start, next.selection.end))
+            if (r.text != next.text) next = TextFieldValue(r.text, TextRange(r.start, r.end))
+            history.record(snap(old), snap(next), System.currentTimeMillis())
+            historyTick++
+        }
         // Il cursore non resta mai dentro "[ ] ": scrivendo lì la voce si romperebbe.
         val safe = if (next.selection.collapsed) {
             val at = NoteLines.outOfPrefix(next.text, next.selection.start)
@@ -158,15 +202,26 @@ internal fun RichNoteField(
     }
 
     DisposableEffect(focused, readOnly) {
-        if (focused && !readOnly) RichBar.target = RichBar.Target(owner, { current }, { change(it, typed = false) })
+        if (focused && !readOnly) RichBar.target = RichBar.Target(
+            owner, { current }, { change(it, typed = false) },
+            canUndo = { historyTick; history.canUndo },
+            canRedo = { historyTick; history.canRedo },
+            undo = { restore(history.undo(snap(current))) },
+            redo = { restore(history.redo(snap(current))) },
+        )
         onDispose { if (RichBar.target?.owner == owner) RichBar.target = null }
     }
 
     val faded = colors.onSurfaceVariant
     // Una trasformazione nuova a ogni testo nuovo (1.578): con due formati sulla stessa parola il disegno restava
     // quello vecchio finché non si muoveva il cursore.
-    val transformation = remember(faded, value.text) {
-        VisualTransformation { input -> richText(input.text, faded) }
+    val found = remember(value.text, find) { if (find.isNullOrBlank()) emptyList() else NoteLines.matches(value.text, find) }
+    val foundStyle = SpanStyle(background = colors.primary.copy(alpha = 0.22f))
+    val foundNow = SpanStyle(background = colors.primary.copy(alpha = 0.5f))
+    val transformation = remember(faded, value.text, found, findAt) {
+        VisualTransformation { input ->
+            richText(input.text, faded, found.mapIndexed { i, r -> r to if (i == findAt) foundNow else foundStyle })
+        }
     }
 
     // Il cursore resta sempre in vista sopra la barra e la tastiera, anche quando Invio fa una riga nuova (1.562):
@@ -182,6 +237,23 @@ internal fun RichNoteField(
         val cursor = l.getCursorRect(at)
         follow.bringIntoView(Rect(cursor.left, cursor.top - room / 2, cursor.right, cursor.bottom + room))
     }
+
+    // La parola trovata resta in vista, anche senza tastiera.
+    LaunchedEffect(found, findAt) {
+        val r = found.getOrNull(findAt) ?: return@LaunchedEffect
+        withFrameNanos { }
+        val l = layout ?: return@LaunchedEffect
+        val at = transformation.filter(AnnotatedString(value.text)).offsetMapping.originalToTransformed(r.first)
+        if (at > l.layoutInput.text.length) return@LaunchedEffect
+        val box = l.getCursorRect(at)
+        follow.bringIntoView(Rect(box.left, box.top - room * 3, box.right, box.bottom + room * 3))
+    }
+
+    // Trascinare una voce (1.579): tieni premuto il cerchio o il pallino e sposta su o giù. Se non si muove, il fumetto.
+    var dragging by remember { mutableStateOf<Int?>(null) }
+    var dragMoved by remember { mutableStateOf(false) }
+    var dragPull by remember { mutableFloatStateOf(0f) }
+    var dragEndedAt by remember { mutableLongStateOf(0L) }
 
     Box(modifier) {
         BasicTextField(
@@ -225,20 +297,61 @@ internal fun RichNoteField(
                 val height = with(density) { (l.getLineBottom(row) - top).toDp() }
                 // Tutto il rientro fino al testo: il riquadro del solo spazio sottile è largo un filo e schiacciava i cerchi (1.559).
                 val width = with(density) { (l.getHorizontalPosition(at + 1, true) - place.left).coerceAtLeast(place.width).toDp() }
+                val rowPx = (l.getLineBottom(row) - top).coerceAtLeast(1f)
+                val lineNow by rememberUpdatedState(line)
                 Box(
-                    contentAlignment = Alignment.Center,
+                    contentAlignment = Alignment.CenterEnd,
                     modifier = Modifier
                         .offset { IntOffset(place.left.toInt(), top.toInt()) }
                         .size(width, height)
+                        .pointerInput(readOnly) {
+                            if (readOnly) return@pointerInput
+                            detectDragGesturesAfterLongPress(
+                                onDragStart = {
+                                    haptic(Haptic.LONG_PRESS)
+                                    dragging = lineNow.index
+                                    dragMoved = false
+                                    dragPull = 0f
+                                },
+                                onDrag = { change, amount ->
+                                    change.consume()
+                                    val from = dragging
+                                    dragPull += amount.y
+                                    if (from != null) {
+                                    val count = NoteLines.parse(current.text).size
+                                    if (dragPull > rowPx * 0.7f && from < count - 1) {
+                                        dragPull -= rowPx
+                                        haptic(Haptic.TICK)
+                                        dragMoved = true
+                                        dragging = from + 1
+                                        change(TextFieldValue(NoteLines.move(current.text, from, up = false), current.selection), typed = false)
+                                    } else if (dragPull < -rowPx * 0.7f && from > 0) {
+                                        dragPull += rowPx
+                                        haptic(Haptic.TICK)
+                                        dragMoved = true
+                                        dragging = from - 1
+                                        change(TextFieldValue(NoteLines.move(current.text, from, up = true), current.selection), typed = false)
+                                    }
+                                    }
+                                },
+                                onDragEnd = {
+                                    dragEndedAt = System.currentTimeMillis()
+                                    if (!dragMoved) ActionBubble.show(*lineActions(context, lineNow, current, emit, sendToTodo).toTypedArray())
+                                    dragging = null
+                                },
+                                onDragCancel = {
+                                    dragEndedAt = System.currentTimeMillis()
+                                    dragging = null
+                                },
+                            )
+                        }
                         .combinedClickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
                             onClickLabel = if (line.kind == NoteLines.Kind.CHECK) (if (line.done) "Togli la spunta" else "Spunta") else null,
-                            onLongClick = {
-                                haptic(Haptic.LONG_PRESS)
-                                ActionBubble.show(*lineActions(context, line, current, emit, sendToTodo).toTypedArray())
-                            },
                             onClick = {
+                                // Il tocco che chiude un tieni premuto non spunta.
+                                if (System.currentTimeMillis() - dragEndedAt < 400) return@combinedClickable
                                 if (line.kind == NoteLines.Kind.CHECK) {
                                     haptic(if (line.done) Haptic.TOGGLE_OFF else Haptic.TOGGLE_ON)
                                     val now = current
@@ -251,7 +364,10 @@ internal fun RichNoteField(
                             },
                         ),
                 ) {
-                    LineMark(line)
+                    // Il segno sta sempre accanto al testo, anche nelle sotto-voci più rientrate.
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.width(with(density) { INDENT.toDp() }).fillMaxHeight()) {
+                        LineMark(line, lifted = dragging == line.index)
+                    }
                 }
             } }
         }
@@ -260,15 +376,25 @@ internal fun RichNoteField(
 
 /** Il cerchio vuoto, il cerchio pieno con la spunta, o il pallino del punto. */
 @Composable
-private fun LineMark(line: NoteLines.Line) {
+private fun LineMark(line: NoteLines.Line, lifted: Boolean = false) {
     val colors = MaterialTheme.colorScheme
+    // Mentre la si trascina, la voce ha il segno blu: si vede quale si sta spostando.
+    val ink = if (lifted) colors.primary else colors.onSurface
     when {
+        line.kind == NoteLines.Kind.NUMBER -> Text(
+            "${line.number}.",
+            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+            color = if (lifted) colors.primary else colors.onSurfaceVariant,
+            maxLines = 1,
+            softWrap = false,
+            modifier = Modifier.wrapContentWidth(unbounded = true),
+        )
         // requiredSize: tondi sempre, anche se il posto è più stretto.
-        line.kind == NoteLines.Kind.BULLET -> Box(Modifier.requiredSize(6.dp).clip(CircleShape).background(colors.onSurface))
+        line.kind == NoteLines.Kind.BULLET -> Box(Modifier.requiredSize(if (lifted) 9.dp else 6.dp).clip(CircleShape).background(ink))
         line.done -> Box(contentAlignment = Alignment.Center, modifier = Modifier.requiredSize(19.dp).clip(CircleShape).background(colors.primary)) {
             Icon(Icons.Outlined.Check, contentDescription = null, tint = colors.onPrimary, modifier = Modifier.size(13.dp))
         }
-        else -> Box(Modifier.requiredSize(19.dp).border(1.6.dp, colors.onSurfaceVariant, CircleShape))
+        else -> Box(Modifier.requiredSize(19.dp).border(1.6.dp, if (lifted) colors.primary else colors.onSurfaceVariant, CircleShape))
     }
 }
 
@@ -276,7 +402,7 @@ private fun LineMark(line: NoteLines.Line) {
  * Il testo disegnato: formati, titoletti, voci fatte barrate e sbiadite, il rientro di punti e voci. I segni dei formati
  * ([NoteFormat.hidden]) e delle voci ([NoteLines.Shown]) non si vedono mai (1.577).
  */
-private fun richText(text: String, faded: androidx.compose.ui.graphics.Color): TransformedText {
+private fun richText(text: String, faded: androidx.compose.ui.graphics.Color, marks: List<Pair<IntRange, SpanStyle>> = emptyList()): TransformedText {
     val styled = buildAnnotatedString {
         append(text)
         NoteFormat.spans(text).forEach { s ->
@@ -292,6 +418,7 @@ private fun richText(text: String, faded: androidx.compose.ui.graphics.Color): T
         NoteLines.parse(text).filter { it.kind == NoteLines.Kind.CHECK && it.done && it.end > it.contentStart }.forEach {
             addStyle(SpanStyle(textDecoration = TextDecoration.LineThrough, color = faded), it.contentStart, it.end)
         }
+        marks.forEach { (r, style) -> if (r.last < text.length) addStyle(style, r.first, r.last + 1) }
     }
     val view = NoteLines.Shown(text, NoteFormat.hidden(text))
     if (view.cuts.isEmpty()) return TransformedText(styled, OffsetMapping.Identity)
@@ -305,7 +432,8 @@ private fun richText(text: String, faded: androidx.compose.ui.graphics.Color): T
         append(styled.subSequence(at, text.length))
         view.lines.filter { it.isList && it.prefix > 0 }.forEach { line ->
             val s = view.toShown(line.start)
-            if (s < length) addStyle(SpanStyle(letterSpacing = INDENT), s, s + 1)
+            // Ogni livello di sotto-voce sposta il testo di un altro rientro (1.579).
+            if (s < length) addStyle(SpanStyle(letterSpacing = (INDENT.value * (1 + line.level)).sp), s, s + 1)
         }
     }
     val mapping = object : OffsetMapping {
@@ -350,8 +478,9 @@ private fun lineActions(
 }
 
 /**
- * La barra sopra la tastiera: Punti, Spunta (accesi = com'è la riga del cursore) e Aa. Con del testo scelto, o
- * dopo Aa, diventa grassetto, corsivo, barrato, titolo; la X torna alla barra delle righe.
+ * La barra sopra la tastiera (1.579, /mnt/project-files/editor-note-3/barra.png): solo icone tonde in gruppi.
+ * Annulla · Ripeti | Punti · Numeri · Spunta · rientro → ← | Aa. Con del testo scelto, o dopo Aa: grassetto, corsivo,
+ * barrato, titolo | X per tornare. Accesa = blu; spenta (grigia) = adesso non si può.
  */
 @Composable
 internal fun RichToolbar(modifier: Modifier = Modifier) {
@@ -361,39 +490,53 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
     var formats by remember(target.owner) { mutableStateOf(false) }
     val selecting = !v.selection.collapsed
     val line = NoteLines.lineAt(v.text, v.selection.min.coerceIn(0, v.text.length))
+    // Ogni tocco legge il valore di adesso, non quello di quando la barra si è disegnata.
     fun kind(k: NoteLines.Kind) {
         haptic(Haptic.TICK)
         val now = target.value()
-        val e = NoteLines.setKind(now.text, now.selection.min, now.selection.max, k)
+        val e = NoteLines.renumber(NoteLines.setKind(now.text, now.selection.min, now.selection.max, k))
+        target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
+    }
+    fun indent(by: Int) {
+        haptic(Haptic.TICK)
+        val now = target.value()
+        val e = NoteLines.indent(now.text, now.selection.min, now.selection.max, by)
         target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
     }
     fun mark(m: String) {
         haptic(Haptic.TICK)
-        // Il valore di adesso, non quello di quando la barra si è disegnata: due tocchi di fila (G poi C) si sommano.
         val now = target.value()
         val e = NoteFormat.toggle(now.text, now.selection.min, now.selection.max, m)
         target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
     }
     Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier.horizontalScroll(rememberScrollState()),
     ) {
         if (selecting || formats) {
             val active = NoteFormat.active(v.text, v.selection.min, v.selection.max)
-            BarChip(null, "G", "Grassetto", NoteFormat.Kind.BOLD in active, SpanStyle(fontWeight = FontWeight.Bold)) { mark(NoteFormat.BOLD) }
-            BarChip(null, "C", "Corsivo", NoteFormat.Kind.ITALIC in active, SpanStyle(fontStyle = FontStyle.Italic)) { mark(NoteFormat.ITALIC) }
-            BarChip(null, "B", "Barrato", NoteFormat.Kind.STRIKE in active, SpanStyle(textDecoration = TextDecoration.LineThrough)) { mark(NoteFormat.STRIKE) }
-            BarChip(Icons.Outlined.Title, "Titolo", "Titoletto", line.kind == NoteLines.Kind.HEADING) { kind(NoteLines.Kind.HEADING) }
-            BarChip(Icons.Outlined.Close, null, "Torna a punti e spunte", false) {
+            BarIcon(Icons.Outlined.FormatBold, "Grassetto", on = NoteFormat.Kind.BOLD in active) { mark(NoteFormat.BOLD) }
+            BarIcon(Icons.Outlined.FormatItalic, "Corsivo", on = NoteFormat.Kind.ITALIC in active) { mark(NoteFormat.ITALIC) }
+            BarIcon(Icons.Outlined.StrikethroughS, "Barrato", on = NoteFormat.Kind.STRIKE in active) { mark(NoteFormat.STRIKE) }
+            BarIcon(Icons.Outlined.Title, "Titolo", on = line.kind == NoteLines.Kind.HEADING) { kind(NoteLines.Kind.HEADING) }
+            BarSeparator()
+            BarIcon(Icons.Outlined.Close, "Torna a punti e spunte") {
                 haptic(Haptic.TICK)
                 formats = false
                 if (selecting) target.set(v.copy(selection = TextRange(v.selection.max)))
             }
         } else {
-            BarChip(Icons.AutoMirrored.Outlined.FormatListBulleted, "Punti", "Elenco puntato", line.kind == NoteLines.Kind.BULLET) { kind(NoteLines.Kind.BULLET) }
-            BarChip(Icons.Outlined.RadioButtonUnchecked, "Spunta", "Voce da spuntare", line.kind == NoteLines.Kind.CHECK) { kind(NoteLines.Kind.CHECK) }
-            BarChip(null, "Aa", "Grassetto, corsivo, barrato, titolo", false) {
+            BarIcon(Icons.AutoMirrored.Outlined.Undo, "Annulla", enabled = target.canUndo()) { haptic(Haptic.TICK); target.undo() }
+            BarIcon(Icons.AutoMirrored.Outlined.Redo, "Ripeti", enabled = target.canRedo()) { haptic(Haptic.TICK); target.redo() }
+            BarSeparator()
+            BarIcon(Icons.AutoMirrored.Outlined.FormatListBulleted, "Elenco puntato", on = line.kind == NoteLines.Kind.BULLET) { kind(NoteLines.Kind.BULLET) }
+            BarIcon(Icons.Outlined.FormatListNumbered, "Elenco numerato", on = line.kind == NoteLines.Kind.NUMBER) { kind(NoteLines.Kind.NUMBER) }
+            BarIcon(Icons.Outlined.RadioButtonUnchecked, "Voce da spuntare", on = line.kind == NoteLines.Kind.CHECK) { kind(NoteLines.Kind.CHECK) }
+            BarIcon(Icons.AutoMirrored.Outlined.FormatIndentIncrease, "Sotto-voce", enabled = NoteLines.canIndent(v.text, v.selection.min, 1)) { indent(1) }
+            BarIcon(Icons.AutoMirrored.Outlined.FormatIndentDecrease, "Su di un livello", enabled = NoteLines.canIndent(v.text, v.selection.min, -1)) { indent(-1) }
+            BarSeparator()
+            BarIcon(Icons.Outlined.TextFormat, "Grassetto, corsivo, barrato, titolo") {
                 haptic(Haptic.TICK)
                 formats = true
             }
@@ -401,32 +544,33 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
     }
 }
 
-/** Un tasto della barra: acceso = blu, come tutte le azioni. */
+/** Un tasto della barra: tondo, solo l'icona. Acceso = blu come tutte le azioni, spento = sbiadito e fermo. */
 @Composable
-private fun BarChip(icon: ImageVector?, label: String?, description: String, on: Boolean, style: SpanStyle? = null, onClick: () -> Unit) {
+private fun BarIcon(icon: ImageVector, description: String, on: Boolean = false, enabled: Boolean = true, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
-    val tint = if (on) colors.onPrimary else colors.onSurface
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .heightIn(min = 40.dp)
-            .bouncyPress(0.92f)
-            .clip(RoundedCornerShape(20.dp))
-            .background(if (on) colors.primary else colors.card)
-            .border(cardBorder(), RoundedCornerShape(20.dp))
-            .clickable(onClickLabel = description, onClick = onClick)
-            .padding(horizontal = if (label == null) 11.dp else 14.dp, vertical = 9.dp),
-    ) {
-        if (icon != null) Icon(icon, contentDescription = if (label == null) description else null, tint = tint, modifier = Modifier.size(18.dp))
-        if (icon != null && label != null) Spacer(Modifier.width(6.dp))
-        if (label != null) {
-            Text(
-                if (style != null) AnnotatedString(label, spanStyles = listOf(AnnotatedString.Range(style, 0, label.length))) else AnnotatedString(label),
-                style = MaterialTheme.typography.labelLarge,
-                color = tint,
-            )
-        }
+    val tint = when {
+        on -> colors.onPrimary
+        enabled -> colors.onSurface
+        else -> colors.onSurfaceVariant.copy(alpha = 0.4f)
     }
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(42.dp)
+            .then(if (enabled) Modifier.bouncyPress(0.9f) else Modifier)
+            .clip(CircleShape)
+            .background(if (on) colors.primary else colors.card)
+            .border(cardBorder(), CircleShape)
+            .clickable(enabled = enabled, onClickLabel = description, onClick = onClick),
+    ) {
+        Icon(icon, contentDescription = description, tint = tint, modifier = Modifier.size(21.dp))
+    }
+}
+
+/** La linea sottile fra un gruppo di tasti e l'altro. */
+@Composable
+private fun BarSeparator() {
+    Box(Modifier.padding(horizontal = 2.dp).width(1.dp).heightIn(min = 26.dp).background(MaterialTheme.colorScheme.outlineVariant))
 }
 
 /**

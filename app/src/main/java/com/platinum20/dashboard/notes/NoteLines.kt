@@ -7,12 +7,12 @@ package com.platinum20.dashboard.notes
  * pallini. Funzioni pure: si provano senza telefono.
  */
 object NoteLines {
-    enum class Kind { TEXT, BULLET, CHECK, HEADING }
+    enum class Kind { TEXT, BULLET, CHECK, HEADING, NUMBER }
 
     /** Una riga: [start]..[end] ([end] = dove sta il "\n" o la fine), il segno davanti lungo [prefix]. */
-    data class Line(val index: Int, val start: Int, val end: Int, val kind: Kind, val done: Boolean, val prefix: Int) {
+    data class Line(val index: Int, val start: Int, val end: Int, val kind: Kind, val done: Boolean, val prefix: Int, val level: Int = 0, val number: Int = 0) {
         val contentStart: Int get() = start + prefix
-        val isList: Boolean get() = kind == Kind.BULLET || kind == Kind.CHECK
+        val isList: Boolean get() = kind == Kind.BULLET || kind == Kind.CHECK || kind == Kind.NUMBER
     }
 
     /** Il risultato di una modifica: testo nuovo e cursore (o selezione) nuovo. */
@@ -25,11 +25,25 @@ object NoteLines {
 
     private val checkRx = Regex("""^\s*\[([ xX]?)](?: |$)""")
     private val bulletRx = Regex("""^\s*[-•*] """)
+    private val numberRx = Regex("""^\s*(\d{1,3})[.)] """)
+
+    /** Un livello di rientro (1.579): due spazi davanti al segno. */
+    const val INDENT = "  "
+    const val MAX_LEVEL = 4
+
+    /** Quanto è rientrata una riga: due spazi o un tab = un livello. */
+    fun levelOf(line: String): Int {
+        var spaces = 0
+        var tabs = 0
+        for (c in line) { if (c == ' ') spaces++ else if (c == '\t') tabs++ else break }
+        return minOf(MAX_LEVEL, spaces / 2 + tabs)
+    }
 
     /** Che riga è e quanto è lungo il suo segno. */
     fun kindOf(line: String): Triple<Kind, Boolean, Int> {
         checkRx.find(line)?.let { m -> return Triple(Kind.CHECK, m.groupValues[1].equals("x", ignoreCase = true), m.value.length) }
         bulletRx.find(line)?.let { m -> return Triple(Kind.BULLET, false, m.value.length) }
+        numberRx.find(line)?.let { m -> return Triple(Kind.NUMBER, false, m.value.length) }
         if (line.startsWith(HEADING)) return Triple(Kind.HEADING, false, HEADING.length)
         return Triple(Kind.TEXT, false, 0)
     }
@@ -41,8 +55,11 @@ object NoteLines {
         while (true) {
             val nl = text.indexOf('\n', start)
             val end = if (nl < 0) text.length else nl
-            val (kind, done, prefix) = kindOf(text.substring(start, end))
-            out += Line(index, start, end, kind, done, prefix)
+            val raw = text.substring(start, end)
+            val (kind, done, prefix) = kindOf(raw)
+            val level = if (kind == Kind.BULLET || kind == Kind.CHECK || kind == Kind.NUMBER) levelOf(raw) else 0
+            val number = if (kind == Kind.NUMBER) numberRx.find(raw)?.groupValues?.get(1)?.toIntOrNull() ?: 1 else 0
+            out += Line(index, start, end, kind, done, prefix, level, number)
             if (nl < 0) break
             start = nl + 1
             index++
@@ -64,6 +81,7 @@ object NoteLines {
         Kind.BULLET -> BULLET
         Kind.CHECK -> if (done) DONE else CHECK
         Kind.HEADING -> HEADING
+        Kind.NUMBER -> "1. "
     }
 
     /**
@@ -82,7 +100,9 @@ object NoteLines {
         var at = 0
         touched.forEach { l ->
             sb.append(text, at, l.start)
-            val keep = if (target == Kind.CHECK && l.kind == Kind.CHECK) prefixFor(Kind.CHECK, l.done) else prefixFor(target)
+            // Il rientro resta se la riga resta in una lista.
+            val indent = if (l.isList && (target == Kind.BULLET || target == Kind.CHECK || target == Kind.NUMBER)) INDENT.repeat(l.level) else ""
+            val keep = indent + if (target == Kind.CHECK && l.kind == Kind.CHECK) prefixFor(Kind.CHECK, l.done) else prefixFor(target)
             sb.append(keep).append(text, l.contentStart, l.end)
             shifts += Triple(l.start, l.prefix, keep.length)
             at = l.end
@@ -112,10 +132,28 @@ object NoteLines {
             val p = cursor - 1
             val line = lineAt(old, p)
             if (!line.isList || p < line.contentStart) return null
-            if (content(old, line).isBlank()) return Edit(old.removeRange(line.start, line.end), line.start)
+            if (content(old, line).isBlank()) {
+                // Invio su una voce vuota rientrata: torna su di un livello; non rientrata: la lista finisce.
+                if (line.level > 0) {
+                    val e = indent(old, line.contentStart, line.contentStart, -1)
+                    return Edit(e.text, e.start)
+                }
+                return Edit(old.removeRange(line.start, line.end), line.start)
+            }
             val indent = old.substring(line.start, line.contentStart).takeWhile { it == ' ' || it == '\t' }
-            val pre = indent + if (line.kind == Kind.CHECK) CHECK else old.substring(line.start + indent.length, line.contentStart)
+            val pre = indent + when (line.kind) {
+                Kind.CHECK -> CHECK
+                Kind.NUMBER -> "${line.number + 1}. "
+                else -> old.substring(line.start + indent.length, line.contentStart)
+            }
             return Edit(new.substring(0, cursor) + pre + new.substring(cursor), cursor + pre.length)
+        }
+        // Scorciatoia (1.579): "# " a inizio riga diventa un titolo.
+        if (new.length == old.length + 1 && cursor >= 2 && cursor <= new.length && new[cursor - 1] == ' ') {
+            val line = lineAt(new, cursor)
+            if (new.substring(line.start, cursor) == "# " && line.kind == Kind.TEXT) {
+                return Edit(new.substring(0, line.start) + HEADING + new.substring(cursor), line.start + HEADING.length)
+            }
         }
         // Un carattere cancellato dentro il segno (indietro a inizio voce): la voce torna testo.
         if (new.length == old.length - 1 && cursor in 0..new.length &&
@@ -127,6 +165,71 @@ object NoteLines {
             }
         }
         return null
+    }
+
+    /**
+     * I tasti del rientro (1.579): le voci toccate dalla selezione vanno a destra ([by] = +1, diventano sotto-voci) o
+     * a sinistra (-1). Le righe che non sono voci non si muovono. La selezione segue il testo.
+     */
+    fun indent(text: String, selStart: Int, selEnd: Int, by: Int): Edit {
+        val s = minOf(selStart, selEnd).coerceIn(0, text.length)
+        val e = maxOf(selStart, selEnd).coerceIn(0, text.length)
+        val touched = parse(text).filter { it.end >= s && it.start <= e && it.isList }
+        if (touched.isEmpty()) return Edit(text, selStart, selEnd)
+        val sb = StringBuilder()
+        val shifts = mutableListOf<Pair<Int, Int>>() // dove, quanto cambia
+        var at = 0
+        touched.forEach { l ->
+            sb.append(text, at, l.start)
+            val ws = text.substring(l.start, l.contentStart).takeWhile { it == ' ' || it == '\t' }
+            val level = (l.level + by).coerceIn(0, MAX_LEVEL)
+            val now = INDENT.repeat(level)
+            sb.append(now)
+            shifts += l.start to (now.length - ws.length)
+            at = l.start + ws.length
+        }
+        sb.append(text, at, text.length)
+        // Un punto a inizio riga resta a inizio riga; gli altri si spostano col rientro di tutte le righe prima.
+        fun map(o: Int): Int = o + shifts.filter { it.first < o }.sumOf { it.second }
+        return renumber(Edit(sb.toString(), map(s), map(e)))
+    }
+
+    /** Può andare a destra / a sinistra la riga del cursore? Per accendere o spegnere i tasti. */
+    fun canIndent(text: String, offset: Int, by: Int): Boolean {
+        val l = lineAt(text, offset.coerceIn(0, text.length))
+        return l.isList && (if (by > 0) l.level < MAX_LEVEL else l.level > 0)
+    }
+
+    /**
+     * I numeri delle liste numerate sempre 1, 2, 3 (1.579): contano le voci numerate di fila allo stesso livello; una
+     * riga di testo ricomincia da 1, una voce più in fuori ricomincia le sotto-liste. Il cursore resta dov'era.
+     */
+    fun renumber(edit: Edit): Edit {
+        val text = edit.text
+        val lines = parse(text)
+        if (lines.none { it.kind == Kind.NUMBER }) return edit
+        val counters = IntArray(MAX_LEVEL + 1)
+        val changes = mutableListOf<Triple<Int, Int, String>>() // inizio cifre, fine cifre, cifre nuove
+        lines.forEach { l ->
+            if (!l.isList) { counters.fill(0); return@forEach }
+            for (d in l.level + 1..MAX_LEVEL) counters[d] = 0
+            if (l.kind != Kind.NUMBER) { counters[l.level] = 0; return@forEach }
+            counters[l.level]++
+            val want = counters[l.level]
+            if (want != l.number) {
+                val raw = text.substring(l.start, l.contentStart)
+                val m = numberRx.find(raw) ?: return@forEach
+                val ds = l.start + m.groups[1]!!.range.first
+                changes += Triple(ds, ds + m.groups[1]!!.value.length, want.toString())
+            }
+        }
+        if (changes.isEmpty()) return edit
+        val sb = StringBuilder()
+        var at = 0
+        changes.forEach { (a, b, d) -> sb.append(text, at, a).append(d); at = b }
+        sb.append(text, at, text.length)
+        fun map(o: Int): Int = o + changes.filter { it.second <= o }.sumOf { it.third.length - (it.second - it.first) }
+        return Edit(sb.toString(), map(edit.start), map(edit.end))
     }
 
     /** Spunta o toglie la spunta alla riga [index]; il segno diventa sempre "[ ] " / "[x] ". */
@@ -260,6 +363,19 @@ object NoteLines {
             }
             return (offset - delta).coerceIn(0, text.length)
         }
+    }
+
+    /** "Cerca nella nota" (1.579): dove compare [query], senza badare a maiuscole. Vuota = niente. */
+    fun matches(text: String, query: String): List<IntRange> {
+        val q = query.trim()
+        if (q.isEmpty()) return emptyList()
+        val out = mutableListOf<IntRange>()
+        var at = text.indexOf(q, 0, ignoreCase = true)
+        while (at >= 0) {
+            out += at until at + q.length
+            at = text.indexOf(q, at + q.length, ignoreCase = true)
+        }
+        return out
     }
 
     /** Un cursore finito dentro il segno di una voce va subito dopo il segno. */

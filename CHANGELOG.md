@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.582.0
+**Editor delle note più completo (parte 1)**
+- La barra sopra la tastiera è fatta di icone tonde, in gruppi: Annulla e Ripeti, punti, numeri, spunte, rientro e Aa
+- Annulla e Ripeti: una parola scritta di fila torna indietro tutta insieme
+- Elenchi numerati 1, 2, 3 che si rinumerano da soli, e sotto-voci con le frecce del rientro (anche per punti e spunte). Invio su una sotto-voce vuota la riporta su di un livello
+- Scorciatoie: a inizio riga "- " fa un punto, "1. " un numero, "[] " una spunta, "# " un titolo
+- In "Altro": Cerca nella nota. Le parole trovate si colorano, con su e giù per passare dall'una all'altra
+- Tieni premuto il cerchio, il pallino o il numero di una voce e trascinalo su o giù per spostarla. Se lo lasci senza muoverlo si apre il fumetto come prima
 ## 1.581.0
 **Meteo rifatto: card più corta, pagina più chiara**
 - Card in Home: una riga sola, con il cielo e sotto "max 19° · min 10°"; le ore si leggono aprendo la pagina
