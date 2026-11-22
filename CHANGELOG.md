@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.578.0
+**Calendario in Home: sempre le prossime 3 cose**
+- Dopo oggi la card mostra tutto domani e comunque i prossimi 3 impegni, anche se sono fra qualche giorno: con oggi e domani vuoti vedi lo stesso cosa arriva
+
 ## 1.577.0
 **Note: niente più asterischi**
 - Grassetto, corsivo, barrato e titoletti si vedono già formattati mentre scrivi: asterischi, trattini e cancelletti non compaiono mai, neanche col cursore sopra
