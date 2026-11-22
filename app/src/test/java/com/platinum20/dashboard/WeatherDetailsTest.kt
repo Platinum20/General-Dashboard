@@ -1,5 +1,6 @@
 package com.platinum20.dashboard
 
+import com.platinum20.dashboard.ui.screens.detailRows
 import com.platinum20.dashboard.ui.screens.weatherDetails
 import com.platinum20.dashboard.weather.CurrentWeather
 import com.platinum20.dashboard.weather.DailyPoint
@@ -21,7 +22,7 @@ class WeatherDetailsTest {
 
     @Test
     fun nientePressioneNePioggiaOggi() {
-        val labels = weatherDetails(forecast(5.0)).map { it.first }
+        val labels = weatherDetails(forecast(5.0)).map { it.label }
         assertFalse("Pressione" in labels)
         assertFalse("Pioggia oggi" in labels)
         assertEquals(listOf("Umidità", "Vento", "Indice UV", "Alba · Tramonto"), labels)
@@ -29,7 +30,15 @@ class WeatherDetailsTest {
 
     @Test
     fun uvSoloDaTreInSu() {
-        assertFalse(weatherDetails(forecast(2.4)).any { it.first == "Indice UV" })
-        assertTrue(weatherDetails(forecast(3.0)).any { it.first == "Indice UV" })
+        assertFalse(weatherDetails(forecast(2.4)).any { it.label == "Indice UV" })
+        assertTrue(weatherDetails(forecast(3.0)).any { it.label == "Indice UV" })
+    }
+
+    @Test
+    fun albaTramontoSempreLargaDaSola() {
+        val rows = detailRows(weatherDetails(forecast(5.0))).map { r -> r.map { it.label } }
+        assertEquals(listOf(listOf("Umidità", "Vento"), listOf("Indice UV"), listOf("Alba · Tramonto")), rows)
+        val noUv = detailRows(weatherDetails(forecast(1.0))).map { r -> r.map { it.label } }
+        assertEquals(listOf(listOf("Umidità", "Vento"), listOf("Alba · Tramonto")), noUv)
     }
 }

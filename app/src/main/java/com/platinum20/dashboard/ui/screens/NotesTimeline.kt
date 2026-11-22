@@ -571,17 +571,22 @@ internal fun habitsIndex(days: List<Pair<LocalDate?, Boolean>>, nowAt: Int, toda
 }
 
 /**
- * Quante righe mostra la card Calendario in Home dopo quelle di oggi: solo domani (Antonio, 2026-11-11: "solo oggi
- * e domani"); e quante altre cose restano nel mese in corso, per la riga "Altre N a novembre".
+ * Quante righe mostra la card Calendario in Home dopo quelle di oggi: tutto domani, e comunque sempre le prossime
+ * [CALENDAR_CARD_NEXT] cose anche se sono più avanti (Antonio, 2026-11-22: "i prossimi 3 eventi sempre");
+ * e quante altre cose restano nel mese in corso.
  * [days] = per ogni riga dopo oggi il suo giorno (null = senza data), in ordine.
  */
 internal fun calendarCardCut(days: List<LocalDate?>, today: LocalDate): Pair<Int, Int> {
     val tomorrow = today.plusDays(1)
-    val shown = days.takeWhile { it == tomorrow }.size
+    val future = days.takeWhile { it != null && it.isAfter(today) }.size
+    val shown = maxOf(days.takeWhile { it == tomorrow }.size, minOf(CALENDAR_CARD_NEXT, future))
     val month = java.time.YearMonth.from(today)
     val more = days.drop(shown).count { it != null && it.isAfter(today) && java.time.YearMonth.from(it) == month }
     return shown to more
 }
+
+/** Le cose dopo oggi che la card Calendario mostra sempre, anche con oggi e domani vuoti. */
+internal const val CALENDAR_CARD_NEXT = 3
 
 /** Il numero a destra del titolo della card Calendario: le cose da oggi a fine mese (non la riga OGGI). */
 internal fun calendarMonthCount(rows: List<DueRow>, today: LocalDate): Int {

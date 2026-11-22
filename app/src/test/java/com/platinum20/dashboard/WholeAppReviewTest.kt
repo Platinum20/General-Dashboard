@@ -32,19 +32,25 @@ class WholeAppReviewTest {
     }
 
     @Test
-    fun calendarCardShowsOnlyTomorrowThenCountsTheMonth() {
-        // Dopo oggi: due cose domani, poi 4 a novembre e una a dicembre.
+    fun calendarCardShowsTheNextThreeThenCountsTheMonth() {
+        // Dopo oggi: due cose domani, poi 4 a novembre e una a dicembre: si vedono le prime 3.
         val days = listOf(
             today.plusDays(1), today.plusDays(1), today.plusDays(4),
             today.plusDays(6), today.plusDays(8), today.plusDays(10),
             LocalDate.of(2026, 12, 2),
         )
-        assertEquals(2 to 4, calendarCardCut(days, today))
+        assertEquals(3 to 3, calendarCardCut(days, today))
     }
 
     @Test
-    fun calendarCardWithNothingTomorrowShowsOnlyToday() {
-        assertEquals(0 to 1, calendarCardCut(listOf(today.plusDays(3), null), today))
+    fun calendarCardWithNothingTomorrowStillShowsWhatComes() {
+        assertEquals(1 to 0, calendarCardCut(listOf(today.plusDays(3), null), today))
+    }
+
+    @Test
+    fun calendarCardShowsAllOfTomorrowEvenBeyondThree() {
+        val days = List(5) { today.plusDays(1) } + listOf(today.plusDays(2))
+        assertEquals(5 to 1, calendarCardCut(days, today))
     }
 
     @Test

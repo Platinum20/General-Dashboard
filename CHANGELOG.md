@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.579.0
+## 1.582.0
 **Editor delle note più completo (parte 1)**
 - La barra sopra la tastiera è fatta di icone tonde, in gruppi: Annulla e Ripeti, punti, numeri, spunte, rientro e Aa
 - Annulla e Ripeti: una parola scritta di fila torna indietro tutta insieme
@@ -8,6 +8,26 @@
 - Scorciatoie: a inizio riga "- " fa un punto, "1. " un numero, "[] " una spunta, "# " un titolo
 - In "Altro": Cerca nella nota. Le parole trovate si colorano, con su e giù per passare dall'una all'altra
 - Tieni premuto il cerchio, il pallino o il numero di una voce e trascinalo su o giù per spostarla. Se lo lasci senza muoverlo si apre il fumetto come prima
+## 1.581.0
+**Meteo rifatto: card più corta, pagina più chiara**
+- Card in Home: una riga sola, con il cielo e sotto "max 19° · min 10°"; le ore si leggono aprendo la pagina
+- La sera la card dice la minima di stanotte e una riga "Domani sereno · max 19° · min 9°"
+- Tieni premuta la card: Apri meteo, Aggiorna, Cambia località
+- Pagina: il titolo è la città, toccala per cambiarla; "percepita" accanto al cielo
+- Sulla curva delle 24 ore sono scritte la massima, la minima e la pioggia più probabile
+- Tocca un giorno della settimana per vedere le sue ore (6, 9, 12…) e una frase su pioggia e vento
+- Ogni casella dice cosa vuol dire il numero ("Brezza da nord-ovest", "9 ore e 44 minuti di luce")
+- Dato vecchio: in cima la riga grigia "Dati delle 9:05" con Aggiorna accanto, niente più scritta rossa
+
+## 1.580.0
+**Calendario in Home: sempre le prossime 3 cose**
+- Dopo oggi la card mostra tutto domani e comunque i prossimi 3 impegni, anche se sono fra qualche giorno: con oggi e domani vuoti vedi lo stesso cosa arriva
+
+## 1.579.0
+**Meteo: Alba e Tramonto largo**
+- La casella Alba · Tramonto prende tutta la riga, larga come due caselle
+- Una casella rimasta da sola non lascia più mezza riga vuota
+
 ## 1.578.0
 **Note: più formati insieme**
 - Grassetto e corsivo (o barrato) sulla stessa parola si vedono subito, senza dover spostare il cursore
