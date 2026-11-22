@@ -4,6 +4,13 @@
 **Video in Media: mai più una fila vuota**
 - Mentre i video delle iscrizioni arrivano, al loro posto ci sono tessere grigie invece del vuoto
 - Se non arrivano lo dice, con Riprova accanto (o Rientra se l'accesso a YouTube è scaduto)
+**Note: la riga sopra la tastiera, rientri giusti, menu in vista**
+- Scrivendo, la riga sale davvero in alto: la pagina la porta sopra la barra e la tastiera, anche quando la tastiera si apre
+- Fumetti, colori, "Trasforma in" e il menu "/" restano sopra la tastiera, mai sotto
+- Citazioni: il testo che va a capo resta accanto alla barra, non ci finisce sopra
+- Sotto-voci, punti e spunte: le righe che vanno a capo restano allineate al testo della voce
+- L'emoji della nota sta a sinistra del titolo, sulla stessa riga
+- La linea si mette da "/", la barra Aa ha solo formati e stili della riga
 ## 1.593.0
 **Note: foto ovunque, la riga sempre in vista**
 - Foto nel testo: dal + o da "/" la foto va dove c'è il cursore, larga quanto la nota (tieni premuto per toglierla)

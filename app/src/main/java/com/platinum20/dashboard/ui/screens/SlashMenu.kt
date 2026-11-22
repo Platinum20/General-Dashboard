@@ -182,6 +182,10 @@ internal fun SlashMenu(target: RichBar.Target, query: String) {
     val room = with(density) { 64.dp.roundToPx() }
     val gap = with(density) { 6.dp.roundToPx() }
     val width = (LocalConfiguration.current.screenWidthDp - 40).coerceAtMost(340).dp
+    // Alto al massimo metà dello spazio sopra la tastiera (1.594): così sta sempre tutto sopra o sotto la riga, mai
+    // sotto la tastiera né sopra la riga in cui si scrive.
+    val free = LocalConfiguration.current.screenHeightDp - with(density) { imeBottom.toDp().value } - 64f - 40f
+    val maxHeight = (free / 2f).coerceIn(140f, 320f).dp
     LaunchedEffect(Unit) { SlashRecent.load(context) }
     val recent by SlashRecent.ids.collectAsState()
     val inApp = LocalInAppNav.current
@@ -201,9 +205,15 @@ internal fun SlashMenu(target: RichBar.Target, query: String) {
     }
     val provider = object : PopupPositionProvider {
         override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection, popupContentSize: IntSize): IntOffset {
-            val limit = windowSize.height - imeBottom - room
+            val limit = (windowSize.height - imeBottom - room).coerceAtLeast(0)
             val below = anchorBounds.bottom + gap
-            val y = if (below + popupContentSize.height <= limit) below else (anchorBounds.top - gap - popupContentSize.height).coerceAtLeast(0)
+            val above = anchorBounds.top - gap - popupContentSize.height
+            val y = when {
+                below + popupContentSize.height <= limit -> below
+                above >= 0 -> above
+                // Né sotto né sopra per intero: dove c'è più posto, comunque sopra la tastiera.
+                else -> (limit - popupContentSize.height).coerceAtLeast(0)
+            }
             val x = anchorBounds.left.coerceAtMost((windowSize.width - popupContentSize.width).coerceAtLeast(0))
             return IntOffset(x, y)
         }
@@ -213,7 +223,7 @@ internal fun SlashMenu(target: RichBar.Target, query: String) {
         Column(
             Modifier
                 .width(width)
-                .heightIn(max = 320.dp)
+                .heightIn(max = maxHeight)
                 .shadow(12.dp, shape)
                 .clip(shape)
                 .background(colors.surfaceContainerHigh.copy(alpha = 0.97f))
