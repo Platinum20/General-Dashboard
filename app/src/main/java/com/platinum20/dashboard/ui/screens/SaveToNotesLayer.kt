@@ -39,6 +39,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -206,8 +213,9 @@ internal fun BoxScope.BottomBubble(
         exit = fadeOut(tween(Motion.EXIT_MS - 20)) + slideOutVertically(tween(Motion.EXIT_MS, easing = Motion.Accelerate)) { it / 3 },
         modifier = Modifier
             .align(Alignment.BottomCenter)
-            .navigationBarsPadding()
-            .padding(bottom = 96.dp, start = 16.dp, end = 16.dp),
+            // Sopra la tastiera quando è aperta (1.594): prima il fumetto finiva sotto, mentre si scriveva una nota.
+            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Vertical))
+            .padding(top = 16.dp, bottom = 96.dp, start = 16.dp, end = 16.dp),
     ) {
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             SwipeAwayMark(swipe)
@@ -224,7 +232,8 @@ internal fun BoxScope.BottomBubble(
                     border = cardBorder(),
                     modifier = Modifier.fillMaxWidth().glass(shape),
                 ) {
-                    Column(Modifier.padding(vertical = 4.dp), content = content)
+                    // Con la tastiera aperta lo spazio è poco: le righe scorrono invece di uscire dallo schermo.
+                    Column(Modifier.verticalScroll(rememberScrollState()).padding(vertical = 4.dp), content = content)
                 }
                 if (hint) {
                     Surface(

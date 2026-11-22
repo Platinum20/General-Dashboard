@@ -117,6 +117,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
@@ -181,6 +184,12 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
     var viewer by remember { mutableStateOf<Int?>(null) }
     var arranging by remember { mutableStateOf(false) }
     var bodyFocused by remember { mutableStateOf(false) }
+    // La pagina che scorre e cosa se ne vede sullo schermo (1.594): la riga in cui si scrive resta sopra la tastiera.
+    val pageScroll = rememberScrollState()
+    var viewTop by remember { mutableFloatStateOf(0f) }
+    var viewBottom by remember { mutableFloatStateOf(Float.MAX_VALUE) }
+    var barTop by remember { mutableFloatStateOf(Float.MAX_VALUE) }
+    val lineRoom = with(androidx.compose.ui.platform.LocalDensity.current) { 24.dp.toPx() }
     val bodyFocus = remember { FocusRequester() }
     // "Cerca nella nota" (1.579): null = chiuso.
     var finding by remember { mutableStateOf<String?>(null) }
@@ -601,6 +610,8 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     .navigationBarsPadding()
                     .imePadding()
                     .miniPlayerFloor()
+                    // Il bordo alto della barra (sopra la tastiera): sotto lì il testo non si vede (1.594).
+                    .onGloballyPositioned { barTop = it.boundsInRoot().top }
                     .padding(horizontal = 16.dp, vertical = 8.dp)
                 // Mentre si scrive, al posto dei due tasti: la barra delle righe (1.555).
                 if (richBarShown()) {
@@ -637,7 +648,8 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                 Modifier
                     .fillMaxSize()
                     .padding(inner)
-                    .verticalScroll(rememberScrollState())
+                    .onGloballyPositioned { it.boundsInRoot().let { b -> viewTop = b.top; viewBottom = b.bottom } }
+                    .verticalScroll(pageScroll)
                     .padding(vertical = 12.dp),
             ) {
                 // La copertina (1.590): in cima, larga quanto la pagina; tocco o tieni premuto = cambiala o toglila.
@@ -657,51 +669,51 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                             ) { id?.let { nid -> haptic(Haptic.TICK); ActionBubble.show(*coverActions(nid, path)) } },
                     )
                 }
-                // L'emoji della nota (1.586): grande sopra il titolo; tocco o tieni premuto = cambiala.
-                current?.emoji?.let { e ->
-                    Text(
-                        e,
-                        fontSize = 40.sp,
+                Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp), verticalAlignment = Alignment.Top) {
+                    // L'emoji della nota: a sinistra del titolo, sulla stessa riga; tocco o tieni premuto = cambiala.
+                    current?.emoji?.let { e ->
+                        Text(
+                            e,
+                            fontSize = 26.sp,
+                            modifier = Modifier
+                                .padding(end = 10.dp)
+                                .combinedClickable(
+                                    onClickLabel = "Cambia l'emoji",
+                                    onLongClick = { id?.let { nid -> haptic(Haptic.LONG_PRESS); ActionBubble.show(emojiAction(nid, e)) } },
+                                ) { id?.let { nid -> haptic(Haptic.TICK); ActionBubble.show(emojiAction(nid, e)) } },
+                        )
+                    }
+                    BasicTextField(
+                        value = title,
+                        onValueChange = { v ->
+                            // Invio (o un testo incollato su più righe) nel titolo: il resto scende nel testo.
+                            val cut = v.text.indexOf('\n')
+                            if (cut < 0) {
+                                title = v
+                            } else {
+                                val rest = v.text.substring(cut + 1)
+                                title = TextFieldValue(v.text.substring(0, cut))
+                                val joined = if (body.text.isEmpty()) rest else rest + "\n" + body.text
+                                body = TextFieldValue(joined, TextRange(rest.length))
+                                bodyFocus.requestFocus()
+                            }
+                            // Salvataggio continuo: niente perso se l'app viene chiusa.
+                            save()
+                        },
+                        textStyle = titleStyle,
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                        decorationBox = { field ->
+                            Box {
+                                if (title.text.isEmpty()) Text("Titolo", style = titleStyle, color = faint)
+                                field()
+                            }
+                        },
                         modifier = Modifier
-                            .padding(horizontal = 24.dp)
-                            .padding(bottom = 6.dp)
-                            .combinedClickable(
-                                onClickLabel = "Cambia l'emoji",
-                                onLongClick = { id?.let { nid -> haptic(Haptic.LONG_PRESS); ActionBubble.show(emojiAction(nid, e)) } },
-                            ) { id?.let { nid -> haptic(Haptic.TICK); ActionBubble.show(emojiAction(nid, e)) } },
+                            .weight(1f)
+                            .autoFocus(enabled = noteId == null),
                     )
                 }
-                BasicTextField(
-                    value = title,
-                    onValueChange = { v ->
-                        // Invio (o un testo incollato su più righe) nel titolo: il resto scende nel testo.
-                        val cut = v.text.indexOf('\n')
-                        if (cut < 0) {
-                            title = v
-                        } else {
-                            val rest = v.text.substring(cut + 1)
-                            title = TextFieldValue(v.text.substring(0, cut))
-                            val joined = if (body.text.isEmpty()) rest else rest + "\n" + body.text
-                            body = TextFieldValue(joined, TextRange(rest.length))
-                            bodyFocus.requestFocus()
-                        }
-                        // Salvataggio continuo: niente perso se l'app viene chiusa.
-                        save()
-                    },
-                    textStyle = titleStyle,
-                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                    decorationBox = { field ->
-                        Box {
-                            if (title.text.isEmpty()) Text("Titolo", style = titleStyle, color = faint)
-                            field()
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp)
-                        .autoFocus(enabled = noteId == null),
-                )
                 if (photos.isNotEmpty()) {
                     Spacer(Modifier.size(14.dp))
                     PhotoStrip(
@@ -741,6 +753,9 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     placeholder = "Scrivi qui…",
                     focusRequester = bodyFocus,
                     onFocusChange = { bodyFocused = it },
+                    keepInView = { top, bottom, typing ->
+                        pageScroll.keepLine(scope, top, bottom, typing, viewTop, minOf(viewBottom, barTop), lineRoom)
+                    },
                     sendToTodo = true,
                     onAllDone = { allDone() },
                     find = finding,
@@ -1074,4 +1089,28 @@ private fun PhotoViewer(
             RoundIconButton(Icons.Outlined.MoreHoriz, "Altro") { photos.getOrNull(page)?.let(onMore) }
         }
     }
+}
+
+/**
+ * Tiene la riga del cursore ([top]..[bottom], sullo schermo) nella parte visibile [visTop]..[visBottom] (sopra barra e
+ * tastiera). Scrivendo, quando la riga scende oltre metà, la pagina la riporta in alto (un terzo): sotto resta spazio
+ * vuoto e non si scrive mai sotto la tastiera. Muovendo solo il cursore basta che si veda.
+ */
+internal fun keepLineDelta(top: Float, bottom: Float, typing: Boolean, visTop: Float, visBottom: Float, margin: Float): Float {
+    val h = visBottom - visTop
+    if (h <= margin * 3) return 0f
+    return when {
+        typing && bottom > visTop + h * 0.55f -> top - (visTop + h * 0.3f)
+        bottom > visBottom - margin -> bottom - (visBottom - margin)
+        top < visTop + margin -> top - (visTop + margin)
+        else -> 0f
+    }
+}
+
+private fun androidx.compose.foundation.ScrollState.keepLine(
+    scope: kotlinx.coroutines.CoroutineScope, top: Float, bottom: Float, typing: Boolean, visTop: Float, visBottom: Float, margin: Float,
+) {
+    val delta = keepLineDelta(top, bottom, typing, visTop, visBottom, margin)
+    if (kotlin.math.abs(delta) < 1f) return
+    scope.launch { animateScrollBy(delta, Motion.settle()) }
 }
