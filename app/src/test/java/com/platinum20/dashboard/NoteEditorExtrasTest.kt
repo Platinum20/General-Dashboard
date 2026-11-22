@@ -30,6 +30,15 @@ class NoteEditorExtrasTest {
     }
 
     @Test
+    fun everyWrittenLineGetsItsBreath() {
+        val v = NoteLines.Shown("ab\n- c", breathe = true)
+        assertEquals(NoteLines.BREATH + "ab\n" + NoteLines.PLACE + "c", v.shown)
+        assertEquals(0, v.toShown(0))
+        assertEquals(2, v.toShown(1))
+        assertEquals(0, v.toText(1))
+    }
+
+    @Test
     fun newTableGoesBelowTheLine() {
         val (t, line) = NoteTable.insert("ciao", 2)
         assertEquals("ciao\n| Nome | Valore |\n|  |  |", t)
