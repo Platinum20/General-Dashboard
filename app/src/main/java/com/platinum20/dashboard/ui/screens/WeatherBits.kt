@@ -161,11 +161,23 @@ fun TempCurve(forecast: Forecast, modifier: Modifier = Modifier) {
     }
 }
 
+/** Le tessere che stanno sempre da sole su una riga, larghe come due (Antonio, 2026-11-22). */
+internal val WIDE_DETAILS = setOf("Alba · Tramonto")
+
+/**
+ * Le righe delle tessere: due per riga, ma quelle in [WIDE_DETAILS] stanno da sole e una tessera rimasta sola
+ * prende tutta la larghezza, così non resta mai mezza riga vuota.
+ */
+internal fun detailRows(details: List<Pair<String, String>>): List<List<Pair<String, String>>> {
+    val wide = details.filter { it.first in WIDE_DETAILS }
+    return details.filterNot { it.first in WIDE_DETAILS }.chunked(2) + wide.map { listOf(it) }
+}
+
 /** I dettagli del meteo come tessere piccole, due per riga (1.528, scelta B): etichetta sopra, valore sotto. */
 @Composable
 fun DetailTiles(details: List<Pair<String, String>>, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        details.chunked(2).forEach { pair ->
+        detailRows(details).forEach { pair ->
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 pair.forEach { (label, value) ->
                     CanvasCard(
@@ -185,7 +197,6 @@ fun DetailTiles(details: List<Pair<String, String>>, modifier: Modifier = Modifi
                         }
                     }
                 }
-                if (pair.size == 1) Spacer(Modifier.weight(1f))
             }
         }
     }

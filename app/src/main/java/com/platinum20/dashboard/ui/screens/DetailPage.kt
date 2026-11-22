@@ -72,8 +72,8 @@ internal fun DetailPage(
     val left = primary ?: onEdit?.let { DetailAction(Icons.Outlined.Edit, "Modifica", it) }
     val extra = more +
         listOfNotNull(
-            onEdit?.takeIf { primary != null }?.let { BubbleAction(Icons.Outlined.Edit, "Modifica", onClick = it) },
-            onDelete?.let { BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true, onClick = it) },
+            onEdit?.takeIf { primary != null }?.let { BubbleAction(Icons.Outlined.Edit, "Modifica", "cambia i dettagli", onClick = it) },
+            onDelete?.let { BubbleAction(Icons.Outlined.Delete, "Elimina", "sparisce da Canvas", danger = true, onClick = it) },
         )
     Scaffold(
         topBar = {

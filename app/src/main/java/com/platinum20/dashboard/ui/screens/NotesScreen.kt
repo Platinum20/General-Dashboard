@@ -783,13 +783,13 @@ private fun NoteCard(note: Note, onOpen: () -> Unit, onDelete: () -> Unit, modif
                             if (note.pinned) "Togli da in alto" else "Fissa in alto",
                             detail = note.title,
                         ) { NotesStore.togglePin(note.id) },
-                        BubbleAction(Icons.Outlined.Share, "Condividi") {
+                        BubbleAction(Icons.Outlined.Share, "Condividi", "con le app del telefono") {
                             val share = android.content.Intent(android.content.Intent.ACTION_SEND)
                                 .setType("text/plain")
                                 .putExtra(android.content.Intent.EXTRA_TEXT, saved?.let(SavedLinks::shareText) ?: note.text)
                             context.startActivity(android.content.Intent.createChooser(share, null))
                         },
-                        BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true, onClick = onDelete),
+                        BubbleAction(Icons.Outlined.Delete, "Elimina", "la nota sparisce", danger = true, onClick = onDelete),
                     )
                 },
             ),

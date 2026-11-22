@@ -67,8 +67,8 @@ internal fun rememberRowActions(onOpenEvent: ((CalendarEvent) -> Unit)? = null):
         },
         if (!t.tickable) null else pinAction(t.pinned, t.text) { NotesStore.toggleTaskPin(t.id) },
         snoozeAction(t),
-        BubbleAction(Icons.Outlined.Share, "Condividi") { share(t.text) },
-        BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
+        BubbleAction(Icons.Outlined.Share, "Condividi", "il testo, con le app del telefono") { share(t.text) },
+        BubbleAction(Icons.Outlined.Delete, "Elimina", "con Annulla", danger = true) {
             NotesStore.deleteTask(t.id)
             offerUndo(listOf(t), "Promemoria eliminato")
         },
@@ -88,17 +88,17 @@ internal fun rememberRowActions(onOpenEvent: ((CalendarEvent) -> Unit)? = null):
         return listOfNotNull(
             BubbleAction(Icons.Outlined.Event, "Apri", detail = e.title) { openEvent(e) },
             tickets.takeIf { it.isNotEmpty() }?.let {
-                BubbleAction(Icons.Outlined.QrCode2, "Biglietto") {
+                BubbleAction(Icons.Outlined.QrCode2, "Biglietto", "il QR da mostrare all'ingresso") {
                     runCatching { context.startActivity(com.platinum20.dashboard.tickets.TicketActivity.intent(context, e.eventId)) }
                 }
             },
-            BubbleAction(Icons.Outlined.Share, "Condividi") { share(eventShareText(e)) },
+            BubbleAction(Icons.Outlined.Share, "Condividi", "titolo, giorno e ora") { share(eventShareText(e)) },
             // I turni e le cose finte del calendario (id negativi) non si cambiano da qui.
             e.takeIf { it.eventId > 0 }?.let {
-                BubbleAction(Icons.Outlined.Edit, "Modifica") { withWritable { inApp?.openRoute?.invoke(Routes.calendarEdit(e.eventId)) } }
+                BubbleAction(Icons.Outlined.Edit, "Modifica", "titolo, orario, luogo, avviso") { withWritable { inApp?.openRoute?.invoke(Routes.calendarEdit(e.eventId)) } }
             },
             e.takeIf { it.eventId > 0 }?.let {
-                BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
+                BubbleAction(Icons.Outlined.Delete, "Elimina", "chiede conferma", danger = true) {
                     withWritable {
                         // Non si può annullare: si conferma nel solito fumetto, come nella scheda.
                         ActionBubble.show(
@@ -129,8 +129,8 @@ internal fun rememberRowActions(onOpenEvent: ((CalendarEvent) -> Unit)? = null):
                         inApp?.openWeb?.invoke(url, row.parcel.carrier.label)
                     }
                 },
-                BubbleAction(Icons.Outlined.Share, "Condividi") { share(row.parcel.title) },
-                BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
+                BubbleAction(Icons.Outlined.Share, "Condividi", "il nome del pacco") { share(row.parcel.title) },
+                BubbleAction(Icons.Outlined.Delete, "Elimina", "con Annulla", danger = true) {
                     NotesStore.deleteParcel(row.parcel.id)
                     offerUndo("Pacco eliminato") { NotesStore.restoreParcel(row.parcel) }
                 },
@@ -142,13 +142,13 @@ internal fun rememberRowActions(onOpenEvent: ((CalendarEvent) -> Unit)? = null):
     fun noteActions(n: Note) {
         ActionBubble.show(
             pinAction(n.pinned, n.title) { NotesStore.togglePin(n.id) },
-            BubbleAction(Icons.Outlined.Share, "Condividi") { share(n.text) },
+            BubbleAction(Icons.Outlined.Share, "Condividi", "il testo della nota") { share(n.text) },
             // L'archivio di Appunti (Antonio, 2026-11-20): la nota esce dalla card senza perdersi.
             if (n.archivedAt == null) BubbleAction(Icons.Outlined.Archive, "Archivia", detail = n.title) {
                 NotesStore.toggleNoteArchive(n.id)
                 offerUndo("Archiviata") { NotesStore.toggleNoteArchive(n.id) }
-            } else BubbleAction(Icons.Outlined.Unarchive, "Rimetti negli appunti") { NotesStore.toggleNoteArchive(n.id) },
-            BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
+            } else BubbleAction(Icons.Outlined.Unarchive, "Rimetti negli appunti", "torna nella card della Home") { NotesStore.toggleNoteArchive(n.id) },
+            BubbleAction(Icons.Outlined.Delete, "Elimina", "con Annulla", danger = true) {
                 NotesStore.deleteNote(n.id)
                 offerUndo("Nota eliminata") { NotesStore.restoreNote(n) }
             },
@@ -179,7 +179,7 @@ internal fun eventShareText(title: String, begin: Long): String =
 
 /** "Rimanda a domani" per una cosa con data non ancora fatta: stessa ora, domani. Uguale nel fumetto e nella scheda. */
 internal fun snoozeAction(t: TaskItem): BubbleAction? = t.dueAt?.takeIf { !t.done }?.let { due ->
-    BubbleAction(Icons.Outlined.Update, "Rimanda a domani") {
+    BubbleAction(Icons.Outlined.Update, "Rimanda a domani", "stessa ora, domani") {
         val zone = ZoneId.systemDefault()
         val time = java.time.Instant.ofEpochMilli(due).atZone(zone).toLocalTime()
         NotesStore.snoozeTask(t.id, LocalDate.now().plusDays(1).atTime(time).atZone(zone).toInstant().toEpochMilli())

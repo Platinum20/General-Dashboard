@@ -226,9 +226,9 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
         // La pagina del corriere si apre dentro Canvas, non nel browser.
         // Le azioni che prima stavano tenendo premuta la riga (Antonio, 2026-11-11): qui, con un tocco.
         more = listOfNotNull(
-            tracking?.let { open -> BubbleAction(Icons.Outlined.LocalShipping, "Traccia la spedizione", onClick = open) },
+            tracking?.let { open -> BubbleAction(Icons.Outlined.LocalShipping, "Traccia la spedizione", "dove si trova il pacco adesso", onClick = open) },
             task?.let { snoozeAction(it) },
-            shareLine?.let { text -> BubbleAction(Icons.Outlined.Share, "Condividi") { shareText(context, text) } },
+            shareLine?.let { text -> BubbleAction(Icons.Outlined.Share, "Condividi", "con le app del telefono") { shareText(context, text) } },
         ),
     ) {
         if (detail == null) {
@@ -246,7 +246,7 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
                 WhenText3(statusLine?.text.orEmpty(), whenLine.text, ""),
                 onClick = edit?.let { e -> { picker = e.picker ?: run { e.onClick(); null } } },
                 // Tieni premuto: le scelte del quando nel fumetto, come ogni riga (regola della pressione lunga).
-                onLongClick = edit?.onClear?.let { clear -> { ActionBubble.show(BubbleAction(Icons.Outlined.EventBusy, "Togli la data", danger = true, onClick = clear)) } },
+                onLongClick = edit?.onClear?.let { clear -> { ActionBubble.show(BubbleAction(Icons.Outlined.EventBusy, "Togli la data", "torna senza scadenza", danger = true, onClick = clear)) } },
             )
         }
         val rest = if (whenLine != null) detail.lines.filter { it.kind != LineKind.WHEN && it.kind != LineKind.STATUS } else detail.lines
@@ -338,8 +338,8 @@ private fun lineEdit(kind: ItemKind, id: Long, data: NotesData, line: LineKind):
             when (line) {
                 LineKind.REPEAT -> LineEdit.Tap(onClick = {
                     ActionBubble.show(
-                        BubbleAction(Icons.Outlined.Repeat, "Ogni giorno") { NotesStore.saveHabit(id, h.title, 0, h.remindAt) },
-                        *(1..6).map { n -> BubbleAction(Icons.Outlined.Repeat, "$n volte a settimana") { NotesStore.saveHabit(id, h.title, n, h.remindAt) } }.toTypedArray(),
+                        BubbleAction(Icons.Outlined.Repeat, "Ogni giorno", "la serie conta ogni giorno") { NotesStore.saveHabit(id, h.title, 0, h.remindAt) },
+                        *(1..6).map { n -> BubbleAction(Icons.Outlined.Repeat, "$n volte a settimana", "basta farla $n giorni su 7") { NotesStore.saveHabit(id, h.title, n, h.remindAt) } }.toTypedArray(),
                     )
                 })
                 LineKind.WHEN -> LineEdit.Tap(

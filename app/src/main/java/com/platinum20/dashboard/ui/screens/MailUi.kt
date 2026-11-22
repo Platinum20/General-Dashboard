@@ -414,7 +414,7 @@ fun MailScreen(id: String, onBack: () -> Unit) {
         },
         more = listOfNotNull(
             mail?.let { m ->
-                BubbleAction(Icons.Outlined.ContentCopy, "Copia il testo") {
+                BubbleAction(Icons.Outlined.ContentCopy, "Copia il testo", "tutto il testo della mail") {
                     Clip.copy(context, "Mail", m.body.ifEmpty { m.snippet }, "Testo copiato")
                 }
             },

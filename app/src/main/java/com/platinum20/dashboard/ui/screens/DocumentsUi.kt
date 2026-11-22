@@ -106,9 +106,9 @@ internal fun docActions(context: android.content.Context, scope: kotlinx.corouti
         },
         BubbleAction(Icons.Outlined.Share, "Condividi PDF", "Fronte e retro su un foglio A4") { exportDocPdf(context, scope, doc, save = false) },
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            BubbleAction(Icons.Outlined.Download, "Salva PDF in Download") { exportDocPdf(context, scope, doc, save = true) }
+            BubbleAction(Icons.Outlined.Download, "Salva PDF in Download", "lo trovi nella cartella Download") { exportDocPdf(context, scope, doc, save = true) }
         } else null,
-        BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
+        BubbleAction(Icons.Outlined.Delete, "Elimina", "chiede conferma", danger = true) {
             ActionBubble.show(
                 BubbleAction(Icons.Outlined.Delete, "Elimina ${doc.title}", detail = "Con le sue foto", danger = true) {
                     DocumentsStore.delete(doc.id)
@@ -254,15 +254,15 @@ internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
     val more = buildList {
         add(BubbleAction(Icons.Outlined.Share, "Condividi PDF", "Fronte e retro su un foglio A4") { exportPdf(save = false) })
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            add(BubbleAction(Icons.Outlined.Download, "Salva PDF in Download") { exportPdf(save = true) })
+            add(BubbleAction(Icons.Outlined.Download, "Salva PDF in Download", "lo trovi nella cartella Download") { exportPdf(save = true) })
         }
-        add(BubbleAction(Icons.Outlined.PhotoCamera, if (doc.back == null) "Fotografa il retro" else "Rifai il retro") {
+        add(BubbleAction(Icons.Outlined.PhotoCamera, if (doc.back == null) "Fotografa il retro" else "Rifai il retro", "con la fotocamera") {
             runCatching { camera.launch(ReceiptReader.photoUri(context)) }
         })
-        add(BubbleAction(Icons.Outlined.PhotoLibrary, "Retro dalla galleria") {
+        add(BubbleAction(Icons.Outlined.PhotoLibrary, "Retro dalla galleria", "scegli una foto che hai già") {
             gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         })
-        if (doc.back != null) add(BubbleAction(Icons.Outlined.RemoveCircleOutline, "Togli il retro") { DocumentsStore.removeBack(id) })
+        if (doc.back != null) add(BubbleAction(Icons.Outlined.RemoveCircleOutline, "Togli il retro", "resta solo il fronte") { DocumentsStore.removeBack(id) })
     }
     DetailPage(
         onBack = onBack,
@@ -280,7 +280,7 @@ internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
         fun sideActions(back: Boolean) {
             val cut = if (back) doc.backFull else doc.frontFull
             ActionBubble.show(*listOfNotNull(
-                BubbleAction(Icons.Outlined.Rotate90DegreesCw, "Ruota") { scope.launch { DocumentsStore.turn(context, id, back) } },
+                BubbleAction(Icons.Outlined.Rotate90DegreesCw, "Ruota", "di un quarto di giro") { scope.launch { DocumentsStore.turn(context, id, back) } },
                 cut?.let { BubbleAction(Icons.Outlined.CropFree, "Foto intera", "Togli il ritaglio") { DocumentsStore.useFull(id, back) } },
             ).toTypedArray())
         }

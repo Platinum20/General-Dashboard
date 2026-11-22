@@ -86,7 +86,7 @@ import com.platinum20.dashboard.notes.NotesStore
 
 /**
  * Il testo con le righe (1.555, Antonio scelta A di /mnt/project-files/editor-note-2/): punti, voci da spuntare e
- * titoletti mescolati nella stessa nota, la barra Punti · Spunta · Titolo · Aa sopra la tastiera. Lo usano le note
+ * titoletti mescolati nella stessa nota, la barra Punti · Spunta · Aa sopra la tastiera. Lo usano le note
  * lunghe e il campo "Note" di eventi, promemoria e date.
  */
 object RichBar {
@@ -163,7 +163,9 @@ internal fun RichNoteField(
     }
 
     val faded = colors.onSurfaceVariant
-    val transformation = remember(faded) {
+    // Una trasformazione nuova a ogni testo nuovo (1.578): con due formati sulla stessa parola il disegno restava
+    // quello vecchio finché non si muoveva il cursore.
+    val transformation = remember(faded, value.text) {
         VisualTransformation { input -> richText(input.text, faded) }
     }
 
@@ -326,11 +328,11 @@ private fun lineActions(
     fun set(next: String) = emit(TextFieldValue(next, TextRange(NoteLines.parse(next).getOrNull(line.index)?.end ?: next.length)))
     val words = NoteLines.plainLine(text.substring(line.start, line.end))
     return listOfNotNull(
-        if (line.kind == NoteLines.Kind.CHECK) BubbleAction(Icons.AutoMirrored.Outlined.FormatListBulleted, "Diventa un punto") { set(NoteLines.setLineKind(text, line.index, NoteLines.Kind.BULLET)) }
-        else BubbleAction(Icons.Outlined.RadioButtonUnchecked, "Diventa da spuntare") { set(NoteLines.setLineKind(text, line.index, NoteLines.Kind.CHECK)) },
-        BubbleAction(Icons.AutoMirrored.Outlined.Notes, "Diventa testo") { set(NoteLines.setLineKind(text, line.index, NoteLines.Kind.TEXT)) },
-        if (line.index > 0) BubbleAction(Icons.Outlined.ArrowUpward, "Sposta su") { set(NoteLines.move(text, line.index, up = true)) } else null,
-        if (line.index < count - 1) BubbleAction(Icons.Outlined.ArrowDownward, "Sposta giù") { set(NoteLines.move(text, line.index, up = false)) } else null,
+        if (line.kind == NoteLines.Kind.CHECK) BubbleAction(Icons.AutoMirrored.Outlined.FormatListBulleted, "Diventa un punto", "il cerchio diventa un pallino") { set(NoteLines.setLineKind(text, line.index, NoteLines.Kind.BULLET)) }
+        else BubbleAction(Icons.Outlined.RadioButtonUnchecked, "Diventa da spuntare", "il pallino diventa un cerchio") { set(NoteLines.setLineKind(text, line.index, NoteLines.Kind.CHECK)) },
+        BubbleAction(Icons.AutoMirrored.Outlined.Notes, "Diventa testo", "senza pallino né cerchio") { set(NoteLines.setLineKind(text, line.index, NoteLines.Kind.TEXT)) },
+        if (line.index > 0) BubbleAction(Icons.Outlined.ArrowUpward, "Sposta su", "scambia con la riga sopra") { set(NoteLines.move(text, line.index, up = true)) } else null,
+        if (line.index < count - 1) BubbleAction(Icons.Outlined.ArrowDownward, "Sposta giù", "scambia con la riga sotto") { set(NoteLines.move(text, line.index, up = false)) } else null,
         if (sendToTodo && words.isNotEmpty()) BubbleAction(Icons.Outlined.TaskAlt, "Manda in Da fare", "la trovi nella card della Home") {
             NotesStore.addTodo(words)?.let { task ->
                 set(NoteLines.remove(text, line.index))
@@ -348,8 +350,8 @@ private fun lineActions(
 }
 
 /**
- * La barra sopra la tastiera: Punti, Spunta, Titolo (acceso = com'è la riga del cursore) e Aa. Con del testo scelto, o
- * dopo Aa, diventa grassetto, corsivo, barrato; la X torna alla barra delle righe.
+ * La barra sopra la tastiera: Punti, Spunta (accesi = com'è la riga del cursore) e Aa. Con del testo scelto, o
+ * dopo Aa, diventa grassetto, corsivo, barrato, titolo; la X torna alla barra delle righe.
  */
 @Composable
 internal fun RichToolbar(modifier: Modifier = Modifier) {
@@ -361,12 +363,15 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
     val line = NoteLines.lineAt(v.text, v.selection.min.coerceIn(0, v.text.length))
     fun kind(k: NoteLines.Kind) {
         haptic(Haptic.TICK)
-        val e = NoteLines.setKind(v.text, v.selection.min, v.selection.max, k)
+        val now = target.value()
+        val e = NoteLines.setKind(now.text, now.selection.min, now.selection.max, k)
         target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
     }
     fun mark(m: String) {
         haptic(Haptic.TICK)
-        val e = NoteFormat.toggle(v.text, v.selection.min, v.selection.max, m)
+        // Il valore di adesso, non quello di quando la barra si è disegnata: due tocchi di fila (G poi C) si sommano.
+        val now = target.value()
+        val e = NoteFormat.toggle(now.text, now.selection.min, now.selection.max, m)
         target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
     }
     Row(
@@ -388,8 +393,7 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
         } else {
             BarChip(Icons.AutoMirrored.Outlined.FormatListBulleted, "Punti", "Elenco puntato", line.kind == NoteLines.Kind.BULLET) { kind(NoteLines.Kind.BULLET) }
             BarChip(Icons.Outlined.RadioButtonUnchecked, "Spunta", "Voce da spuntare", line.kind == NoteLines.Kind.CHECK) { kind(NoteLines.Kind.CHECK) }
-            BarChip(Icons.Outlined.Title, "Titolo", "Titoletto", line.kind == NoteLines.Kind.HEADING) { kind(NoteLines.Kind.HEADING) }
-            BarChip(null, "Aa", "Grassetto, corsivo, barrato", false) {
+            BarChip(null, "Aa", "Grassetto, corsivo, barrato, titolo", false) {
                 haptic(Haptic.TICK)
                 formats = true
             }

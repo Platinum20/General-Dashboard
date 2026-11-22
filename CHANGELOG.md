@@ -1,9 +1,19 @@
 # Changelog
 
-## 1.578.0
+## 1.580.0
 **Calendario in Home: sempre le prossime 3 cose**
 - Dopo oggi la card mostra tutto domani e comunque i prossimi 3 impegni, anche se sono fra qualche giorno: con oggi e domani vuoti vedi lo stesso cosa arriva
 
+## 1.579.0
+**Meteo: Alba e Tramonto largo**
+- La casella Alba · Tramonto prende tutta la riga, larga come due caselle
+- Una casella rimasta da sola non lascia più mezza riga vuota
+
+## 1.578.0
+**Note: più formati insieme**
+- Grassetto e corsivo (o barrato) sulla stessa parola si vedono subito, senza dover spostare il cursore
+- Titolo ora sta solo nella barra Aa, insieme a grassetto, corsivo e barrato; nella barra principale restano Punti e Spunta
+- Tutti i fumetti dell'app: ogni voce ha una riga sotto che dice cosa fa (come "Foto · dalla galleria")
 ## 1.577.0
 **Note: niente più asterischi**
 - Grassetto, corsivo, barrato e titoletti si vedono già formattati mentre scrivi: asterischi, trattini e cancelletti non compaiono mai, neanche col cursore sopra
