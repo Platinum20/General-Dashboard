@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.594.0
+**Video in Media: mai più una fila vuota**
+- Mentre i video delle iscrizioni arrivano, al loro posto ci sono tessere grigie invece del vuoto
+- Se non arrivano lo dice, con Riprova accanto (o Rientra se l'accesso a YouTube è scaduto)
 ## 1.593.0
 **Note: foto ovunque, la riga sempre in vista**
 - Foto nel testo: dal + o da "/" la foto va dove c'è il cursore, larga quanto la nota (tieni premuto per toglierla)

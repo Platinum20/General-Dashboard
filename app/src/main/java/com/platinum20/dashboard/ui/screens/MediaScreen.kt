@@ -298,6 +298,7 @@ fun MediaScreen(
                     // Schede grandi come nella lista verticale (1.503, Antonio), una per volta con la successiva che spunta.
                     val big = bigVideoWidth()
                     val bigHeight = big * 9f / 16f
+                    Column {
                     LazyRow(state = rememberRowAtStart(), contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         // La playlist "Salvati", sempre la prima (2026-11-22, Antonio); senza salvati non c'è.
                         if (savedVideos.isNotEmpty()) item(key = "saved") {
@@ -306,10 +307,29 @@ fun MediaScreen(
                         items(subsRow, key = { "sub-" + it.id }) { v ->
                             androidx.compose.foundation.layout.Box(Modifier.width(big)) { VideoCard(v, onClick = { onPlayVideo(v.watchUrl) }) }
                         }
+                        // Mentre il feed arriva (primo avvio, app reinstallata) tessere grigie, mai una fila vuota (1.594).
+                        if (youTubeOn && subsRow.isEmpty() && subs.error == null && subs.data.isNullOrEmpty()) items(2, key = { "subs-wait-$it" }) {
+                            Placeholder(big, bigHeight, shape = MaterialTheme.shapes.large)
+                        }
                         if (youTubeOn && subsRow.isNotEmpty() && !subsEnded) item(key = "subs-more") {
                             LaunchedEffect(subsRow.size) { YouTubeStore.loadMoreSubscriptions(context) }
                             Placeholder(big, bigHeight, shape = MaterialTheme.shapes.large)
                         }
+                    }
+                    // Il feed non è arrivato: lo dice, con Rientra (accesso) o Riprova accanto, invece di una fila vuota.
+                    val subsError = subs.error
+                    if (youTubeOn && subsRow.isEmpty() && subsError != null && !subs.loading) {
+                        val signIn = videoFeedNeedsSignIn(subsError)
+                        StatusLine(
+                            LinkStatus(if (signIn) LinkStatus.Kind.EXPIRED else LinkStatus.Kind.STALE, if (signIn) "Accesso a YouTube scaduto" else "I video non sono arrivati"),
+                            action = if (signIn) "Rientra" else "Riprova",
+                            onAction = {
+                                if (signIn) onOpenRoute(Routes.login(MediaService.YOUTUBE))
+                                else YouTubeStore.refreshSubscriptions(context, force = true)
+                            },
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                    }
                     }
                 }
             }
@@ -630,4 +650,10 @@ internal fun newEpisodes(latest: List<com.platinum20.dashboard.media.podcast.Epi
     val listened = history.filter { it.kind == ResumeKind.PODCAST }.map { it.key }.toSet()
     val now = System.currentTimeMillis()
     return latest.filter { com.platinum20.dashboard.media.MediaFresh.isNewEpisode(it, listened, now) }
+}
+
+/** Un errore del feed Video che si risolve solo rientrando (cookie persi, accesso scaduto), non riprovando. */
+internal fun videoFeedNeedsSignIn(error: String): Boolean {
+    val e = error.lowercase()
+    return listOf("accesso", "accedi", "login", "sign in", "401", "403", "scadut").any { it in e }
 }
