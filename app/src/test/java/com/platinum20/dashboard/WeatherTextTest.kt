@@ -30,9 +30,9 @@ class WeatherTextTest {
     fun minimaDiStanotteFinoAlleSette() {
         val now = LocalDateTime.of(2026, 11, 22, 21, 10)
         val hours = (21..35).map { h ->
-            HourlyPoint(day.atStartOfDay().plusHours(h.toLong()), if (h == 31) 6.0 else if (h == 33) 4.0 else 10.0, 0, 0, false)
+            HourlyPoint(day.atStartOfDay().plusHours(h.toLong()), if (h == 30) 6.0 else if (h == 33) 4.0 else 10.0, 0, 0, false)
         }
-        // Alle 9 di domani (h 33) non conta più: stanotte la minima è quella delle 7 meno un'ora.
+        // Alle 6 di domani conta, alle 9 (h 33) non più.
         assertEquals(6.0, WeatherText.tonightMin(hours, now)!!, 0.0)
     }
 
