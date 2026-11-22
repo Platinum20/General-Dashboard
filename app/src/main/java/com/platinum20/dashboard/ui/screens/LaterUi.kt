@@ -391,7 +391,7 @@ fun LaterArchiveScreen(kind: LooseCardKind = LooseCardKind.TODO, onBack: () -> U
 
 /** "Togli dai salvati", ultima riga di ogni fumetto delle cose salvate. */
 private fun forgetAction(note: com.platinum20.dashboard.notes.Note, title: String) =
-    BubbleAction(Icons.Rounded.BookmarkRemove, "Togli dai salvati", danger = true, onClick = { SavedLinks.forget(note, "Tolto: $title") })
+    BubbleAction(Icons.Rounded.BookmarkRemove, "Togli dai salvati", "sparisce dagli Appunti", danger = true, onClick = { SavedLinks.forget(note, "Tolto: $title") })
 
 /**
  * Tenendo premuto un video, un brano o un episodio salvato (Antonio, 2026-11-13): le stesse azioni degli altri media.
@@ -432,7 +432,7 @@ private fun savedArticleActions(context: android.content.Context, entry: SavedLi
     val title = entry.article.title.ifBlank { "Articolo" }
     ActionBubble.show(
         BubbleAction(Icons.AutoMirrored.Rounded.Article, "Leggi", detail = title, onClick = read),
-        BubbleAction(Icons.Rounded.Share, "Condividi") { shareText(context, entry.article.url) },
+        BubbleAction(Icons.Rounded.Share, "Condividi", "il link dell'articolo") { shareText(context, entry.article.url) },
         forgetAction(entry.note, title),
     )
 }

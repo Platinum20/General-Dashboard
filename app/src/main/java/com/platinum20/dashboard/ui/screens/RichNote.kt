@@ -328,11 +328,11 @@ private fun lineActions(
     fun set(next: String) = emit(TextFieldValue(next, TextRange(NoteLines.parse(next).getOrNull(line.index)?.end ?: next.length)))
     val words = NoteLines.plainLine(text.substring(line.start, line.end))
     return listOfNotNull(
-        if (line.kind == NoteLines.Kind.CHECK) BubbleAction(Icons.AutoMirrored.Outlined.FormatListBulleted, "Diventa un punto") { set(NoteLines.setLineKind(text, line.index, NoteLines.Kind.BULLET)) }
-        else BubbleAction(Icons.Outlined.RadioButtonUnchecked, "Diventa da spuntare") { set(NoteLines.setLineKind(text, line.index, NoteLines.Kind.CHECK)) },
-        BubbleAction(Icons.AutoMirrored.Outlined.Notes, "Diventa testo") { set(NoteLines.setLineKind(text, line.index, NoteLines.Kind.TEXT)) },
-        if (line.index > 0) BubbleAction(Icons.Outlined.ArrowUpward, "Sposta su") { set(NoteLines.move(text, line.index, up = true)) } else null,
-        if (line.index < count - 1) BubbleAction(Icons.Outlined.ArrowDownward, "Sposta giù") { set(NoteLines.move(text, line.index, up = false)) } else null,
+        if (line.kind == NoteLines.Kind.CHECK) BubbleAction(Icons.AutoMirrored.Outlined.FormatListBulleted, "Diventa un punto", "il cerchio diventa un pallino") { set(NoteLines.setLineKind(text, line.index, NoteLines.Kind.BULLET)) }
+        else BubbleAction(Icons.Outlined.RadioButtonUnchecked, "Diventa da spuntare", "il pallino diventa un cerchio") { set(NoteLines.setLineKind(text, line.index, NoteLines.Kind.CHECK)) },
+        BubbleAction(Icons.AutoMirrored.Outlined.Notes, "Diventa testo", "senza pallino né cerchio") { set(NoteLines.setLineKind(text, line.index, NoteLines.Kind.TEXT)) },
+        if (line.index > 0) BubbleAction(Icons.Outlined.ArrowUpward, "Sposta su", "scambia con la riga sopra") { set(NoteLines.move(text, line.index, up = true)) } else null,
+        if (line.index < count - 1) BubbleAction(Icons.Outlined.ArrowDownward, "Sposta giù", "scambia con la riga sotto") { set(NoteLines.move(text, line.index, up = false)) } else null,
         if (sendToTodo && words.isNotEmpty()) BubbleAction(Icons.Outlined.TaskAlt, "Manda in Da fare", "la trovi nella card della Home") {
             NotesStore.addTodo(words)?.let { task ->
                 set(NoteLines.remove(text, line.index))

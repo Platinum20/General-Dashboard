@@ -221,7 +221,7 @@ fun SearchScreen(
                     if (recents.isNotEmpty()) Section(title = "Recenti") {
                         recents.forEachIndexed { i, r ->
                             HintRow(Icons.Outlined.History, r, onLongClick = {
-                                ActionBubble.show(BubbleAction(Icons.Outlined.Delete, "Togli dalle recenti", danger = true) { SearchRecents.forget(r) })
+                                ActionBubble.show(BubbleAction(Icons.Outlined.Delete, "Togli dalle recenti", "solo dalla lista", danger = true) { SearchRecents.forget(r) })
                             }) { haptic(Haptic.TICK); setQuery(r) }
                         }
                     }
@@ -271,10 +271,11 @@ fun SearchScreen(
                                     // Le stesse azioni della pagina del canale: aprirlo e l'iscrizione.
                                     val now = YtRatings.isSubscribed(hit.channel.id, YtRatings.subscribed.value, YouTubeStore.channels.value.data)
                                     ActionBubble.show(
-                                        BubbleAction(Icons.Outlined.AccountCircle, "Apri il canale", onClick = open),
+                                        BubbleAction(Icons.Outlined.AccountCircle, "Apri il canale", "i suoi video, qui in Canvas", onClick = open),
                                         BubbleAction(
                                             if (now) Icons.Outlined.NotificationsOff else Icons.Outlined.NotificationsActive,
                                             if (now) "Annulla l'iscrizione" else "Iscriviti",
+                                            if (now) "i suoi video non arrivano più nel feed" else "i nuovi video arrivano nel feed",
                                             danger = now,
                                         ) {
                                             val ok = YtRatings.toggleSubscribe(context, hit.channel.id, now) {

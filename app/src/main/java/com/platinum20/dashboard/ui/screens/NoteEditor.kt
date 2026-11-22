@@ -236,13 +236,13 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
         val index = photos.indexOf(path)
         val nid = id
         return listOfNotNull(
-            if (open) BubbleAction(Icons.Outlined.Fullscreen, "Apri a tutto schermo") { viewer = index.coerceAtLeast(0) } else null,
+            if (open) BubbleAction(Icons.Outlined.Fullscreen, "Apri a tutto schermo", "scorri di lato fra le foto") { viewer = index.coerceAtLeast(0) } else null,
             if (index > 0 && nid != null) BubbleAction(Icons.Outlined.Star, "Metti per prima", "diventa la copertina nel Calendario") {
                 haptic(Haptic.CONFIRM)
                 NotesStore.editNotePhotos(nid) { NotePhotos.toFront(it, path) }
             } else null,
-            BubbleAction(Icons.Outlined.Rotate90DegreesCw, "Ruota") { rotatePhoto(path) },
-            BubbleAction(Icons.Outlined.Share, "Condividi la foto") { NotePhotoFiles.share(context, "", listOf(path)) },
+            BubbleAction(Icons.Outlined.Rotate90DegreesCw, "Ruota", "di un quarto di giro") { rotatePhoto(path) },
+            BubbleAction(Icons.Outlined.Share, "Condividi la foto", "solo questa foto") { NotePhotoFiles.share(context, "", listOf(path)) },
             BubbleAction(Icons.Outlined.Delete, "Togli dalla nota", "con Annulla", danger = true) { removePhoto(path) },
         ).toTypedArray()
     }
@@ -296,6 +296,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     BubbleAction(
                         if (pinned) Icons.Filled.PushPinFilled else Icons.Outlined.PushPin,
                         if (pinned) "Togli da in alto" else "Fissa in alto",
+                        if (pinned) "torna in ordine con le altre" else "resta prima fra gli Appunti",
                     ) {
                         haptic(if (pinned) Haptic.TOGGLE_OFF else Haptic.TOGGLE_ON)
                         NotesStore.togglePin(nid)
@@ -319,13 +320,13 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                         save()
                     }
                 },
-                if (text.isBlank()) null else BubbleAction(Icons.Outlined.ContentCopy, "Copia il testo") {
+                if (text.isBlank()) null else BubbleAction(Icons.Outlined.ContentCopy, "Copia il testo", "senza le foto") {
                     Clip.copy(context, "Nota", NoteFormat.plain(text), "Testo copiato")
                 },
                 if (text.isBlank() && photos.isEmpty()) null else BubbleAction(
-                    Icons.Outlined.Share, "Condividi", if (photos.isEmpty()) "" else "testo e foto insieme",
+                    Icons.Outlined.Share, "Condividi", if (photos.isEmpty()) "il testo, con le app del telefono" else "testo e foto insieme",
                 ) { NotePhotoFiles.share(context, NoteFormat.plain(text), photos) },
-                BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
+                BubbleAction(Icons.Outlined.Delete, "Elimina", "con le sue foto", danger = true) {
                     deleted = true
                     id?.let { nid ->
                         NotesStore.note(nid)?.let(DeletedNote::put)
