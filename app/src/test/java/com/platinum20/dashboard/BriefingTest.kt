@@ -151,7 +151,7 @@ class BriefingTest {
             tasks = emptyList(),
             zone = zone,
         ).first { it.kind == BriefKind.WEATHER }
-        assertEquals("Domani 22° / 10°, pioggia 60%", line.text)
+        assertEquals("Domani pioggia debole 60% · max 22° · min 10°", line.text)
         assertEquals(61, line.weatherCode)
     }
 

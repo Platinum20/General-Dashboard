@@ -68,6 +68,8 @@ data class Forecast(
     /** Pioggia prevista ogni 15 minuti nelle prossime ore (mm). */
     val nowcast: List<Pair<LocalDateTime, Double>> = emptyList(),
     val air: AirQuality? = null,
+    /** Tutte le ore dei 7 giorni: per aprire un giorno nella pagina Meteo e vedere le sue ore (1.581). */
+    val allHourly: List<HourlyPoint> = hourly,
 ) {
     /** Il giorno di oggi: con una previsione salvata ieri non è il primo della lista. */
     val today: DailyPoint? get() = LocalDate.now().let { now -> daily.firstOrNull { !it.date.isBefore(now) } }
@@ -148,7 +150,7 @@ object ForecastParser {
         val h = json.getJSONObject("hourly")
         val hTimes = h.getJSONArray("time")
         val currentHour = current.time.withMinute(0)
-        val hourly = (0 until hTimes.length())
+        val all = (0 until hTimes.length())
             .map { i ->
                 HourlyPoint(
                     time = LocalDateTime.parse(hTimes.getString(i)),
@@ -158,8 +160,7 @@ object ForecastParser {
                     isDay = h.getJSONArray("is_day").optInt(i, 1) == 1,
                 )
             }
-            .filter { !it.time.isBefore(currentHour) }
-            .take(24)
+        val hourly = all.filter { !it.time.isBefore(currentHour) }.take(24)
 
         val d = json.getJSONObject("daily")
         val dTimes = d.getJSONArray("time")
@@ -185,7 +186,7 @@ object ForecastParser {
                 t to values.optDouble(i, 0.0).let { v -> if (v.isNaN()) 0.0 else v }
             }
         } ?: emptyList()
-        return Forecast(place, latitude, longitude, fetchedAt, current, hourly, daily, nowcast, parseAir(airRaw))
+        return Forecast(place, latitude, longitude, fetchedAt, current, hourly, daily, nowcast, parseAir(airRaw), all)
     }
 
     private fun JSONArray.dateTimeAt(i: Int): LocalDateTime? =

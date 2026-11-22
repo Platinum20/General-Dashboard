@@ -54,6 +54,7 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.WbSunny
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -494,9 +495,21 @@ private fun WeatherCard(
     onOpenBrief: (BriefLine) -> Unit,
 ) {
     val forecast = state.forecast
+    val inApp = LocalInAppNav.current
+    val context = LocalContext.current
     // "Adesso" è l'unico blocco colorato della pagina (colore del tema, Material You compreso): l'occhio parte da qui.
     CanvasCard(
         onClick = { if (forecast != null) onClick() else if (!hasPermission) onRequestPermission() else onRetry() },
+        // Tenendo premuto, le azioni del meteo (regola del tocco lungo, revisione Meteo 2026-11-22).
+        onLongClick = {
+            ActionBubble.show(
+                BubbleAction(Icons.Outlined.WbSunny, "Apri meteo", "Le prossime ore e la settimana", onClick = onClick),
+                BubbleAction(Icons.Outlined.Refresh, "Aggiorna", "Rilegge adesso il meteo") { WeatherStore.refresh(context, force = true) },
+                BubbleAction(Icons.Outlined.LocationOn, "Cambia località", "La tua posizione o una città") {
+                    inApp?.openRoute?.invoke(Routes.WEATHER_PLACE)
+                },
+            )
+        },
         modifier = Modifier.fillMaxWidth().sharedItem(SharedKeys.WEATHER, rounded = true).bouncyPress(0.98f),
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(
@@ -504,14 +517,8 @@ private fun WeatherCard(
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         ),
     ) {
-        WeatherSummary(state, hasPermission, onRequestPermission, onRetry, alone = briefing.isEmpty() && forecast == null)
-        // Le prossime ore dentro Adesso (1.528, Antonio scelta B): il meteo si legge senza aprire la pagina.
-        if (forecast != null) {
-            HourStrip(
-                forecast.hourly,
-                Modifier.padding(start = 18.dp, end = 18.dp, top = 6.dp, bottom = if (briefing.isEmpty()) 14.dp else 8.dp),
-            )
-        }
+        // Una riga sola, niente ore (Antonio, 2026-11-22, scelta C): le ore si leggono aprendo la pagina.
+        WeatherSummary(state, hasPermission, onRequestPermission, onRetry, alone = briefing.isEmpty())
         if (briefing.isNotEmpty()) {
             Column(Modifier.padding(bottom = 10.dp)) {
                 briefing.forEach { line -> BriefRow(line, onAction = { onBriefAction(line) }) { onOpenBrief(line) } }
@@ -592,7 +599,7 @@ private fun WeatherSummary(
 ) {
     val forecast = state.forecast
     when {
-        forecast != null -> WeatherNowCompact(forecast, state.loading, bottom = if (alone) 14.dp else 6.dp)
+        forecast != null -> WeatherNowCompact(forecast, state.loading, bottom = if (alone) 14.dp else 8.dp)
         !hasPermission -> CardMessage(
             icon = Icons.Outlined.LocationOn,
             title = "Meteo",

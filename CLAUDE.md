@@ -32,7 +32,7 @@ layers (queue, video settings, What's new) drawn OUTSIDE the NavHost. Calendario
 - `HomeScreen.kt` `Urgent.color()` = the attention orange in every theme (don't use `colorScheme.tertiary` for it).
 
 **Home** (`HomeScreen.kt`, `HomeCards.kt`, order in `HomeCard` / `CustomizeScreen.kt`): `InvitesRow` (orange line on
-top, only when something needs doing), Adesso/weather (`WeatherBits.kt`), Riprendi, `CalendarCard` (today + tomorrow,
+top, only when something needs doing), Adesso/weather (`WeatherBits.kt`, page `WeatherScreen.kt`, pure phrases `weather/WeatherText.kt`), Riprendi, `CalendarCard` (today + tomorrow,
 count to month end), `LaterCard` (LaterUi.kt) = "Da fare" (to-dos, habits on top: `HabitTodoRow`, `habitTodoLine`
 /`habitFlame` in BriefActions.kt; "Manca oggi" grey, orange from `HABIT_LATE_HOUR`) and "Appunti" (notes, photos,
 saved media; archive via long press); full pages `LaterArchiveScreen(kind)`. News card, SIM (`ContiCard`),

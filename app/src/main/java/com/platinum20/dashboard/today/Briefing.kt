@@ -10,7 +10,6 @@ import com.platinum20.dashboard.notes.Parcel
 import java.time.YearMonth
 import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.weather.Forecast
-import com.platinum20.dashboard.weather.asTemp
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -178,8 +177,8 @@ object Briefing {
             forecast?.daily?.firstOrNull { it.date == date.plusDays(1) }?.let { d ->
                 lines += BriefLine(
                     BriefKind.WEATHER,
-                    "Domani ${d.max.asTemp()} / ${d.min.asTemp()}" +
-                        if (d.precipitationProbability >= 40) ", pioggia ${d.precipitationProbability}%" else "",
+                    // "Domani sereno · max 19° · min 9°" (revisione Meteo 2026-11-22): la sera sta qui, non nelle ore.
+                    com.platinum20.dashboard.weather.WeatherText.tomorrowLine(d),
                     weatherCode = d.code,
                 )
             }

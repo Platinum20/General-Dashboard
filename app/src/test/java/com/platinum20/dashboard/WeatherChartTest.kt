@@ -28,13 +28,27 @@ class WeatherChartTest {
     }
 
     @Test
-    fun stripAndLabels() {
+    fun labels() {
         val hours = (15..26).map { hour(it, 20.0) }
-        assertEquals(6, WeatherChart.strip(hours).size)
         val labels = WeatherChart.labels(hours)
         assertEquals("Ora", labels.first().second)
         assertEquals(3 to "18", labels[1])
         assertEquals(4, labels.size)
+    }
+}
+
+class WeatherChartMarksTest {
+    @Test
+    fun extremesAreFirstHottestAndColdest() {
+        assertEquals(2 to 0, WeatherChart.extremes(listOf(10.0, 12.0, 19.0, 19.0, 11.0)))
+        // Curva piatta: niente numeri.
+        assertEquals(null, WeatherChart.extremes(listOf(12.0, 12.4, 12.2)))
+    }
+
+    @Test
+    fun rainPeakOnlyFromThirty() {
+        assertEquals(3, WeatherChart.rainPeak(listOf(10, 25, 60, 70, 45)))
+        assertEquals(null, WeatherChart.rainPeak(listOf(10, 25, 20)))
     }
 }
 
