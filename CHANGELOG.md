@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.592.0
+**Corretta la chiusura all'avvio della 1.590**
+- Canvas si chiudeva appena aperto: il segno dei colori nelle note non piaceva al telefono. Ora si apre di nuovo
+- Un controllo automatico impedisce che lo stesso errore torni
 ## 1.591.0
 **Spunte quadrate**
 - Tutte le spunte ora sono quadratini con gli angoli arrotondati, come in Notion: vuoti col bordo, pieni con la ✓ quando è fatto
