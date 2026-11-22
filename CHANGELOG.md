@@ -1,7 +1,7 @@
 # Changelog
 
 ## 1.589.0
-**Note: elenchi di nuovo compatti**
+**Note come su Notion: tabella, menu "/", vocali, elenchi compatti**
 - Tolto lo spazio enorme fra le voci di punti e numeri (e sopra l'elenco) arrivato con la 1.587
 - Fra il cerchio o il pallino e il testo resta un po' d'aria
 - Righe più strette quando vanno a capo da sole, più aria dopo un Invio
