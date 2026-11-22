@@ -128,7 +128,7 @@ internal fun captureActions(context: Context, file: String, text: () -> String):
             ),
         )
     },
-    BubbleAction(Icons.Outlined.Share, "Condividi i dati letti") { shareTextFile(context, "$file.txt", text()) },
+    BubbleAction(Icons.Outlined.Share, "Condividi i dati letti", "un file di testo con quello che Canvas legge") { shareTextFile(context, "$file.txt", text()) },
 )
 
 /** Spotify o YouTube: un solo accesso per servizio, serve sia al player sia al feed nell'app. */
@@ -174,7 +174,7 @@ private fun MediaAccountRow(service: MediaService, tile: AccountTile, onLogin: (
                         detail = if (spotifyClientId == SpotifyAuth.DEFAULT_CLIENT_ID) "Predefinita" else "La tua",
                     ) { editKey = true }
                 } else null,
-                if (connected) BubbleAction(Icons.Outlined.LinkOff, "Esci", danger = true) { logout() } else null,
+                if (connected) BubbleAction(Icons.Outlined.LinkOff, "Esci", "Canvas dimentica l'accesso", danger = true) { logout() } else null,
             ).toTypedArray(),
         )
     }

@@ -118,8 +118,8 @@ internal object PlaylistManage {
     fun trackMenu(context: Context, playlist: SpItem, track: SpItem, index: Int, count: Int) {
         val name = title(playlist)
         val actions = buildList {
-            if (index > 0) add(BubbleAction(Icons.Rounded.VerticalAlignTop, "Sposta in cima") { move(context, playlist, index, 0) })
-            if (index < count - 1) add(BubbleAction(Icons.Rounded.VerticalAlignBottom, "Sposta in fondo") { move(context, playlist, index, count - 1) })
+            if (index > 0) add(BubbleAction(Icons.Rounded.VerticalAlignTop, "Sposta in cima", "diventa il primo brano") { move(context, playlist, index, 0) })
+            if (index < count - 1) add(BubbleAction(Icons.Rounded.VerticalAlignBottom, "Sposta in fondo", "diventa l'ultimo brano") { move(context, playlist, index, count - 1) })
             add(BubbleAction(Icons.Rounded.PlaylistRemove, "Togli da $name", track.title, danger = true) { remove(context, playlist, track, index, name) })
         }
         ActionBubble.show(*actions.toTypedArray())

@@ -97,7 +97,7 @@ unique. Tours (`ScreenshotTour`, `YouTubeTour`, …) and `LiveChecks` run only w
 - One color, one meaning: blue = now + actions, orange = attention, red = delete, rest ink.
 - Every page answers one question. Each piece of info lives in one place. Settings = set-once things only.
   Old data says so, with refresh/re-login next to it. Subtitles fit on ONE line.
-- Long press on anything with options opens the bubble with those options.
+- Long press on anything with options opens the bubble with those options. Every bubble row has a one-line subtitle.
 - "+" and voice never ask for the type. NO money/expense tracking anywhere (shift pay stays).
 - Month views show only the current month. Player: one source at a time, no sleep timer, no close button.
 - Nav pill animation stays exactly as it is. Only the three springs.

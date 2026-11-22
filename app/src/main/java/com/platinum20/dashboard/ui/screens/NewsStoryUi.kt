@@ -93,7 +93,7 @@ internal fun storyActions(context: Context, story: NewsStory, onMarkRead: () -> 
         BubbleAction(Icons.Outlined.Headphones, "Ascolta", "Con la voce di lettura") { listenArticle(context, lead) },
         // Come nell'"Altro" dell'articolo, senza aprirlo (2026-11-13).
         BubbleAction(Icons.Outlined.Share, "Condividi il link", lead.source.name) { runCatching { shareText(context, lead.link) } },
-        BubbleAction(Icons.Outlined.DoneAll, "Segna come letta") {
+        BubbleAction(Icons.Outlined.DoneAll, "Segna come letta", "non la vedi più fra le nuove") {
             NewsHistory.init(context)
             story.items.forEach { NewsHistory.markRead(it.link) }
             onMarkRead()

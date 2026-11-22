@@ -339,7 +339,7 @@ internal fun WindTreAccountRow(tile: AccountTile) {
         ActionBubble.show(
             BubbleAction(Icons.Outlined.SimCard, if (linked) "Apri la SIM" else "Accedi", detail = "Giga, minuti e credito") { open() },
             *(if (linked) captureActions(context, "windtre-dati-letti") { SimStore.capturesText() } else emptyArray()),
-            *(if (linked) arrayOf(BubbleAction(Icons.Outlined.LinkOff, "Esci", danger = true) { WindTreLink.forget(context) }) else emptyArray()),
+            *(if (linked) arrayOf(BubbleAction(Icons.Outlined.LinkOff, "Esci", "Canvas dimentica l'accesso a WindTre", danger = true) { WindTreLink.forget(context) }) else emptyArray()),
         )
     }
     SettingsItem(

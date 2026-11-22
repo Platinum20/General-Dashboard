@@ -367,7 +367,7 @@ private fun SwipeQueueRow(entry: QueueEntry, modifier: Modifier = Modifier, hand
                         BubbleAction(Icons.Rounded.VerticalAlignTop, "Subito dopo", detail = "In cima alla coda") { CanvasPlayer.moveTo(entry.id, top.id) }
                     },
                     goToCreatorAction(context, entry.item, inApp?.openRoute),
-                    BubbleAction(Icons.Outlined.RemoveCircleOutline, "Togli dalla coda", danger = true) { removeWithUndo() },
+                    BubbleAction(Icons.Outlined.RemoveCircleOutline, "Togli dalla coda", "con Annulla", danger = true) { removeWithUndo() },
                 ).toTypedArray())
             },
         )
