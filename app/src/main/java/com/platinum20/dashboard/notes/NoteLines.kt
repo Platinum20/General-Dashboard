@@ -7,7 +7,7 @@ package com.platinum20.dashboard.notes
  * pallini. Funzioni pure: si provano senza telefono.
  */
 object NoteLines {
-    enum class Kind { TEXT, BULLET, CHECK, HEADING, NUMBER, QUOTE, CALLOUT, DIVIDER, TABLE, AUDIO, COLUMNS, PAGE, BOOKMARK, BOARD }
+    enum class Kind { TEXT, BULLET, CHECK, HEADING, NUMBER, QUOTE, CALLOUT, DIVIDER, TABLE, AUDIO, COLUMNS, PAGE, BOOKMARK, BOARD, IMAGE }
 
     /** Una riga: [start]..[end] ([end] = dove sta il "\n" o la fine), il segno davanti lungo [prefix]. */
     data class Line(val index: Int, val start: Int, val end: Int, val kind: Kind, val done: Boolean, val prefix: Int, val level: Int = 0, val number: Int = 0, val doing: Boolean = false) {
@@ -19,7 +19,7 @@ object NoteLines {
          * bacheca. Il cursore non ci entra, Indietro lo toglie tutto, l'editor ci disegna sopra.
          */
         val isBlock: Boolean get() = kind == Kind.DIVIDER || kind == Kind.TABLE || kind == Kind.AUDIO || kind == Kind.COLUMNS ||
-            kind == Kind.PAGE || kind == Kind.BOOKMARK || kind == Kind.BOARD
+            kind == Kind.PAGE || kind == Kind.BOOKMARK || kind == Kind.BOARD || kind == Kind.IMAGE
 
         /** Il segno davanti non si vede e l'editor ci disegna sopra (cerchio, numero, barra, emoji, linea). */
         val hasMark: Boolean get() = isList || kind == Kind.QUOTE || kind == Kind.CALLOUT || isBlock
@@ -39,6 +39,7 @@ object NoteLines {
 
     private val audioRx = Regex("""^\s*\[[^\]\n]*]\(audio:[^)\n]+\)\s*$""")
     private val columnsRx = Regex("""^‖ ([^\n]*) ‖ ([^\n]*) ‖\s*$""")
+    private val imageRx = Regex("""^\[🖼[^\]\n]*]\(img:[^)\n]+\)\s*$""")
     private val pageRx = Regex("""^\[📄 [^\]\n]*]\(nota:\d+\)\s*$""")
     private val bookmarkRx = Regex("""^\[🔗[^\]\n]*]\(https?://[^)\s]+\)\s*$""")
     private val checkRx = Regex("""^\s*\[([ xX\-]?)](?: |$)""")
@@ -86,6 +87,8 @@ object NoteLines {
         if (pageRx.matches(line)) return Triple(Kind.PAGE, false, line.length)
         if (bookmarkRx.matches(line)) return Triple(Kind.BOOKMARK, false, line.length)
         if (line.trim() == BOARD) return Triple(Kind.BOARD, false, line.length)
+        // Una foto dentro il testo (1.591): `[🖼 Foto](img:/percorso)`, dove la si mette.
+        if (imageRx.matches(line)) return Triple(Kind.IMAGE, false, line.length)
         if (line.startsWith(QUOTE)) return Triple(Kind.QUOTE, false, QUOTE.length)
         calloutRx.find(line)?.let { m -> return Triple(Kind.CALLOUT, false, m.value.length) }
         checkRx.find(line)?.let { m -> return Triple(Kind.CHECK, m.groupValues[1].equals("x", ignoreCase = true), m.value.length) }
@@ -132,7 +135,7 @@ object NoteLines {
         Kind.NUMBER -> "1. "
         Kind.QUOTE -> QUOTE
         Kind.CALLOUT -> CALLOUT
-        Kind.DIVIDER, Kind.TABLE, Kind.AUDIO, Kind.COLUMNS, Kind.PAGE, Kind.BOOKMARK, Kind.BOARD -> ""
+        Kind.DIVIDER, Kind.TABLE, Kind.AUDIO, Kind.COLUMNS, Kind.PAGE, Kind.BOOKMARK, Kind.BOARD, Kind.IMAGE -> ""
     }
 
     /**
@@ -654,6 +657,11 @@ object NoteLines {
         val lines = (a.split('\n') + b.split('\n')).filter { it.isNotBlank() }.joinToString("\n")
         return text.substring(0, l.start) + lines + text.substring(l.end)
     }
+
+    /** Una foto nel testo (1.591): la riga che la mostra, e il suo file. */
+    fun imageLine(path: String): String = "[🖼 Foto](img:$path)"
+
+    fun imagePath(line: String): String? = Regex("""\(img:([^)\n]+)\)""").find(line)?.groupValues?.get(1)
 
     /** Una sotto-nota: la riga che la apre. */
     fun pageLine(title: String, id: Long): String = "[📄 ${title.replace('[', '(').replace(']', ')').replace('\n', ' ').trim().ifEmpty { "Pagina" }}](nota:$id)"

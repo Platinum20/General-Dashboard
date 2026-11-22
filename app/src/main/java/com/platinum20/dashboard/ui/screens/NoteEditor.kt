@@ -39,6 +39,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -239,6 +240,25 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
     }
     fun pickPhotos() = gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
 
+    // ---- Le foto nel testo (1.591): dove c'è il cursore, non solo in cima ----
+    val inlinePick = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(MAX_PICK)) { uris ->
+        if (uris.isNotEmpty()) scope.launch {
+            val paths = uris.mapNotNull { PhotoAttach.keep(context, it) }
+            if (paths.isEmpty()) return@launch
+            var t = body.text
+            var at = body.selection.end.coerceIn(0, t.length)
+            paths.forEach { p ->
+                val e = NoteLines.insertBlock(t, at, NoteLines.imageLine(p))
+                t = e.text
+                at = e.start
+            }
+            body = TextFieldValue(t, TextRange(at))
+            save()
+            haptic(Haptic.CONFIRM)
+        }
+    }
+    fun pickInline() = inlinePick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+
     // ---- La copertina (1.590): una foto in cima alla nota ----
     val coverPick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         val nid = id
@@ -412,7 +432,8 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
         haptic(Haptic.LONG_PRESS)
         ActionBubble.show(
             *listOfNotNull(
-                BubbleAction(Icons.Outlined.AddPhotoAlternate, "Foto", "dalla galleria, anche più insieme") { pickPhotos() },
+                BubbleAction(Icons.Outlined.Image, "Foto nel testo", "dove c'è il cursore, larga quanto la nota") { pickInline() },
+                BubbleAction(Icons.Outlined.AddPhotoAlternate, "Foto in cima", "dalla galleria, anche più insieme") { pickPhotos() },
                 BubbleAction(Icons.Outlined.PhotoCamera, "Scatta una foto", "con la fotocamera, va subito nella nota") { camera.launch(ReceiptReader.photoUri(context)) },
                 BubbleAction(Icons.Outlined.Mic, "Detta", "il testo va dove c'è il cursore") { dictate() },
                 BubbleAction(Icons.Outlined.Draw, "Disegna", "a mano, va fra le foto") { draw() },
@@ -726,7 +747,8 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     findAt = findAt.coerceAtMost((found.size - 1).coerceAtLeast(0)),
                     revealAt = reveal,
                     slashExtras = listOf(
-                        SlashItem(Icons.Outlined.AddPhotoAlternate, "Foto", "dalla galleria") { pickPhotos() },
+                        SlashItem(Icons.Outlined.Image, "Foto nel testo", "dove c'è il cursore") { pickInline() },
+                        SlashItem(Icons.Outlined.AddPhotoAlternate, "Foto in cima", "dalla galleria") { pickPhotos() },
                         SlashItem(Icons.Outlined.PhotoCamera, "Scatta", "con la fotocamera") { camera.launch(ReceiptReader.photoUri(context)) },
                         SlashItem(Icons.Outlined.Mic, "Detta", "dove c'è il cursore") { dictate() },
                         SlashItem(Icons.Outlined.Draw, "Disegno", "a mano") { draw() },
@@ -743,7 +765,8 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                 Box(
                     Modifier
                         .fillMaxWidth()
-                        .height(if (imeOpen) 120.dp else 320.dp)
+                        // Scrivendo (1.591) sotto c'è tanto spazio vuoto: la riga può salire in alto, mai sotto la tastiera.
+                        .height(if (imeOpen && bodyFocused) (LocalConfiguration.current.screenHeightDp * 0.6f).dp else if (imeOpen) 120.dp else 320.dp)
                         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
                             val e = NoteLines.tapBelow(body.text)
                             val changed = e.text != body.text

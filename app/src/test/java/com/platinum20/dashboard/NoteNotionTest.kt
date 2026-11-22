@@ -69,4 +69,15 @@ class NoteNotionTest {
         assertEquals("Casa\nfine", NoteLines.guardBlocks(t, t.removeRange(end, end + 1))!!.text)
         assertEquals("Casa\n[bacheca]\n[x] luce", NoteLines.boardAdd("Casa\n[bacheca]", 1, "luce", 2).let { NoteLines.setState(it, 2, 2) })
     }
+
+    @Test
+    fun photosGoWhereTheCursorIs() {
+        val l = NoteLines.imageLine("/x/foto.jpg")
+        assertEquals(NoteLines.Kind.IMAGE, NoteLines.kindOf(l).first)
+        assertEquals("/x/foto.jpg", NoteLines.imagePath(l))
+        val e = NoteLines.insertBlock("uno\ndue", 2, l)
+        assertEquals("uno\n$l\ndue", e.text)
+        // Scrivere dopo la foto va nella riga sotto, Indietro la toglie intera.
+        assertEquals("uno\ndue", NoteLines.guardBlocks(e.text, e.text.removeRange(e.start - 1, e.start))!!.text)
+    }
 }
