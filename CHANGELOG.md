@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.586.0
+**Copertina fissa per i Salvati**
+- Le playlist "Salvati" di Musica e Video hanno una copertina tutta loro, come i mix: colore fisso, segnalibro e il nome grande, non più l'ultima cosa salvata
 ## 1.585.0
 **Editor delle note più completo (parte 2)**
 - Scrivi "/" per aggiungere un blocco: punti, numeri, spunte, titolo, citazione, riquadro, linea, foto, scatta, detta
