@@ -8,6 +8,7 @@
 - In Altro, "Usa come modello": una nota nuova uguale, con tutte le spunte da rifare
 - Emoji della nota: la scegli in Altro, compare grande sopra il titolo e piccola davanti al titolo in Appunti e nel Calendario
 - Con almeno 3 titoli, in cima c'è l'indice: tocchi un titolo e la nota scorre lì
+- Menu "/": scelto un blocco (per esempio Linea), la "/" scritta sparisce
 ## 1.585.0
 **Editor delle note più completo (parte 2)**
 - Scrivi "/" per aggiungere un blocco: punti, numeri, spunte, titolo, citazione, riquadro, linea, foto, scatta, detta

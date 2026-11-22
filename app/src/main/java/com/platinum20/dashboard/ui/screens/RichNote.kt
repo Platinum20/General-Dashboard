@@ -641,10 +641,12 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
     var formats by remember(target.owner) { mutableStateOf(false) }
     val selecting = !v.selection.collapsed
     val line = NoteLines.lineAt(v.text, v.selection.min.coerceIn(0, v.text.length))
-    // Ogni tocco legge il valore di adesso, non quello di quando la barra si è disegnata.
+    // Ogni tocco legge il valore di adesso, non quello di quando la barra si è disegnata. Dal menu "/" il valore di
+    // adesso è quello senza la "/" scritta, che il campo non ha ancora ricevuto ([slashBase]).
+    var slashBase: TextFieldValue? = null
     fun kind(k: NoteLines.Kind) {
         haptic(Haptic.TICK)
-        val now = target.value()
+        val now = slashBase ?: target.value()
         val e = NoteLines.renumber(NoteLines.setKind(now.text, now.selection.min, now.selection.max, k))
         target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
     }
@@ -687,7 +689,7 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
     }
     fun divider() {
         haptic(Haptic.TICK)
-        val now = target.value()
+        val now = slashBase ?: target.value()
         val e = NoteLines.insertDivider(now.text, now.selection.end)
         target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
     }
@@ -703,8 +705,10 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                     val now = target.value()
                     val l = NoteLines.lineAt(now.text, now.selection.end)
                     val t = now.text.removeRange(l.contentStart, now.selection.end.coerceAtLeast(l.contentStart))
-                    target.set(TextFieldValue(t, TextRange(l.contentStart)))
-                    run()
+                    val clean = TextFieldValue(t, TextRange(l.contentStart))
+                    target.set(clean)
+                    slashBase = clean
+                    try { run() } finally { slashBase = null }
                 }
                 val all = listOf(
                     SlashItem(Icons.AutoMirrored.Outlined.FormatListBulleted, "Punti", "elenco puntato") { kind(NoteLines.Kind.BULLET) },
