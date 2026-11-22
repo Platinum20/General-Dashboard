@@ -34,6 +34,7 @@ object NotePdf {
             NoteLines.Kind.QUOTE -> "“$text”"
             NoteLines.Kind.DIVIDER -> "────────────"
             NoteLines.Kind.TABLE -> NoteTable.cells(body.substring(l.start, l.end)).joinToString("   ·   ")
+            NoteLines.Kind.AUDIO -> "🎙 " + (Regex("""\[([^\]]*)]""").find(body.substring(l.start, l.end))?.groupValues?.get(1)?.removePrefix("🎙 ") ?: "Audio")
             else -> text
         }
     }

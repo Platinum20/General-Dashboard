@@ -30,10 +30,31 @@ class NoteEditorExtrasTest {
     }
 
     @Test
+    fun everyWrittenLineGetsItsBreath() {
+        val v = NoteLines.Shown("ab\n- c", breathe = true)
+        assertEquals(NoteLines.BREATH + "ab\n" + NoteLines.PLACE + "c", v.shown)
+        assertEquals(0, v.toShown(0))
+        assertEquals(2, v.toShown(1))
+        assertEquals(0, v.toText(1))
+    }
+
+    @Test
     fun newTableGoesBelowTheLine() {
         val (t, line) = NoteTable.insert("ciao", 2)
-        assertEquals("ciao\n| Nome | Valore |\n|  |  |", t)
+        assertEquals("ciao\n|  |  |\n|  |  |", t)
         assertEquals(1, line)
+        assertEquals(listOf(listOf("", ""), listOf("", "")), NoteTable.grid(t, 1..2))
+    }
+
+    @Test
+    fun tableCellsRowsAndColumnsChangeInPlace() {
+        val g = listOf(listOf("Nome", "Scarpe"), listOf("Marco", "42"))
+        assertEquals(listOf(listOf("Nome", "Scarpe"), listOf("Marco", "4/2 x")), NoteTable.setCell(g, 1, 1, "4|2\nx"))
+        assertEquals(listOf(listOf("Nome", "Scarpe"), listOf("", ""), listOf("Marco", "42")), NoteTable.addRow(g, 1))
+        assertEquals(listOf(listOf("", "Nome", "Scarpe"), listOf("", "Marco", "42")), NoteTable.addColumn(g, 0))
+        assertEquals(listOf(listOf("Nome", "Scarpe")), NoteTable.dropRow(g, 1))
+        assertEquals(listOf(listOf("Scarpe"), listOf("42")), NoteTable.dropColumn(g, 0))
+        assertEquals(emptyList<List<String>>(), NoteTable.dropColumn(NoteTable.dropColumn(g, 0), 0))
     }
 
     @Test

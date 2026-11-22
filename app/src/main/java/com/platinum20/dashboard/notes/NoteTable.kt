@@ -2,13 +2,14 @@ package com.platinum20.dashboard.notes
 
 /**
  * La tabella semplice (1.588): righe "| Nome | Scarpe | Maglia |" una sotto l'altra, la prima fa da intestazione.
- * Nel testo restano così (si copiano ovunque); l'editor le nasconde e disegna le caselle, e si cambiano dal suo fumetto.
+ * Nel testo restano così (si copiano ovunque); l'editor le nasconde e ci disegna sopra le caselle, in cui si scrive
+ * direttamente come su Notion (1.590).
  */
 object NoteTable {
     private val rowRx = Regex("""^\|.*\|\s*$""")
 
-    /** Una nuova tabella: due colonne, l'intestazione e una riga vuota. */
-    val NEW: List<List<String>> = listOf(listOf("Nome", "Valore"), listOf("", ""))
+    /** Una nuova tabella (1.590): due per due, vuota; si comincia a scrivere nella prima casella. */
+    val NEW: List<List<String>> = listOf(listOf("", ""), listOf("", ""))
 
     fun isRow(line: String): Boolean = rowRx.matches(line)
 
@@ -54,4 +55,27 @@ object NoteTable {
             (text.substring(0, l.end) + "\n" + rows + text.substring(l.end)) to l.index + 1
         }
     }
+
+    /** La casella [r],[c] diventa [value] (senza "|" e a capo, che romperebbero la riga). */
+    fun setCell(grid: List<List<String>>, r: Int, c: Int, value: String): List<List<String>> {
+        val v = value.replace('|', '/').replace('\n', ' ')
+        return grid.mapIndexed { i, row -> if (i == r) row.mapIndexed { j, x -> if (j == c) v else x } else row }
+    }
+
+    /** Una riga vuota al posto [at] (0 = in cima). */
+    fun addRow(grid: List<List<String>>, at: Int): List<List<String>> {
+        val cols = grid.maxOfOrNull { it.size } ?: 1
+        return grid.toMutableList().apply { add(at.coerceIn(0, size), List(cols) { "" }) }
+    }
+
+    /** Una colonna vuota al posto [at] (0 = a sinistra) in ogni riga. */
+    fun addColumn(grid: List<List<String>>, at: Int): List<List<String>> =
+        grid.map { row -> row.toMutableList().apply { add(at.coerceIn(0, size), "") } }
+
+    /** Senza la riga [at]; senza righe la tabella se ne va. */
+    fun dropRow(grid: List<List<String>>, at: Int): List<List<String>> = grid.filterIndexed { i, _ -> i != at }
+
+    /** Senza la colonna [at]; senza colonne la tabella se ne va. */
+    fun dropColumn(grid: List<List<String>>, at: Int): List<List<String>> =
+        grid.map { row -> row.filterIndexed { j, _ -> j != at } }.let { g -> if (g.all { it.isEmpty() }) emptyList() else g }
 }
