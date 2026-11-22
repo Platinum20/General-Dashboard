@@ -46,7 +46,8 @@ event pages in `CalendarScreen.kt`. `calendar/` = CalendarContract, `Trips` (tra
 Reminders: `TaskReminderWorker`, `HabitReminderWorker`, `notes/ReminderText.kt`.
 
 **Notes editor**: `NoteEditor.kt` + `RichNote.kt` (`RichNoteField`, `RichToolbar`), pure `notes/NoteLines.kt`
-(text/bullet/check/heading per line), `notes/NoteFormat.kt`, `notes/NotePhotos.kt`.
+(text/bullet/number/check/heading per line, indent levels, renumber), `notes/NoteFormat.kt` (marks never shown,
+`afterEdit` keeps them intact), `notes/NoteHistory.kt` (undo/redo), `notes/NotePhotos.kt`.
 
 **Capture "+"** (`capture/`): `CaptureComposer` (bar morphs into input), `CaptureDestination` chips
 Da fare/Appunti/Calendario/Abitudine (never ask the type), `CaptureGuess`, `CaptureSave` (+ undo), `CaptureWhen`,

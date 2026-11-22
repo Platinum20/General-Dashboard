@@ -49,6 +49,9 @@ import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.AddPhotoAlternate
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.KeyboardArrowUp
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Rotate90DegreesCw
@@ -162,6 +165,11 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
     var arranging by remember { mutableStateOf(false) }
     var bodyFocused by remember { mutableStateOf(false) }
     val bodyFocus = remember { FocusRequester() }
+    // "Cerca nella nota" (1.579): null = chiuso.
+    var finding by remember { mutableStateOf<String?>(null) }
+    var findAt by remember { mutableIntStateOf(0) }
+    val found = remember(body.text, finding) { finding?.let { NoteLines.matches(body.text, it) }.orEmpty() }
+    BackHandler(enabled = finding != null) { finding = null }
 
     fun save(next: String = NoteText.join(title.text, body.text)) {
         id = NotesStore.saveNote(id, next) ?: id
@@ -302,6 +310,10 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                         NotesStore.togglePin(nid)
                     }
                 },
+                if (body.text.isBlank()) null else BubbleAction(Icons.Outlined.Search, "Cerca nella nota", "le parole trovate si colorano") {
+                    findAt = 0
+                    finding = ""
+                },
                 // Per le liste (1.555): le fatte in fondo, via, o tutte da rifare (la valigia).
                 if (!NoteLines.hasDone(body.text)) null else BubbleAction(Icons.Outlined.VerticalAlignBottom, "Fatte in fondo", "in ogni lista le spuntate scendono") {
                     body = TextFieldValue(NoteLines.doneToBottom(body.text))
@@ -361,8 +373,33 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
                     }
+                    finding?.let { query ->
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 12.dp, bottom = 6.dp)) {
+                            CanvasSearchField(
+                                value = query,
+                                onValueChange = { finding = it; findAt = 0 },
+                                placeholder = "Cerca nella nota",
+                                trailing = {
+                                    if (query.isNotBlank()) Text(
+                                        if (found.isEmpty()) "nessuna" else "${findAt + 1} di ${found.size}",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                },
+                                modifier = Modifier.weight(1f).autoFocus(),
+                            )
+                            Spacer(Modifier.size(6.dp))
+                            RoundIconButton(Icons.Outlined.KeyboardArrowUp, "Quella prima") {
+                                if (found.isNotEmpty()) { haptic(Haptic.TICK); findAt = (findAt - 1 + found.size) % found.size }
+                            }
+                            RoundIconButton(Icons.Outlined.KeyboardArrowDown, "Quella dopo") {
+                                if (found.isNotEmpty()) { haptic(Haptic.TICK); findAt = (findAt + 1) % found.size }
+                            }
+                            RoundIconButton(Icons.Outlined.Close, "Chiudi la ricerca") { finding = null }
+                        }
+                    }
                     // La riga sopra il titolo, come nelle altre schede; mentre detti dice quello che sta capendo.
-                    Text(
+                    if (finding == null) Text(
                         meta.uppercase(),
                         style = MaterialTheme.typography.labelMedium,
                         color = if (dictation.listening) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -469,6 +506,8 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     onFocusChange = { bodyFocused = it },
                     sendToTodo = true,
                     onAllDone = { allDone() },
+                    find = finding,
+                    findAt = findAt.coerceAtMost((found.size - 1).coerceAtLeast(0)),
                     // Con la tastiera aperta niente altezza minima: se no la pagina scorre per mostrarla tutta e titolo e foto
                     // finiscono fuori dallo schermo (1.559).
                     minHeight = if (imeOpen) 0.dp else 320.dp,
