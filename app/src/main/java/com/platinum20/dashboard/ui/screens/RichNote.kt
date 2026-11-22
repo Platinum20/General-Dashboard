@@ -137,7 +137,7 @@ object RichBar {
 }
 
 /** Una voce del menu "/" (1.584): scrivendo "/" a inizio riga. */
-internal class SlashItem(val icon: ImageVector, val label: String, val detail: String, val run: () -> Unit)
+class SlashItem(val icon: ImageVector, val label: String, val detail: String, val run: () -> Unit)
 
 /** La barra si vede solo mentre un campo con le righe scrive e la tastiera è aperta. */
 @OptIn(ExperimentalLayoutApi::class)
