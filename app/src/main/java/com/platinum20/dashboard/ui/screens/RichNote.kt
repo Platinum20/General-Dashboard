@@ -283,7 +283,7 @@ internal fun RichNoteField(
     val marker = androidx.compose.ui.graphics.Color(0x66FFD54F)
     val transformation = remember(faded, value.text, found, findAt, accent, folds) {
         VisualTransformation { input ->
-            richText(input.text, faded, found.mapIndexed { i, r -> r to if (i == findAt) foundNow else foundStyle }, accent, marker, folds)
+            richText(input.text, faded, found.mapIndexed { i, r -> r to if (i == findAt) foundNow else foundStyle }, accent, marker = marker, folds = folds)
         }
     }
     fun hiddenLine(line: NoteLines.Line) = folds.any { line.start in it }
