@@ -4,6 +4,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PushPin as PushPinFilled
 import androidx.compose.material.icons.outlined.Archive
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.CheckBox
+import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
 import androidx.compose.material.icons.outlined.Unarchive
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
@@ -61,7 +63,7 @@ internal fun rememberRowActions(onOpenEvent: ((CalendarEvent) -> Unit)? = null):
         detail = title,
     ) { haptic(if (pinned) Haptic.TOGGLE_OFF else Haptic.TOGGLE_ON); toggle() }
     fun taskActions(t: TaskItem): List<BubbleAction> = listOfNotNull(
-        if (!t.tickable) null else BubbleAction(Icons.Outlined.Check, if (t.done) "Segna da fare" else "Fatto", detail = t.text) {
+        if (!t.tickable) null else BubbleAction(if (t.done) Icons.Outlined.CheckBoxOutlineBlank else Icons.Outlined.CheckBox, if (t.done) "Segna da fare" else "Fatto", detail = t.text) {
             haptic(Haptic.CONFIRM)
             NotesStore.toggleTask(t.id)
         },

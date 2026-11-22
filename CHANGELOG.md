@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.589.0
+**Spunte quadrate**
+- Tutte le spunte ora sono quadratini con gli angoli arrotondati, come in Notion: vuoti col bordo, pieni con la ✓ quando è fatto
+- Ovunque: Da fare e abitudini in Home, Calendario, archivi, pagina dell'abitudine e widget Da fare
+
 ## 1.588.0
 **Editor delle note completo**
 - "@" collega anche promemoria, cose da fare, abitudini, pacchi, documenti e le sezioni (Meteo, SIM, Calendario, News, Musica…): un tocco le apre

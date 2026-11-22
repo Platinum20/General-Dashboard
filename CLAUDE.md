@@ -18,7 +18,7 @@ layers (queue, video settings, What's new) drawn OUTSIDE the NavHost. Calendario
 **Shared UI (`ui/screens/`, always reuse)**
 - `Common.kt`: `TopLevelBar` (collapses with scroll), `CanvasCard`, `CardSection`/`CardTitle(opens=)` (Home card title
   INSIDE the card, "DA FARE ›"), `SectionHeader`, `OpenableHeader`, `RowDivider`, `CanvasChip`, `RoundIconButton`,
-  `IconTile`, `CanvasButton` (`ButtonLevel`), `bouncyPress`, haptics, `RollingText`, `LoadingPulse`/`Placeholder`
+  `IconTile`, `CanvasButton` (`ButtonLevel`), `CanvasCheck` (CanvasCheck.kt = THE square tick, never circles), `bouncyPress`, haptics, `RollingText`, `LoadingPulse`/`Placeholder`
   (no spinners), `Clip.copy`, `relativeTime`, `rememberRowAtStart` (Media LazyRows), `PlusAction`.
 - `Motion.kt`: only `Motion.settle()`, `Motion.lively()`, `Motion.gesture()` + `Motion.fling`; `Modifier.entrance()`.
 - `ActionBubble.kt` = every menu/confirm (glass bubble, bottom center). `GlassDialog.kt` `CanvasDialog` = every dialog.

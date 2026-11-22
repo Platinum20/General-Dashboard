@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Il cerchio pieno di un'abitudine fatta oggi nel widget Da fare (come il ✓ della card in Home). -->
+<!-- Il quadratino pieno di una cosa fatta nel widget Da fare (come CanvasCheck in app). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="20dp"
-    android:height="20dp"
+    android:width="19dp"
+    android:height="19dp"
     android:viewportWidth="20"
     android:viewportHeight="20">
-    <path android:fillColor="@color/widget_accent" android:pathData="M10,0a10,10 0,1 1,0 20a10,10 0,1 1,0 -20z" />
+    <path android:fillColor="@color/widget_accent" android:pathData="M4.8,0H15.2A4.8,4.8 0,0 1,20 4.8V15.2A4.8,4.8 0,0 1,15.2 20H4.8A4.8,4.8 0,0 1,0 15.2V4.8A4.8,4.8 0,0 1,4.8 0z" />
     <path
         android:fillColor="@android:color/transparent"
-        android:pathData="M5.6,10.3L8.6,13.2L14.4,7.2"
-        android:strokeWidth="1.9"
+        android:pathData="M5.4,10.4L8.6,13.4L14.6,7"
+        android:strokeWidth="2.2"
         android:strokeColor="@color/widget_on_accent"
         android:strokeLineCap="round"
         android:strokeLineJoin="round" />

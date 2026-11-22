@@ -161,11 +161,11 @@ private fun LooseRow(item: LooseItem, onClick: () -> Unit, onLongClick: () -> Un
     ) {
         Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) {
             when {
-                onTick != null -> Icon(
-                    if (item.done) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
-                    contentDescription = if (item.done) "Da fare" else "Fatto",
-                    tint = if (item.done) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(22.dp).clip(CircleShape).clickable(onClick = onTick),
+                onTick != null -> CanvasCheck(
+                    item.done,
+                    size = 21.dp,
+                    description = if (item.done) "Da fare" else "Fatto",
+                    onToggle = onTick,
                 )
                 item.image.isNotBlank() -> AsyncImage(
                     model = item.image.let { if (it.startsWith("/")) java.io.File(it) else it },
@@ -219,11 +219,11 @@ private fun HabitTodoRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) {
-            Icon(
-                if (done) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
-                contentDescription = if (done) "Togli da oggi" else "Fatta oggi",
-                tint = if (done) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(22.dp).clip(CircleShape).clickable(onClick = onTick),
+            CanvasCheck(
+                done,
+                size = 21.dp,
+                description = if (done) "Togli da oggi" else "Fatta oggi",
+                onToggle = onTick,
             )
         }
         Spacer(Modifier.width(12.dp))

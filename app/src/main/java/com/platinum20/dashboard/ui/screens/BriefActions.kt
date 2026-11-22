@@ -8,8 +8,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.CheckBox
+import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Done
 import androidx.compose.material.icons.outlined.Delete
@@ -112,7 +112,7 @@ fun HabitsTodayDialog(habits: List<Habit>, today: LocalDate, onToggle: (Habit) -
                         modifier = Modifier.fillMaxWidth().clickable { onToggle(habit) },
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Checkbox(checked = habit.isDone(today), onCheckedChange = { onToggle(habit) })
+                        Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) { CanvasCheck(habit.isDone(today)) }
                         Text(habit.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
@@ -131,7 +131,7 @@ internal fun habitsBubble(habits: List<Habit>, today: java.time.LocalDate, open:
     habits.map { h ->
         val done = h.isDone(today)
         BubbleAction(
-            icon = if (done) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
+            icon = if (done) Icons.Filled.CheckBox else Icons.Outlined.CheckBoxOutlineBlank,
             title = h.title,
             detail = if (done) "Fatta oggi · tieni premuto per altro" else "Tocca per segnarla · tieni premuto per altro",
             onClick = { NotesStore.toggleHabit(h.id, today) },
@@ -144,7 +144,7 @@ internal fun habitActions(h: Habit, today: java.time.LocalDate, open: (Habit) ->
     val done = h.isDone(today)
     return arrayOf(
         BubbleAction(
-            if (done) Icons.Outlined.RadioButtonUnchecked else Icons.Filled.CheckCircle,
+            if (done) Icons.Outlined.CheckBoxOutlineBlank else Icons.Filled.CheckBox,
             if (done) "Togli da oggi" else "Fatta oggi",
             detail = h.title,
         ) { NotesStore.toggleHabit(h.id, today) },
