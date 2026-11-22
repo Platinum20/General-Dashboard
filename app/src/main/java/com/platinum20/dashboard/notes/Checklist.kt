@@ -39,7 +39,8 @@ object Checklist {
     fun toggle(text: String, index: Int): String {
         val all = text.lines().toMutableList()
         val item = all.getOrNull(index)?.let { parseLine(index, it) } as? Item ?: return text
-        all[index] = format(item.text, !item.done)
+        // Il rientro della sotto-voce resta (1.599).
+        all[index] = all[index].takeWhile { it == ' ' || it == '\t' } + format(item.text, !item.done)
         return all.joinToString("\n")
     }
 

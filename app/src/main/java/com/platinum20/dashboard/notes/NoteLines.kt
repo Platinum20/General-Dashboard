@@ -295,7 +295,8 @@ object NoteLines {
     /** Spunta o toglie la spunta alla riga [index]; il segno diventa sempre "[ ] " / "[x] ". */
     fun toggle(text: String, index: Int): String {
         val line = parse(text).getOrNull(index)?.takeIf { it.kind == Kind.CHECK } ?: return text
-        return text.substring(0, line.start) + prefixFor(Kind.CHECK, !line.done) + text.substring(line.contentStart)
+        // Il rientro della sotto-voce resta (1.599): spuntata non torna al bordo.
+        return text.substring(0, line.start) + INDENT.repeat(line.level) + prefixFor(Kind.CHECK, !line.done) + text.substring(line.contentStart)
     }
 
     /** Cambia il tipo di una riga sola (fumetto del tieni premuto). */
