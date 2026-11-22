@@ -143,10 +143,10 @@ object RichBar {
 /** Una voce del menu "/" (1.584): scrivendo "/" a inizio riga. */
 class SlashItem(val icon: ImageVector, val label: String, val detail: String, val run: () -> Unit)
 
-/** La barra si vede solo mentre un campo con le righe scrive e la tastiera è aperta. */
+/** La barra si vede mentre un campo con le righe scrive con la tastiera aperta, o quando c'è del testo scelto. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun richBarShown(): Boolean = RichBar.target != null && WindowInsets.isImeVisible
+internal fun richBarShown(): Boolean = RichBar.target.let { t -> t != null && (WindowInsets.isImeVisible || !t.value().selection.collapsed) }
 
 /**
  * Il posto di cerchio e pallino: lo spazio sottile al posto del segno, allargato con la spaziatura delle lettere.
@@ -229,8 +229,10 @@ internal fun RichNoteField(
         emit(safe)
     }
 
-    DisposableEffect(focused, readOnly) {
-        if (focused && !readOnly) RichBar.target = RichBar.Target(
+    // Anche con del testo scelto senza tastiera (1.586): la barra Aa deve esserci lo stesso.
+    val choosing = !value.selection.collapsed
+    DisposableEffect(focused, choosing, readOnly) {
+        if ((focused || choosing) && !readOnly) RichBar.target = RichBar.Target(
             owner, { current }, { change(it, typed = false) },
             canUndo = { historyTick; history.canUndo },
             canRedo = { historyTick; history.canRedo },
