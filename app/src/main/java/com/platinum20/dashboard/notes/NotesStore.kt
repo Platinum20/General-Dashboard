@@ -241,11 +241,15 @@ data class Note(
     val photos: List<String> = emptyList(),
     /** Messa nell'archivio di Appunti (Antonio, 2026-11-20): esce dalla card ma non si perde. Null = in Appunti. */
     val archivedAt: Long? = null,
+    /** L'emoji della nota (1.586): grande sopra il titolo nell'editor, piccola davanti al titolo ovunque. Null = nessuna. */
+    val emoji: String? = null,
 ) {
     /** La copertina: quella che si vede sulla linea del tempo e in Per dopo. */
     val photo: String get() = photos.firstOrNull().orEmpty()
-    /** La prima riga fa da titolo, senza i segni dei formati. */
-    val title: String get() = NoteFormat.plain(text.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty())
+    /** La prima riga fa da titolo, senza i segni dei formati, con l'emoji davanti se c'è. */
+    val title: String get() = listOfNotNull(emoji, plainTitle.ifEmpty { null }).joinToString(" ")
+    /** La prima riga senza emoji: per cercare e per i link fra note. */
+    val plainTitle: String get() = NoteFormat.plain(text.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty())
     /** Senza l'indirizzo canvas://open delle cose salvate da "Salva nelle note", e senza i segni dei formati. */
     val body: String get() = NoteFormat.plain(SavedLinks.withoutLink(text).substringAfter('\n', "").trim())
 }
@@ -624,7 +628,7 @@ object NotesStore {
             val existing = d.notes.firstOrNull { it.id == noteId }
             if (existing != null && existing.text == text) return@update d
             val now = System.currentTimeMillis()
-            val note = Note(noteId, text, now, existing?.pinned ?: false, existing?.createdAt ?: now, existing?.photos.orEmpty())
+            val note = Note(noteId, text, now, existing?.pinned ?: false, existing?.createdAt ?: now, existing?.photos.orEmpty(), emoji = existing?.emoji)
             d.copy(notes = listOf(note) + d.notes.filter { it.id != noteId })
         }
         return noteId
@@ -655,6 +659,11 @@ object NotesStore {
         val all = o.optJSONArray("photos")
         if (all != null) return (0 until all.length()).map { all.optString(it) }.filter { it.isNotEmpty() }
         return listOfNotNull(o.optString("photo").takeIf { it.isNotEmpty() })
+    }
+
+    /** L'emoji della nota (1.586); null la toglie. */
+    fun setNoteEmoji(id: Long, emoji: String?) = update { d ->
+        d.copy(notes = d.notes.map { if (it.id == id) it.copy(emoji = emoji?.takeIf { e -> e.isNotBlank() }) else it })
     }
 
     fun togglePin(id: Long) = update { d ->
@@ -737,7 +746,8 @@ object NotesStore {
                 put(JSONObject().put("id", it.id).put("text", it.text).put("updatedAt", it.updatedAt).put("pinned", it.pinned).put("createdAt", it.createdAt)
                     // "photo" = la copertina, per i backup letti da versioni vecchie; "photos" = tutte.
                     .apply { if (it.photos.isNotEmpty()) put("photo", it.photo).put("photos", JSONArray(it.photos)) }
-                    .apply { it.archivedAt?.let { at -> put("archivedAt", at) } })
+                    .apply { it.archivedAt?.let { at -> put("archivedAt", at) } }
+                    .apply { it.emoji?.let { e -> put("emoji", e) } })
             }
         })
         .put("habits", JSONArray().apply {
@@ -806,7 +816,7 @@ object NotesStore {
                 val o = notes.getJSONObject(i)
                 o.optLong("updatedAt").let { updated ->
                     Note(o.getLong("id"), o.optString("text"), updated, o.optBoolean("pinned"), o.optLong("createdAt", updated), notePhotos(o),
-                        o.optLong("archivedAt", 0L).takeIf { it > 0L })
+                        o.optLong("archivedAt", 0L).takeIf { it > 0L }, o.optString("emoji").takeIf { it.isNotBlank() })
                 }
             },
             habits = (0 until habits.length()).map { i ->

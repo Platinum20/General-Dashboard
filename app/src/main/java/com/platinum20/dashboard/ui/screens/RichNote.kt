@@ -176,6 +176,8 @@ internal fun RichNoteField(
     findAt: Int = 0,
     /** Le voci in più del menu "/" (foto, scatta, detta…), quando il campo sta in una nota. */
     slashExtras: List<SlashItem> = emptyList(),
+    /** L'indice dei titoli (1.586): la riga che comincia a first va in cima alla pagina; second cambia a ogni tocco. */
+    revealAt: Pair<Int, Int>? = null,
 ) {
     val context = LocalContext.current
     val haptic = rememberHaptic()
@@ -271,6 +273,18 @@ internal fun RichNoteField(
         if (at > l.layoutInput.text.length) return@LaunchedEffect
         val box = l.getCursorRect(at)
         follow.bringIntoView(Rect(box.left, box.top - room * 3, box.right, box.bottom + room * 3))
+    }
+
+    // Un titolo toccato nell'indice sale in cima alla pagina.
+    LaunchedEffect(revealAt) {
+        val at0 = revealAt?.first ?: return@LaunchedEffect
+        withFrameNanos { }
+        val l = layout ?: return@LaunchedEffect
+        val at = transformation.filter(AnnotatedString(value.text)).offsetMapping.originalToTransformed(at0.coerceIn(0, value.text.length))
+        if (at > l.layoutInput.text.length) return@LaunchedEffect
+        val box = l.getCursorRect(at)
+        // Un rettangolo più alto dello schermo: la pagina scorre fino al suo inizio.
+        follow.bringIntoView(Rect(box.left, box.top - room, box.right, box.top + room * 200))
     }
 
     // Trascinare una voce (1.579): tieni premuto il cerchio o il pallino e sposta su o giù. Se non si muove, il fumetto.
@@ -709,7 +723,7 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
             mention != null -> {
                 // "@" (1.584): un'altra nota dentro questa, come link che la apre.
                 val notes by NotesStore.data.collectAsStateWithLifecycle()
-                val hits = notes.notes.filter { it.title.isNotBlank() && it.title.contains(mention.second, ignoreCase = true) }
+                val hits = notes.notes.filter { it.plainTitle.isNotBlank() && it.plainTitle.contains(mention.second, ignoreCase = true) }
                     .sortedByDescending { it.updatedAt }.take(8)
                 if (hits.isEmpty()) BarLabel(Icons.Outlined.Close, if (mention.second.isEmpty()) "Scrivi il nome della nota" else "Nessuna nota \"${mention.second}\"") {}
                 hits.forEach { n ->
@@ -717,7 +731,7 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                         haptic(Haptic.TICK)
                         val now = target.value()
                         val m = mentionQuery(now.text, now.selection.end) ?: return@BarLabel
-                        val e = NoteFormat.noteLink(now.text, m.first, now.selection.end, n.title, n.id)
+                        val e = NoteFormat.noteLink(now.text, m.first, now.selection.end, n.plainTitle, n.id)
                         target.set(TextFieldValue(e.text, TextRange(e.start)))
                     }
                 }

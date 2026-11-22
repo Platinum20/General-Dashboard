@@ -2,6 +2,7 @@ package com.platinum20.dashboard
 
 import com.platinum20.dashboard.notes.NoteFormat
 import com.platinum20.dashboard.notes.NoteLines
+import com.platinum20.dashboard.notes.NoteText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -59,5 +60,38 @@ class NoteEditorBlocksTest {
         assertEquals("uno\n---\ndue", e.text)
         assertEquals("uno\n---\n".length, e.start)
         assertEquals("uno\n---\n", NoteLines.insertDivider("uno", 3).text)
+    }
+}
+
+/** Parte 3 (1.586): ordina, tocco sotto, indice, modello. */
+class NoteEditorListsTest {
+    @Test
+    fun sortAlphaKeepsChildrenAndDoneAtBottom() {
+        val t = "Spesa\n[x] Uova\n[ ] burro\n  [ ] salato\n[ ] Arance\nfine"
+        assertEquals("Spesa\n[ ] Arance\n[ ] burro\n  [ ] salato\n[x] Uova\nfine", NoteLines.sortAlpha(t))
+        assertEquals("2. b\n1. a".let { NoteLines.sortAlpha(it) }, "1. a\n2. b")
+    }
+
+    @Test
+    fun tapBelowOpensANewItem() {
+        assertEquals("- latte\n- pane\n- ", NoteLines.tapBelow("- latte\n- pane").text)
+        assertEquals("1. a\n2. ", NoteLines.tapBelow("1. a").text)
+        assertEquals("  [x] a\n  [ ] ", NoteLines.tapBelow("  [x] a").text)
+        assertEquals("ciao", NoteLines.tapBelow("ciao").text)
+        assertEquals(4, NoteLines.tapBelow("ciao").start)
+        assertEquals("- ", NoteLines.tapBelow("- ").text)
+    }
+
+    @Test
+    fun headingsForTheIndex() {
+        val t = "## Biglietti\nandata\n## **Hotel**\ntesto"
+        assertEquals(listOf(0 to "Biglietti", 20 to "Hotel"), NoteLines.headings(t))
+    }
+
+    @Test
+    fun copyTitleCounts() {
+        assertEquals("Valigia (2)", NoteText.copyTitle("Valigia"))
+        assertEquals("Valigia (3)", NoteText.copyTitle("Valigia (2)"))
+        assertEquals("", NoteText.copyTitle(""))
     }
 }

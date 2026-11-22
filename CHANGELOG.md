@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.586.0
+**Editor delle note più completo (parte 3)**
+- Righe un po' più ariose: il testo lungo si legge meglio
+- Tocchi lo spazio sotto il testo: il cursore va in fondo e, se l'ultima riga è una voce, se ne apre subito una nuova
+- In Altro, "Ordina la lista": dalla A alla Z (le fatte restano in fondo) o prima quelle da fare
+- In Altro, "Usa come modello": una nota nuova uguale, con tutte le spunte da rifare
+- Emoji della nota: la scegli in Altro, compare grande sopra il titolo e piccola davanti al titolo in Appunti e nel Calendario
+- Con almeno 3 titoli, in cima c'è l'indice: tocchi un titolo e la nota scorre lì
 ## 1.585.0
 **Editor delle note più completo (parte 2)**
 - Scrivi "/" per aggiungere un blocco: punti, numeri, spunte, titolo, citazione, riquadro, linea, foto, scatta, detta
