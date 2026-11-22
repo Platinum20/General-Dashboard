@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.579.0
+**Meteo: Alba e Tramonto largo**
+- La casella Alba · Tramonto prende tutta la riga, larga come due caselle
+- Una casella rimasta da sola non lascia più mezza riga vuota
+
 ## 1.578.0
 **Note: più formati insieme**
 - Grassetto e corsivo (o barrato) sulla stessa parola si vedono subito, senza dover spostare il cursore
