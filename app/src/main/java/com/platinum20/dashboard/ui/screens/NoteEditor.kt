@@ -282,7 +282,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
         ActionBubble.show(
             *listOfNotNull(
                 BubbleAction(Icons.Outlined.AddPhotoAlternate, "Foto", "dalla galleria, anche più insieme") { pickPhotos() },
-                BubbleAction(Icons.Outlined.PhotoCamera, "Scatta una foto") { camera.launch(ReceiptReader.photoUri(context)) },
+                BubbleAction(Icons.Outlined.PhotoCamera, "Scatta una foto", "con la fotocamera, va subito nella nota") { camera.launch(ReceiptReader.photoUri(context)) },
                 BubbleAction(Icons.Outlined.Mic, "Detta", "il testo va dove c'è il cursore") { dictate() },
             ).toTypedArray(),
         )

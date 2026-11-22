@@ -4,6 +4,7 @@
 **Note: più formati insieme**
 - Grassetto e corsivo (o barrato) sulla stessa parola si vedono subito, senza dover spostare il cursore
 - Titolo ora sta solo nella barra Aa, insieme a grassetto, corsivo e barrato; nella barra principale restano Punti e Spunta
+- In "Aggiungi", anche "Scatta una foto" ha la sua riga sotto
 ## 1.577.0
 **Note: niente più asterischi**
 - Grassetto, corsivo, barrato e titoletti si vedono già formattati mentre scrivi: asterischi, trattini e cancelletti non compaiono mai, neanche col cursore sopra
