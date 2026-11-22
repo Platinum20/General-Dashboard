@@ -156,7 +156,8 @@ object NoteLines {
         ) {
             val p = cursor - 1
             val line = lineAt(old, p)
-            if (!line.isList || p < line.contentStart) return null
+            // Le voci e la citazione (1.586) continuano nella riga nuova; Invio su una vuota le chiude.
+            if (!(line.isList || line.kind == Kind.QUOTE) || p < line.contentStart) return null
             if (content(old, line).isBlank()) {
                 // Invio su una voce vuota rientrata: torna su di un livello; non rientrata: la lista finisce.
                 if (line.level > 0) {
@@ -323,6 +324,55 @@ object NoteLines {
         flush()
         return out.joinToString("\n")
     }
+
+    /** La nota ha almeno un elenco (punti, numeri o spunte): solo allora "Ordina la lista". */
+    fun hasList(text: String): Boolean = parse(text).any { it.isList }
+
+    /**
+     * "Dalla A alla Z" (1.586): in ogni elenco le voci si mettono in ordine alfabetico, ognuna con le sue sotto-voci;
+     * le spuntate restano in fondo. I numeri si rifanno.
+     */
+    fun sortAlpha(text: String): String {
+        val all = text.split('\n')
+        val out = mutableListOf<String>()
+        var i = 0
+        while (i < all.size) {
+            if (!kindOf(all[i]).first.isListKind()) { out += all[i]; i++; continue }
+            // Un elenco: righe di voci una dopo l'altra. Le voci del livello più basso portano con sé quelle sotto.
+            var j = i
+            while (j < all.size && kindOf(all[j]).first.isListKind()) j++
+            val block = all.subList(i, j)
+            val top = block.minOf { levelOf(it) }
+            val groups = mutableListOf<MutableList<String>>()
+            block.forEach { line -> if (levelOf(line) == top || groups.isEmpty()) groups += mutableListOf(line) else groups.last() += line }
+            out += groups.sortedWith(compareBy<List<String>>({ kindOf(it.first()).second }, { plainLine(it.first()).lowercase() })).flatten()
+            i = j
+        }
+        return renumber(Edit(out.joinToString("\n"), 0)).text
+    }
+
+    private fun Kind.isListKind() = this == Kind.BULLET || this == Kind.CHECK || this == Kind.NUMBER
+
+    /**
+     * Tocco sotto l'ultima riga (1.586): il cursore va in fondo. Se l'ultima riga è una voce scritta, se ne apre una nuova
+     * uguale (stesso rientro, spunta vuota, numero dopo).
+     */
+    fun tapBelow(text: String): Edit {
+        val last = parse(text).lastOrNull() ?: return Edit(text, text.length)
+        if (!last.isList || content(text, last).isBlank()) return Edit(text, text.length)
+        val indent = INDENT.repeat(last.level)
+        val pre = indent + when (last.kind) {
+            Kind.CHECK -> CHECK
+            Kind.NUMBER -> "${last.number + 1}. "
+            else -> BULLET
+        }
+        val t = text + "\n" + pre
+        return Edit(t, t.length)
+    }
+
+    /** I titoli della nota (1.586), per l'indice in cima: dove comincia la riga e il testo. */
+    fun headings(text: String): List<Pair<Int, String>> =
+        parse(text).filter { it.kind == Kind.HEADING }.map { it.start to plainLine(text.substring(it.start, it.end)) }.filter { it.second.isNotEmpty() }
 
     /** Il testo che si legge: senza segni di riga né di formato (righe fuori dall'editor). */
     fun plainLine(line: String): String = NoteFormat.plain(line.substring(kindOf(line).third)).trim()

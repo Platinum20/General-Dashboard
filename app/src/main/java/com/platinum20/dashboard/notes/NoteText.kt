@@ -64,6 +64,13 @@ object NoteText {
     }
 
     /** L'inverso di [split]: una nota con solo il titolo non porta un a capo in fondo. */
+    /** "Usa come modello" (1.586): il titolo della copia, "Valigia" → "Valigia (2)", "Valigia (2)" → "Valigia (3)". */
+    fun copyTitle(title: String): String {
+        val m = Regex("""^(.*?)\s*\((\d{1,3})\)$""").find(title.trim())
+        if (m != null) return "${m.groupValues[1]} (${m.groupValues[2].toInt() + 1})"
+        return if (title.isBlank()) "" else "${title.trim()} (2)"
+    }
+
     fun join(title: String, body: String): String = if (body.isEmpty()) title else "$title\n$body"
 
     /** Inserisce il testo dettato dove sta il cursore, con lo spazio giusto prima e dopo; restituisce testo e cursore. */

@@ -67,6 +67,13 @@ import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material.icons.outlined.VerticalAlignBottom
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.RemoveDone
+import androidx.compose.material.icons.outlined.SortByAlpha
+import androidx.compose.material.icons.outlined.FileCopy
+import androidx.compose.material.icons.outlined.EmojiEmotions
+import androidx.compose.material.icons.automirrored.outlined.Sort
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.height
+import com.platinum20.dashboard.Routes
 import androidx.compose.material.icons.filled.PushPin as PushPinFilled
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -142,7 +149,7 @@ import kotlin.math.roundToInt
  * detta; tenuto premuto = foto subito) e "Altro" a destra. Punti, spunte, titoletti e grassetto stanno solo nella barra
  * sopra la tastiera (1.577). Si salva da sola.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
     val context = LocalContext.current
@@ -170,6 +177,9 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
     var findAt by remember { mutableIntStateOf(0) }
     val found = remember(body.text, finding) { finding?.let { NoteLines.matches(body.text, it) }.orEmpty() }
     BackHandler(enabled = finding != null) { finding = null }
+    // L'indice dei titoli (1.586): il titolo toccato e un numero che cambia a ogni tocco.
+    var reveal by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    val inApp = LocalInAppNav.current
 
     fun save(next: String = NoteText.join(title.text, body.text)) {
         id = NotesStore.saveNote(id, next) ?: id
@@ -296,6 +306,13 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
         )
     }
 
+    /** La riga "Emoji della nota" (1.586): una fila di emoji da toccare, e Togli se c'è già. */
+    fun emojiAction(nid: Long, now: String?): BubbleAction = BubbleAction(
+        Icons.Outlined.EmojiEmotions, "Emoji della nota", "si vede davanti al titolo, anche in Appunti",
+        chips = NOTE_EMOJIS.map { e -> BubbleChip(e, selected = e == now) { NotesStore.setNoteEmoji(nid, if (e == now) null else e) } } +
+            listOfNotNull(if (now != null) BubbleChip("Togli") { NotesStore.setNoteEmoji(nid, null) } else null),
+    )
+
     fun more() {
         haptic(Haptic.LONG_PRESS)
         ActionBubble.show(
@@ -310,14 +327,31 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                         NotesStore.togglePin(nid)
                     }
                 },
+                id?.takeIf { current != null }?.let { nid -> emojiAction(nid, current?.emoji) },
                 if (body.text.isBlank()) null else BubbleAction(Icons.Outlined.Search, "Cerca nella nota", "le parole trovate si colorano") {
                     findAt = 0
                     finding = ""
                 },
                 // Per le liste (1.555): le fatte in fondo, via, o tutte da rifare (la valigia).
-                if (!NoteLines.hasDone(body.text)) null else BubbleAction(Icons.Outlined.VerticalAlignBottom, "Fatte in fondo", "in ogni lista le spuntate scendono") {
-                    body = TextFieldValue(NoteLines.doneToBottom(body.text))
-                    save()
+                // "Ordina la lista" (1.586): dalla A alla Z, o prima quelle da fare (le spuntate scendono).
+                if (!NoteLines.hasList(body.text)) null else BubbleAction(Icons.AutoMirrored.Outlined.Sort, "Ordina la lista", "dalla A alla Z, o prima quelle da fare") {
+                    ActionBubble.show(
+                        *listOfNotNull(
+                            BubbleAction(Icons.Outlined.SortByAlpha, "Dalla A alla Z", "le fatte restano in fondo") {
+                                val before = body.text
+                                body = TextFieldValue(NoteLines.sortAlpha(before))
+                                save()
+                                CaptureFeedback.tell(context, "Lista in ordine", Icons.Outlined.SortByAlpha, "Annulla") {
+                                    body = TextFieldValue(before)
+                                    save()
+                                }
+                            },
+                            if (!NoteLines.hasDone(body.text)) null else BubbleAction(Icons.Outlined.VerticalAlignBottom, "Prima quelle da fare", "le spuntate scendono, l'ordine resta") {
+                                body = TextFieldValue(NoteLines.doneToBottom(body.text))
+                                save()
+                            },
+                        ).toTypedArray(),
+                    )
                 },
                 if (!NoteLines.hasDone(body.text)) null else BubbleAction(Icons.Outlined.RadioButtonUnchecked, "Togli tutte le spunte", "per rifare la stessa lista") {
                     body = TextFieldValue(NoteLines.uncheckAll(body.text))
@@ -331,6 +365,14 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                         body = TextFieldValue(before)
                         save()
                     }
+                },
+                // "Usa come modello" (1.586): una nota nuova uguale, con le spunte da rifare (la valigia, la spesa fissa).
+                if (text.isBlank()) null else BubbleAction(Icons.Outlined.FileCopy, "Usa come modello", "nota nuova, uguale, tutto da rifare") {
+                    save()
+                    val copy = NoteText.join(NoteText.copyTitle(title.text), NoteLines.uncheckAll(body.text))
+                    val nid = NotesStore.saveNote(null, copy) ?: return@BubbleAction
+                    current?.emoji?.let { NotesStore.setNoteEmoji(nid, it) }
+                    inApp?.openRoute(Routes.noteEdit(nid))
                 },
                 if (text.isBlank()) null else BubbleAction(Icons.Outlined.ContentCopy, "Copia il testo", "senza le foto") {
                     Clip.copy(context, "Nota", NoteFormat.plain(text), "Testo copiato")
@@ -442,7 +484,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
         ) { inner ->
             @OptIn(ExperimentalLayoutApi::class)
             val imeOpen = WindowInsets.isImeVisible
-            val bodyStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface, lineHeight = 26.sp)
+            val bodyStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface, lineHeight = 29.sp)
             val titleStyle = MaterialTheme.typography.headlineSmall.copy(color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
             val faint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             Column(
@@ -452,6 +494,20 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     .verticalScroll(rememberScrollState())
                     .padding(vertical = 12.dp),
             ) {
+                // L'emoji della nota (1.586): grande sopra il titolo; tocco o tieni premuto = cambiala.
+                current?.emoji?.let { e ->
+                    Text(
+                        e,
+                        fontSize = 40.sp,
+                        modifier = Modifier
+                            .padding(horizontal = 24.dp)
+                            .padding(bottom = 6.dp)
+                            .combinedClickable(
+                                onClickLabel = "Cambia l'emoji",
+                                onLongClick = { id?.let { nid -> haptic(Haptic.LONG_PRESS); ActionBubble.show(emojiAction(nid, e)) } },
+                            ) { id?.let { nid -> haptic(Haptic.TICK); ActionBubble.show(emojiAction(nid, e)) } },
+                    )
+                }
                 BasicTextField(
                     value = title,
                     onValueChange = { v ->
@@ -491,9 +547,27 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                         onMenu = { path -> haptic(Haptic.LONG_PRESS); ActionBubble.show(*photoActions(path, open = true)) },
                         onMove = { from, to -> id?.let { nid -> NotesStore.editNotePhotos(nid) { NotePhotos.move(it, from, to) } } },
                         onArranging = { arranging = it },
+                        onAdd = { haptic(Haptic.TICK); pickPhotos() },
+                        onAddMenu = { add() },
                     )
                 }
                 Spacer(Modifier.size(12.dp))
+                // L'indice dei titoli (1.586): con almeno 3 titoli, in cima; tocchi e la nota scorre lì.
+                val heads = remember(body.text) { NoteLines.headings(body.text) }
+                if (heads.size >= 3 && finding == null) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 24.dp)
+                            .padding(bottom = 12.dp),
+                    ) {
+                        heads.forEach { (at, name) ->
+                            CanvasChip(selected = false, onClick = { haptic(Haptic.TICK); reveal = at to ((reveal?.second ?: 0) + 1) }, label = name.take(24))
+                        }
+                    }
+                }
                 RichNoteField(
                     value = body,
                     onValueChange = { v ->
@@ -508,6 +582,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     onAllDone = { allDone() },
                     find = finding,
                     findAt = findAt.coerceAtMost((found.size - 1).coerceAtLeast(0)),
+                    revealAt = reveal,
                     slashExtras = listOf(
                         SlashItem(Icons.Outlined.AddPhotoAlternate, "Foto", "dalla galleria") { pickPhotos() },
                         SlashItem(Icons.Outlined.PhotoCamera, "Scatta", "con la fotocamera") { camera.launch(ReceiptReader.photoUri(context)) },
@@ -515,10 +590,23 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     ),
                     // Con la tastiera aperta niente altezza minima: se no la pagina scorre per mostrarla tutta e titolo e foto
                     // finiscono fuori dallo schermo (1.559).
-                    minHeight = if (imeOpen) 0.dp else 320.dp,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp),
+                )
+                // Tocco sotto l'ultima riga (1.586): il cursore va in fondo e, se l'ultima riga è una voce, ne apre una nuova.
+                // Con la tastiera aperta lo spazio è più basso: se no la pagina scorre e titolo e foto escono (1.559).
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(if (imeOpen) 120.dp else 320.dp)
+                        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                            val e = NoteLines.tapBelow(body.text)
+                            val changed = e.text != body.text
+                            body = TextFieldValue(e.text, TextRange(e.start))
+                            if (changed) save()
+                            bodyFocus.requestFocus()
+                        },
                 )
             }
         }
@@ -539,6 +627,9 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
         }
     }
 }
+
+/** Le emoji da scegliere per una nota. */
+private val NOTE_EMOJIS = listOf("📝", "🛒", "🧳", "🍝", "💊", "🏠", "💼", "🎁", "📚", "💡", "❤️", "⭐")
 
 /** Quante foto si scelgono al massimo in una volta dalla galleria. */
 private const val MAX_PICK = 20
@@ -565,7 +656,8 @@ private fun HoldRoundButton(icon: ImageVector, label: String, tint: Color = Mate
 /**
  * Le foto sotto il titolo (1.575): la prima grande, a destra due più piccole una sopra l'altra; scorrendo a destra le
  * altre a pagine 2x2. Tocca = a tutto schermo; tieni premuto e lascia = fumetto; tieni premuto e trascina = cambia
- * l'ordine (le altre si fanno da parte, una vibrazione a ogni posto). Per aggiungerne: "Aggiungi" in basso.
+ * l'ordine (le altre si fanno da parte, una vibrazione a ogni posto). Per ultimo un riquadro col "+" (1.586): tocca =
+ * foto dalla galleria, tieni premuto = anche scatta o detta. Si aggiungono anche da "Aggiungi" in basso.
  */
 @Composable
 private fun PhotoStrip(
@@ -574,14 +666,17 @@ private fun PhotoStrip(
     onMenu: (String) -> Unit,
     onMove: (Int, Int) -> Unit,
     onArranging: (Boolean) -> Unit,
+    onAdd: () -> Unit,
+    onAddMenu: () -> Unit,
 ) {
     BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = 24.dp)) {
-        PhotoMosaic(photos, maxWidth, onOpen, onMenu, onMove, onArranging)
+        PhotoMosaic(photos, maxWidth, onOpen, onMenu, onMove, onArranging, onAdd, onAddMenu)
     }
 }
 
 private val PHOTO_GAP = 8.dp
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun PhotoMosaic(
     photos: List<String>,
@@ -590,10 +685,15 @@ private fun PhotoMosaic(
     onMenu: (String) -> Unit,
     onMove: (Int, Int) -> Unit,
     onArranging: (Boolean) -> Unit,
+    onAdd: () -> Unit,
+    onAddMenu: () -> Unit,
 ) {
     val haptic = rememberHaptic()
     val density = LocalDensity.current
-    val slots = with(density) { NotePhotos.slots(photos.size, width.toPx(), PHOTO_GAP.toPx()) }
+    // Un posto in più, l'ultimo, per il riquadro "+"; le foto si spostano solo fra i loro posti.
+    val withAdd = with(density) { NotePhotos.slots(photos.size + 1, width.toPx(), PHOTO_GAP.toPx()) }
+    val slots = withAdd.take(photos.size)
+    val addSlot = withAdd.last()
     val slop = with(density) { 12.dp.toPx() }
     val current by rememberUpdatedState(photos)
     val places by rememberUpdatedState(slots)
@@ -610,7 +710,7 @@ private fun PhotoMosaic(
         val s = places.getOrNull(from) ?: return from
         return NotePhotos.nearest(places, s.cx + dragX, s.cy + dragY)
     }
-    val totalW = with(density) { NotePhotos.mosaicWidth(slots).toDp() }
+    val totalW = with(density) { NotePhotos.mosaicWidth(withAdd).toDp() }
     val totalH = with(density) { (slots.firstOrNull()?.size ?: 0f).toDp() }
     Box(
         Modifier
@@ -693,6 +793,22 @@ private fun PhotoMosaic(
                         NotePhoto(path, Modifier.fillMaxSize(), crop = true)
                     }
                 }
+            }
+            val ax by animateFloatAsState(addSlot.x, Motion.settle(), label = "x+")
+            val ay by animateFloatAsState(addSlot.y, Motion.settle(), label = "y+")
+            val aside by animateFloatAsState(addSlot.size, Motion.settle(), label = "lato+")
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .offset { androidx.compose.ui.unit.IntOffset(ax.roundToInt(), ay.roundToInt()) }
+                    .size(with(density) { aside.toDp() })
+                    .bouncyPress(0.95f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.card)
+                    .border(cardBorder(), RoundedCornerShape(16.dp))
+                    .combinedClickable(onClickLabel = "Aggiungi foto", onLongClick = onAddMenu, onClick = onAdd),
+            ) {
+                Icon(Icons.Outlined.Add, contentDescription = "Aggiungi foto", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(28.dp))
             }
         }
     }

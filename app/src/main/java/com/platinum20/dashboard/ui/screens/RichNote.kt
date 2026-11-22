@@ -64,6 +64,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.ParagraphStyle
+import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
@@ -77,6 +79,8 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.LinkOff
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.platinum20.dashboard.capture.CaptureFeedback
@@ -139,10 +143,10 @@ object RichBar {
 /** Una voce del menu "/" (1.584): scrivendo "/" a inizio riga. */
 class SlashItem(val icon: ImageVector, val label: String, val detail: String, val run: () -> Unit)
 
-/** La barra si vede solo mentre un campo con le righe scrive e la tastiera è aperta. */
+/** La barra si vede mentre un campo con le righe scrive con la tastiera aperta, o quando c'è del testo scelto. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun richBarShown(): Boolean = RichBar.target != null && WindowInsets.isImeVisible
+internal fun richBarShown(): Boolean = RichBar.target.let { t -> t != null && (WindowInsets.isImeVisible || !t.value().selection.collapsed) }
 
 /**
  * Il posto di cerchio e pallino: lo spazio sottile al posto del segno, allargato con la spaziatura delle lettere.
@@ -176,10 +180,13 @@ internal fun RichNoteField(
     findAt: Int = 0,
     /** Le voci in più del menu "/" (foto, scatta, detta…), quando il campo sta in una nota. */
     slashExtras: List<SlashItem> = emptyList(),
+    /** L'indice dei titoli (1.586): la riga che comincia a first va in cima alla pagina; second cambia a ogni tocco. */
+    revealAt: Pair<Int, Int>? = null,
 ) {
     val context = LocalContext.current
     val haptic = rememberHaptic()
     val colors = MaterialTheme.colorScheme
+    val inApp = LocalInAppNav.current
     val owner = remember { Any() }
     val current by rememberUpdatedState(value)
     val emit by rememberUpdatedState(onValueChange)
@@ -222,8 +229,10 @@ internal fun RichNoteField(
         emit(safe)
     }
 
-    DisposableEffect(focused, readOnly) {
-        if (focused && !readOnly) RichBar.target = RichBar.Target(
+    // Anche con del testo scelto senza tastiera (1.586): la barra Aa deve esserci lo stesso.
+    val choosing = !value.selection.collapsed
+    DisposableEffect(focused, choosing, readOnly) {
+        if ((focused || choosing) && !readOnly) RichBar.target = RichBar.Target(
             owner, { current }, { change(it, typed = false) },
             canUndo = { historyTick; history.canUndo },
             canRedo = { historyTick; history.canRedo },
@@ -271,6 +280,18 @@ internal fun RichNoteField(
         if (at > l.layoutInput.text.length) return@LaunchedEffect
         val box = l.getCursorRect(at)
         follow.bringIntoView(Rect(box.left, box.top - room * 3, box.right, box.bottom + room * 3))
+    }
+
+    // Un titolo toccato nell'indice sale in cima alla pagina.
+    LaunchedEffect(revealAt) {
+        val at0 = revealAt?.first ?: return@LaunchedEffect
+        withFrameNanos { }
+        val l = layout ?: return@LaunchedEffect
+        val at = transformation.filter(AnnotatedString(value.text)).offsetMapping.originalToTransformed(at0.coerceIn(0, value.text.length))
+        if (at > l.layoutInput.text.length) return@LaunchedEffect
+        val box = l.getCursorRect(at)
+        // Un rettangolo più alto dello schermo: la pagina scorre fino al suo inizio.
+        follow.bringIntoView(Rect(box.left, box.top - room, box.right, box.top + room * 200))
     }
 
     // Trascinare una voce (1.579): tieni premuto il cerchio o il pallino e sposta su o giù. Se non si muove, il fumetto.
@@ -457,8 +478,54 @@ internal fun RichNoteField(
                     }
                 }
             } }
+            // I link si toccano (1.586): un tocco apre la nota collegata con "@" o la pagina; tieni premuto = le scelte.
+            if (!readOnly) NoteFormat.spans(text).filter { it.kind == NoteFormat.Kind.LINK || it.kind == NoteFormat.Kind.URL }.forEach { span ->
+                val (url, label) = NoteFormat.linkAt(text, span.start) ?: return@forEach
+                val s0 = shown.toShown(span.start)
+                val e0 = shown.toShown(span.end).coerceAtMost(drawn)
+                if (s0 >= e0) return@forEach
+                val firstRow = l.getLineForOffset(s0)
+                val lastRow = l.getLineForOffset((e0 - 1).coerceAtLeast(s0))
+                for (row in firstRow..lastRow) androidx.compose.runtime.key("l${span.start}-$row") {
+                    val x0 = if (row == firstRow) l.getHorizontalPosition(s0, true) else l.getLineLeft(row)
+                    val x1 = if (row == lastRow) l.getHorizontalPosition(e0, true) else l.getLineRight(row)
+                    val top = l.getLineTop(row)
+                    val w = with(density) { (x1 - x0).coerceAtLeast(1f).toDp() }
+                    val h = with(density) { (l.getLineBottom(row) - top).toDp() }
+                    Box(
+                        Modifier
+                            .offset { IntOffset(minOf(x0, x1).toInt(), top.toInt()) }
+                            .size(w, h)
+                            .combinedClickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onLongClick = {
+                                    haptic(Haptic.LONG_PRESS)
+                                    ActionBubble.show(
+                                        BubbleAction(Icons.AutoMirrored.Outlined.OpenInNew, "Apri", if (url.startsWith(NoteFormat.NOTE_LINK)) "la nota collegata" else "la pagina, dentro Canvas") { openNoteLink(inApp, url, label) },
+                                        BubbleAction(Icons.Outlined.Edit, "Modifica il testo", "il cursore va sul link") {
+                                            emit(TextFieldValue(current.text, TextRange(span.end)))
+                                            focusRequester?.requestFocus()
+                                        },
+                                        BubbleAction(Icons.Outlined.LinkOff, "Togli il link", "resta il testo") {
+                                            val e = NoteFormat.link(current.text, span.start, span.start, null)
+                                            emit(TextFieldValue(e.text, TextRange(e.end)))
+                                        },
+                                    )
+                                },
+                            ) { haptic(Haptic.TICK); openNoteLink(inApp, url, label) },
+                    )
+                }
+            }
         }
     }
+}
+
+/** Apre un link della nota: "nota:ID" = l'altra nota, il resto dentro Canvas. */
+internal fun openNoteLink(inApp: InAppNav?, url: String, label: String) {
+    val id = url.removePrefix(NoteFormat.NOTE_LINK).toLongOrNull()
+    if (url.startsWith(NoteFormat.NOTE_LINK) && id != null) inApp?.openRoute?.invoke(Routes.noteEdit(id))
+    else inApp?.openWeb?.invoke(url, label)
 }
 
 /** Il fumetto del tieni premuto su citazione, riquadro o linea. */
@@ -569,8 +636,15 @@ private fun richText(
         append(styled.subSequence(at, text.length))
         view.lines.filter { it.hasMark && it.prefix > 0 && it.kind != NoteLines.Kind.DIVIDER }.forEach { line ->
             val s = view.toShown(line.start)
+            // Il paragrafo comprende il suo "\n", come vuole Compose: se no il solo "\n" diventa un paragrafo vuoto in più.
+            val e = (view.toShown(line.end) + if (line.end < text.length) 1 else 0).coerceAtMost(length)
             // Ogni livello di sotto-voce sposta il testo di un altro rientro (1.579); citazione e riquadro uno solo.
-            if (s < length) addStyle(SpanStyle(letterSpacing = (INDENT.value * (1 + line.level)).sp), s, s + 1)
+            // Rientro del paragrafo (1.586), non spazio fra lettere: così anche le righe che vanno a capo da sole restano
+            // rientrate accanto alla barra o al cerchio, e il segno ha sempre il suo spazio prima del testo.
+            if (s < e) {
+                val indent = (INDENT.value * (1 + line.level)).sp
+                addStyle(ParagraphStyle(textIndent = TextIndent(firstLine = indent, restLine = indent)), s, e)
+            }
         }
     }
     val mapping = object : OffsetMapping {
@@ -627,10 +701,12 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
     var formats by remember(target.owner) { mutableStateOf(false) }
     val selecting = !v.selection.collapsed
     val line = NoteLines.lineAt(v.text, v.selection.min.coerceIn(0, v.text.length))
-    // Ogni tocco legge il valore di adesso, non quello di quando la barra si è disegnata.
+    // Ogni tocco legge il valore di adesso, non quello di quando la barra si è disegnata. Dal menu "/" il valore di
+    // adesso è quello senza la "/" scritta, che il campo non ha ancora ricevuto ([slashBase]).
+    var slashBase: TextFieldValue? = null
     fun kind(k: NoteLines.Kind) {
         haptic(Haptic.TICK)
-        val now = target.value()
+        val now = slashBase ?: target.value()
         val e = NoteLines.renumber(NoteLines.setKind(now.text, now.selection.min, now.selection.max, k))
         target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
     }
@@ -673,7 +749,7 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
     }
     fun divider() {
         haptic(Haptic.TICK)
-        val now = target.value()
+        val now = slashBase ?: target.value()
         val e = NoteLines.insertDivider(now.text, now.selection.end)
         target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
     }
@@ -689,8 +765,10 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                     val now = target.value()
                     val l = NoteLines.lineAt(now.text, now.selection.end)
                     val t = now.text.removeRange(l.contentStart, now.selection.end.coerceAtLeast(l.contentStart))
-                    target.set(TextFieldValue(t, TextRange(l.contentStart)))
-                    run()
+                    val clean = TextFieldValue(t, TextRange(l.contentStart))
+                    target.set(clean)
+                    slashBase = clean
+                    try { run() } finally { slashBase = null }
                 }
                 val all = listOf(
                     SlashItem(Icons.AutoMirrored.Outlined.FormatListBulleted, "Punti", "elenco puntato") { kind(NoteLines.Kind.BULLET) },
@@ -709,7 +787,7 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
             mention != null -> {
                 // "@" (1.584): un'altra nota dentro questa, come link che la apre.
                 val notes by NotesStore.data.collectAsStateWithLifecycle()
-                val hits = notes.notes.filter { it.title.isNotBlank() && it.title.contains(mention.second, ignoreCase = true) }
+                val hits = notes.notes.filter { it.plainTitle.isNotBlank() && it.plainTitle.contains(mention.second, ignoreCase = true) }
                     .sortedByDescending { it.updatedAt }.take(8)
                 if (hits.isEmpty()) BarLabel(Icons.Outlined.Close, if (mention.second.isEmpty()) "Scrivi il nome della nota" else "Nessuna nota \"${mention.second}\"") {}
                 hits.forEach { n ->
@@ -717,7 +795,7 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                         haptic(Haptic.TICK)
                         val now = target.value()
                         val m = mentionQuery(now.text, now.selection.end) ?: return@BarLabel
-                        val e = NoteFormat.noteLink(now.text, m.first, now.selection.end, n.title, n.id)
+                        val e = NoteFormat.noteLink(now.text, m.first, now.selection.end, n.plainTitle, n.id)
                         target.set(TextFieldValue(e.text, TextRange(e.start)))
                     }
                 }

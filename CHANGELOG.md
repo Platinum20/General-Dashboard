@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.587.0
+**Editor delle note più completo (parte 3)**
+- Righe un po' più ariose: il testo lungo si legge meglio
+- Tocchi lo spazio sotto il testo: il cursore va in fondo e, se l'ultima riga è una voce, se ne apre subito una nuova
+- In Altro, "Ordina la lista": dalla A alla Z (le fatte restano in fondo) o prima quelle da fare
+- In Altro, "Usa come modello": una nota nuova uguale, con tutte le spunte da rifare
+- Emoji della nota: la scegli in Altro, compare grande sopra il titolo e piccola davanti al titolo in Appunti e nel Calendario
+- Con almeno 3 titoli, in cima c'è l'indice: tocchi un titolo e la nota scorre lì
+- Menu "/": scelto un blocco (per esempio Linea), la "/" scritta sparisce
+- Nelle note con foto, dopo l'ultima c'è un riquadro col "+" per aggiungerne altre (tienilo premuto per scattare o dettare)
+- Citazioni, riquadri e voci che vanno a capo restano rientrate accanto alla barra o al cerchio; Invio in una citazione ne continua un'altra riga
+- Fra cerchio e testo delle voci c'è di nuovo un po' di spazio
+- I link nella nota si toccano: un tocco apre la nota collegata con "@" o la pagina; tenendo premuto, Apri, Modifica il testo o Togli il link
+- Scegliendo del testo senza la tastiera aperta compare lo stesso la barra con grassetto e gli altri formati
 ## 1.586.0
 **Copertina fissa per i Salvati**
 - Le playlist "Salvati" di Musica e Video hanno una copertina tutta loro, come i mix: colore fisso, segnalibro e il nome grande, non più l'ultima cosa salvata
