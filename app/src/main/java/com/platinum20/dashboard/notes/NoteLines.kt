@@ -425,15 +425,21 @@ object NoteLines {
      */
     const val PLACE = "\u2009\u200B"
 
+    /** L'aria sopra ogni riga scritta (1.589): un carattere invisibile che l'editor disegna più grande. */
+    const val BREATH = "\u200B"
+
     /**
      * Il testo come lo disegna l'editor: i segni dei formati [hidden] (da [NoteFormat.hidden]) spariscono, il segno di
      * ogni voce diventa [PLACE]. Il cursore non può finire dentro un segno: da lì va sempre dopo.
      */
-    class Shown(val text: String, hidden: List<IntRange> = emptyList()) {
+    class Shown(val text: String, hidden: List<IntRange> = emptyList(), breathe: Boolean = false) {
         data class Cut(val start: Int, val end: Int, val with: String)
 
         val lines: List<Line> = parse(text)
         val cuts: List<Cut> = (lines.filter { it.hasMark && it.prefix > 0 }.map { Cut(it.start, it.contentStart, PLACE) } +
+            // [breathe] (1.589): uno spazio di larghezza zero all'inizio di ogni riga scritta, che l'editor fa più alto: così
+            // c'è aria fra una riga e l'altra (Invio), ma non dentro la stessa riga che va a capo da sola.
+            (if (breathe) lines.filter { !(it.hasMark && it.prefix > 0) }.map { Cut(it.start, it.start, BREATH) } else emptyList()) +
             hidden.map { Cut(it.first, it.last + 1, "") })
             .sortedBy { it.start }
             .fold(mutableListOf<Cut>()) { acc, c -> if (acc.isNotEmpty() && c.start < acc.last().end) acc else acc.apply { add(c) } }

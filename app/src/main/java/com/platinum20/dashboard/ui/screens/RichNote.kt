@@ -179,6 +179,9 @@ private val MARK_SLOT = 20.dp
  */
 private val MARK_SPACE = 46.sp
 
+/** Quanto è alto il carattere invisibile in cima a ogni riga (1.589): l'aria dopo un Invio. */
+private val BREATH_SIZE = 25.sp
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun RichNoteField(
@@ -359,7 +362,7 @@ internal fun RichNoteField(
         // Lo sfondo dei riquadri "da non dimenticare", sotto il testo (1.584).
         layout?.let { l ->
             val text = value.text
-            val shown = NoteLines.Shown(text, NoteFormat.hidden(text) + folds)
+            val shown = NoteLines.Shown(text, NoteFormat.hidden(text) + folds, breathe = true)
             val drawn = l.layoutInput.text.length
             val density = LocalDensity.current
             shown.lines.filter { it.kind == NoteLines.Kind.CALLOUT && !hiddenLine(it) && shown.toShown(it.start) < drawn }.forEach { line ->
@@ -408,14 +411,17 @@ internal fun RichNoteField(
         if (l != null) {
             // Gli stessi segni nascosti del testo disegnato, se no le posizioni scivolano di riga.
             val text = value.text
-            val shown = NoteLines.Shown(text, NoteFormat.hidden(text) + folds)
+            val shown = NoteLines.Shown(text, NoteFormat.hidden(text) + folds, breathe = true)
             val density = LocalDensity.current
             val drawn = l.layoutInput.text.length
             shown.lines.filter { it.isList && !hiddenLine(it) && shown.toShown(it.start) < drawn }.forEach { line -> androidx.compose.runtime.key(line.index) {
                 val at = shown.toShown(line.start)
                 val row = l.getLineForOffset(at)
-                val top = l.getLineTop(row)
-                val height = with(density) { (l.getLineBottom(row) - top).toDp() }
+                // Il segno sta all'altezza delle lettere, non a metà della riga: sopra c'è l'aria dopo l'Invio (1.589).
+                val fontPx = with(density) { if (textStyle.fontSize.isSp) textStyle.fontSize.toPx() else 16.sp.toPx() }
+                val base = l.getLineBaseline(row)
+                val top = (base - fontPx * 1.05f).coerceAtLeast(l.getLineTop(row))
+                val height = with(density) { ((base + fontPx * 0.35f).coerceAtMost(l.getLineBottom(row)) - top).toDp() }
                 // Il segno si misura da dove comincia il testo della voce (1.583): un rientro prima del testo. Così il cerchio
                 // di una voce sta sul bordo del testo normale, non fuori a sinistra, e le sotto-voci scalano di un rientro.
                 val textX = l.getHorizontalPosition(shown.toShown(line.contentStart).coerceAtMost(drawn), true)
@@ -823,7 +829,7 @@ private fun richText(
         }
         marks.forEach { (r, style) -> if (r.last < text.length) addStyle(style, r.first, r.last + 1) }
     }
-    val view = NoteLines.Shown(text, NoteFormat.hidden(text) + folds)
+    val view = NoteLines.Shown(text, NoteFormat.hidden(text) + folds, breathe = true)
     if (view.cuts.isEmpty()) return TransformedText(styled, OffsetMapping.Identity)
     val shown = buildAnnotatedString {
         var at = 0
@@ -839,6 +845,12 @@ private fun richText(
             // Spazio fra lettere sul posto del segno, mai ParagraphStyle: ogni voce diventava un paragrafo con una riga
             // vuota sotto (1.556, di nuovo nella 1.587).
             if (s < length) addStyle(SpanStyle(letterSpacing = (MARK_SPACE.value * (1 + line.level)).sp), s, s + 1)
+        }
+        // L'aria fra le righe (1.589): il carattere invisibile in cima a ogni riga è più grande del testo, così la riga
+        // dopo un Invio ha più spazio sopra; le righe che vanno a capo da sole restano strette.
+        view.lines.filter { folds.none { f -> it.start in f } }.forEach { line ->
+            val at = view.toShown(line.start) + if (line.hasMark && line.prefix > 0) 1 else 0
+            if (at < length) addStyle(SpanStyle(fontSize = BREATH_SIZE), at, at + 1)
         }
     }
     val mapping = object : OffsetMapping {

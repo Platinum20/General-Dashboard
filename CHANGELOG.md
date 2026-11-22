@@ -4,6 +4,7 @@
 **Note: elenchi di nuovo compatti**
 - Tolto lo spazio enorme fra le voci di punti e numeri (e sopra l'elenco) arrivato con la 1.587
 - Fra il cerchio o il pallino e il testo resta un po' d'aria
+- Righe più strette quando vanno a capo da sole, più aria dopo un Invio
 ## 1.588.0
 **Editor delle note completo**
 - "@" collega anche promemoria, cose da fare, abitudini, pacchi, documenti e le sezioni (Meteo, SIM, Calendario, News, Musica…): un tocco le apre
