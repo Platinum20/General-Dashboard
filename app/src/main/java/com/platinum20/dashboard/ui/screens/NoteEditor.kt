@@ -508,6 +508,11 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     onAllDone = { allDone() },
                     find = finding,
                     findAt = findAt.coerceAtMost((found.size - 1).coerceAtLeast(0)),
+                    slashExtras = listOf(
+                        SlashItem(Icons.Outlined.AddPhotoAlternate, "Foto", "dalla galleria") { pickPhotos() },
+                        SlashItem(Icons.Outlined.PhotoCamera, "Scatta", "con la fotocamera") { camera.launch(ReceiptReader.photoUri(context)) },
+                        SlashItem(Icons.Outlined.Mic, "Detta", "dove c'è il cursore") { dictate() },
+                    ),
                     // Con la tastiera aperta niente altezza minima: se no la pagina scorre per mostrarla tutta e titolo e foto
                     // finiscono fuori dallo schermo (1.559).
                     minHeight = if (imeOpen) 0.dp else 320.dp,

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.584.0
+**Editor delle note più completo (parte 2)**
+- Scrivi "/" per aggiungere un blocco: punti, numeri, spunte, titolo, citazione, riquadro, linea, foto, scatta, detta
+- Scrivi "@" e il nome di un'altra nota: diventa un link che la apre
+- Nella barra Aa: Evidenzia (sfondo giallo) e Link (incolla l'indirizzo copiato sul testo scelto). Gli indirizzi scritti nella nota si colorano e con il cursore sopra compare il tasto per aprirli
+- Citazione con la barra a sinistra, riquadro con un'emoji che cambi tenendolo premuto, linea per separare due parti
 ## 1.583.0
 **Note: cerchi e pallini allineati**
 - Cerchi, pallini e numeri delle voci stanno sul bordo del testo, non sporgono più a sinistra; il testo della voce comincia subito dopo
