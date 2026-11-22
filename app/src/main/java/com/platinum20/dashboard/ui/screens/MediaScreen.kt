@@ -299,10 +299,8 @@ fun MediaScreen(
                     val big = bigVideoWidth()
                     val bigHeight = big * 9f / 16f
                     LazyRow(state = rememberRowAtStart(), contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        // Ognuno con la sua copertina (2026-11-21, Antonio); se sono tanti, in fondo l'elenco intero.
-                        val (savedShown, savedMore) = savedRow(savedVideos)
-                        items(savedShown, key = { "saved-" + it.note.id }) { SavedItemTile(bigHeight, it, wide = true) }
-                        if (savedMore) item(key = "saved") {
+                        // La playlist "Salvati", sempre la prima (2026-11-22, Antonio); senza salvati non c'è.
+                        if (savedVideos.isNotEmpty()) item(key = "saved") {
                             SavedTile(bigHeight, savedVideos, wide = true) { onOpenRoute(Routes.savedMedia(video = true)) }
                         }
                         items(subsRow, key = { "sub-" + it.id }) { v ->
