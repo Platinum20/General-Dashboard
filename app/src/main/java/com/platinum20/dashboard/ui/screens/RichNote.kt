@@ -64,8 +64,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.ParagraphStyle
-import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
@@ -174,6 +172,12 @@ private val INDENT = 30.sp
 
 /** Il posto del cerchio (19 dp) e del pallino, allineato al bordo del testo. */
 private val MARK_SLOT = 20.dp
+
+/**
+ * Lo spazio fra lettere sul posto del segno (1.589): il telefono ne usa circa sei decimi (metà va prima della prima
+ * lettera della riga e si perde), quindi 46 sp danno circa 28 dp: il cerchio da 20 dp e un po' d'aria prima del testo.
+ */
+private val MARK_SPACE = 46.sp
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -831,15 +835,10 @@ private fun richText(
         append(styled.subSequence(at, text.length))
         view.lines.filter { it.hasMark && it.prefix > 0 && it.kind != NoteLines.Kind.DIVIDER && it.kind != NoteLines.Kind.TABLE && folds.none { f -> it.start in f } }.forEach { line ->
             val s = view.toShown(line.start)
-            // Il paragrafo comprende il suo "\n", come vuole Compose: se no il solo "\n" diventa un paragrafo vuoto in più.
-            val e = (view.toShown(line.end) + if (line.end < text.length) 1 else 0).coerceAtMost(length)
             // Ogni livello di sotto-voce sposta il testo di un altro rientro (1.579); citazione e riquadro uno solo.
-            // Rientro del paragrafo (1.586), non spazio fra lettere: così anche le righe che vanno a capo da sole restano
-            // rientrate accanto alla barra o al cerchio, e il segno ha sempre il suo spazio prima del testo.
-            if (s < e) {
-                val indent = (INDENT.value * (1 + line.level)).sp
-                addStyle(ParagraphStyle(textIndent = TextIndent(firstLine = indent, restLine = indent)), s, e)
-            }
+            // Spazio fra lettere sul posto del segno, mai ParagraphStyle: ogni voce diventava un paragrafo con una riga
+            // vuota sotto (1.556, di nuovo nella 1.587).
+            if (s < length) addStyle(SpanStyle(letterSpacing = (MARK_SPACE.value * (1 + line.level)).sp), s, s + 1)
         }
     }
     val mapping = object : OffsetMapping {
