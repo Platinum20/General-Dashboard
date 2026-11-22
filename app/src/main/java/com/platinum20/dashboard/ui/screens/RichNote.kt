@@ -27,6 +27,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.outlined.ArrowDownward
@@ -234,7 +238,13 @@ internal fun RichNoteField(
     fun change(v: TextFieldValue, typed: Boolean = true) {
         val old = current
         var next = v
-        if (typed && v.text != old.text && v.selection.collapsed) {
+        // Un link "@" si cancella tutto insieme (1.589): basta togliere una lettera.
+        // Tabella, linea e vocale sono pezzi unici (1.589): la tastiera non li rompe.
+        val guard = if (typed && v.text != old.text) NoteLines.guardBlocks(old.text, v.text) else null
+        val mention = if (guard == null && typed && v.selection.collapsed) NoteFormat.deleteMention(old.text, v.text, v.selection.end) else null
+        if (guard != null) next = TextFieldValue(guard.text, TextRange(guard.start))
+        else if (mention != null) next = TextFieldValue(mention.text, TextRange(mention.start))
+        else if (typed && v.text != old.text && v.selection.collapsed) {
             NoteLines.afterEdit(old.text, v.text, v.selection.end)?.let { next = TextFieldValue(it.text, TextRange(it.start, it.end)) }
             // I segni dei formati non si vedono (1.577): la tastiera non deve poterli rompere.
             NoteFormat.afterEdit(old.text, old.selection.start, old.selection.end, next.text, next.selection.end)?.let {
@@ -380,6 +390,29 @@ internal fun RichNoteField(
                         .background(colors.card),
                 )
             }
+            // Le bolle dei link "@" (1.589), sotto il testo: una per riga se il link va a capo.
+            NoteFormat.mentions(text).filter { r -> folds.none { r.first in it } }.forEach { r ->
+                val s0 = shown.toShown(r.first)
+                val e0 = shown.toShown(r.last + 1).coerceAtMost(drawn)
+                if (s0 >= e0) return@forEach
+                val firstRow = l.getLineForOffset(s0)
+                val lastRow = l.getLineForOffset((e0 - 1).coerceAtLeast(s0))
+                val pad = with(density) { 5.dp.toPx() }
+                val fontPx = with(density) { if (textStyle.fontSize.isSp) textStyle.fontSize.toPx() else 16.sp.toPx() }
+                for (row in firstRow..lastRow) {
+                    val x0 = (if (row == firstRow) l.getHorizontalPosition(s0, true) else l.getLineLeft(row)) - pad
+                    val x1 = (if (row == lastRow) l.getHorizontalPosition(e0, true) else l.getLineRight(row)) + pad
+                    val base = l.getLineBaseline(row)
+                    val top = base - fontPx * 1.1f
+                    Box(
+                        Modifier
+                            .offset { IntOffset(x0.coerceAtLeast(0f).toInt(), top.toInt()) }
+                            .size(with(density) { (x1 - x0).coerceAtLeast(1f).toDp() }, with(density) { (fontPx * 1.5f).toDp() })
+                            .clip(RoundedCornerShape(50))
+                            .background(colors.primary.copy(alpha = 0.14f)),
+                    )
+                }
+            }
         }
         BasicTextField(
             value = value,
@@ -502,7 +535,7 @@ internal fun RichNoteField(
                 }
             } }
             // Citazione, riquadro e linea (1.584): la barra, l'emoji, la linea. Tieni premuto per le scelte.
-            shown.lines.filter { it.hasMark && !it.isList && it.kind != NoteLines.Kind.TABLE && !hiddenLine(it) && shown.toShown(it.start) < drawn }.forEach { line -> androidx.compose.runtime.key("m${line.index}") {
+            shown.lines.filter { it.hasMark && !it.isList && it.kind != NoteLines.Kind.TABLE && it.kind != NoteLines.Kind.AUDIO && !hiddenLine(it) && shown.toShown(it.start) < drawn }.forEach { line -> androidx.compose.runtime.key("m${line.index}") {
                 val at = shown.toShown(line.start)
                 val first = l.getLineForOffset(at)
                 val last = l.getLineForOffset(shown.toShown(line.end).coerceAtMost(drawn))
@@ -540,7 +573,7 @@ internal fun RichNoteField(
                 }
             } }
             // I link si toccano (1.586): un tocco apre la nota collegata con "@" o la pagina; tieni premuto = le scelte.
-            if (!readOnly) NoteFormat.spans(text).filter { (it.kind == NoteFormat.Kind.LINK || it.kind == NoteFormat.Kind.URL) && folds.none { f -> it.start in f } }.forEach { span ->
+            if (!readOnly) NoteFormat.spans(text).filter { (it.kind == NoteFormat.Kind.LINK || it.kind == NoteFormat.Kind.URL) && folds.none { f -> it.start in f } && NoteLines.lineAt(text, it.start).kind != NoteLines.Kind.AUDIO }.forEach { span ->
                 val (url, label) = NoteFormat.linkAt(text, span.start) ?: return@forEach
                 val s0 = shown.toShown(span.start)
                 val e0 = shown.toShown(span.end).coerceAtMost(drawn)
@@ -610,6 +643,38 @@ internal fun RichNoteField(
                         )
                         if (closed) Text("$count", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
                     }
+                }
+            }
+            // Il vocale (1.589): una barra larga quanto la nota, alta una riga. Play/pausa, avanzamento (si tocca per andare
+            // a un punto), durata. Tieni premuto = le scelte.
+            shown.lines.filter { it.kind == NoteLines.Kind.AUDIO && !hiddenLine(it) && shown.toShown(it.start) < drawn }.forEach { line ->
+                val link = NoteFormat.linkAt(text, text.indexOf('[', line.start).coerceAtLeast(line.start)) ?: return@forEach
+                val path = link.first.removePrefix(NoteAudio.SCHEME)
+                val row = l.getLineForOffset(shown.toShown(line.start))
+                val top = l.getLineTop(row)
+                val bottom = l.getLineBottom(row)
+                androidx.compose.runtime.key("a${line.start}:$path") {
+                    AudioPill(
+                        path = path,
+                        label = link.second,
+                        modifier = Modifier
+                            .offset { IntOffset(0, top.toInt()) }
+                            .fillMaxWidth()
+                            .height(with(density) { (bottom - top).toDp() }),
+                        onLongPress = if (readOnly) null else ({
+                            haptic(Haptic.LONG_PRESS)
+                            ActionBubble.show(
+                                BubbleAction(Icons.Outlined.Delete, "Togli il vocale", "con Annulla", danger = true) {
+                                    val before = current
+                                    val l2 = NoteLines.parse(before.text).firstOrNull { it.start == line.start && it.kind == NoteLines.Kind.AUDIO } ?: return@BubbleAction
+                                    val t = NoteLines.remove(before.text, l2.index)
+                                    NoteAudio.stopPlaying()
+                                    emit(TextFieldValue(t, TextRange(l2.start.coerceIn(0, t.length))))
+                                    CaptureFeedback.tell(context, "Vocale tolto", Icons.Outlined.Delete, "Annulla") { emit(before) }
+                                },
+                            )
+                        }),
+                    )
                 }
             }
             // La tabella (1.588): le righe "| a | b |" sono nascoste, qui sopra le caselle. Tocco = si cambia; tieni premuto = scelte.
@@ -816,7 +881,10 @@ private fun richText(
                 NoteFormat.Kind.MARK -> null
                 // Evidenziatore (1.584): uno sfondo giallo chiaro, l'unico colore che non vuol dire niente altro.
                 NoteFormat.Kind.HIGHLIGHT -> SpanStyle(background = marker)
-                NoteFormat.Kind.LINK, NoteFormat.Kind.URL -> SpanStyle(color = accent, textDecoration = TextDecoration.Underline)
+                // I link "@" stanno in una bolla (disegnata sotto il testo), senza sottolineatura (1.589).
+                NoteFormat.Kind.LINK, NoteFormat.Kind.URL ->
+                    if (s.kind == NoteFormat.Kind.LINK && NoteFormat.linkAt(text, s.start)?.first?.let(NoteFormat::isMention) == true) SpanStyle(color = accent)
+                    else SpanStyle(color = accent, textDecoration = TextDecoration.Underline)
             }
             if (style != null) addStyle(style, s.start, s.end)
         }
@@ -839,7 +907,7 @@ private fun richText(
             at = c.end
         }
         append(styled.subSequence(at, text.length))
-        view.lines.filter { it.hasMark && it.prefix > 0 && it.kind != NoteLines.Kind.DIVIDER && it.kind != NoteLines.Kind.TABLE && folds.none { f -> it.start in f } }.forEach { line ->
+        view.lines.filter { it.hasMark && it.prefix > 0 && !it.isBlock && folds.none { f -> it.start in f } }.forEach { line ->
             val s = view.toShown(line.start)
             // Ogni livello di sotto-voce sposta il testo di un altro rientro (1.579); citazione e riquadro uno solo.
             // Spazio fra lettere sul posto del segno, mai ParagraphStyle: ogni voce diventava un paragrafo con una riga
@@ -942,7 +1010,7 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
     // Una data scritta nella riga del cursore (1.588): "venerdì alle 15 dentista" → il tasto per metterla nel Calendario.
     val lineText = v.text.substring(line.start, line.end)
     val dated = remember(lineText) {
-        if (line.kind == NoteLines.Kind.TABLE || NoteFormat.linkAt(lineText, 0) != null || lineText.contains("](")) null
+        if (line.isBlock || NoteFormat.linkAt(lineText, 0) != null || lineText.contains("](")) null
         else NoteLines.plainLine(lineText).takeIf { it.length >= 4 }?.let { p -> QuickParse.parse(p).due?.let { p to it } }
     }
     fun toCalendar() {
@@ -1168,5 +1236,67 @@ internal fun DetailRichRow(key: Any, icon: ImageVector, value: String, placehold
             sendToTodo = true,
             modifier = Modifier.weight(1f),
         )
+    }
+}
+
+/** La barra di un vocale nella nota (1.589): play/pausa all'inizio, l'avanzamento che si tocca, la durata in fondo. */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+private fun AudioPill(path: String, label: String, modifier: Modifier, onLongPress: (() -> Unit)?) {
+    val colors = MaterialTheme.colorScheme
+    val playing by NoteAudio.playing.collectAsStateWithLifecycle()
+    val paused by NoteAudio.paused.collectAsStateWithLifecycle()
+    val mine = playing == path
+    val running = mine && !paused
+    var progress by remember { mutableFloatStateOf(0f) }
+    val total = remember(path) { NoteAudio.length(path) }
+    LaunchedEffect(mine, paused) {
+        if (!mine) { progress = 0f; return@LaunchedEffect }
+        progress = NoteAudio.progress(path)
+        while (running) { progress = NoteAudio.progress(path); kotlinx.coroutines.delay(100) }
+    }
+    // Senza il file (nota da un altro telefono, file tolto) resta la durata scritta nella riga.
+    val written = Regex("""\d+:\d{2}""").find(label)?.value
+    val shownTime = if (mine && total > 0) NoteAudio.duration((total * progress).toLong().coerceAtLeast(1000)) else if (total > 0) NoteAudio.duration(total) else written ?: ""
+    Row(
+        modifier = modifier
+            .padding(vertical = 2.dp)
+            .clip(RoundedCornerShape(50))
+            .background(colors.card)
+            .border(cardBorder(), RoundedCornerShape(50))
+            .combinedClickable(onClick = { NoteAudio.toggle(path) }, onLongClick = onLongPress)
+            .padding(start = 4.dp, end = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Box(
+            Modifier
+                .fillMaxHeight()
+                .aspectRatio(1f, matchHeightConstraintsFirst = true)
+                .padding(3.dp)
+                .clip(androidx.compose.foundation.shape.CircleShape)
+                .background(colors.primary),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                if (running) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                contentDescription = if (running) "Pausa" else "Ascolta",
+                tint = colors.onPrimary,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+        Box(
+            Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .pointerInput(path) {
+                    detectTapGestures { o -> NoteAudio.seek(path, o.x / size.width) }
+                },
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            Box(Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(50)).background(colors.onSurface.copy(alpha = 0.12f)))
+            Box(Modifier.fillMaxWidth(progress.coerceIn(0f, 1f)).height(4.dp).clip(RoundedCornerShape(50)).background(colors.primary))
+        }
+        Text(shownTime, style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant, maxLines = 1)
     }
 }

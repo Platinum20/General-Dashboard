@@ -5,6 +5,9 @@
 - Tolto lo spazio enorme fra le voci di punti e numeri (e sopra l'elenco) arrivato con la 1.587
 - Fra il cerchio o il pallino e il testo resta un po' d'aria
 - Righe più strette quando vanno a capo da sole, più aria dopo un Invio
+- I collegamenti "@" stanno in una bolla e si cancellano tutti insieme, basta togliere una lettera
+- Tabella, linea e vocali non si rompono più: il cursore non ci entra, scrivere va nella riga sotto, Indietro li toglie interi (con Annulla)
+- I vocali sono una barra larga quanto la nota: play/pausa all'inizio, l'avanzamento che si tocca per andare a un punto, la durata
 ## 1.588.0
 **Editor delle note completo**
 - "@" collega anche promemoria, cose da fare, abitudini, pacchi, documenti e le sezioni (Meteo, SIM, Calendario, News, Musica…): un tocco le apre

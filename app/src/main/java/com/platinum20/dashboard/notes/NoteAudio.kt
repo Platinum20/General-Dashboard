@@ -11,7 +11,7 @@ import java.io.File
 
 /**
  * L'audio nella nota (1.588): si registra dal tasto Aggiungi e nella nota resta una riga-link
- * `[🎙 Audio 0:12](audio:/percorso)`; toccandola si ascolta, toccandola di nuovo si ferma. Il file sta nell'app.
+ * `[🎙 Audio 0:12](audio:/percorso)`; l'editor ci disegna sopra una barra con play/pausa, avanzamento e durata. Il file sta nell'app.
  */
 object NoteAudio {
     const val SCHEME = "audio:"
@@ -85,21 +85,60 @@ object NoteAudio {
         return "%d:%02d".format(s / 60, s % 60)
     }
 
-    /** Tocco sulla riga: suona, o si ferma se stava già suonando. */
+    /** In pausa (1.589): il file resta pronto in [playing] e riparte da dove era. */
+    private val _paused = MutableStateFlow(false)
+    val paused: StateFlow<Boolean> = _paused.asStateFlow()
+
+    /** Il tasto play/pausa della barra: suona, mette in pausa o riprende. */
     fun toggle(path: String) {
-        if (_playing.value == path) { stopPlaying(); return }
+        val p = player
+        if (_playing.value == path && p != null) {
+            runCatching { if (p.isPlaying) { p.pause(); _paused.value = true } else { pauseOthers(); p.start(); _paused.value = false } }
+            return
+        }
+        play(path, 0f)
+    }
+
+    /** Toccando la barra di avanzamento: va a quel punto ([fraction] da 0 a 1) e suona. */
+    fun seek(path: String, fraction: Float) {
+        val p = player
+        if (_playing.value == path && p != null) {
+            runCatching { p.seekTo((p.duration * fraction.coerceIn(0f, 1f)).toInt()); if (!p.isPlaying) { pauseOthers(); p.start(); _paused.value = false } }
+            return
+        }
+        play(path, fraction)
+    }
+
+    /** Dove è arrivato [path], da 0 a 1 (0 se non è lui a suonare). */
+    fun progress(path: String): Float {
+        val p = player ?: return 0f
+        if (_playing.value != path) return 0f
+        return runCatching { if (p.duration > 0) p.currentPosition.toFloat() / p.duration else 0f }.getOrDefault(0f)
+    }
+
+    /** Quanto dura [path] in millisecondi (dal file), 0 se non si legge. */
+    fun length(path: String): Long = runCatching {
+        val r = android.media.MediaMetadataRetriever()
+        try { r.setDataSource(path); r.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong() ?: 0L } finally { r.release() }
+    }.getOrDefault(0L)
+
+    // Una sola cosa suona alla volta: il player di Canvas si mette in pausa.
+    private fun pauseOthers() { runCatching { com.platinum20.dashboard.media.CanvasPlayer.pause() } }
+
+    private fun play(path: String, from: Float) {
         stopPlaying()
         if (!File(path).exists()) return
-        // Una sola cosa suona alla volta: il player di Canvas si mette in pausa.
-        runCatching { com.platinum20.dashboard.media.CanvasPlayer.pause() }
+        pauseOthers()
         runCatching {
             player = MediaPlayer().apply {
                 setDataSource(path)
                 setOnCompletionListener { stopPlaying() }
                 prepare()
+                if (from > 0f) seekTo((duration * from.coerceIn(0f, 1f)).toInt())
                 start()
             }
             _playing.value = path
+            _paused.value = false
         }.onFailure { stopPlaying() }
     }
 
@@ -107,5 +146,6 @@ object NoteAudio {
         player?.let { runCatching { it.stop() }; it.release() }
         player = null
         _playing.value = null
+        _paused.value = false
     }
 }
