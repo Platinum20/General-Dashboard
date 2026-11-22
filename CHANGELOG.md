@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.591.0
+**Spunte quadrate**
+- Tutte le spunte ora sono quadratini con gli angoli arrotondati, come in Notion: vuoti col bordo, pieni con la ✓ quando è fatto
+- Ovunque: Da fare e abitudini in Home, Calendario, archivi, pagina dell'abitudine e widget Da fare
+
 ## 1.590.0
 **Note: sette idee prese da Notion**
 - Trasforma in: tieni premuta una voce (o scegli del testo, tasto nella barra) e diventa testo, titolo, punti, numeri, spunta, citazione o riquadro

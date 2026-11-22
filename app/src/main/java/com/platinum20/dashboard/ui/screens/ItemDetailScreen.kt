@@ -4,14 +4,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.CheckBox
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.EventBusy
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.QrCode2
-import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Notifications
@@ -187,20 +187,20 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
     // L'azione di tutti i giorni in basso a sinistra, come la lista nell'editor delle note (Antonio).
     val action: Triple<ImageVector, String, () -> Unit>? = when (kind) {
         ItemKind.TASK -> data.tasks.firstOrNull { it.id == id }?.takeIf { it.tickable }?.let { t ->
-            Triple(if (t.done) Icons.Outlined.RadioButtonUnchecked else Icons.Outlined.CheckCircle, if (t.done) "Da rifare" else "Segna come fatto") {
+            Triple(if (t.done) Icons.Outlined.CheckBoxOutlineBlank else Icons.Outlined.CheckBox, if (t.done) "Da rifare" else "Segna come fatto") {
                 haptic(if (t.done) Haptic.TICK else Haptic.CONFIRM)
                 NotesStore.toggleTask(id)
             }
         }
         ItemKind.HABIT -> data.habits.firstOrNull { it.id == id }?.let { h ->
             val done = h.isDone(LocalDate.now())
-            Triple(if (done) Icons.Outlined.RadioButtonUnchecked else Icons.Outlined.CheckCircle, if (done) "Non fatta oggi" else "Fatta oggi") {
+            Triple(if (done) Icons.Outlined.CheckBoxOutlineBlank else Icons.Outlined.CheckBox, if (done) "Non fatta oggi" else "Fatta oggi") {
                 haptic(if (done) Haptic.TICK else Haptic.CONFIRM)
                 NotesStore.toggleHabit(id)
             }
         }
         ItemKind.PARCEL -> data.parcels.firstOrNull { it.id == id }?.let { p ->
-            Triple(if (p.delivered) Icons.Outlined.RadioButtonUnchecked else Icons.Outlined.CheckCircle, if (p.delivered) "Non ancora arrivato" else "È arrivato") {
+            Triple(if (p.delivered) Icons.Outlined.CheckBoxOutlineBlank else Icons.Outlined.CheckBox, if (p.delivered) "Non ancora arrivato" else "È arrivato") {
                 haptic(if (p.delivered) Haptic.TICK else Haptic.CONFIRM)
                 NotesStore.toggleDelivered(id)
             }

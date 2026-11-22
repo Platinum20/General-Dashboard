@@ -339,13 +339,12 @@ fun TimelineRow(
             TripBlock(trip, tint, entry.past, Modifier.weight(1f), Modifier.sharedItem(SharedRows.key(sharedScope, entry.key)), rail = false)
         } else {
         if (onIcon != null || entry.done) {
-            Icon(
-                if (shownDone) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
-                contentDescription = if (shownDone) "Da fare" else "Fatto",
-                tint = if (shownDone) MaterialTheme.colorScheme.primary else tint,
-                modifier = Modifier.size(20.dp)
-                    .graphicsLayer { scaleX = pop.value; scaleY = pop.value }
-                    .clip(CircleShape).then(if (tick != null) Modifier.clickable(onClick = tick) else Modifier),
+            CanvasCheck(
+                shownDone,
+                border = tint,
+                description = if (shownDone) "Da fare" else "Fatto",
+                modifier = Modifier.graphicsLayer { scaleX = pop.value; scaleY = pop.value },
+                onToggle = tick,
             )
             Spacer(Modifier.width(8.dp))
         } else if (entry.image != null) {

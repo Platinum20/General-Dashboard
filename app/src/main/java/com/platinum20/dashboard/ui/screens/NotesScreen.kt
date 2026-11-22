@@ -13,6 +13,7 @@ import com.platinum20.dashboard.Routes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.lazy.LazyRow
@@ -575,7 +576,7 @@ private fun habitItems(habits: List<Habit>, onDeleted: (Habit) -> Unit): LazyLis
                                     Box(
                                         Modifier
                                             .size(14.dp)
-                                            .clip(CircleShape)
+                                            .clip(RoundedCornerShape(3.5.dp))
                                             .background(
                                                 when {
                                                     done -> MaterialTheme.colorScheme.primary
@@ -584,7 +585,7 @@ private fun habitItems(habits: List<Habit>, onDeleted: (Habit) -> Unit): LazyLis
                                                 }
                                             )
                                             .then(
-                                                if (missingToday) Modifier.border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                                if (missingToday) Modifier.border(1.5.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(3.5.dp))
                                                 else Modifier
                                             ),
                                     )
@@ -597,22 +598,17 @@ private fun habitItems(habits: List<Habit>, onDeleted: (Habit) -> Unit): LazyLis
                             }
                         }
                     }
-                    // Da fare: cerchio vuoto con il bordo; fatta: pieno con l'accento e la spunta.
-                    val toggle: (Boolean) -> Unit = {
-                        haptic(if (it) Haptic.CONFIRM else Haptic.TICK)
-                        NotesStore.toggleHabit(habit.id)
-                    }
-                    if (doneToday) {
-                        FilledIconToggleButton(checked = true, onCheckedChange = toggle, modifier = Modifier.size(48.dp)) {
-                            Icon(Icons.Outlined.Check, contentDescription = "Fatta oggi")
+                    // La spunta quadrata di Canvas, grande perché è l'azione della scheda.
+                    Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                        CanvasCheck(
+                            doneToday,
+                            size = 28.dp,
+                            border = MaterialTheme.colorScheme.outline,
+                            description = if (doneToday) "Fatta oggi" else "Segna fatta oggi",
+                        ) {
+                            haptic(if (!doneToday) Haptic.CONFIRM else Haptic.TICK)
+                            NotesStore.toggleHabit(habit.id)
                         }
-                    } else {
-                        OutlinedIconToggleButton(
-                            checked = false,
-                            onCheckedChange = toggle,
-                            border = BorderStroke(2.dp, MaterialTheme.colorScheme.outline),
-                            modifier = Modifier.size(48.dp).semantics { contentDescription = "Segna fatta oggi" },
-                        ) {}
                     }
                 }
             }
@@ -731,10 +727,12 @@ private fun TaskRow(task: TaskItem, onDeleted: (TaskItem) -> Unit, trailing: (@C
             .padding(start = 4.dp, top = 2.dp, bottom = 2.dp, end = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Checkbox(checked = task.done, onCheckedChange = {
-            haptic(if (task.done) Haptic.TICK else Haptic.CONFIRM)
-            NotesStore.toggleTask(task.id)
-        })
+        Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+            CanvasCheck(task.done, description = if (task.done) "Da fare" else "Fatto") {
+                haptic(if (task.done) Haptic.TICK else Haptic.CONFIRM)
+                NotesStore.toggleTask(task.id)
+            }
+        }
         Column(
             Modifier
                 .weight(1f)
