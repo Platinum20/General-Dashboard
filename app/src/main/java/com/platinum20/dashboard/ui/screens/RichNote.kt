@@ -1059,11 +1059,21 @@ internal fun dueLabel(due: java.time.LocalDateTime): String {
 internal class MentionTarget(val icon: ImageVector, val title: String, val url: String)
 
 /** Le cose che corrispondono a quello scritto dopo "@": prima le note, poi il resto; al massimo 10. */
-internal fun mentionTargets(data: com.platinum20.dashboard.notes.NotesData, docs: List<com.platinum20.dashboard.docs.Document>, query: String): List<MentionTarget> {
+internal fun mentionTargets(
+    data: com.platinum20.dashboard.notes.NotesData,
+    docs: List<com.platinum20.dashboard.docs.Document>,
+    query: String,
+    /** Gli eventi del calendario del telefono (1.598), dal mese scorso ai prossimi tre. */
+    events: List<com.platinum20.dashboard.calendar.CalendarEvent> = emptyList(),
+    now: Long = System.currentTimeMillis(),
+): List<MentionTarget> {
     fun hit(t: String) = t.isNotBlank() && t.contains(query, ignoreCase = true)
     val out = mutableListOf<MentionTarget>()
     data.notes.filter { hit(it.plainTitle) }.sortedByDescending { it.updatedAt }.take(5)
         .forEach { out += MentionTarget(Icons.AutoMirrored.Outlined.Notes, it.title, NoteFormat.NOTE_LINK + it.id) }
+    // Eventi: uno per evento (le ripetizioni no), prima i più vicini a oggi.
+    events.filter { hit(it.title) }.sortedBy { kotlin.math.abs(it.begin - now) }.distinctBy { it.eventId }.take(4)
+        .forEach { out += MentionTarget(Icons.Outlined.Event, it.title, NoteFormat.APP_LINK + Routes.calendarEvent(it.eventId, it.begin, it.end)) }
     data.tasks.filter { !it.done && hit(it.text) }.sortedBy { it.dueAt ?: Long.MAX_VALUE }.take(4)
         .forEach { out += MentionTarget(if (it.dueAt != null) Icons.Outlined.Event else Icons.Outlined.TaskAlt, it.text, NoteFormat.APP_LINK + Routes.noteItem(ItemKind.TASK, it.id)) }
     data.habits.filter { hit(it.title) }.take(3)
@@ -1121,6 +1131,7 @@ internal fun mentionMark(url: String, data: com.platinum20.dashboard.notes.Notes
         )
     }
     if (route.startsWith("home/document/")) return MentionMark(Icons.Outlined.Badge)
+    if (route.startsWith("home/calendar/event")) return MentionMark(Icons.Outlined.Event)
     return MentionMark(pageIcon(route))
 }
 
@@ -1402,7 +1413,14 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                 // sezioni. Diventa un link che si apre con un tocco.
                 val data by NotesStore.data.collectAsStateWithLifecycle()
                 val docs by DocumentsStore.docs.collectAsStateWithLifecycle()
-                val hits = remember(data, docs, mention.second) { mentionTargets(data, docs, mention.second) }
+                // Gli eventi del telefono (1.598): letti una volta quando si apre "@", se c'è il permesso del calendario.
+                var events by remember { mutableStateOf<List<com.platinum20.dashboard.calendar.CalendarEvent>>(emptyList()) }
+                LaunchedEffect(Unit) {
+                    if (com.platinum20.dashboard.calendar.CalendarRepository.hasPermission(context)) events = runCatching {
+                        com.platinum20.dashboard.calendar.CalendarRepository.eventsFrom(context, java.time.LocalDate.now().minusDays(30), 120).values.flatten()
+                    }.getOrDefault(emptyList())
+                }
+                val hits = remember(data, docs, events, mention.second) { mentionTargets(data, docs, mention.second, events) }
                 if (hits.isEmpty()) BarLabel(Icons.Outlined.Close, if (mention.second.isEmpty()) "Scrivi un nome" else "Niente con \"${mention.second}\"") {}
                 hits.forEach { h ->
                     BarLabel(h.icon, h.title.take(28)) {
