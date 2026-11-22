@@ -1,5 +1,6 @@
 package com.platinum20.dashboard
 
+import com.platinum20.dashboard.ui.screens.detailRows
 import com.platinum20.dashboard.ui.screens.weatherDetails
 import com.platinum20.dashboard.weather.CurrentWeather
 import com.platinum20.dashboard.weather.DailyPoint
@@ -31,5 +32,13 @@ class WeatherDetailsTest {
     fun uvSoloDaTreInSu() {
         assertFalse(weatherDetails(forecast(2.4)).any { it.first == "Indice UV" })
         assertTrue(weatherDetails(forecast(3.0)).any { it.first == "Indice UV" })
+    }
+
+    @Test
+    fun albaTramontoSempreLargaDaSola() {
+        val rows = detailRows(weatherDetails(forecast(5.0))).map { r -> r.map { it.first } }
+        assertEquals(listOf(listOf("Umidità", "Vento"), listOf("Indice UV"), listOf("Alba · Tramonto")), rows)
+        val noUv = detailRows(weatherDetails(forecast(1.0))).map { r -> r.map { it.first } }
+        assertEquals(listOf(listOf("Umidità", "Vento"), listOf("Alba · Tramonto")), noUv)
     }
 }
