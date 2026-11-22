@@ -468,29 +468,55 @@ internal fun rememberSavedMedia(video: Boolean): List<com.platinum20.dashboard.c
 @Composable
 internal fun SavedTile(height: androidx.compose.ui.unit.Dp, saved: List<com.platinum20.dashboard.capture.SavedLinks.Later>, wide: Boolean, onClick: () -> Unit) {
     val context = LocalContext.current
-    // Le copertine di quello che hai salvato: una riempie, da 4 un mosaico; sopra il segnalibro.
-    val art = savedArt(saved.map { it.item.coverImage() })
     MediaTile(
-        height, wide = wide, image = if (art.size in 1..3) art.first() else "", title = "Salvati",
+        height, wide = wide, image = "", title = "Salvati",
         author = savedCountLine(saved.size, video = wide), date = null, mark = null,
         click = Modifier.combinedClickable(onClick = onClick, onLongClick = { savedListActions(context, saved, video = wide, open = onClick) }),
     ) {
-        if (art.size >= 4) CoverMosaic(art.take(4), Modifier.matchParentSize())
-        if (art.isEmpty()) androidx.compose.material3.Icon(
+        SavedCover(video = wide, big = false, modifier = Modifier.matchParentSize())
+    }
+}
+
+/**
+ * La copertina fissa della playlist Salvati (2026-11-22, Antonio: "una copertina base, tipo i mix", non l'ultima cosa
+ * salvata): il colore suo, il segnalibro in trasparenza e il nome grande in basso, come le copertine dei mix.
+ */
+@Composable
+internal fun SavedCover(video: Boolean, big: Boolean, modifier: Modifier = Modifier) {
+    val color = androidx.compose.ui.graphics.Color(if (video) SAVED_VIDEO_COLOR else SAVED_MUSIC_COLOR)
+    val white = androidx.compose.ui.graphics.Color.White
+    Box(
+        modifier.background(
+            androidx.compose.ui.graphics.Brush.linearGradient(listOf(color.copy(alpha = 0.75f), color)),
+        ),
+    ) {
+        androidx.compose.material3.Icon(
             androidx.compose.material.icons.Icons.Rounded.Bookmark, contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp),
-        ) else Box(
-            Modifier.align(Alignment.TopStart).padding(6.dp).size(22.dp)
-                .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.66f), androidx.compose.foundation.shape.CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            androidx.compose.material3.Icon(
-                androidx.compose.material.icons.Icons.Rounded.Bookmark, contentDescription = "Salvati",
-                tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(14.dp),
+            tint = white.copy(alpha = 0.22f),
+            modifier = Modifier.align(Alignment.TopEnd).padding(if (big) 16.dp else 8.dp).size(if (big) 96.dp else 52.dp),
+        )
+        Column(Modifier.align(Alignment.BottomStart).padding(if (big) 16.dp else 10.dp)) {
+            Text(
+                if (video) "VIDEO" else "MUSICA",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                    letterSpacing = androidx.compose.ui.unit.TextUnit(0.8f, androidx.compose.ui.unit.TextUnitType.Sp),
+                ),
+                color = white.copy(alpha = 0.85f), maxLines = 1,
+            )
+            Text(
+                "Salvati",
+                style = (if (big) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.titleLarge)
+                    .copy(fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold),
+                color = white, maxLines = 1,
             )
         }
     }
 }
+
+/** I colori fissi delle due playlist Salvati, scuri come quelli dei mix perché la scritta bianca si legga. */
+internal const val SAVED_MUSIC_COLOR = 0xFF2D4F8F
+internal const val SAVED_VIDEO_COLOR = 0xFF9C3F32
 
 /** La riga sotto il nome della playlist Salvati: "1 video", "5 video", "1 salvato", "8 salvati". */
 internal fun savedCountLine(count: Int, video: Boolean): String = when {
@@ -528,9 +554,6 @@ internal fun savedListActions(context: android.content.Context, saved: List<com.
     )
 }
 
-/** Le copertine utili per la tessera Salvati: senza vuote e senza doppioni, nell'ordine dei salvati. */
-internal fun savedArt(images: List<String>): List<String> = images.filter { it.isNotBlank() }.distinct()
-
 /**
  * La pagina della playlist "Salvati" (1.490, come playlist dal 2026-11-22): in cima le copertine con Riproduci e
  * Casuale, sotto le cose salvate dalla più recente. Un tocco ne apre una ferma, tenendo premuto il fumetto dei media
@@ -541,35 +564,20 @@ internal fun savedArt(images: List<String>): List<String> = images.filter { it.i
 fun SavedMediaScreen(video: Boolean, onBack: () -> Unit, onOpenRoute: (String) -> Unit) {
     val context = LocalContext.current
     val saved = rememberSavedMedia(video)
-    val art = savedArt(saved.map { it.item.coverImage() })
     val playable = remember(saved) { savedPlayable(saved.map { it.item }) }
     val playingKey = rememberPlayingKey()
     Column(Modifier.fillMaxSize()) {
         val hero: @Composable () -> Unit = {
             MediaHero(
                 title = "Salvati",
-                image = art.firstOrNull().orEmpty(),
+                image = "",
                 onBack = onBack,
                 line = if (video) "Video da vedere dopo" else "Musica e podcast per dopo",
                 detail = savedCountLine(saved.size, video),
                 onPlay = if (playable.isEmpty()) null else ({ playSaved(context, saved, shuffle = false) {} }),
                 onShuffle = if (playable.size < 2) null else ({ playSaved(context, saved, shuffle = true) {} }),
-                picture = when {
-                    art.size >= 4 -> ({
-                        Box(Modifier.size(MediaPage.HERO_COVER).clip(MaterialTheme.shapes.large)) { CoverMosaic(art.take(4), Modifier.matchParentSize()) }
-                    })
-                    art.isEmpty() -> ({
-                        Box(
-                            Modifier.size(MediaPage.HERO_COVER).clip(MaterialTheme.shapes.large).background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            androidx.compose.material3.Icon(
-                                androidx.compose.material.icons.Icons.Rounded.Bookmark, contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(64.dp),
-                            )
-                        }
-                    })
-                    else -> null
+                picture = {
+                    SavedCover(video = video, big = true, modifier = Modifier.size(MediaPage.HERO_COVER).clip(MaterialTheme.shapes.large))
                 },
             )
         }

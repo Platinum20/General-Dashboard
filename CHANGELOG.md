@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.586.0
+## 1.587.0
 **Editor delle note più completo (parte 3)**
 - Righe un po' più ariose: il testo lungo si legge meglio
 - Tocchi lo spazio sotto il testo: il cursore va in fondo e, se l'ultima riga è una voce, se ne apre subito una nuova
@@ -14,6 +14,9 @@
 - Fra cerchio e testo delle voci c'è di nuovo un po' di spazio
 - I link nella nota si toccano: un tocco apre la nota collegata con "@" o la pagina; tenendo premuto, Apri, Modifica il testo o Togli il link
 - Scegliendo del testo senza la tastiera aperta compare lo stesso la barra con grassetto e gli altri formati
+## 1.586.0
+**Copertina fissa per i Salvati**
+- Le playlist "Salvati" di Musica e Video hanno una copertina tutta loro, come i mix: colore fisso, segnalibro e il nome grande, non più l'ultima cosa salvata
 ## 1.585.0
 **Editor delle note più completo (parte 2)**
 - Scrivi "/" per aggiungere un blocco: punti, numeri, spunte, titolo, citazione, riquadro, linea, foto, scatta, detta
