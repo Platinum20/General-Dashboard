@@ -79,6 +79,8 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.LinkOff
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.platinum20.dashboard.capture.CaptureFeedback
@@ -184,6 +186,7 @@ internal fun RichNoteField(
     val context = LocalContext.current
     val haptic = rememberHaptic()
     val colors = MaterialTheme.colorScheme
+    val inApp = LocalInAppNav.current
     val owner = remember { Any() }
     val current by rememberUpdatedState(value)
     val emit by rememberUpdatedState(onValueChange)
@@ -473,8 +476,54 @@ internal fun RichNoteField(
                     }
                 }
             } }
+            // I link si toccano (1.586): un tocco apre la nota collegata con "@" o la pagina; tieni premuto = le scelte.
+            if (!readOnly) NoteFormat.spans(text).filter { it.kind == NoteFormat.Kind.LINK || it.kind == NoteFormat.Kind.URL }.forEach { span ->
+                val (url, label) = NoteFormat.linkAt(text, span.start) ?: return@forEach
+                val s0 = shown.toShown(span.start)
+                val e0 = shown.toShown(span.end).coerceAtMost(drawn)
+                if (s0 >= e0) return@forEach
+                val firstRow = l.getLineForOffset(s0)
+                val lastRow = l.getLineForOffset((e0 - 1).coerceAtLeast(s0))
+                for (row in firstRow..lastRow) androidx.compose.runtime.key("l${span.start}-$row") {
+                    val x0 = if (row == firstRow) l.getHorizontalPosition(s0, true) else l.getLineLeft(row)
+                    val x1 = if (row == lastRow) l.getHorizontalPosition(e0, true) else l.getLineRight(row)
+                    val top = l.getLineTop(row)
+                    val w = with(density) { (x1 - x0).coerceAtLeast(1f).toDp() }
+                    val h = with(density) { (l.getLineBottom(row) - top).toDp() }
+                    Box(
+                        Modifier
+                            .offset { IntOffset(minOf(x0, x1).toInt(), top.toInt()) }
+                            .size(w, h)
+                            .combinedClickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onLongClick = {
+                                    haptic(Haptic.LONG_PRESS)
+                                    ActionBubble.show(
+                                        BubbleAction(Icons.AutoMirrored.Outlined.OpenInNew, "Apri", if (url.startsWith(NoteFormat.NOTE_LINK)) "la nota collegata" else "la pagina, dentro Canvas") { openNoteLink(inApp, url, label) },
+                                        BubbleAction(Icons.Outlined.Edit, "Modifica il testo", "il cursore va sul link") {
+                                            emit(TextFieldValue(current.text, TextRange(span.end)))
+                                            focusRequester?.requestFocus()
+                                        },
+                                        BubbleAction(Icons.Outlined.LinkOff, "Togli il link", "resta il testo") {
+                                            val e = NoteFormat.link(current.text, span.start, span.start, null)
+                                            emit(TextFieldValue(e.text, TextRange(e.end)))
+                                        },
+                                    )
+                                },
+                            ) { haptic(Haptic.TICK); openNoteLink(inApp, url, label) },
+                    )
+                }
+            }
         }
     }
+}
+
+/** Apre un link della nota: "nota:ID" = l'altra nota, il resto dentro Canvas. */
+internal fun openNoteLink(inApp: InAppNav?, url: String, label: String) {
+    val id = url.removePrefix(NoteFormat.NOTE_LINK).toLongOrNull()
+    if (url.startsWith(NoteFormat.NOTE_LINK) && id != null) inApp?.openRoute?.invoke(Routes.noteEdit(id))
+    else inApp?.openWeb?.invoke(url, label)
 }
 
 /** Il fumetto del tieni premuto su citazione, riquadro o linea. */

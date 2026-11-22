@@ -12,6 +12,7 @@
 - Nelle note con foto, dopo l'ultima c'è un riquadro col "+" per aggiungerne altre (tienilo premuto per scattare o dettare)
 - Citazioni, riquadri e voci che vanno a capo restano rientrate accanto alla barra o al cerchio; Invio in una citazione ne continua un'altra riga
 - Fra cerchio e testo delle voci c'è di nuovo un po' di spazio
+- I link nella nota si toccano: un tocco apre la nota collegata con "@" o la pagina; tenendo premuto, Apri, Modifica il testo o Togli il link
 ## 1.585.0
 **Editor delle note più completo (parte 2)**
 - Scrivi "/" per aggiungere un blocco: punti, numeri, spunte, titolo, citazione, riquadro, linea, foto, scatta, detta
