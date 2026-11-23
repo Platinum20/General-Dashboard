@@ -404,8 +404,10 @@ internal fun RichNoteField(
         val moved = value.selection != followedSelection
         followedText = value.text
         followedSelection = value.selection
-        atTop = followMode(typing, moved, value.selection.collapsed, android.os.SystemClock.uptimeMillis() - tapAt, atTop)
-        android.util.Log.i("NoteCheck", "segui: typing=$typing moved=$moved sel=${value.selection} tap=${android.os.SystemClock.uptimeMillis() - tapAt} atTop=$atTop ime=$imeBottom")
+        val sinceTap = android.os.SystemClock.uptimeMillis() - tapAt
+        atTop = followMode(typing, moved, value.selection.collapsed, sinceTap, atTop)
+        // Il cursore spostato dal tocco usa il tocco: un altro spostamento dopo (maniglia, frecce) non porta più in cima.
+        if (typing || (moved && sinceTap <= TAP_WINDOW_MS)) tapAt = 0L
         withFrameNanos { }
         val l = layout ?: return@LaunchedEffect
         val at = transformation.filter(AnnotatedString(value.text)).offsetMapping.originalToTransformed(value.selection.end)
@@ -1721,17 +1723,19 @@ internal fun colorActions(apply: (Char?) -> Unit): List<BubbleAction> = listOf(
     BubbleAction(Icons.Outlined.FormatColorReset, "Togli il colore", "il testo torna normale") { apply(null) },
 )
 
+/** Con la tastiera già aperta il campo mette il cursore anche più di un secondo dopo il tocco (aspetta il doppio tocco). */
+internal const val TAP_WINDOW_MS = 2_500L
+
 /** Come la pagina tiene la riga del cursore: solo in vista, scrivendo (sale a un terzo), toccata (in cima). */
 enum class LineFollow { MOVE, TYPING, TAPPED }
 
 /**
- * La riga sta in cima? Sì subito dopo un tocco che mette il cursore (non una selezione), e resta sì mentre la tastiera
+ * La riga sta in cima? Sì quando un tocco ha appena messo il cursore (non una selezione), e resta sì mentre la tastiera
  * si apre; scrivere o spostare il cursore in altro modo la rimette normale.
  */
 internal fun followMode(typing: Boolean, moved: Boolean, collapsed: Boolean, sinceTapMs: Long, wasAtTop: Boolean): Boolean = when {
     typing -> false
-    sinceTapMs in 0..600 -> collapsed
-    moved -> false
+    moved -> sinceTapMs in 0..TAP_WINDOW_MS && collapsed
     else -> wasAtTop
 }
 
@@ -1745,7 +1749,6 @@ private fun Modifier.tapWatch(onTap: () -> Unit): Modifier = pointerInput(Unit) 
             val change = event.changes.firstOrNull { it.id == down.id } ?: return@awaitEachGesture
             if ((change.position - down.position).getDistance() > viewConfiguration.touchSlop) far = true
             if (!change.pressed) {
-                android.util.Log.i("NoteCheck", "tapWatch far=$far")
                 if (!far && change.uptimeMillis - down.uptimeMillis < viewConfiguration.longPressTimeoutMillis) onTap()
                 return@awaitEachGesture
             }

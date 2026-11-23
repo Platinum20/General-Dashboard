@@ -112,6 +112,8 @@ class NoteEditorTidyTest {
         assertEquals(700f - 112f, keepLineDelta(700f, 724f, LineFollow.TAPPED, visTop = 100f, visBottom = 500f, margin = 24f), 0.01f)
         // Il tocco mette in cima; la tastiera che si apre lo lascia; scrivere o una selezione no.
         assertTrue(followMode(typing = false, moved = true, collapsed = true, sinceTapMs = 50, wasAtTop = false))
+        // Con la tastiera aperta il cursore arriva anche un secondo e mezzo dopo il tocco.
+        assertTrue(followMode(typing = false, moved = true, collapsed = true, sinceTapMs = 1_550, wasAtTop = false))
         assertTrue(followMode(typing = false, moved = false, collapsed = true, sinceTapMs = 5_000, wasAtTop = true))
         assertFalse(followMode(typing = true, moved = true, collapsed = true, sinceTapMs = 50, wasAtTop = true))
         assertFalse(followMode(typing = false, moved = true, collapsed = false, sinceTapMs = 50, wasAtTop = false))
