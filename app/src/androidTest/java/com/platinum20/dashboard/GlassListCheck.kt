@@ -57,7 +57,9 @@ class GlassListCheck {
     private val instr get() = InstrumentationRegistry.getInstrumentation()
 
     private fun shot(name: String) {
-        Thread.sleep(1500)
+        // La regola dei test tiene ferme le animazioni: il fumetto compare solo se il suo orologio va avanti.
+        compose.mainClock.advanceTimeBy(1500)
+        Thread.sleep(600)
         val dir = File(instr.targetContext.getExternalFilesDir(null), "glass-check").apply { mkdirs() }
         runCatching {
             val window = compose.activity.window
@@ -111,11 +113,11 @@ class GlassListCheck {
                 BubbleAction(Icons.Rounded.Star, "Vai all'artista", "Artista") {},
             )
         }
-        fun close() { instr.runOnMainSync { ActionBubble.dismiss() }; Thread.sleep(800) }
-        fun scroll(index: Int) { compose.runOnUiThread { kotlinx.coroutines.MainScope().launch { list.scrollToItem(index) } }; Thread.sleep(1200) }
+        fun close() { instr.runOnMainSync { ActionBubble.dismiss() }; compose.mainClock.advanceTimeBy(800); Thread.sleep(300) }
+        fun scroll(index: Int) { compose.runOnUiThread { kotlinx.coroutines.MainScope().launch { list.scrollToItem(index) } }; compose.mainClock.advanceTimeBy(500); Thread.sleep(500) }
         for (p in listOf("cover", "photo")) {
             compose.runOnUiThread { page = p }
-            Thread.sleep(1500)
+            compose.mainClock.advanceTimeBy(1500); Thread.sleep(500)
             bubble(); shot("1-$p-in-cima"); close()
             scroll(4)
             bubble(); shot("2-$p-scorsa-poco"); close()
