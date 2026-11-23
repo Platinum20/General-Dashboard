@@ -1,0 +1,9 @@
+
+com.platinum20.dashboard.GlassListCheck:
+com.platinum20.dashboard.GlassDeviceCheck:
+---- log
+--------- beginning of main
+11-23 18:11:06.354   830   884 E OpenGLRenderer: Unable to match the desired swap behavior.
+11-23 18:11:09.106  1082  1991 E OpenGLRenderer: Unable to match the desired swap behavior.
+11-23 18:11:14.396  1082  1991 E OpenGLRenderer: Unable to match the desired swap behavior.
+11-23 18:11:15.680   830   884 E OpenGLRenderer: Unable to match the desired swap behavior.
