@@ -1,0 +1,31 @@
+
+com.platinum20.dashboard.BubbleShotsCheck:..........
+
+Time: 102.033
+
+OK (10 tests)
+
+
+
+---- log
+--------- beginning of main
+11-23 23:44:46.576  3190  3548 I BubbleCheck: foto 21-quante-volte
+11-23 23:45:02.079  3190  3548 I BubbleCheck: foto 15-colore
+11-23 23:45:08.814  3190  3548 I BubbleCheck: foto 25-scheda
+11-23 23:45:15.057  3190  3548 I BubbleCheck: foto 01-coda
+11-23 23:45:16.645  3190  3548 I BubbleCheck: foto 02-raccolte
+11-23 23:45:18.210  3190  3548 I BubbleCheck: foto 04-brano-riordino
+11-23 23:45:19.875  3190  3548 I BubbleCheck: foto 18-account
+11-23 23:45:21.504  3190  3548 I BubbleCheck: foto 22-quando
+11-23 23:45:23.267  3190  3548 I BubbleCheck: foto 27-mail-nota
+11-23 23:45:30.592  3190  3548 I BubbleCheck: foto 14-tabella
+11-23 23:45:38.149  3190  3548 I BubbleCheck: foto 19-si-ripete
+11-23 23:45:40.265  3190  3548 I BubbleCheck: foto 20-avviso
+11-23 23:45:45.626  3190  3548 I BubbleCheck: foto 13-riquadro
+11-23 23:45:51.347  3190  3548 I BubbleCheck: foto 11-riga
+11-23 23:45:56.906  3190  3548 I BubbleCheck: foto 12-trasforma
+11-23 23:46:05.555  3190  3548 I BubbleCheck: foto 08-slash
+11-23 23:46:07.559  3190  3548 I BubbleCheck: foto 09-slash-ta
+11-23 23:46:14.413  3190  3548 I BubbleCheck: foto 07-nota-altro
+11-23 23:46:15.789  3190  3548 I BubbleCheck: foto 17-in-un-posto
+11-23 23:46:18.085  3190  3548 I BubbleCheck: foto 10-emoji
