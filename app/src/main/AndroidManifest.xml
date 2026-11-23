@@ -162,6 +162,19 @@
                 android:resource="@xml/widget_todo_info" />
         </receiver>
 
+        <!-- Widget "Nota": una nota scelta, con le spunte (2026-11-23, idea 8). -->
+        <receiver
+            android:name=".widget.NoteWidget"
+            android:exported="false"
+            android:label="@string/widget_note_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_note_info" />
+        </receiver>
+
         <!-- Widget "News". -->
         <receiver
             android:name=".widget.NewsWidget"

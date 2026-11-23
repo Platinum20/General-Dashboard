@@ -1,5 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.outlined.FileCopy
+import androidx.compose.material.icons.outlined.Replay
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PushPin as PushPinFilled
 import androidx.compose.material.icons.outlined.Archive
@@ -142,8 +144,19 @@ internal fun rememberRowActions(onOpenEvent: ((CalendarEvent) -> Unit)? = null):
         if (actions.isNotEmpty()) ActionBubble.show(*actions.toTypedArray())
     }
     fun noteActions(n: Note) {
+        // Una lista (2026-11-23, idea 15): Ricomincia e Duplica anche da qui, come nell'editor e in Da fare.
+        val list = com.platinum20.dashboard.notes.NoteLists.of(n)
+        val done = com.platinum20.dashboard.notes.NoteLists.doneCount(n.text)
         ActionBubble.show(
+            *listOfNotNull(
             pinAction(n.pinned, n.title) { NotesStore.togglePin(n.id) },
+            if (list == null || done == 0) null else BubbleAction(Icons.Outlined.Replay, "Ricomincia", if (done == 1) "toglie la spunta, il testo resta" else "toglie le $done spunte, il testo resta") {
+                NotesStore.editNoteText(n.id) { com.platinum20.dashboard.notes.NoteLists.restart(it) }
+                offerUndo("Lista da rifare") { NotesStore.editNoteText(n.id) { n.text } }
+            },
+            if (list == null) null else BubbleAction(Icons.Outlined.FileCopy, "Duplica", "una copia nuova, tutto da rifare") {
+                NotesStore.duplicateNote(n.id)?.let { inApp?.openRoute?.invoke(com.platinum20.dashboard.Routes.noteEdit(it)) }
+            },
             BubbleAction(Icons.Outlined.Share, "Condividi", "il testo della nota") { share(n.text) },
             // L'archivio di Appunti (Antonio, 2026-11-20): la nota esce dalla card senza perdersi.
             if (n.archivedAt == null) BubbleAction(Icons.Outlined.Archive, "Archivia", detail = n.title) {
@@ -154,6 +167,7 @@ internal fun rememberRowActions(onOpenEvent: ((CalendarEvent) -> Unit)? = null):
                 NotesStore.deleteNote(n.id)
                 offerUndo("Nota eliminata") { NotesStore.restoreNote(n) }
             },
+            ).toTypedArray(),
         )
     }
     return { row ->

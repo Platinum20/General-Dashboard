@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Una riga di testo del widget Nota (non da spuntare): allineata ai nomi delle voci. -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/note_line"
+    style="@style/WidgetText"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="30dp"
+    android:gravity="center_vertical"
+    android:paddingStart="12dp"
+    android:paddingEnd="4dp"
+    android:textSize="14sp" />
