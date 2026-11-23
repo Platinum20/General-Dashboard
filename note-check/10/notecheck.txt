@@ -1,0 +1,263 @@
+
+com.platinum20.dashboard.NoteEditorDeviceCheck:
+Error in transformFromBarAndFromLongPress(com.platinum20.dashboard.NoteEditorDeviceCheck):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.transformFromBarAndFromLongPress(NoteEditorDeviceCheck.kt:470)
+.
+Error in linkAloneBecomesPreview(com.platinum20.dashboard.NoteEditorDeviceCheck):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.linkAloneBecomesPreview(NoteEditorDeviceCheck.kt:558)
+
+Error in tickChecklistAndNestedTicked(com.platinum20.dashboard.NoteEditorDeviceCheck):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.tickChecklistAndNestedTicked(NoteEditorDeviceCheck.kt:312)
+.
+Error in mentionNoteAndCalendarEvent(com.platinum20.dashboard.NoteEditorDeviceCheck):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.mentionNoteAndCalendarEvent(NoteEditorDeviceCheck.kt:505)
+
+Error in slashBlocks(com.platinum20.dashboard.NoteEditorDeviceCheck):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.slashBlocks(NoteEditorDeviceCheck.kt:394)
+.
+Error in barRightAfterTypingAWord(com.platinum20.dashboard.NoteEditorDeviceCheck):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.barRightAfterTypingAWord(NoteEditorDeviceCheck.kt:351)
+
+Error in undoRedo(com.platinum20.dashboard.NoteEditorDeviceCheck):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.undoRedo(NoteEditorDeviceCheck.kt:484)
+
+Error in typingKeepsLineAboveKeyboard(com.platinum20.dashboard.NoteEditorDeviceCheck):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.typingKeepsLineAboveKeyboard(NoteEditorDeviceCheck.kt:644)
+
+Error in markdownShortcutsAtLineStart(com.platinum20.dashboard.NoteEditorDeviceCheck):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.markdownShortcutsAtLineStart(NoteEditorDeviceCheck.kt:266)
+
+Error in tapThatScrollsKeepsKeyboard(com.platinum20.dashboard.NoteEditorDeviceCheck):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.tapThatScrollsKeepsKeyboard(NoteEditorDeviceCheck.kt:661)
+
+Error in slashMenuFiltersAndEnterPicks(com.platinum20.dashboard.NoteEditorDeviceCheck):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.slashMenuFiltersAndEnterPicks(NoteEditorDeviceCheck.kt:379)
+
+Error in backspaceOnEmptyItemRemovesMark(com.platinum20.dashboard.NoteEditorDeviceCheck):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.backspaceOnEmptyItemRemovesMark(NoteEditorDeviceCheck.kt:289)
+...
+Error in subNoteFromSlash(com.platinum20.dashboard.NoteEditorDeviceCheck):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.subNoteFromSlash(NoteEditorDeviceCheck.kt:422)
+
+Error in titleEnterMovesToBody(com.platinum20.dashboard.NoteEditorDeviceCheck):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.titleEnterMovesToBody(NoteEditorDeviceCheck.kt:238)
+
+Error in formatBarBoldColorAndBack(com.platinum20.dashboard.NoteEditorDeviceCheck):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.formatBarBoldColorAndBack(NoteEditorDeviceCheck.kt:434)
+
+Error in dragClosesKeyboard(com.platinum20.dashboard.NoteEditorDeviceCheck):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.dragClosesKeyboard(NoteEditorDeviceCheck.kt:711)
+
+Error in bulletsContinueAndEnterOnEmptyExits(com.platinum20.dashboard.NoteEditorDeviceCheck):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.bulletsContinueAndEnterOnEmptyExits(NoteEditorDeviceCheck.kt:252)
+
+Error in tappedLineGoesToTop(com.platinum20.dashboard.NoteEditorDeviceCheck):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.tappedLineGoesToTop(NoteEditorDeviceCheck.kt:685)
+.
+
+Time: 305.445
+There were 18 failures:
+1) transformFromBarAndFromLongPress(com.platinum20.dashboard.NoteEditorDeviceCheck)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.transformFromBarAndFromLongPress(NoteEditorDeviceCheck.kt:470)
+2) linkAloneBecomesPreview(com.platinum20.dashboard.NoteEditorDeviceCheck)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.linkAloneBecomesPreview(NoteEditorDeviceCheck.kt:558)
+3) tickChecklistAndNestedTicked(com.platinum20.dashboard.NoteEditorDeviceCheck)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.tickChecklistAndNestedTicked(NoteEditorDeviceCheck.kt:312)
+4) mentionNoteAndCalendarEvent(com.platinum20.dashboard.NoteEditorDeviceCheck)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.mentionNoteAndCalendarEvent(NoteEditorDeviceCheck.kt:505)
+5) slashBlocks(com.platinum20.dashboard.NoteEditorDeviceCheck)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.slashBlocks(NoteEditorDeviceCheck.kt:394)
+6) barRightAfterTypingAWord(com.platinum20.dashboard.NoteEditorDeviceCheck)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.barRightAfterTypingAWord(NoteEditorDeviceCheck.kt:351)
+7) undoRedo(com.platinum20.dashboard.NoteEditorDeviceCheck)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.undoRedo(NoteEditorDeviceCheck.kt:484)
+8) typingKeepsLineAboveKeyboard(com.platinum20.dashboard.NoteEditorDeviceCheck)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.typingKeepsLineAboveKeyboard(NoteEditorDeviceCheck.kt:644)
+9) markdownShortcutsAtLineStart(com.platinum20.dashboard.NoteEditorDeviceCheck)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.markdownShortcutsAtLineStart(NoteEditorDeviceCheck.kt:266)
+10) tapThatScrollsKeepsKeyboard(com.platinum20.dashboard.NoteEditorDeviceCheck)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.tapThatScrollsKeepsKeyboard(NoteEditorDeviceCheck.kt:661)
+11) slashMenuFiltersAndEnterPicks(com.platinum20.dashboard.NoteEditorDeviceCheck)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.slashMenuFiltersAndEnterPicks(NoteEditorDeviceCheck.kt:379)
+12) backspaceOnEmptyItemRemovesMark(com.platinum20.dashboard.NoteEditorDeviceCheck)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.backspaceOnEmptyItemRemovesMark(NoteEditorDeviceCheck.kt:289)
+13) subNoteFromSlash(com.platinum20.dashboard.NoteEditorDeviceCheck)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.subNoteFromSlash(NoteEditorDeviceCheck.kt:422)
+14) titleEnterMovesToBody(com.platinum20.dashboard.NoteEditorDeviceCheck)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.titleEnterMovesToBody(NoteEditorDeviceCheck.kt:238)
+15) formatBarBoldColorAndBack(com.platinum20.dashboard.NoteEditorDeviceCheck)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.formatBarBoldColorAndBack(NoteEditorDeviceCheck.kt:434)
+16) dragClosesKeyboard(com.platinum20.dashboard.NoteEditorDeviceCheck)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.dragClosesKeyboard(NoteEditorDeviceCheck.kt:711)
+17) bulletsContinueAndEnterOnEmptyExits(com.platinum20.dashboard.NoteEditorDeviceCheck)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:189)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.bulletsContinueAndEnterOnEmptyExits(NoteEditorDeviceCheck.kt:252)
+18) tappedLineGoesToTop(com.platinum20.dashboard.NoteEditorDeviceCheck)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.tappedLineGoesToTop(NoteEditorDeviceCheck.kt:685)
+
+FAILURES!!!
+Tests run: 25,  Failures: 18
+
+
+
+---- log
+--------- beginning of main
+11-23 12:58:33.317  3627  4107 I NoteCheck: [trasforma/fumetto_voce] ime=false body=[ ] una voce
+11-23 12:58:36.866  3627  4107 I NoteCheck: [trasforma/numeri] ime=false body=1. una voce
+11-23 12:59:00.482  3627  4107 I NoteCheck: [spunta_senza_tastiera/spuntata] ime=false body=[x] pane⏎[ ] latte
+11-23 12:59:23.378  3627  4107 I NoteCheck: [spunte/prima] ime=false body=[ ] maglie⏎  [ ] calze⏎[ ] scarpe
+11-23 12:59:24.175  3627  4107 I NoteCheck: [spunte/sotto_voce_spuntata] ime=false body=[ ] maglie⏎  [x] calze⏎[ ] scarpe
+11-23 12:59:41.336  3627  4107 I NoteCheck: [tocco_sotto/tocco_sotto] ime=false body=[ ] uno⏎[ ] 
+11-23 12:59:41.337  3627  4107 I NoteCheck: tocco sotto: [CHECK, CHECK]
+11-23 13:00:14.699  3627  4107 I NoteCheck: [fumetto_riga/fumetto] ime=false body=[ ] prima⏎[ ] seconda
+11-23 13:00:18.431  3627  4107 I NoteCheck: [fumetto_riga/mandata_in_da_fare] ime=false body=[ ] prima
+11-23 13:01:44.486  3627  4107 I NoteCheck: [tutto_fatto/tutto_fatto] ime=false body=[x] pane⏎[x] latte
+11-23 13:01:44.489  3627  4107 I NoteCheck: tutto fatto: 0 nodi
+11-23 13:01:50.122  3627  4107 I NoteCheck: [foto/foto_e_copertina] ime=false body=sopra⏎[🖼 Foto](img:/data/user/0/com.platinum20.dashboard/files/prova.png)⏎sotto
+11-23 13:01:51.352  3627  4107 I NoteCheck: [foto/fumetto_foto] ime=false body=sopra⏎[🖼 Foto](img:/data/user/0/com.platinum20.dashboard/files/prova.png)⏎sotto
+11-23 13:01:53.887  3627  4107 I NoteCheck: [foto/fumetto_copertina] ime=false body=sopra⏎sotto
+11-23 13:02:00.650  3627  4107 I NoteCheck: [emoji/altro] ime=false body=Porto
+11-23 13:02:01.897  3627  4107 I NoteCheck: [emoji/emoji_nel_titolo] ime=false body=Porto
+11-23 13:02:04.064  3627  4107 I NoteCheck: [emoji/cambia_emoji] ime=false body=Porto
+11-23 13:03:21.316  3627  4107 I NoteCheck: [vocale/aggiungi] ime=false body=prima
+11-23 13:03:24.829  3627  4107 I NoteCheck: [vocale/registro] ime=false body=prima
+11-23 13:03:27.395  3627  4107 I NoteCheck: [vocale/vocale_nella_nota] ime=false body=prima⏎[🎙 Audio 0:03](audio:/data/user/0/com.platinum20.dashboard/files/note-audio/1795439001332.m4a)
