@@ -7,7 +7,7 @@ on:
     branches: ["claude/**"]
     paths:
       - ".github/workflows/logincheck.yml"
-      - "app/src/androidTest/**"
+      - "app/src/androidTest/java/com/platinum20/dashboard/LoginPageCheck.kt"
 
 permissions:
   contents: write

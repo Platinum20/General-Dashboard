@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.605.0
+**Note provate a fondo su un telefono vero**
+- La tastiera non si chiude più quando tocchi una riga e la pagina scorre da sola per mostrarla: si chiude solo trascinando col dito
+- Tieni premuto il quadratino di una voce: si apre il fumetto (Trasforma in, Sposta, Manda in Da fare, Togli) invece di spuntarla
+- Il menu "/" si apre sotto la riga con tutto lo spazio che c'è, non più schiacciato sopra il titolo con tre voci
+- Dopo una foto, due colonne, una bacheca o una sotto-nota il cursore va nella riga vuota sotto, non resta sopra il riquadro
+- Indietro nella riga vuota sotto una foto o un riquadro toglie solo la riga vuota; un secondo Indietro toglie il riquadro
+
 ## 1.604.0
 **Turno allungato: l'orario di fine giusto**
 - Se allunghi un turno su Creators Pro, notifica, calendario, Home e widget dicono "finisce alle" e "finito alle" con l'orario nuovo, fino alla fine dell'extra

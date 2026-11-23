@@ -640,6 +640,13 @@ object NoteLines {
         }
         // Qualcosa tolto (o sostituito) fra [a] e [b].
         val hit = blocks.filter { a <= it.last && b > it.first }
+        // Indietro in una riga vuota subito sotto un pezzo (1.604): se ne va la riga vuota, il pezzo resta.
+        // Fra più "a capo" di fila il confronto può indicare l'ultimo: si risale fino a quello attaccato al pezzo.
+        if (ins.isEmpty() && b == a + 1 && old[a] == '\n') {
+            var d = a
+            while (d > 0 && old[d - 1] == '\n' && blocks.none { it.last == d }) d--
+            if (blocks.any { it.last == d } && (d + 1 == old.length || old[d + 1] == '\n')) return Edit(old.removeRange(d, d + 1), d)
+        }
         if (hit.isEmpty()) {
             // Indietro all'inizio del pezzo: la riga sopra resta dov'è (se era vuota se ne va lei).
             val blk = blocks.firstOrNull { b == it.first && a == it.first - 1 && ins.isEmpty() } ?: return null
@@ -673,16 +680,23 @@ object NoteLines {
         return setKind(same.text, same.start, same.end, Kind.BULLET)
     }
 
-    /** Una riga-pezzo ([line], senza "\n") sotto la riga di [offset], o al suo posto se è vuota; il cursore in fondo al pezzo. */
+    /**
+     * Una riga-pezzo ([line], senza "\n") sotto la riga di [offset], o al suo posto se è vuota. Il cursore va nella riga
+     * vuota subito sotto (1.604, come su Notion), aggiunta se non c'è: prima restava in fondo al pezzo, disegnato sopra
+     * la foto o la scheda.
+     */
     fun insertBlock(text: String, offset: Int, line: String): Edit {
         val l = lineAt(text, offset.coerceIn(0, text.length))
-        if (text.substring(l.start, l.end).isBlank()) {
-            val t = text.substring(0, l.start) + line + text.substring(l.end)
-            return Edit(t, l.start + line.length)
-        }
-        val t = text.substring(0, l.end) + "\n" + line + text.substring(l.end)
-        return Edit(t, l.end + 1 + line.length)
+        val (before, after) = if (text.substring(l.start, l.end).isBlank()) text.substring(0, l.start) to text.substring(l.end)
+        else text.substring(0, l.end) + "\n" to text.substring(l.end)
+        val blockEnd = before.length + line.length
+        // Dopo il pezzo: c'è già una riga vuota (o il testo finisce con un a capo) → il cursore va lì.
+        if (after.startsWith("\n") && (after.length == 1 || after[1] == '\n')) return Edit(before + line + after, blockEnd + 1)
+        return Edit(before + line + "\n" + after, blockEnd + 1)
     }
+
+    /** La riga del pezzo appena messo con [insertBlock]: quella sopra il cursore. */
+    fun insertedBlockIndex(edit: Edit): Int = (lineAt(edit.text, edit.start).index - 1).coerceAtLeast(0)
 
     // Due colonne: "‖ sinistra ‖ destra ‖"; un a capo dentro una colonna si tiene come U+2028.
     const val COLUMNS_NEW = "‖  ‖  ‖"

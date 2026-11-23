@@ -132,6 +132,9 @@ separate functions so it can be unit-tested; new logic ships with a test. `TopLe
 - Visual check for risky changes: dispatch `screenshots.yml`; PNGs land on branch `screenshots` under
   `<branch>/<run>/`. In tours never use `performScrollToNode` (hangs), use `performScrollToIndex`.
 - Other dispatch-only workflows: `verifica.yml`, `ytcheck.yml`, `logincheck.yml`.
+- Notes editor on a real emulator + real keyboard: `notecheck.yml` (androidTest `NoteEditorDeviceCheck`, type with `input text`,
+  never `performTextInput`); log + screenshots on branch `screenshots` under `note-check/<run>/`. If every test times out on
+  `imeOpen`, the emulator keyboard didn't start: rerun.
 
 ## Sandbox gotchas
 

@@ -585,8 +585,8 @@ internal fun RichNoteField(
                         .pointerInput(readOnly) {
                             if (readOnly) return@pointerInput
                             detectDragGesturesAfterLongPress(
+                                // Il fumetto lo apre il tieni premuto del tocco qui sotto; trascinando si chiude e la voce si sposta.
                                 onDragStart = {
-                                    haptic(Haptic.LONG_PRESS)
                                     dragging = lineNow.index
                                     dragMoved = false
                                     dragPull = 0f
@@ -596,6 +596,7 @@ internal fun RichNoteField(
                                     val from = dragging
                                     dragPull += amount.y
                                     if (from != null) {
+                                    if (!dragMoved && kotlin.math.abs(dragPull) > rowPx * 0.3f) ActionBubble.dismiss()
                                     val count = NoteLines.parse(current.text).size
                                     if (dragPull > rowPx * 0.7f && from < count - 1) {
                                         dragPull -= rowPx
@@ -614,7 +615,6 @@ internal fun RichNoteField(
                                 },
                                 onDragEnd = {
                                     dragEndedAt = System.currentTimeMillis()
-                                    if (!dragMoved) ActionBubble.show(*lineActions(context, lineNow, current, emit, sendToTodo).toTypedArray())
                                     dragging = null
                                 },
                                 onDragCancel = {
@@ -627,6 +627,13 @@ internal fun RichNoteField(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
                             onClickLabel = if (line.kind == NoteLines.Kind.CHECK) (if (line.done) "Togli la spunta" else "Spunta") else null,
+                            // Tieni premuto = il fumetto della voce (1.604). Senza questo, sul telefono il tieni premuto
+                            // valeva come tocco: spuntava la voce e il fumetto non si apriva.
+                            onLongClickLabel = if (readOnly) null else "Scelte della riga",
+                            onLongClick = if (readOnly) null else ({
+                                haptic(Haptic.LONG_PRESS)
+                                ActionBubble.show(*lineActions(context, lineNow, current, emit, sendToTodo).toTypedArray())
+                            }),
                             onClick = {
                                 // Il tocco che chiude un tieni premuto non spunta.
                                 if (System.currentTimeMillis() - dragEndedAt < 400) return@combinedClickable
