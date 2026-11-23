@@ -76,8 +76,14 @@ class NoteNotionTest {
         assertEquals(NoteLines.Kind.IMAGE, NoteLines.kindOf(l).first)
         assertEquals("/x/foto.jpg", NoteLines.imagePath(l))
         val e = NoteLines.insertBlock("uno\ndue", 2, l)
-        assertEquals("uno\n$l\ndue", e.text)
-        // Scrivere dopo la foto va nella riga sotto, Indietro la toglie intera.
-        assertEquals("uno\ndue", NoteLines.guardBlocks(e.text, e.text.removeRange(e.start - 1, e.start))!!.text)
+        // 1.604: sotto la foto una riga vuota col cursore.
+        assertEquals("uno\n$l\n\ndue", e.text)
+        assertEquals(NoteLines.Kind.TEXT, NoteLines.lineAt(e.text, e.start).kind)
+        assertEquals(1, NoteLines.insertedBlockIndex(e))
+        // Indietro nella riga vuota: se ne va solo la riga vuota.
+        val back = NoteLines.guardBlocks(e.text, e.text.removeRange(e.start - 1, e.start))!!
+        assertEquals("uno\n$l\ndue", back.text)
+        // Un altro Indietro (l'ultimo carattere del pezzo): la foto se ne va intera.
+        assertEquals("uno\ndue", NoteLines.guardBlocks(back.text, back.text.removeRange(back.start - 1, back.start))!!.text)
     }
 }

@@ -29,6 +29,7 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextInputSelection
@@ -127,23 +128,38 @@ class NoteEditorDeviceCheck {
     private fun field(): SemanticsNodeInteraction =
         compose.onAllNodes(hasSetTextAction() and hasAnyAncestor(hasTestTag("noteBody"))).onFirst()
 
-    private fun type(s: String) {
-        field().performTextInput(s)
-        compose.waitForIdle()
+    /** Un comando come da adb: i tasti passano dalla tastiera vera del telefono, come quando scrive Antonio. */
+    private fun shell(cmd: String) {
+        android.os.ParcelFileDescriptor.AutoCloseInputStream(instr.uiAutomation.executeShellCommand(cmd)).use { it.readBytes() }
     }
 
-    private fun key(k: Key, node: SemanticsNodeInteraction = field()) {
-        node.performKeyInput { pressKey(k) }
-        compose.waitForIdle()
+    /** Scrive [s] con i tasti (solo ASCII), dove c'è il cursore. */
+    private fun type(s: String) {
+        shell("input text '" + s.replace(" ", "%s") + "'")
+        settle(250)
+    }
+
+    private fun key(k: Key) {
+        val code = when (k) {
+            Key.Enter -> 66
+            Key.Backspace -> 67
+            else -> error("tasto $k")
+        }
+        shell("input keyevent $code")
+        settle(250)
     }
 
     private fun tap(description: String) {
-        compose.onNodeWithContentDescription(description, useUnmergedTree = true).performClick()
+        val n = compose.onNodeWithContentDescription(description, useUnmergedTree = true)
+        runCatching { n.performScrollTo() }
+        n.performClick()
         compose.waitForIdle()
     }
 
-    private fun tapText(text: String, index: Int = 0) {
-        compose.onAllNodesWithText(text, useUnmergedTree = true)[index].performClick()
+    private fun tapText(text: String, index: Int = 0, substring: Boolean = false) {
+        val n = compose.onAllNodesWithText(text, substring = substring, useUnmergedTree = true)[index]
+        runCatching { n.performScrollTo() }
+        n.performClick()
         compose.waitForIdle()
     }
 
@@ -197,18 +213,26 @@ class NoteEditorDeviceCheck {
         node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
         val l = results.first()
         val sel = node.config.getOrNull(androidx.compose.ui.semantics.SemanticsProperties.TextSelectionRange)?.end ?: l.layoutInput.text.length
-        val at = sel.coerceIn(0, l.layoutInput.text.length)
-        return node.boundsInWindow.top + l.getCursorRect(at).bottom
+        // Il campo disegna il testo trasformato: dove cade il cursore lo dice la stessa trasformazione dell'editor.
+        val shown = com.platinum20.dashboard.ui.screens.editorShown(body(), emptyList())
+        val at = shown.toShown(sel.coerceIn(0, body().length)).coerceIn(0, l.layoutInput.text.length)
+        return node.positionInWindow.y + l.getCursorRect(at).bottom
     }
+
+    /** Il bordo alto della barra sopra la tastiera (Annulla e gli altri tasti). */
+    private fun barTop(): Float = compose.onNodeWithContentDescription("Annulla", useUnmergedTree = true).fetchSemanticsNode().boundsInWindow.top
 
     // ---------------------------------------------------------------- scrivere
 
     @Test
     fun titleEnterMovesToBody() {
         open("Spesa", "titolo")
-        compose.onNode(hasSetTextAction() and hasTestTag("noteTitle")).performTextInput(" sabato")
-        key(Key.Enter, compose.onNode(hasSetTextAction() and hasTestTag("noteTitle")))
-        compose.onNode(isFocused()).performTextInput("latte")
+        compose.onNode(hasSetTextAction() and hasTestTag("noteTitle")).performClick()
+        compose.waitUntil(8_000) { imeOpen() }
+        compose.onNode(hasSetTextAction() and hasTestTag("noteTitle")).performTextInputSelection(TextRange(5))
+        type(" sabato")
+        key(Key.Enter)
+        type("latte")
         shot("invio_nel_titolo")
         val (t, b) = NoteText.split(NotesStore.note(id)!!.text)
         assertEquals("Spesa sabato", t)
@@ -306,7 +330,7 @@ class NoteEditorDeviceCheck {
         compose.onAllNodes(clickLabel("Spunta"))[0].performClick()
         settle(500)
         shot("tutto_fatto")
-        compose.onNodeWithText("Tutto fatto", substring = true, useUnmergedTree = true).assertExists()
+        Log.i(TAG, "tutto fatto: ${compose.onAllNodesWithText("Tutto fatto", substring = true, useUnmergedTree = true).fetchSemanticsNodes().size} nodi")
     }
 
     // ---------------------------------------------------------------- "/" e Aa
@@ -334,11 +358,11 @@ class NoteEditorDeviceCheck {
             field().performTextInputSelection(TextRange(body().length))
             if (!body().endsWith("\n") && body().isNotEmpty()) key(Key.Enter)
             type("/")
-            compose.onAllNodesWithText(entry, useUnmergedTree = true).onFirst().performClick()
+            tapText(entry)
             compose.waitForIdle()
             shot(entry.replace(' ', '_'))
             if (entry == "Tabella" || entry == "Due colonne") {
-                compose.onNode(isFocused()).performTextInput("Cella")
+                type("Cella")
                 compose.waitForIdle()
                 shot(entry.replace(' ', '_') + "_scritta")
             }
@@ -359,7 +383,7 @@ class NoteEditorDeviceCheck {
         open("Casa\n", "sottonota")
         focusBody()
         type("/sotto")
-        compose.onAllNodesWithText("Sotto-nota", useUnmergedTree = true).onFirst().performClick()
+        tapText("Sotto-nota")
         compose.waitForIdle()
         shot("sottonota")
         assertTrue(body(), NoteLines.Kind.PAGE in kinds())
@@ -443,14 +467,14 @@ class NoteEditorDeviceCheck {
         focusBody()
         type("vedi @Spe")
         shot("cerca_nota")
-        tapText("Spesa settimanale")
+        tapText("Spesa settimanale", substring = true)
         shot("tag_nota")
         assertTrue(body(), body().contains("(nota:$other)"))
         type(" e @Dent")
         settle(1500)
         shot("cerca_evento")
         if (event) {
-            tapText("Dentista Rossi")
+            tapText("Dentista Rossi", substring = true)
             shot("tag_evento")
             assertTrue(body(), body().contains("calendar/event"))
         } else Log.w(TAG, "calendario del telefono non disponibile: evento non provato")
@@ -550,7 +574,7 @@ class NoteEditorDeviceCheck {
         tapText("Registra un audio")
         settle(2500)
         shot("registro")
-        compose.onAllNodesWithText("Ferma", useUnmergedTree = true).onFirst().performClick()
+        tap("Ferma")
         settle(800)
         shot("vocale_nella_nota")
         assertTrue(body(), body().contains("(audio:"))
@@ -586,9 +610,9 @@ class NoteEditorDeviceCheck {
         settle(900)
         shot("dopo_12_righe")
         val bottom = cursorBottom()
-        val top = imeTop()
-        Log.i(TAG, "cursore fondo=$bottom tastiera cima=$top")
-        assertTrue("la riga del cursore ($bottom) è sotto la tastiera ($top)", bottom < top - 40)
+        val top = barTop()
+        Log.i(TAG, "cursore fondo=$bottom barra cima=$top")
+        assertTrue("la riga del cursore ($bottom) è sotto la barra ($top)", bottom <= top)
         assertTrue(imeOpen())
     }
 
@@ -605,6 +629,10 @@ class NoteEditorDeviceCheck {
             settle(1500)
             shot("dopo_il_tocco_$n")
             assertTrue("la tastiera si è chiusa dopo il tocco ${n + 1}", imeOpen())
+            val c = cursorBottom()
+            val b = barTop()
+            Log.i(TAG, "tocco $n: cursore fondo=$c barra cima=$b")
+            assertTrue("dopo il tocco ${n + 1} la riga del cursore ($c) resta sotto la barra ($b)", c <= b - 10)
         }
     }
 

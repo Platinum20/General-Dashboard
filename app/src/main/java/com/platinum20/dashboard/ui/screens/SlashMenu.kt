@@ -37,6 +37,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -142,7 +149,7 @@ internal fun slashEntries(target: RichBar.Target, openPage: (Long, String) -> Un
         SlashEntry("colonne", blocks, Icons.Outlined.ViewColumn, "Due colonne", "‖") { now ->
             val e = NoteLines.insertBlock(now.text, now.selection.end, NoteLines.COLUMNS_NEW)
             target.set(TextFieldValue(e.text, TextRange(e.start)))
-            RichBar.openTable = NoteLines.lineAt(e.text, e.start).index
+            RichBar.openTable = NoteLines.insertedBlockIndex(e)
         },
         SlashEntry("bacheca", blocks, Icons.Outlined.ViewKanban, "Bacheca", "") { now ->
             val e = NoteLines.insertBlock(now.text, now.selection.end, NoteLines.BOARD)
@@ -182,10 +189,20 @@ internal fun SlashMenu(target: RichBar.Target, query: String) {
     val room = with(density) { 64.dp.roundToPx() }
     val gap = with(density) { 6.dp.roundToPx() }
     val width = (LocalConfiguration.current.screenWidthDp - 40).coerceAtMost(340).dp
-    // Alto al massimo metà dello spazio sopra la tastiera (1.594): così sta sempre tutto sopra o sotto la riga, mai
-    // sotto la tastiera né sopra la riga in cui si scrive.
-    val free = LocalConfiguration.current.screenHeightDp - with(density) { imeBottom.toDp().value } - 64f - 40f
-    val maxHeight = (free / 2f).coerceIn(140f, 320f).dp
+    // Sotto la riga quando lì c'è posto per almeno quattro voci, se no sopra (1.604). Prima era alto al massimo metà dello
+    // spazio sopra la tastiera e, con la riga in cima alla nota, finiva sopra il titolo con tre voci sole: la riga e lo
+    // spazio vero sotto di lei decidono l'altezza.
+    val view = androidx.compose.ui.platform.LocalView.current
+    var anchor by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+    val windowH = view.rootView.height.takeIf { it > 0 } ?: with(density) { LocalConfiguration.current.screenHeightDp.dp.roundToPx() }
+    val topInset = WindowInsets.statusBars.getTop(density)
+    val place = slashPlace(
+        anchorTop = anchor?.top ?: 0f, anchorBottom = anchor?.bottom ?: 0f,
+        limit = (windowH - imeBottom - room).toFloat(), top = topInset.toFloat(), gap = gap.toFloat(),
+        minBelow = with(density) { 200.dp.toPx() }, max = with(density) { 380.dp.toPx() },
+    )
+    val maxHeight = with(density) { place.second.toDp() }.coerceAtLeast(120.dp)
+    Box(Modifier.fillMaxSize().onGloballyPositioned { anchor = it.boundsInWindow() })
     LaunchedEffect(Unit) { SlashRecent.load(context) }
     val recent by SlashRecent.ids.collectAsState()
     val inApp = LocalInAppNav.current
@@ -205,15 +222,9 @@ internal fun SlashMenu(target: RichBar.Target, query: String) {
     }
     val provider = object : PopupPositionProvider {
         override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection, popupContentSize: IntSize): IntOffset {
-            val limit = (windowSize.height - imeBottom - room).coerceAtLeast(0)
             val below = anchorBounds.bottom + gap
             val above = anchorBounds.top - gap - popupContentSize.height
-            val y = when {
-                below + popupContentSize.height <= limit -> below
-                above >= 0 -> above
-                // Né sotto né sopra per intero: dove c'è più posto, comunque sopra la tastiera.
-                else -> (limit - popupContentSize.height).coerceAtLeast(0)
-            }
+            val y = if (place.first) below else above.coerceAtLeast(topInset)
             val x = anchorBounds.left.coerceAtMost((windowSize.width - popupContentSize.width).coerceAtLeast(0))
             return IntOffset(x, y)
         }
@@ -303,4 +314,16 @@ private fun SlashRow(entry: SlashEntry, on: Boolean, onClick: () -> Unit) {
         Text(entry.label, style = MaterialTheme.typography.bodyLarge, color = colors.onSurface, maxLines = 1, modifier = Modifier.weight(1f))
         if (entry.key.isNotEmpty()) Text(entry.key, style = MaterialTheme.typography.labelMedium, fontFamily = FontFamily.Monospace, color = colors.onSurfaceVariant)
     }
+}
+
+/**
+ * Pura (1.604): dove va il menu "/" e quanto può essere alto, in pixel della finestra. Sotto la riga se lì ci stanno
+ * almeno [minBelow] (o comunque più che sopra), se no sopra; l'altezza è lo spazio di quel lato, al massimo [max].
+ * first = sotto, second = altezza massima.
+ */
+internal fun slashPlace(anchorTop: Float, anchorBottom: Float, limit: Float, top: Float, gap: Float, minBelow: Float, max: Float): Pair<Boolean, Float> {
+    val below = limit - anchorBottom - gap
+    val above = anchorTop - gap - top
+    val down = below >= minBelow || below >= above
+    return down to (if (down) below else above).coerceIn(0f, max)
 }
