@@ -26,6 +26,7 @@
     <!-- Sveglia con la radio: allarme esatto e riprogrammazione dopo il riavvio. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- WindTre e Creators Pro restano collegati anche col telefono fermo (KeepAliveWorker). -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
@@ -78,6 +79,16 @@
             android:excludeFromRecents="true"
             android:launchMode="singleTask"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <!-- La sveglia veloce del turno a tutto schermo, anche col telefono bloccato. -->
+        <activity
+            android:name=".trips.QuickAlarmActivity"
+            android:exported="false"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true" />
 
         <!-- Cattura al volo: finestrella sopra le altre app per promemoria e note. -->
         <activity
@@ -201,6 +212,16 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_capture_info" />
+        </receiver>
+
+        <!-- Sveglia veloce 5 / 10 / 15 min della notifica del turno. -->
+        <receiver
+            android:name=".trips.QuickAlarmReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
         </receiver>
 
         <receiver

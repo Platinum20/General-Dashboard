@@ -9,6 +9,11 @@
 - Video in Media: senza iscrizioni le tessere grigie non restano lì per sempre
 - Il riassunto vocale delle news non rischia più di chiudere l'app per un segno nel testo
 - Nuovi controlli automatici: migliaia di note scritte a caso passano dall'editor senza chiuderlo
+## 1.601.0
+**Sveglia veloce dalla notifica del turno**
+- In fondo alla notifica del turno ci sono tre tasti: sveglia fra 5, 10 o 15 minuti
+- Suona come la sveglia dell'orologio, anche col telefono in vibrazione o silenzioso, e si apre a tutto schermo
+- Dopo il tocco vedi l'orario con "Togli"; quando suona puoi fermarla o rimandarla di 5 minuti
 
 ## 1.600.0
 **La tastiera si chiude quando scorri**
