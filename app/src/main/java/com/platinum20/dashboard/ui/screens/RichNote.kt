@@ -261,6 +261,11 @@ internal fun RichNoteField(
     tappedBelow: Int = 0,
     /** La nota di questo campo (2026-11-23): l'evento messo in calendario da una data la richiama con "@". */
     noteId: Long? = null,
+    /**
+     * L'aria sopra la prima riga (2026-11-23). Nelle righe dentro una card (Appunti, note di un evento) va tolta: se no
+     * il testo sta più in basso dell'icona e la card sembra più alta delle altre righe.
+     */
+    firstAir: Boolean = true,
 ) {
     val context = LocalContext.current
     val haptic = rememberHaptic()
@@ -387,9 +392,9 @@ internal fun RichNoteField(
             }
         }
     }
-    val transformation = remember(faded, value.text, found, findAt, accent, folds, tallAt, blockSp, smartStyles) {
+    val transformation = remember(faded, value.text, found, findAt, accent, folds, tallAt, blockSp, smartStyles, firstAir) {
         VisualTransformation { input ->
-            richText(input.text, faded, smartStyles + found.mapIndexed { i, r -> r to if (i == findAt) foundNow else foundStyle }, accent, marker = marker, folds = folds, tall = tallAt, sizes = blockSp)
+            richText(input.text, faded, smartStyles + found.mapIndexed { i, r -> r to if (i == findAt) foundNow else foundStyle }, accent, marker = marker, folds = folds, tall = tallAt, sizes = blockSp, firstAir = firstAir)
         }
     }
     fun hiddenLine(line: NoteLines.Line) = folds.any { line.start in it }
@@ -1390,6 +1395,8 @@ internal fun richText(
     tall: Int? = null,
     /** L'altezza (in sp del carattere invisibile) delle righe-pezzo, per il loro testo (1.590). */
     sizes: Map<String, Float> = emptyMap(),
+    /** Senza aria sopra la prima riga: la prima riga semplice resta alta come il testo. */
+    firstAir: Boolean = true,
 ): TransformedText {
     val styled = buildAnnotatedString {
         append(text)
@@ -1443,6 +1450,7 @@ internal fun richText(
         // dopo un Invio ha più spazio sopra; le righe che vanno a capo da sole restano strette.
         view.lines.filter { folds.none { f -> it.start in f } }.forEach { line ->
             val at = view.toShown(line.start) + if (line.hasMark && line.prefix > 0) 1 else 0
+            if (!firstAir && line.index == 0 && !line.isBlock && line.start != tall) return@forEach
             val size = if (line.start == tall) TALL_SIZE else if (line.isBlock) sizes[text.substring(line.start, line.end)]?.sp ?: BREATH_SIZE else BREATH_SIZE
             if (at < length) addStyle(SpanStyle(fontSize = size), at, at + 1)
         }
@@ -1766,6 +1774,7 @@ internal fun DetailRichRow(key: Any, icon: ImageVector, value: String, placehold
             textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
             placeholder = placeholder,
             sendToTodo = true,
+            firstAir = false,
             modifier = Modifier.weight(1f),
         )
     }
