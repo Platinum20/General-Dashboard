@@ -133,7 +133,6 @@ internal fun BoxScope.CaptureFeedbackLayer(onNotes: Boolean) {
                 color = androidx.compose.ui.graphics.Color.Transparent,
                 // Sopra la Scaffold nessuno dà il colore del testo: senza, nel tema scuro restava nero.
                 contentColor = MaterialTheme.colorScheme.onSurface,
-                border = cardBorder(),
                 modifier = Modifier
                     .swipeAway(swipe) { if (notice === n) notice = null }
                     .glass(RoundedCornerShape(22.dp))
