@@ -373,7 +373,17 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
 
     // ---- Audio nella nota (1.588): la riga-link va sotto la riga del cursore ----
     val recordingSince by NoteAudio.recordingSince.collectAsStateWithLifecycle()
-    DisposableEffect(Unit) { onDispose { NoteAudio.cancel(); NoteAudio.stopPlaying() } }
+    // Uscendo dalla nota mentre si registra, l'audio resta nella nota invece di perdersi.
+    DisposableEffect(Unit) {
+        onDispose {
+            if (!deleted && NoteAudio.recordingSince.value != null) NoteAudio.stop()?.let { line ->
+                val e = NoteText.insertLine(body.text, body.selection.end, line)
+                body = TextFieldValue(e.first, TextRange(e.second))
+                NotesStore.saveNote(id, NoteText.join(title.text, body.text))
+            }
+            NoteAudio.cancel(); NoteAudio.stopPlaying()
+        }
+    }
     fun startRecording() {
         if (NoteAudio.start(context)) haptic(Haptic.TOGGLE_ON) else CaptureFeedback.tell(context, "Il microfono non si apre")
     }

@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.602.0
+**Giro di controllo: piccoli bug sistemati**
+- Uscendo da una nota mentre registri un audio, l'audio resta nella nota invece di perdersi
+- Se il microfono non si apre, non resta occupato per la registrazione dopo
+- Un link @ verso una pagina che non c'è più non chiude l'app
+- Il quadratino delle abitudini e delle cose da fare nel calendario si tocca in tutto il suo spazio, non solo sulla spunta
+- Video in Media: senza iscrizioni le tessere grigie non restano lì per sempre
+- Il riassunto vocale delle news non rischia più di chiudere l'app per un segno nel testo
+- Nuovi controlli automatici: migliaia di note scritte a caso passano dall'editor senza chiuderlo
 ## 1.601.0
 **Sveglia veloce dalla notifica del turno**
 - In fondo alla notifica del turno ci sono tre tasti: sveglia fra 5, 10 o 15 minuti

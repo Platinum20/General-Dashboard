@@ -14,8 +14,12 @@ class AndroidRegexTest {
     fun everyBraceInARegexIsEscaped() {
         val literal = Regex("Regex\\(\"\"\"(.*?)\"\"\"")
         val ok = Regex("""\\p\{\w+}|\$\{[^}]*}|\\.|\{\d+(,\d*)?}""")
+        // Anche le stringhe normali Regex("…"), lette come le vede il programma (\\ → \); quelle col dollaro di Kotlin si saltano.
+        val quoted = Regex("Regex\\(\"((?:[^\"\\\\]|\\\\.)*)\"")
         val bad = File("src/main/java").walkTopDown().filter { it.extension == "kt" }.flatMap { f ->
-            literal.findAll(f.readText()).map { it.groupValues[1] }
+            val src = f.readText()
+            (literal.findAll(src).map { it.groupValues[1] } +
+                quoted.findAll(src).map { it.groupValues[1] }.filter { '$' !in it }.map { it.replace("\\\\", "\\").replace("\\\"", "\"") })
                 .filter { p -> p.replace(ok, "").any { it == '{' || it == '}' } }
                 .map { "${f.name}: $it" }
         }.toList()

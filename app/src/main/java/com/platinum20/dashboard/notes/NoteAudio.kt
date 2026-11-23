@@ -33,10 +33,13 @@ object NoteAudio {
     fun start(context: Context): Boolean {
         stopPlaying()
         cancel()
+        var made: MediaRecorder? = null
         return runCatching {
             val file = File(context.filesDir, "note-audio/${System.currentTimeMillis()}.m4a").apply { parentFile?.mkdirs() }
+            recording = file
             @Suppress("DEPRECATION")
             val r = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) MediaRecorder(context) else MediaRecorder()
+            made = r
             r.setAudioSource(MediaRecorder.AudioSource.MIC)
             r.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
             r.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
@@ -50,7 +53,11 @@ object NoteAudio {
             startedAt = System.currentTimeMillis()
             _recordingSince.value = startedAt
             true
-        }.getOrElse { cancel(); false }
+        }.getOrElse {
+            // Il microfono non si è aperto: il registratore va chiuso lo stesso (se no resta occupato) e il file vuoto via.
+            if (recorder == null) runCatching { made?.release() }
+            cancel(); false
+        }
     }
 
     /** Ferma la registrazione: la riga da mettere nella nota, o null se è troppo corta o non è andata. */
