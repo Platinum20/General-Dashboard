@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.604.0
+**Turno allungato: l'orario di fine giusto**
+- Se allunghi un turno su Creators Pro, notifica, calendario, Home e widget dicono "finisce alle" e "finito alle" con l'orario nuovo, fino alla fine dell'extra
+- Nella mezz'ora dopo la fine del turno Canvas rilegge Creators Pro, così vede anche l'extra messo all'ultimo
+
 ## 1.603.0
 **Tasti della sveglia più corti**
 - Nella notifica del turno i tre tasti dicono solo "5 min", "10 min" e "15 min"
