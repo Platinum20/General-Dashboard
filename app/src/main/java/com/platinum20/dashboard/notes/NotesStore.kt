@@ -675,6 +675,26 @@ object NotesStore {
         d.copy(notes = d.notes.map { if (it.id == id) it.copy(emoji = emoji?.takeIf { e -> e.isNotBlank() }) else it })
     }
 
+    /**
+     * Cambia il testo di una nota da fuori dall'editor (una spunta dalla Home o dal widget, "Ricomincia"): tutto il
+     * resto della nota (foto, archivio, emoji) resta com'è.
+     */
+    fun editNoteText(id: Long, change: (String) -> String) = update { d ->
+        val n = d.notes.firstOrNull { it.id == id } ?: return@update d
+        val next = change(n.text)
+        if (next == n.text) return@update d
+        d.copy(notes = d.notes.map { if (it.id == id) it.copy(text = next, updatedAt = System.currentTimeMillis()) else it })
+    }
+
+    /** "Duplica" (2026-11-23, idea 15): una nota nuova uguale, spunte da rifare, con la stessa emoji. Restituisce l'id. */
+    fun duplicateNote(id: Long): Long? {
+        val n = note(id) ?: return null
+        val now = System.currentTimeMillis()
+        val copy = Note(newId(), NoteLists.duplicate(n.text), now, createdAt = now, emoji = n.emoji)
+        update { d -> d.copy(notes = listOf(copy) + d.notes) }
+        return copy.id
+    }
+
     fun togglePin(id: Long) = update { d ->
         d.copy(notes = d.notes.map { if (it.id == id) it.copy(pinned = !it.pinned) else it })
     }

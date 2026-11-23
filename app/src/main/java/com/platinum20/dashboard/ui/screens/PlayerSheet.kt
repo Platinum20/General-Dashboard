@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
@@ -105,7 +106,7 @@ internal fun PlayerSheet(
                 Modifier
                     .fillMaxSize()
                     // Velo leggero: sotto al vetro il video si deve ancora vedere.
-                    .background(Color.Black.copy(alpha = 0.18f))
+                    .background(Color.Black.copy(alpha = Glass.scrim(MaterialTheme.colorScheme.background.luminance() < 0.5f)))
                     .pointerInput(Unit) { detectTapGestures { onClose() } },
             )
         }
@@ -137,8 +138,7 @@ internal fun PlayerSheet(
             Column(
                 size
                     .offset { if (sideways) IntOffset(drag.value.roundToInt(), 0) else IntOffset(0, drag.value.roundToInt()) }
-                    .border(cardBorder(), shape)
-                    .glass(shape)
+                    .glass(shape, overScrim = true)
                     // I tocchi sul pannello restano al pannello, non chiudono.
                     .pointerInput(Unit) { detectTapGestures { } }
                     .then(
