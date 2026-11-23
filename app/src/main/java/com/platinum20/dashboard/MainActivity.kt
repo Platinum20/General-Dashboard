@@ -478,6 +478,12 @@ object Routes {
     const val NOTE_ITEM = "notes/item/{kind}/{id}"
 
     fun noteItem(kind: ItemKind, id: Long) = "notes/item/${kind.name}/$id"
+
+    /** La pagina di un'etichetta delle note (#casa) e di una persona dei turni (@Marco), 2026-11-23. */
+    const val TAG = "notes/tag/{name}"
+    fun tag(name: String) = "notes/tag/${Uri.encode(name)}"
+    const val PERSON = "notes/person/{name}"
+    fun person(name: String) = "notes/person/${Uri.encode(name)}"
     const val READER = "news/reader?url={url}&source={source}&title={title}"
     const val WEB_PAGE = "news/web?url={url}&source={source}"
 
@@ -1584,6 +1590,12 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onPickPlace = { navController.navigate(Routes.WEATHER_PLACE) },
                 )
                 }
+            }
+            composable(Routes.TAG, arguments = listOf(navArgument("name") { type = NavType.StringType })) { entry ->
+                com.platinum20.dashboard.ui.screens.TagScreen(name = entry.arguments?.getString("name").orEmpty(), onBack = { navController.popBackStack() })
+            }
+            composable(Routes.PERSON, arguments = listOf(navArgument("name") { type = NavType.StringType })) { entry ->
+                com.platinum20.dashboard.ui.screens.PersonScreen(name = entry.arguments?.getString("name").orEmpty(), onBack = { navController.popBackStack() })
             }
             composable(Routes.LATER_ARCHIVE) {
                 com.platinum20.dashboard.ui.screens.LaterArchiveScreen(onBack = { navController.popBackStack() })
