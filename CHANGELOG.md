@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.607.0
+## 1.608.0
 **Le note entrano in tutta l'app**
 - Scrivi @ in una nota per collegare eventi, turni, treni, brani, video, articoli e altre note; la cosa citata mostra "Citato in"
 - Date, #etichette, codici e numeri di spedizione nelle note si toccano: in calendario, pagina etichetta, copia, segui il pacco
@@ -12,6 +12,12 @@
 - Una nota con un elenco di brani diventa una playlist Spotify o va in coda; "Ascolta" legge la nota con la voce delle News
 - Da una mail in Dalla posta: "Salva in nota" tiene solo codice, orari e indirizzo
 - Condividi → Canvas da qualsiasi app (anche foto) con nuova nota o "Aggiungi a…", riquadro "Nota Canvas" nella tendina, "Detta qui" tenendo premuto nella nota
+
+## 1.607.0
+**La riga che tocchi sale in cima**
+- Tocchi una riga della nota per scrivere: la nota scorre e quella riga va in cima allo schermo, subito sotto la testata
+- Vale con la tastiera chiusa, con la tastiera già aperta e toccando sotto l'ultima riga
+- La tastiera resta aperta: si chiude solo se trascini tu la pagina col dito
 
 ## 1.606.0
 **Un solo vetro in tutta l'app**
