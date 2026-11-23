@@ -45,6 +45,10 @@ Documenti, Dalla posta. Logic in `today/` (`Briefing`, `Upcoming`, `Invites`, `G
 `notes`, `allDay` dates; only undated tasks are tickable). `ItemDetailScreen.kt` (tasks, dates, parcels, habits),
 event pages in `CalendarScreen.kt`. `calendar/` = CalendarContract, `Trips` (train mails → one trip event).
 Reminders: `TaskReminderWorker`, `HabitReminderWorker`, `notes/ReminderText.kt`.
+Attached notes: `Note.about` key (`notes/AttachedNotes.kt`: "ev:<id>[@day]", "habit:<id>") = "Appunti" block on
+event/shift/train/habit pages (`AttachedNotesBlock`), `📝` line in timeline rows, live + morning notifications;
+`NoteNotify.kt` (leftovers after an event, notification buttons), `NotePlaces.kt` (note → place proximity alert),
+`LineReminder` + `NoteExtrasUi.kt` (editor "Altro": Ricordamelo on the cursor line, place).
 
 **Notes editor**: `NoteEditor.kt` + `RichNote.kt` (`RichNoteField`, `RichToolbar`), pure `notes/NoteLines.kt`
 (text/bullet/number/check/heading per line, indent levels, renumber), `notes/NoteFormat.kt` (marks never shown,

@@ -388,6 +388,15 @@ fun EventDetailScreen(
                     }
                 }
             }
+            // Gli appunti di questa cosa (idea 1, 2026-11-23): "portare badge" sta sul turno, non altrove.
+            val shownTitle = if (shift != null) RowText.shift(shift.title) ?: "Turno" else com.platinum20.dashboard.calendar.Trips.title(current.title)
+            AttachedNotesBlock(
+                key = com.platinum20.dashboard.notes.AttachedNotes.event(current.id, from, current.recurring, zone),
+                title = shownTitle + " · " + java.time.Instant.ofEpochMilli(from).atZone(zone)
+                    .format(java.time.format.DateTimeFormatter.ofPattern("EEE d MMM", java.util.Locale.ITALIAN)),
+                begin = from,
+                end = to,
+            )
             if (shift != null) {
                 ShiftPayCards(shift)
             } else if (!current.writable) {

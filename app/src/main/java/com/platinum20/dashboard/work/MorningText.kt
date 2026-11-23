@@ -57,6 +57,14 @@ object MorningText {
         )
     }
 
+    /** La riga degli appunti di oggi ([memo]) in fondo a "Oggi"; senza "Oggi" un gruppo suo. */
+    fun withMemo(groups: List<MorningGroup>, memo: String?): List<MorningGroup> {
+        if (memo == null) return groups
+        val at = groups.indexOfFirst { it.header == "Oggi" }
+        if (at < 0) return groups + MorningGroup("Oggi", listOf(memo))
+        return groups.mapIndexed { i, g -> if (i == at) g.copy(lines = g.lines + memo) else g }
+    }
+
     /** "…e un'altra" / "…e altre N" quando la lista è più lunga delle righe mostrate. */
     fun more(total: Int): String? = when (val rest = total - TASKS) {
         in Int.MIN_VALUE..0 -> null

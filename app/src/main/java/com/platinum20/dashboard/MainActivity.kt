@@ -307,6 +307,8 @@ class MainActivity : ComponentActivity() {
         }
         AppSettings.init(this)
         com.platinum20.dashboard.trips.TrainLive.init(this)
+        // Gli avvisi dei posti delle note: il sistema li perde, si rimettono a ogni avvio (idea 11).
+        runCatching { com.platinum20.dashboard.notes.NotePlaces.registerAll(this) }
         WebFetcher.init(this)
         DiskCache.init(this)
         // Le liste del blocco pubblicità si caricano in sottofondo, pronte per la prima pagina web.
