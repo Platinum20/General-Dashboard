@@ -1,9 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.runtime.Composable
@@ -28,14 +25,11 @@ internal fun AttachedNotesBlock(key: String, title: String, begin: Long = 0L, en
     val data by NotesStore.data.collectAsStateWithLifecycle()
     val note = data.notes.firstOrNull { it.about == key }
     val body = AttachedNotes.body(note)
-    Column(Modifier.fillMaxWidth()) {
-        SectionHeader(label)
-        Spacer(Modifier.height(4.dp))
-        CanvasCard(Modifier.fillMaxWidth()) {
-            DetailRichRow("attached-$key", Icons.AutoMirrored.Outlined.Notes, body, "Tocca per scrivere…") { text ->
-                NotesStore.saveAttached(key, title, text)
-                if (end > 0) runCatching { NoteNotify.scheduleLeftovers(context, key, text, begin, end) }
-            }
+    // Il titolo dentro la card, come "Citato in" subito sopra: due card uguali, non un titolo che galleggia (2026-11-23).
+    CardSection(label, modifier = Modifier.padding(top = 12.dp)) {
+        DetailRichRow("attached-$key", Icons.AutoMirrored.Outlined.Notes, body, "Tocca per scrivere…") { text ->
+            NotesStore.saveAttached(key, title, text)
+            if (end > 0) runCatching { NoteNotify.scheduleLeftovers(context, key, text, begin, end) }
         }
     }
 }

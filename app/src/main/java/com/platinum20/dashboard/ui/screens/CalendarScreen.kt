@@ -358,6 +358,7 @@ fun EventDetailScreen(
                                 RichNoteField(
                                     value = shownNotes,
                                     readOnly = true,
+                                    firstAir = false,
                                     textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
                                     placeholder = "",
                                     onValueChange = { v ->
@@ -388,7 +389,15 @@ fun EventDetailScreen(
                     }
                 }
             }
+            if (shift != null) {
+                ShiftPayCards(shift)
+            } else if (!current.writable) {
+                DetailNote("Questo calendario è di sola lettura: l'evento si può guardare ma non modificare.")
+            }
+            // Le note che citano questo evento, turno o treno con "@" (2026-11-23).
+            CitedIn(listOf(com.platinum20.dashboard.notes.NoteFormat.APP_LINK + com.platinum20.dashboard.Routes.calendarEvent(eventId)), Modifier.padding(top = 12.dp))
             // Gli appunti di questa cosa (idea 1, 2026-11-23): "portare badge" sta sul turno, non altrove.
+            // Sempre l'ultima card della pagina, anche dopo "Citato in" (Antonio, 2026-11-23).
             val shownTitle = if (shift != null) RowText.shift(shift.title) ?: "Turno" else com.platinum20.dashboard.calendar.Trips.title(current.title)
             AttachedNotesBlock(
                 key = com.platinum20.dashboard.notes.AttachedNotes.event(current.id, from, current.recurring, zone),
@@ -397,14 +406,7 @@ fun EventDetailScreen(
                 begin = from,
                 end = to,
             )
-            if (shift != null) {
-                ShiftPayCards(shift)
-            } else if (!current.writable) {
-                DetailNote("Questo calendario è di sola lettura: l'evento si può guardare ma non modificare.")
-            }
         }
-        // Le note che citano questo evento, turno o treno con "@" (2026-11-23).
-        CitedIn(listOf(com.platinum20.dashboard.notes.NoteFormat.APP_LINK + com.platinum20.dashboard.Routes.calendarEvent(eventId)), Modifier.padding(top = 12.dp))
     }
 }
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.611.0
+**Appunti in fondo, e della giusta altezza**
+- Sulle pagine di eventi, turni, treni e abitudini la card Appunti è sempre l'ultima, dopo tutte le altre (anche dopo "Citato in")
+- La card Appunti ha il titolo dentro come le altre e il testo allineato all'icona: prima sembrava più alta del dovuto
+- Anche le note con le voci da spuntare nella pagina dell'evento non hanno più lo spazio vuoto sopra
+
 ## 1.610.0
 **Niente più chiusure col vetro**
 - L'app si chiudeva appena compariva un fumetto o un pannello di vetro: tolta la modifica della 1.609 che lo causava
