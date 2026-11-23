@@ -139,6 +139,26 @@ object ShiftPay {
     fun of(shift: Shift, pay: List<ShiftEarning>): ShiftEarning? =
         pay.firstOrNull { it.id == shift.id } ?: pay.filter { abs(it.start - shift.start) <= 90 * 60_000L }.minByOrNull { abs(it.start - shift.start) }
 
+    /** Oltre questo un "extra" è un dato sbagliato, non un turno allungato. */
+    const val MAX_EXTRA_MS = 8 * 3600_000L
+
+    /**
+     * La fine vera del turno: se lo allunghi su Creators Pro la timeline resta sulla fascia (17–22), ma la busta paga
+     * segna il turno lungo. Si conta la durata della busta paga dall'inizio della timeline, così l'ora sfasata d'inverno
+     * di una delle due non sposta niente; mai più corto della fascia.
+     */
+    fun endWithExtra(shift: Shift, pay: ShiftEarning?): Long {
+        pay ?: return shift.end
+        val length = pay.end - pay.start
+        val extra = length - (shift.end - shift.start)
+        return if (extra in 60_000L..MAX_EXTRA_MS) shift.start + length else shift.end
+    }
+
+    fun withExtra(shifts: List<Shift>, pay: List<ShiftEarning>): List<Shift> = shifts.map { s ->
+        val end = endWithExtra(s, of(s, pay))
+        if (end == s.end) s else s.copy(end = end)
+    }
+
     /** Il mese di busta paga che contiene quel momento. */
     fun monthOf(at: Long, months: List<PayMonth>): PayMonth? = months.firstOrNull { at in it.start..it.end }
 

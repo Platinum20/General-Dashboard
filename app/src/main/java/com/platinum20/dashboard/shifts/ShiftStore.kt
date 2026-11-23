@@ -23,8 +23,18 @@ object ShiftStore {
     const val STALE_MS = 5 * 60 * 1000L
 
     private var appContext: Context? = null
+    /** I turni come li dice la timeline (la fascia, 5 ore). */
     private val _shifts = MutableStateFlow<List<Shift>>(emptyList())
-    val shifts: StateFlow<List<Shift>> = _shifts.asStateFlow()
+    private val _extended = MutableStateFlow<List<Shift>>(emptyList())
+    /**
+     * I turni da mostrare ovunque (calendario, Home, widget, notifica): con la fine spostata dall'extra che la busta
+     * paga segna quando il turno si allunga su Creators Pro (Antonio, 2026-11-23).
+     */
+    val shifts: StateFlow<List<Shift>> = _extended.asStateFlow()
+
+    private fun extend() {
+        _extended.value = ShiftPay.withExtra(_shifts.value, _pay.value)
+    }
     private val _linked = MutableStateFlow(false)
     val linked: StateFlow<Boolean> = _linked.asStateFlow()
     private val _readAt = MutableStateFlow(0L)
@@ -82,6 +92,7 @@ object ShiftStore {
         _shifts.value = ShiftParse.fromJson(prefs.getString("shifts", null))
         _pay.value = ShiftPay.fromJson(prefs.getString("pay", null))
         _payMonths.value = ShiftPay.monthsFromJson(prefs.getString("payMonths", null))
+        extend()
         myIds = prefs.getStringSet("myIds", emptySet()).orEmpty()
         timelineUrl = prefs.getString("timelineUrl", null)
         runCatching {
@@ -140,7 +151,12 @@ object ShiftStore {
         saveCaptures()
         main.post {
             if (months != null) _payMonths.value = ShiftPay.mergeMonths(_payMonths.value, months)
-            if (shifts != null) _pay.value = ShiftPay.mergeShifts(_pay.value, shifts)
+            if (shifts != null) {
+                _pay.value = ShiftPay.mergeShifts(_pay.value, shifts)
+                extend()
+                // Un extra appena letto: il widget Calendario cambia l'orario di fine.
+                appContext?.let { runCatching { com.platinum20.dashboard.widget.Widgets.refresh(it, com.platinum20.dashboard.widget.TasksWidget::class.java) } }
+            }
             appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()
                 ?.putString("pay", ShiftPay.toJson(_pay.value))
                 ?.putString("payMonths", ShiftPay.monthsToJson(_payMonths.value))
@@ -169,6 +185,7 @@ object ShiftStore {
     private fun commit(read: ShiftRead) {
         if (read.myIds.isNotEmpty()) myIds = myIds + read.myIds
         _shifts.value = ShiftParse.merge(_shifts.value, read)
+        extend()
         _readAt.value = System.currentTimeMillis()
         appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()
             ?.putString("shifts", ShiftParse.toJson(_shifts.value))
@@ -212,6 +229,7 @@ object ShiftStore {
         _linked.value = false
         appContext?.let { ShiftWorker.cancel(it); runCatching { com.platinum20.dashboard.work.KeepAliveWorker.update(it) } }
         _shifts.value = emptyList()
+        extend()
         _pay.value = emptyList()
         _payMonths.value = emptyList()
         _readAt.value = 0

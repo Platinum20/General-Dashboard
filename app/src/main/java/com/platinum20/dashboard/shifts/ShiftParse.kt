@@ -294,7 +294,12 @@ object ShiftParse {
                 if (abs(at - begin) > 5 * 60_000L) return@flatMap emptyList()
                 membersOf(other).filter { m -> !namesMe(m, me) && idOf(m) !in ids }.mapNotNull(::memberName)
             }.distinct()
-            mine += Shift(shift.optString("id").ifBlank { ev.optString("id") }, start, start + length, title, scope, mates)
+            // Se lo slot o il turno hanno una fine loro più tarda della fascia, è un turno allungato (2026-11-23).
+            val ownEnd = (instant(ev.opt("endedAt"), zone) ?: instant(shift.opt("endedAt"), zone))?.let { e ->
+                LocalDateTime.ofEpochSecond(e / 1000, 0, offset).atZone(tz).toInstant().toEpochMilli()
+            }
+            val end = ownEnd?.takeIf { it - start in length + 60_000L..length + ShiftPay.MAX_EXTRA_MS } ?: (start + length)
+            mine += Shift(shift.optString("id").ifBlank { ev.optString("id") }, start, end, title, scope, mates)
         }
         val from = instant(param(url, "startedAt"), zone)
         val to = instant(param(url, "endedAt"), zone)
