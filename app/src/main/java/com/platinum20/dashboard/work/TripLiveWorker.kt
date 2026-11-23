@@ -91,7 +91,9 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 val shift = ShiftStore.shifts.value.firstOrNull { it.eventId == event.eventId }
                 // Mentre lavori (e nelle due ore dopo, finché il guadagno non c'è) si rilegge ogni 15 minuti, non ogni ora.
                 val numbers = shift?.let { ShiftPay.of(it, ShiftStore.pay.value) }
-                val wanted = phase == ShiftPhase.WORKING || phase == ShiftPhase.DONE && now < event.end + 2 * 3_600_000L && numbers?.let(ShiftPay::worked) != true
+                // Nella mezz'ora dopo la fine si rilegge comunque: un extra messo all'ultimo sposta la fine (2026-11-23).
+                val wanted = phase == ShiftPhase.WORKING || phase == ShiftPhase.DONE && now < event.end + 2 * 3_600_000L && numbers?.let(ShiftPay::worked) != true ||
+                    phase == ShiftPhase.DONE && now < event.end + 30 * 60_000L
                 val tried = prefs.getLong(KEY_SHIFT_READ, 0L)
                 // Anche se l'accesso sembra scaduto: un 401 di passaggio in background lo segnava scaduto e fermava le
                 // riletture per tutto il turno (2026-11-21, venduto fermo alle 18:20). Una lettura buona lo rimette a posto.
