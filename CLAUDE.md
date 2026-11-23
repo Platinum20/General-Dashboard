@@ -22,7 +22,7 @@ layers (queue, video settings, What's new) drawn OUTSIDE the NavHost. Calendario
   (no spinners), `Clip.copy`, `relativeTime`, `rememberRowAtStart` (Media LazyRows), `PlusAction`.
 - `KeyboardDismiss.kt`: root nestedScroll in MainActivity = a finger drag on any page hides the keyboard (code scrolls don't).
 - `Motion.kt`: only `Motion.settle()`, `Motion.lively()`, `Motion.gesture()` + `Motion.fling`; `Modifier.entrance()`.
-- `ActionBubble.kt` = every menu/confirm (glass bubble, bottom center). `GlassDialog.kt` `CanvasDialog` = every dialog.
+- `ActionBubble.kt` = every menu/confirm (glass bubble, bottom center). Glass = `Modifier.glass(shape, overScrim=)` (Common.kt, draws its own rim: no extra border) + numbers in `GlassStyle.kt` `Glass` (blur, tint, scrim, rim) also used by dialogs. `GlassDialog.kt` `CanvasDialog` = every dialog.
   `SaveToNotesLayer.kt` (`BottomBubble`, `BubbleRow`), `SwipeAway.kt`, `Pickers.kt`, `CanvasSearchField` (SearchField.kt).
 - `RowActions.kt` `rememberRowActions()` = long-press bubble of calendar rows. RULE: anything with a page/menu of
   actions gets the same actions on long press.
@@ -48,7 +48,8 @@ Reminders: `TaskReminderWorker`, `HabitReminderWorker`, `notes/ReminderText.kt`.
 
 **Notes editor**: `NoteEditor.kt` + `RichNote.kt` (`RichNoteField`, `RichToolbar`), pure `notes/NoteLines.kt`
 (text/bullet/number/check/heading per line, indent levels, renumber), `notes/NoteFormat.kt` (marks never shown,
-`afterEdit` keeps them intact), `notes/NoteHistory.kt` (undo/redo), `NoteTable` (| a | b | rows), `NoteAudio` (audio: links), `NoteVersions` (older texts), `NotePdf`, `NoteSmart` (pure: #tags, dates, codes, parcel codes in the text, "Citato in" backlinks, shift people); `NoteLinksUi.kt` (`TagScreen`, `PersonScreen`, `CitedIn` block at the bottom of detail pages); `NoteDrawing.kt`, `NoteTableUi.kt` (`NoteTableBlock`: cells edited inline), `notes/NotePhotos.kt`.
+`afterEdit` keeps them intact), `notes/NoteHistory.kt` (undo/redo), `NoteTable` (| a | b | rows), `NoteAudio` (audio: links), `NoteVersions` (older texts), `NotePdf`, `NoteSmart` (pure: #tags, dates, codes, parcel codes in the text, "Citato in" backlinks, shift people); `NoteLinksUi.kt` (`TagScreen`, `PersonScreen`, `CitedIn` block at the bottom of detail pages); `NoteDrawing.kt`, `NoteTableUi.kt` (`NoteTableBlock`: cells edited inline), `notes/NotePhotos.kt`. `notes/NoteLists.kt` = note checklists as rows in Home Da fare + Ricomincia/Duplica;
+`notes/NotePhotoText.kt` = OCR text of note photos (own file, scanned from MainActivity) for search; `NotesSearch` gives the matching line.
 `richText`: one ParagraphStyle (TextIndent = hanging indent) per line, the `\n` between them drawn as ZWSP (a `\n` inside
 a paragraph = blank line). Page scroll while typing = `keepLineDelta` in NoteEditor (`keepInView`), not bringIntoView.
 
@@ -80,7 +81,7 @@ documents scan. `security/Vault.kt` = Keystore for tokens.
 **Widgets** (`widget/`): `WidgetKit.kt` `CanvasWidget` + `Widgets.refresh` (call when data changes), deep links
 `Widgets.open` → `OpenRequest`. `DashboardWidget` "Oggi" (weather + hours + one "PROSSIMO" line, `AgendaRows.next`),
 `TodoWidget` "Da fare" (habits + to-dos, tick in place, pure `TodoWidgetRows`), `SimWidget` (ring), `TasksWidget`
-"Calendario" (`AgendaRows.build`), `MoreWidgets.kt` News/Meteo/Scrivi. Never rename widget classes (placed ones vanish).
+"Calendario" (`AgendaRows.build`), `NoteWidget` "Nota" (chosen note via "Mostra nel widget", ticks, `NoteWidgetRows`), `MoreWidgets.kt` News/Meteo/Scrivi. Never rename widget classes (placed ones vanish).
 
 **Other**: `search/` (Cerca ovunque),
 `work/` (Morning, Refresh, RainAlert, UpdateCheck), `update/` (self-update, `UpdateTrust`, `WhatsNew` from
