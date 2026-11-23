@@ -21,8 +21,8 @@ class QuickAlarmTest {
         assertEquals("Sveglia alle 18:35 · fra 10 min", QuickAlarm.confirm(ms(18, 35), 10, rome))
     }
 
-    @Test fun treTastiIlPrimoDiceCosaFanno() {
+    @Test fun treTastiSoloMinuti() {
         assertEquals(listOf(5, 10, 15), QuickAlarm.MINUTES)
-        assertEquals(listOf("Sveglia 5 min", "10 min", "15 min"), QuickAlarm.MINUTES.mapIndexed { i, m -> QuickAlarm.buttonTitle(m, i == 0) })
+        assertEquals(listOf("5 min", "10 min", "15 min"), QuickAlarm.MINUTES.mapIndexed { i, m -> QuickAlarm.buttonTitle(m, i == 0) })
     }
 }

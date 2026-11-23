@@ -52,8 +52,9 @@ object QuickAlarm {
 
     fun label(at: Long, zone: ZoneId = ZoneId.systemDefault()): String = Instant.ofEpochMilli(at).atZone(zone).format(hour)
 
-    /** I tasti della notifica: "Sveglia 5 min", poi "10 min", "15 min" (il primo dice cosa fanno tutti). */
-    fun buttonTitle(minutes: Int, first: Boolean): String = if (first) "Sveglia $minutes min" else "$minutes min"
+    /** I tasti della notifica: "5 min", "10 min", "15 min" (Antonio, 2026-11-23: niente "Sveglia" sul primo). */
+    @Suppress("UNUSED_PARAMETER")
+    fun buttonTitle(minutes: Int, first: Boolean = false): String = "$minutes min"
 
     /** Il tasto "Sveglia fra N min" per una notifica. */
     fun button(context: Context, minutes: Int, first: Boolean): Notification.Action =
