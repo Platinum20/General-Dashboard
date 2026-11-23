@@ -30,7 +30,7 @@ object NoteLists {
      */
     fun rows(notes: List<Note>, keep: Set<Long> = emptySet()): List<Row> = notes
         .asSequence()
-        .filter { it.archivedAt == null }
+        .filter { it.archivedAt == null && it.about == null }
         .sortedWith(compareByDescending<Note> { it.pinned }.thenByDescending { it.updatedAt })
         .mapNotNull { n -> of(n)?.takeIf { it.open > 0 || n.id in keep } }
         .toList()

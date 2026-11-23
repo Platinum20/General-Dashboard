@@ -32,7 +32,7 @@ object NoteWidgetRows {
     /** Quale nota: quella scelta, se c'è ancora; se no la lista più utile. Le note archiviate no. */
     fun pick(notes: List<Note>, chosen: Long?): Note? {
         notes.firstOrNull { it.id == chosen }?.let { return it }
-        val active = notes.filter { it.archivedAt == null && (it.text.isNotBlank()) }
+        val active = notes.filter { it.archivedAt == null && it.about == null && (it.text.isNotBlank()) }
         val lists = active.filter { Checklist.hasItems(it.text) }
         return lists.filter { it.pinned }.maxByOrNull { it.updatedAt }
             ?: lists.maxByOrNull { it.updatedAt }
