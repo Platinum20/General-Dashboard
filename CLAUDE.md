@@ -22,7 +22,7 @@ layers (queue, video settings, What's new) drawn OUTSIDE the NavHost. Calendario
   (no spinners), `Clip.copy`, `relativeTime`, `rememberRowAtStart` (Media LazyRows), `PlusAction`.
 - `KeyboardDismiss.kt`: root nestedScroll in MainActivity = a finger drag on any page hides the keyboard (code scrolls don't).
 - `Motion.kt`: only `Motion.settle()`, `Motion.lively()`, `Motion.gesture()` + `Motion.fling`; `Modifier.entrance()`.
-- `ActionBubble.kt` = every menu/confirm (glass bubble, bottom center). `GlassDialog.kt` `CanvasDialog` = every dialog.
+- `ActionBubble.kt` = every menu/confirm (glass bubble, bottom center). Glass = `Modifier.glass(shape, overScrim=)` (Common.kt, draws its own rim: no extra border) + numbers in `GlassStyle.kt` `Glass` (blur, tint, scrim, rim) also used by dialogs. `GlassDialog.kt` `CanvasDialog` = every dialog.
   `SaveToNotesLayer.kt` (`BottomBubble`, `BubbleRow`), `SwipeAway.kt`, `Pickers.kt`, `CanvasSearchField` (SearchField.kt).
 - `RowActions.kt` `rememberRowActions()` = long-press bubble of calendar rows. RULE: anything with a page/menu of
   actions gets the same actions on long press.

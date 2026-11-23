@@ -67,6 +67,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -138,7 +139,7 @@ internal fun VideoSettingsLayer() {
             Box(
                 Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.12f))
+                    .background(Color.Black.copy(alpha = Glass.scrim(MaterialTheme.colorScheme.background.luminance() < 0.5f)))
                     .pointerInput(Unit) { detectTapGestures { close() } },
             )
         }
@@ -164,12 +165,11 @@ internal fun VideoSettingsLayer() {
                     shape = shape,
                     color = Color.Transparent,
                     contentColor = MaterialTheme.colorScheme.onSurface,
-                    border = cardBorder(),
                     modifier = Modifier
                         .then(if (sideways) Modifier.width(VideoSettings.SIDE_WIDTH) else Modifier.widthIn(max = 480.dp).fillMaxWidth())
                         .heightIn(max = maxH - 24.dp)
                         .swipeAway(swipe) { if (visible) close() }
-                        .glass(shape)
+                        .glass(shape, overScrim = true)
                         // I tocchi sul fumetto restano al fumetto, non chiudono.
                         .pointerInput(Unit) { detectTapGestures { } },
                 ) {
