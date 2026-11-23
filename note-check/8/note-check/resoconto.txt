@@ -1,0 +1,18 @@
+[trasforma/fumetto_voce] ime=false body=[ ] una voce
+[trasforma/numeri] ime=false body=1. una voce
+[spunta_senza_tastiera/spuntata] ime=false body=[x] pane⏎[ ] latte
+[spunte/prima] ime=false body=[ ] maglie⏎  [ ] calze⏎[ ] scarpe
+[spunte/sotto_voce_spuntata] ime=false body=[ ] maglie⏎  [x] calze⏎[ ] scarpe
+[tocco_sotto/tocco_sotto] ime=false body=[ ] uno⏎[ ] 
+[fumetto_riga/fumetto] ime=false body=[ ] prima⏎[ ] seconda
+[fumetto_riga/mandata_in_da_fare] ime=false body=[ ] prima
+[tutto_fatto/tutto_fatto] ime=false body=[x] pane⏎[x] latte
+[foto/foto_e_copertina] ime=false body=sopra⏎[🖼 Foto](img:/data/user/0/com.platinum20.dashboard/files/prova.png)⏎sotto
+[foto/fumetto_foto] ime=false body=sopra⏎[🖼 Foto](img:/data/user/0/com.platinum20.dashboard/files/prova.png)⏎sotto
+[foto/fumetto_copertina] ime=false body=sopra⏎sotto
+[emoji/altro] ime=false body=Porto
+[emoji/emoji_nel_titolo] ime=false body=Porto
+[emoji/cambia_emoji] ime=false body=Porto
+[vocale/aggiungi] ime=false body=prima
+[vocale/registro] ime=false body=prima
+[vocale/vocale_nella_nota] ime=false body=prima⏎[🎙 Audio 0:03](audio:/data/user/0/com.platinum20.dashboard/files/note-audio/1795437326780.m4a)
