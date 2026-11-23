@@ -74,7 +74,7 @@ fun Modifier.backdropSource(backdrop: Backdrop): Modifier = composed {
  * Il chiamante ritaglia già sulla [shape].
  */
 @RequiresApi(33)
-internal fun Modifier.liquidGlass(backdrop: Backdrop, shape: Shape, tint: Color, dim: Float = 0f): Modifier = composed {
+internal fun Modifier.liquidGlass(backdrop: Backdrop, shape: Shape, tint: Color, dim: Float = 0f, floor: Color = Color.Transparent): Modifier = composed {
     val effectLayer = rememberGraphicsLayer()
     // Se lo shader non si compila (driver strani, test), resta il vetro sfocato senza lente.
     val shader = remember { runCatching { RuntimeShader(LIQUID_GLASS_SHADER) }.getOrNull() }
@@ -87,6 +87,9 @@ internal fun Modifier.liquidGlass(backdrop: Backdrop, shape: Shape, tint: Color,
         .drawWithContent {
             val source = backdrop.layer
             @Suppress("UNUSED_VARIABLE") val frame = backdrop.frame
+            // Prima lo sfondo dell'app: molte pagine (playlist, mix) non hanno uno sfondo loro, è sotto il NavHost. Senza,
+            // la copia sfocata aveva buchi trasparenti e attraverso si vedevano le righe vere, nitide (Antonio, 1.612).
+            drawRect(floor)
             if (source != null && size.width > 0f && size.height > 0f && drawContext.canvas.nativeCanvas.isHardwareAccelerated) {
                 // Margine attorno: la lente pesca un po' oltre il bordo e la sfocatura non scurisce i lati.
                 val pad = 32.dp.toPx()
