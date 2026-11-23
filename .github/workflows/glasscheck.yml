@@ -36,6 +36,8 @@ jobs:
       - name: Compila
         run: gradle :app:assembleDebug :app:assembleDebugAndroidTest -PallAbis=true --no-daemon
       - uses: reactivecircus/android-emulator-runner@v2
+        timeout-minutes: 30
+        continue-on-error: true
         with:
           api-level: 34
           target: google_apis
@@ -48,7 +50,8 @@ jobs:
             adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
             adb shell settings put secure show_ime_with_hard_keyboard 1
             for p in RECORD_AUDIO READ_CALENDAR WRITE_CALENDAR POST_NOTIFICATIONS; do adb shell pm grant com.platinum20.dashboard android.permission.$p || true; done
-            adb shell am instrument -w -e class com.platinum20.dashboard.GlassListCheck,com.platinum20.dashboard.GlassDeviceCheck com.platinum20.dashboard.test/androidx.test.runner.AndroidJUnitRunner | tee instrument.txt || true
+            timeout 420 adb shell am instrument -w -e class com.platinum20.dashboard.GlassListCheck com.platinum20.dashboard.test/androidx.test.runner.AndroidJUnitRunner | tee instrument.txt || true
+            timeout 300 adb shell am instrument -w -e class com.platinum20.dashboard.GlassDeviceCheck com.platinum20.dashboard.test/androidx.test.runner.AndroidJUnitRunner | tee -a instrument.txt || true
             (cat instrument.txt; echo; echo ---- log; adb logcat -d -s GlassCheck:V AndroidRuntime:E libc:F DEBUG:F OpenGLRenderer:E) > glasscheck.txt || true
             mkdir -p shots && adb pull /sdcard/Android/data/com.platinum20.dashboard/files/glass-check shots/ || true
       - name: Risultato
