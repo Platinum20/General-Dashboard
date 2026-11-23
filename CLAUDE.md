@@ -22,7 +22,7 @@ layers (queue, video settings, What's new) drawn OUTSIDE the NavHost. Calendario
   (no spinners), `Clip.copy`, `relativeTime`, `rememberRowAtStart` (Media LazyRows), `PlusAction`.
 - `KeyboardDismiss.kt`: root nestedScroll in MainActivity = a finger drag on any page hides the keyboard (code scrolls don't).
 - `Motion.kt`: only `Motion.settle()`, `Motion.lively()`, `Motion.gesture()` + `Motion.fling`; `Modifier.entrance()`.
-- `ActionBubble.kt` = every menu/confirm (glass bubble, bottom center). Glass = `Modifier.glass(shape, overScrim=)` (Common.kt, draws its own rim: no extra border) + numbers in `GlassStyle.kt` `Glass` (blur, tint, scrim, rim) also used by dialogs. `GlassDialog.kt` `CanvasDialog` = every dialog.
+- `ActionBubble.kt` = every menu/confirm (glass bubble, bottom center). Glass = `Modifier.glass(shape, overScrim=)` (Common.kt, draws its own rim: no extra border) + numbers in `GlassStyle.kt` `Glass` (blur, tint, scrim, rim) also used by dialogs. Two backdrops in MainActivity: `backdrop` (NavHost, read by bar/+) and `screenBackdrop` (pages+bar+mini player, read by overlay layers, which must stay OUTSIDE its Box or the RenderNode loops). `liquidGlass` paints `floor` (app background) first: pages have no own background. `GlassDialog.kt` `CanvasDialog` = every dialog.
   `SaveToNotesLayer.kt` (`BottomBubble`, `BubbleRow`), `SwipeAway.kt`, `Pickers.kt`, `CanvasSearchField` (SearchField.kt).
 - `RowActions.kt` `rememberRowActions()` = long-press bubble of calendar rows. RULE: anything with a page/menu of
   actions gets the same actions on long press.
@@ -140,6 +140,7 @@ separate functions so it can be unit-tested; new logic ships with a test. `TopLe
 - Visual check for risky changes: dispatch `screenshots.yml`; PNGs land on branch `screenshots` under
   `<branch>/<run>/`. In tours never use `performScrollToNode` (hangs), use `performScrollToIndex`.
 - Other dispatch-only workflows: `verifica.yml`, `ytcheck.yml`, `logincheck.yml`.
+- Glass on a real emulator: `glasscheck.yml` (`GlassListCheck` list pages, `GlassDeviceCheck` MainActivity; PNGs in `screenshots` under `glass-check/<run>/`). Compose test rule freezes animations: `mainClock.advanceTimeBy` before a shot.
 - Notes editor on a real emulator + real keyboard: `notecheck.yml` (androidTest `NoteEditorDeviceCheck`, type with `input text`,
   never `performTextInput`); log + screenshots on branch `screenshots` under `note-check/<run>/`. If every test times out on
   `imeOpen`, the emulator keyboard didn't start: rerun.
