@@ -671,7 +671,38 @@ class NoteEditorDeviceCheck {
             val b = barTop()
             Log.i(TAG, "tocco $n: cursore fondo=$c barra cima=$b")
             assertTrue("dopo il tocco ${n + 1} la riga del cursore ($c) resta sotto la barra ($b)", c <= b - 10)
+            assertTrue("dopo il tocco ${n + 1} la riga ($c) non è salita in cima (${screenHeight()})", c < screenHeight() * 0.3f)
         }
+    }
+
+    /** Antonio (1.606): la riga toccata sale in cima al telefono, con la tastiera chiusa e già aperta, e la tastiera resta. */
+    @Test
+    fun tappedLineGoesToTop() {
+        open("Lunga\n" + (1..40).joinToString("\n") { "riga numero $it" }, "tocco_in_cima")
+        // Tastiera chiusa: tocco a metà schermo.
+        val nodeTop = field().fetchSemanticsNode().boundsInWindow.top
+        field().performTouchInput { click(Offset(centerX, screenHeight() * 0.6f - nodeTop)) }
+        compose.waitUntil(8_000) { imeOpen() }
+        settle(1500)
+        shot("primo_tocco")
+        val first = cursorBottom()
+        note("primo tocco: cursore fondo=$first schermo=${screenHeight()}")
+        assertTrue("la riga toccata ($first) non è in cima", first < screenHeight() * 0.3f)
+        // Tastiera aperta: tocco più in basso, appena sopra la barra.
+        val top2 = field().fetchSemanticsNode().boundsInWindow.top
+        field().performTouchInput { click(Offset(centerX, barTop() - 60f - top2)) }
+        settle(1500)
+        shot("secondo_tocco")
+        val second = cursorBottom()
+        note("secondo tocco: cursore fondo=$second")
+        assertTrue("la tastiera si è chiusa", imeOpen())
+        assertTrue("la seconda riga toccata ($second) non è in cima", second < screenHeight() * 0.3f)
+    }
+
+    private fun screenHeight(): Float {
+        var h = 0f
+        compose.runOnUiThread { h = compose.activity.window.decorView.height.toFloat() }
+        return h
     }
 
     @Test

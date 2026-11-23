@@ -1,5 +1,11 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.media.CanvasPlayer
+import com.platinum20.dashboard.media.ResumeItem
+import com.platinum20.dashboard.media.ResumeKind
+import androidx.compose.material.icons.outlined.Headphones
+import androidx.compose.material.icons.automirrored.outlined.QueueMusic
+import androidx.compose.material.icons.automirrored.outlined.PlaylistAdd
 import com.platinum20.dashboard.notes.NoteLists
 import androidx.compose.material.icons.outlined.Widgets
 import androidx.compose.material.icons.outlined.Replay
@@ -171,6 +177,7 @@ import kotlin.math.roundToInt
 fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
     val context = LocalContext.current
     NotesStore.init(context)
+    com.platinum20.dashboard.notes.NoteSeek.init(context)
     val haptic = rememberHaptic()
     val scope = rememberCoroutineScope()
     var id by remember { mutableStateOf(noteId) }
@@ -191,6 +198,7 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
     // La pagina che scorre e cosa se ne vede sullo schermo (1.594): la riga in cui si scrive resta sopra la tastiera.
     val pageScroll = rememberScrollState()
     var viewTop by remember { mutableFloatStateOf(0f) }
+    var tappedBelow by remember { mutableIntStateOf(0) }
     var viewBottom by remember { mutableFloatStateOf(Float.MAX_VALUE) }
     var barTop by remember { mutableFloatStateOf(Float.MAX_VALUE) }
     val lineRoom = with(androidx.compose.ui.platform.LocalDensity.current) { 24.dp.toPx() }
@@ -454,6 +462,49 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
         )
     }
 
+    // ---- Da elenco di brani a Spotify (1.606, idea 18) ----
+    fun songsToSpotify(songs: List<String>) {
+        val name = com.platinum20.dashboard.media.spotify.SpotifyPlaylists.cleanName(title.text.ifBlank { "Dalla nota" })
+        fun withTracks(then: (List<com.platinum20.dashboard.media.spotify.SpItem>) -> Unit) {
+            CaptureFeedback.tell(context, "Cerco ${songs.size} brani su Spotify…", Icons.AutoMirrored.Outlined.QueueMusic)
+            scope.launch {
+                val found = com.platinum20.dashboard.media.spotify.SpotifyStore.findTracks(songs)
+                val tracks = found.data.orEmpty()
+                when {
+                    found.error != null && tracks.isEmpty() -> CaptureFeedback.tell(context, found.error)
+                    tracks.isEmpty() -> CaptureFeedback.tell(context, "Nessun brano trovato su Spotify")
+                    else -> then(tracks)
+                }
+            }
+        }
+        ActionBubble.show(
+            BubbleAction(Icons.AutoMirrored.Outlined.PlaylistAdd, "Crea playlist \"$name\"", "va in Musica, la nota resta") {
+                withTracks { tracks ->
+                    scope.launch {
+                        com.platinum20.dashboard.media.spotify.SpotifyStore.createPlaylistWith(name, tracks).fold(
+                            onSuccess = { made ->
+                                haptic(Haptic.CONFIRM)
+                                CaptureFeedback.tell(context, "Playlist \"${made.title}\": ${tracks.size} su ${songs.size} brani", Icons.AutoMirrored.Outlined.QueueMusic, "Apri") {
+                                    inApp?.openRoute(Routes.spotifyItem(made))
+                                }
+                            },
+                            onFailure = { CaptureFeedback.tell(context, it.message ?: "Spotify non risponde, riprova") },
+                        )
+                    }
+                }
+            },
+            BubbleAction(Icons.AutoMirrored.Outlined.QueueMusic, "Metti in coda", "partono dopo quello che ascolti") {
+                withTracks { tracks ->
+                    tracks.forEach { t ->
+                        CanvasPlayer.add(ResumeItem(ResumeKind.SPOTIFY, t.uri, t.title, t.subtitle, t.image, durationMs = t.durationMs, at = System.currentTimeMillis()))
+                    }
+                    haptic(Haptic.CONFIRM)
+                    CaptureFeedback.tell(context, "In coda: ${tracks.size} brani", Icons.AutoMirrored.Outlined.QueueMusic)
+                }
+            },
+        )
+    }
+
     fun add() {
         haptic(Haptic.LONG_PRESS)
         ActionBubble.show(
@@ -551,6 +602,19 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                     val nid = NotesStore.saveNote(null, copy) ?: return@BubbleAction
                     current?.emoji?.let { NotesStore.setNoteEmoji(nid, it) }
                     inApp?.openRoute(Routes.noteEdit(nid))
+                },
+                // "Ascolta" (1.606, idea 29): la nota letta con la voce delle News, nel player come un podcast.
+                if (body.text.isBlank()) null else BubbleAction(Icons.Outlined.Headphones, "Ascolta", "letta con la voce delle News") {
+                    save()
+                    val script = com.platinum20.dashboard.notes.NoteSpoken.script(title.text, body.text)
+                    val name = title.text.ifBlank { "Nota" }
+                    com.platinum20.dashboard.news.RecapSpeaker.play(
+                        context, script, title = name, labels = script.map(com.platinum20.dashboard.news.RecapReader::chapterLabel),
+                    )
+                },
+                // Un elenco di brani "Artista – Titolo" (1.606, idea 18): Canvas li cerca su Spotify.
+                com.platinum20.dashboard.notes.NoteSpoken.songs(body.text).takeIf { it.isNotEmpty() }?.let { songs ->
+                    BubbleAction(Icons.AutoMirrored.Outlined.QueueMusic, "Brani su Spotify", "${songs.size} righe: playlist o in coda") { songsToSpotify(songs) }
                 },
                 // Il widget Nota (2026-11-23, idea 8): questa nota sulla schermata del telefono.
                 id?.takeIf { current != null && text.isNotBlank() }?.let { nid ->
@@ -783,6 +847,8 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                         }
                     }
                 }
+                // Tenendo premuto un punto del testo (1.606, idea 14): "Detta qui" nel menu, il testo entra lì mentre parli.
+                WithTextExtras(listOf(TextToolbarExtra("Detta qui") { dictate() })) {
                 RichNoteField(
                     value = body,
                     onValueChange = { v ->
@@ -793,9 +859,10 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                     placeholder = "Scrivi qui…",
                     focusRequester = bodyFocus,
                     onFocusChange = { bodyFocused = it },
-                    keepInView = { top, bottom, typing ->
-                        pageScroll.keepLine(scope, top, bottom, typing, viewTop, minOf(viewBottom, barTop), lineRoom)
+                    keepInView = { top, bottom, mode ->
+                        pageScroll.keepLine(scope, top, bottom, mode, viewTop, minOf(viewBottom, barTop), lineRoom)
                     },
+                    tappedBelow = tappedBelow,
                     sendToTodo = true,
                     noteId = id,
                     onAllDone = { allDone() },
@@ -817,6 +884,7 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                         .padding(horizontal = 24.dp)
                         .testTag("noteBody"),
                 )
+                }
                 // Tocco sotto l'ultima riga (1.586): il cursore va in fondo e, se l'ultima riga è una voce, ne apre una nuova.
                 // Con la tastiera aperta lo spazio è più basso: se no la pagina scorre e titolo e foto escono (1.559).
                 Box(
@@ -829,6 +897,7 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                             val changed = e.text != body.text
                             body = TextFieldValue(e.text, TextRange(e.start))
                             if (changed) save()
+                            tappedBelow++
                             bodyFocus.requestFocus()
                         },
                 )
@@ -1135,14 +1204,15 @@ private fun PhotoViewer(
 
 /**
  * Tiene la riga del cursore ([top]..[bottom], sullo schermo) nella parte visibile [visTop]..[visBottom] (sopra barra e
- * tastiera). Scrivendo, quando la riga scende oltre metà, la pagina la riporta in alto (un terzo): sotto resta spazio
- * vuoto e non si scrive mai sotto la tastiera. Muovendo solo il cursore basta che si veda.
+ * tastiera). Toccata (1.606): la riga va in cima, subito sotto la testata. Scrivendo, quando la riga scende oltre metà,
+ * la pagina la riporta in alto (un terzo): non si scrive mai sotto la tastiera. Muovendo solo il cursore basta che si veda.
  */
-internal fun keepLineDelta(top: Float, bottom: Float, typing: Boolean, visTop: Float, visBottom: Float, margin: Float): Float {
+internal fun keepLineDelta(top: Float, bottom: Float, mode: LineFollow, visTop: Float, visBottom: Float, margin: Float): Float {
     val h = visBottom - visTop
     if (h <= margin * 3) return 0f
     return when {
-        typing && bottom > visTop + h * 0.55f -> top - (visTop + h * 0.3f)
+        mode == LineFollow.TAPPED -> top - (visTop + margin * 0.5f)
+        mode == LineFollow.TYPING && bottom > visTop + h * 0.55f -> top - (visTop + h * 0.3f)
         bottom > visBottom - margin -> bottom - (visBottom - margin)
         top < visTop + margin -> top - (visTop + margin)
         else -> 0f
@@ -1150,9 +1220,9 @@ internal fun keepLineDelta(top: Float, bottom: Float, typing: Boolean, visTop: F
 }
 
 private fun androidx.compose.foundation.ScrollState.keepLine(
-    scope: kotlinx.coroutines.CoroutineScope, top: Float, bottom: Float, typing: Boolean, visTop: Float, visBottom: Float, margin: Float,
+    scope: kotlinx.coroutines.CoroutineScope, top: Float, bottom: Float, mode: LineFollow, visTop: Float, visBottom: Float, margin: Float,
 ) {
-    val delta = keepLineDelta(top, bottom, typing, visTop, visBottom, margin)
+    val delta = keepLineDelta(top, bottom, mode, visTop, visBottom, margin)
     if (kotlin.math.abs(delta) < 1f) return
     scope.launch { animateScrollBy(delta, Motion.settle()) }
 }

@@ -335,6 +335,26 @@ object SpotifyStore {
         return Result.success(made)
     }
 
+    /** I brani trovati su Spotify per ogni riga cercata (1.606, idea 18): il primo risultato, quelle senza niente saltate. */
+    suspend fun findTracks(queries: List<String>): Loadable<List<SpItem>> = call { token ->
+        queries.mapNotNull { q -> runCatching { SpotifyApi.searchKind(token, q, "track", 1).firstOrNull() }.getOrNull() }
+            .distinctBy { it.uri }
+    }
+
+    /** Una playlist nuova chiamata [name] con tutti [tracks] dentro, a gruppi di 100 come vuole Spotify. */
+    suspend fun createPlaylistWith(name: String, tracks: List<SpItem>): Result<SpItem> {
+        val result = modifyCall { token ->
+            val made = SpotifyApi.createPlaylist(token, name)
+            tracks.map { it.uri }.chunked(100).forEach { SpotifyApi.addToPlaylist(token, made.id, it) }
+            made
+        }
+        val made = result.data ?: return Result.failure(IllegalStateException(result.error ?: "Spotify non risponde, riprova"))
+        lastPlaylist = made.id
+        touch(made)
+        refreshPlaylists(force = true)
+        return Result.success(made)
+    }
+
     // --- Gestire una playlist (1.507) ---
 
     /** Il tuo id di Spotify, letto una volta: decide quali playlist si possono cambiare. */
