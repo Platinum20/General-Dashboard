@@ -264,10 +264,11 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
                 }
             }
         }
-        // Gli appunti fissi dell'abitudine (idea 24, 2026-11-23): la scheda della palestra sotto mano quando la spunti.
-        if (kind == ItemKind.HABIT) AttachedNotesBlock(com.platinum20.dashboard.notes.AttachedNotes.habit(id), detail.title)
         // Le note che citano questa cosa con "@" (2026-11-23).
         CitedIn(listOf(com.platinum20.dashboard.notes.NoteFormat.APP_LINK + com.platinum20.dashboard.Routes.noteItem(kind, id)), Modifier.padding(top = 12.dp))
+        // Gli appunti fissi dell'abitudine (idea 24, 2026-11-23): la scheda della palestra sotto mano quando la spunti.
+        // Sempre l'ultima card della pagina, anche dopo "Citato in" (Antonio, 2026-11-23).
+        if (kind == ItemKind.HABIT) AttachedNotesBlock(com.platinum20.dashboard.notes.AttachedNotes.habit(id), detail.title)
     }
 
     when (val p = picker) {
