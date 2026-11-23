@@ -310,9 +310,13 @@ class NoteEditorDeviceCheck {
         // Rientro di una voce spuntata.
         compose.onAllNodes(clickLabel("Spunta"))[2].performClick()
         focusBody()
-        field().performTextInputSelection(TextRange(body().length))
-        compose.waitForIdle()
+        // Come col dito: il cursore in fondo all'ultima riga con i tasti freccia (giù, giù, giù, fine riga).
+        repeat(3) { shell("input keyevent 20") }
+        shell("input keyevent 123")
+        settle(500)
+        note("spunte: prima di Sotto-voce -> ${body()}")
         tap("Sotto-voce")
+        settle(500)
         shot("spuntata_rientrata")
         val last = NoteLines.parse(body()).last()
         assertEquals(1, last.level)
