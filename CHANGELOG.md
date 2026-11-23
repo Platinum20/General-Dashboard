@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.614.0
+**Tutti i fumetti parlano la stessa lingua**
+- Tenendo premuto qualsiasi cosa, il fumetto è sempre uguale: in cima che cos'è, poi le scelte, poi le righe, in fondo i tasti sempre allo stesso posto (Apri a sinistra, Elimina rosso a destra)
+- Le scelte sono chip che riempiono la riga, sempre col nome: al massimo quattro per riga, se sono di più vanno su due righe
+- Tipo di riga e colori: quello scelto è blu, si allarga e dice il suo nome, gli altri sono solo icona
+- Niente più liste da scorrere: playlist e note mostrano le ultime tre, con Nuova e Tutte sotto
+- Il menu «/» delle note è un pannello di chip, una riga per categoria
+- Le cose che non si possono annullare (uscire da un account, svuotare la coda) si toccano due volte, senza finestre
+- Il fumetto non si chiude più da solo
+
 ## 1.613.0
 **Il vetro sfoca davvero ovunque**
 - Nelle playlist e nei mix il fumetto era trasparente e dietro si vedevano le righe nitide: ora è scuro e sfocato come nella pagina dell'artista
