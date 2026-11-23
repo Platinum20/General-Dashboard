@@ -44,7 +44,9 @@ class TaskReminderWorker(context: Context, params: WorkerParameters) : Coroutine
 
         val open = Intent(context, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        OpenRequest(OpenRequest.NOTES).writeTo(open)
+        // Un promemoria nato da una riga di nota (idea 16): la notifica apre quella nota.
+        val fromNote = LineReminder.noteOf(task.notes)?.takeIf { NotesStore.note(it) != null }
+        (if (fromNote != null) OpenRequest(OpenRequest.NOTE, url = fromNote.toString()) else OpenRequest(OpenRequest.NOTES)).writeTo(open)
         val done = Intent(context, TaskDoneReceiver::class.java).putExtra(KEY_ID, id)
 
         val notification = NotificationCompat.Builder(context, CHANNEL)

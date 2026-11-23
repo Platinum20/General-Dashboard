@@ -226,7 +226,7 @@ object SavedLinks {
         .distinctBy { identity(it.article) }
 
     /** Le note salvate per dopo: stanno in Media o in News, non nella card Per dopo né nel calendario. */
-    fun livesElsewhere(note: Note): Boolean = find(note.text) != null || pastedYoutube(note) != null
+    fun livesElsewhere(note: Note): Boolean = note.about != null || find(note.text) != null || pastedYoutube(note) != null
 
     /** Le righe di una nota senza l'indirizzo che la riapre (per le anteprime). */
     fun withoutLink(text: String): String =

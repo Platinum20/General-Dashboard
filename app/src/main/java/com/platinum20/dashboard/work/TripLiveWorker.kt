@@ -151,7 +151,14 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
             val accent = if (card.late) LATE_COLOR else CANVAS_BLUE
             val text = marked(card.text, LiveCard.TEXT, card)
             // Niente elenco delle fermate né tasto "Fermate" (Antonio, 2026-11-21): la notifica dice solo l'essenziale.
-            val body: List<CharSequence> = card.lines.mapIndexed { i, line -> marked(line, i, card) }
+            // Gli appunti del turno o del treno (idea 17, 2026-11-23): la prima cosa da fare, senza aprire niente.
+            val memo = runCatching {
+                com.platinum20.dashboard.notes.NotesStore.init(context)
+                com.platinum20.dashboard.notes.AttachedNotes.forEvent(com.platinum20.dashboard.notes.NotesStore.data.value.notes, event.eventId, event.begin)
+            }.getOrNull()
+            val memoOpen = memo?.let { com.platinum20.dashboard.notes.AttachedNotes.open(com.platinum20.dashboard.notes.AttachedNotes.body(it)).firstOrNull() }
+            val body: List<CharSequence> = card.lines.mapIndexed { i, line -> marked(line, i, card) } +
+                listOfNotNull(memoOpen?.let { "📝 ${it.text}" }.takeIf { !card.done })
             // Disegnata da noi, come la proposta A (Antonio, 2026-11-20): la ProgressStyle di One UI non sa fare pallini
             // tondi, orari sotto la linea, barrato né più di due righe. Il sistema tiene icona, nome e "arriva tra".
             val small = android.widget.RemoteViews(context.packageName, R.layout.notif_trip_small).apply {
@@ -195,6 +202,10 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 // Col ritardo: un treno in ritardo di due ore non perde la notifica all'arrivo del biglietto (2026-11-20).
                 .setTimeoutAfter(if (event.trip == null) (event.end + ShiftLive.DONE_MS - now).coerceAtLeast(60_000L) else (event.end + TrainLive.shiftMs(TrainLive.known(event.eventId, now)) + 2 * LiveTrip.AFTER_MS + 60 * 60_000L - now).coerceAtLeast(60_000L))
+            // "Fatto" spunta la cosa degli appunti e la notifica passa alla dopo. Ai turni restano i tasti della sveglia.
+            if (memo != null && memoOpen != null && event.trip != null && !card.done) {
+                builder.addAction(0, "Fatto", com.platinum20.dashboard.notes.NoteNotify.action(context, com.platinum20.dashboard.notes.NoteNotify.ACTION_TICK, memo.id, 0, memoOpen.index))
+            }
             if (card.phase == LivePhase.ON_BOARD || event.trip != null) {
                 if (TicketQrStore.cached(context, event.eventId).isNotEmpty()) {
                     builder.addAction(0, "Biglietto", TicketActivity.pending(context, event.eventId))

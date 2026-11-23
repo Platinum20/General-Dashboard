@@ -262,6 +262,8 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
                 }
             }
         }
+        // Gli appunti fissi dell'abitudine (idea 24, 2026-11-23): la scheda della palestra sotto mano quando la spunti.
+        if (kind == ItemKind.HABIT) AttachedNotesBlock(com.platinum20.dashboard.notes.AttachedNotes.habit(id), detail.title)
     }
 
     when (val p = picker) {

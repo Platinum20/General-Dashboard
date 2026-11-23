@@ -270,6 +270,8 @@ data class OpenRequest(
         /** Widget Scrivi e "+" del Calendario: la barra si apre già pronta per scrivere, o in ascolto. */
         const val WRITE = "write"
         const val VOICE = "voice"
+        /** Una nota (url = id): dal promemoria di una riga e dall'avviso del posto. */
+        const val NOTE = "note"
 
         private const val EXTRA_TARGET = "open_target"
         private const val EXTRA_URL = "open_url"
@@ -307,6 +309,8 @@ class MainActivity : ComponentActivity() {
         }
         AppSettings.init(this)
         com.platinum20.dashboard.trips.TrainLive.init(this)
+        // Gli avvisi dei posti delle note: il sistema li perde, si rimettono a ogni avvio (idea 11).
+        runCatching { com.platinum20.dashboard.notes.NotePlaces.registerAll(this) }
         WebFetcher.init(this)
         DiskCache.init(this)
         // Le liste del blocco pubblicità si caricano in sottofondo, pronte per la prima pagina web.
@@ -1097,6 +1101,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     navController.navigate(Routes.calendarEvent(id, begin, end))
                 }
                 OpenRequest.SIM -> navController.navigate(Routes.SIM)
+                OpenRequest.NOTE -> request.url.toLongOrNull()?.let { navController.navigate(Routes.noteEdit(it)) }
                 OpenRequest.LATER -> navController.navigate(Routes.LATER_ARCHIVE)
                 OpenRequest.WRITE -> CaptureComposer.open()
                 OpenRequest.VOICE -> voiceRequested = true

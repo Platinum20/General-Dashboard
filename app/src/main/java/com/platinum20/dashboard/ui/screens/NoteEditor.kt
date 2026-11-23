@@ -200,6 +200,8 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
     // L'indice dei titoli (1.586): il titolo toccato e un numero che cambia a ogni tocco.
     var reveal by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     val inApp = LocalInAppNav.current
+    // "Ricordamelo" sulla riga e il posto della nota (idee 16 e 11, NoteExtrasUi.kt).
+    val extras = rememberNoteExtras()
 
     fun save(next: String = NoteText.join(title.text, body.text)) {
         id = NotesStore.saveNote(id, next) ?: id
@@ -484,6 +486,8 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     }
                 },
                 id?.takeIf { current != null }?.let { nid -> emojiAction(nid, current?.emoji) },
+                extras.lineAction({ save(); id }, title.text, body.text, body.selection.end),
+                extras.placeAction({ save(); id }, id),
                 id?.takeIf { current != null }?.let { nid ->
                     BubbleAction(Icons.Outlined.Image, if (current?.cover == null) "Aggiungi una copertina" else "Copertina", "una foto in cima alla nota") {
                         if (current?.cover == null) pickCover() else ActionBubble.show(*coverActions(nid, current?.cover))
