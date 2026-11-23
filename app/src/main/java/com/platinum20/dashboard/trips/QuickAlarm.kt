@@ -24,7 +24,8 @@ import java.time.format.DateTimeFormatter
  * La sveglia veloce dei tasti "5 min · 10 min · 15 min" in fondo alla notifica del turno (Antonio, 2026-11-23).
  * Una sveglia vera: allarme esatto (l'icona della sveglia nella barra di stato) e, quando scade, una notifica
  * sul canale sveglie che suona col suono della sveglia finché non la fermi. Il suono lo fa il sistema, così suona
- * anche se Android ha chiuso l'app. Una sola alla volta: un nuovo tasto sposta quella già messa.
+ * anche se Android ha chiuso l'app, e col telefono in vibrazione o silenzioso: usa il volume della sveglia (USAGE_ALARM),
+ * non quello della suoneria, proprio come la sveglia dell'orologio. Una sola alla volta: un nuovo tasto sposta quella già messa.
  */
 object QuickAlarm {
     val MINUTES = listOf(5, 10, 15)
@@ -104,6 +105,12 @@ object QuickAlarm {
         else alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, fireIntent(app))
     }
 
+    private fun fullScreen(context: Context): PendingIntent = PendingIntent.getActivity(
+        context, 3207,
+        Intent(context, QuickAlarmActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_USER_ACTION),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
+
     private fun fireIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
         context, 3203, Intent(context, QuickAlarmReceiver::class.java).setAction(ACTION_FIRE),
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
@@ -173,6 +180,9 @@ object QuickAlarm {
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setOngoing(true)
             .setDeleteIntent(stop)
+            // A tutto schermo come la sveglia di sistema (telefono bloccato o schermo spento); sbloccato = heads-up.
+            .setFullScreenIntent(fullScreen(app), true)
+            .setContentIntent(fullScreen(app))
             .addAction(action(app, "Ferma", ACTION_STOP, 3206))
             .addAction(button(app, SNOOZE_MINUTES, first = false).let {
                 Notification.Action.Builder(it.getIcon(), "Ancora $SNOOZE_MINUTES min", it.actionIntent).build()
