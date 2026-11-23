@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.610.0
+**Niente più chiusure col vetro**
+- L'app si chiudeva appena compariva un fumetto o un pannello di vetro: tolta la modifica della 1.609 che lo causava
+
 ## 1.609.0
 **Il vetro sfoca davvero tutto quello che c'è sotto**
 - Fumetti (anche tenendo premuto in Media e nelle playlist), coda e impostazioni del video sfocano anche il mini player e la barra in basso: prima lì il vetro li faceva sparire invece di sfocarli
