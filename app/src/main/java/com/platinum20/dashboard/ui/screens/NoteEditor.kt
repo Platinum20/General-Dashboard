@@ -106,6 +106,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -721,6 +722,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                         },
                         modifier = Modifier
                             .weight(1f)
+                            .testTag("noteTitle")
                             .autoFocus(enabled = noteId == null),
                     )
                 }
@@ -783,7 +785,8 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     // finiscono fuori dallo schermo (1.559).
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp),
+                        .padding(horizontal = 24.dp)
+                        .testTag("noteBody"),
                 )
                 // Tocco sotto l'ultima riga (1.586): il cursore va in fondo e, se l'ultima riga è una voce, ne apre una nuova.
                 // Con la tastiera aperta lo spazio è più basso: se no la pagina scorre e titolo e foto escono (1.559).
