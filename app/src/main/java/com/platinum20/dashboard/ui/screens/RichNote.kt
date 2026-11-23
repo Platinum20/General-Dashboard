@@ -254,6 +254,8 @@ internal fun RichNoteField(
      * tastiera si apre, e la tiene sopra la tastiera. Senza, il campo chiede da solo di restare in vista.
      */
     keepInView: ((top: Float, bottom: Float, mode: LineFollow) -> Unit)? = null,
+    /** Cresce a ogni tocco sotto l'ultima riga (fuori dal campo): conta come un tocco sul testo, la riga va in cima. */
+    tappedBelow: Int = 0,
 ) {
     val context = LocalContext.current
     val haptic = rememberHaptic()
@@ -398,10 +400,13 @@ internal fun RichNoteField(
             if (it is androidx.compose.foundation.interaction.PressInteraction.Release) { tapAt = android.os.SystemClock.uptimeMillis(); tapCount++ }
         }
     }
-    LaunchedEffect(value.text, value.selection, focused, imeBottom, tapCount) {
+    var seenBelow by remember { mutableStateOf(tappedBelow) }
+    LaunchedEffect(value.text, value.selection, focused, imeBottom, tapCount, tappedBelow) {
+        val below = tappedBelow != seenBelow
+        if (below) { seenBelow = tappedBelow; tapAt = android.os.SystemClock.uptimeMillis() }
         if (!focused || readOnly) return@LaunchedEffect
-        val typing = value.text != followedText
-        val moved = value.selection != followedSelection
+        val typing = value.text != followedText && !below
+        val moved = value.selection != followedSelection || below
         followedText = value.text
         followedSelection = value.selection
         val sinceTap = android.os.SystemClock.uptimeMillis() - tapAt

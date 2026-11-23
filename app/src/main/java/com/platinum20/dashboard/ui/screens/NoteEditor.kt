@@ -188,6 +188,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
     // La pagina che scorre e cosa se ne vede sullo schermo (1.594): la riga in cui si scrive resta sopra la tastiera.
     val pageScroll = rememberScrollState()
     var viewTop by remember { mutableFloatStateOf(0f) }
+    var tappedBelow by remember { mutableIntStateOf(0) }
     var viewBottom by remember { mutableFloatStateOf(Float.MAX_VALUE) }
     var barTop by remember { mutableFloatStateOf(Float.MAX_VALUE) }
     val lineRoom = with(androidx.compose.ui.platform.LocalDensity.current) { 24.dp.toPx() }
@@ -768,6 +769,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     keepInView = { top, bottom, mode ->
                         pageScroll.keepLine(scope, top, bottom, mode, viewTop, minOf(viewBottom, barTop), lineRoom)
                     },
+                    tappedBelow = tappedBelow,
                     sendToTodo = true,
                     onAllDone = { allDone() },
                     find = finding,
@@ -800,6 +802,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                             val changed = e.text != body.text
                             body = TextFieldValue(e.text, TextRange(e.start))
                             if (changed) save()
+                            tappedBelow++
                             bodyFocus.requestFocus()
                         },
                 )
