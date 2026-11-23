@@ -204,7 +204,13 @@ class NoteEditorDeviceCheck {
         runCatching {
             instr.uiAutomation.takeScreenshot()?.let { b -> file.outputStream().use { b.compress(Bitmap.CompressFormat.PNG, 100, it) } }
         }
-        Log.i(TAG, "[$name/$label] ime=${imeOpen()} body=${body().replace("\n", "⏎")}")
+        note("[$name/$label] ime=${imeOpen()} body=${body().replace("\n", "⏎")}")
+    }
+
+    /** Una riga nel resoconto (logcat può perderla: va anche in un file accanto alle foto). */
+    private fun note(line: String) {
+        Log.i(TAG, line)
+        runCatching { File(outDir, "resoconto.txt").appendText(line + "\n") }
     }
 
     /** Il fondo della riga del cursore sullo schermo (in pixel della finestra). */
@@ -332,6 +338,33 @@ class NoteEditorDeviceCheck {
         settle(500)
         shot("tutto_fatto")
         Log.i(TAG, "tutto fatto: ${compose.onAllNodesWithText("Tutto fatto", substring = true, useUnmergedTree = true).fetchSemanticsNodes().size} nodi")
+    }
+
+    /** I tasti della barra subito dopo una parola scritta (la tastiera la sta ancora componendo, sottolineata). */
+    @Test
+    fun barRightAfterTypingAWord() {
+        open("Barra\n[ ] uno", "barra_dopo_parola")
+        focusBody()
+        field().performTextInputSelection(TextRange(body().length))
+        key(Key.Enter)
+        type("scarpe")
+        note("barra: scritto -> ${body()}")
+        tap("Sotto-voce")
+        note("barra: subito dopo Sotto-voce -> ${body()}")
+        settle(1200)
+        shot("sotto_voce")
+        note("barra: dopo 1,2 s -> ${body()}")
+        type("x")
+        note("barra: e poi x -> ${body()}")
+        val last = NoteLines.parse(body()).last()
+        assertEquals(body(), 1, last.level)
+        key(Key.Enter)
+        type("pane")
+        tap("Elenco puntato")
+        settle(800)
+        shot("punti")
+        note("barra: Punti dopo pane -> ${body()}")
+        assertEquals(body(), NoteLines.Kind.BULLET, NoteLines.parse(body()).last().kind)
     }
 
     // ---------------------------------------------------------------- "/" e Aa

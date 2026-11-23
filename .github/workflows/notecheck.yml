@@ -48,7 +48,7 @@ jobs:
             adb shell settings put secure show_ime_with_hard_keyboard 1
             for p in RECORD_AUDIO READ_CALENDAR WRITE_CALENDAR POST_NOTIFICATIONS; do adb shell pm grant com.platinum20.dashboard android.permission.$p || true; done
             adb shell am instrument -w -e class com.platinum20.dashboard.NoteEditorDeviceCheck com.platinum20.dashboard.test/androidx.test.runner.AndroidJUnitRunner | tee instrument.txt || true
-            (cat instrument.txt; echo; echo ---- log; adb logcat -d -s NoteCheck:I NoteCheck:W AndroidRuntime:E TestRunner:E) > notecheck.txt || true
+            (cat instrument.txt; echo; echo ---- log; adb logcat -d -s NoteCheck:V AndroidRuntime:E) > notecheck.txt || true
             mkdir -p shots && adb pull /sdcard/Android/data/com.platinum20.dashboard/files/note-check shots/ || true
       - name: Risultato
         if: always()
