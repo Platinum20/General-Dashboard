@@ -50,6 +50,8 @@ jobs:
             adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
             adb shell settings put secure show_ime_with_hard_keyboard 1
             for p in RECORD_AUDIO READ_CALENDAR WRITE_CALENDAR POST_NOTIFICATIONS; do adb shell pm grant com.platinum20.dashboard android.permission.$p || true; done
+            adb shell settings put global hide_error_dialogs 1 || true
+            adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
             timeout 420 adb shell am instrument -w -e class com.platinum20.dashboard.GlassListCheck com.platinum20.dashboard.test/androidx.test.runner.AndroidJUnitRunner | tee instrument.txt || true
             timeout 300 adb shell am instrument -w -e class com.platinum20.dashboard.GlassDeviceCheck com.platinum20.dashboard.test/androidx.test.runner.AndroidJUnitRunner | tee -a instrument.txt || true
             (cat instrument.txt; echo; echo ---- log; adb logcat -d -s GlassCheck:V AndroidRuntime:E libc:F DEBUG:F OpenGLRenderer:E) > glasscheck.txt || true

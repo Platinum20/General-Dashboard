@@ -1277,8 +1277,9 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     }
     // Dove finisce la pagina (sopra la barra): lo legge il mini player, disegnato sopra lo Scaffold.
     var scaffoldPadding by remember { mutableStateOf(androidx.compose.foundation.layout.PaddingValues()) }
-    Box(Modifier.fillMaxSize().then(if (android.os.Build.VERSION.SDK_INT >= 33) Modifier.backdropSource(screenBackdrop) else Modifier)) {
     Box(Modifier.fillMaxSize()) {
+    // Solo pagine, barra e mini player: i livelli col vetro stanno fuori, se no il vetro disegnerebbe sé stesso (1.609 si chiudeva).
+    Box(Modifier.fillMaxSize().then(if (android.os.Build.VERSION.SDK_INT >= 33) Modifier.backdropSource(screenBackdrop) else Modifier)) {
     Scaffold(
         bottomBar = {
             AnimatedVisibility(
