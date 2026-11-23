@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -59,7 +60,9 @@ fun Modifier.backdropSource(backdrop: Backdrop): Modifier = composed {
                 layer.record { this@drawWithContent.drawContent() }
                 drawLayer(layer)
                 backdrop.layer = layer
-                backdrop.frame++
+                // Senza leggerlo: "frame++" lo legge, e una lettura nel disegno ridisegnava le pagine a ogni frame,
+                // all'infinito (il telefono non stava mai fermo e il vetro poteva leggere un livello a metà).
+                Snapshot.withoutReadObservation { backdrop.frame = backdrop.frame + 1 }
             } else {
                 drawContent()
             }
