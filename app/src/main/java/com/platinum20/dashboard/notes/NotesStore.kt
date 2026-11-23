@@ -245,6 +245,8 @@ data class Note(
     val emoji: String? = null,
     /** La copertina in cima alla nota nell'editor (1.590): un file nell'app. Null = nessuna. */
     val cover: String? = null,
+    /** Gli appunti di una cosa ([AttachedNotes]: "ev:12", "habit:3"): la nota vive su quella pagina, non in Appunti. */
+    val about: String? = null,
 ) {
     /** La copertina: quella che si vede sulla linea del tempo e in Per dopo. */
     val photo: String get() = photos.firstOrNull().orEmpty()
@@ -630,7 +632,7 @@ object NotesStore {
             val existing = d.notes.firstOrNull { it.id == noteId }
             if (existing != null && existing.text == text) return@update d
             val now = System.currentTimeMillis()
-            val note = Note(noteId, text, now, existing?.pinned ?: false, existing?.createdAt ?: now, existing?.photos.orEmpty(), emoji = existing?.emoji, cover = existing?.cover)
+            val note = Note(noteId, text, now, existing?.pinned ?: false, existing?.createdAt ?: now, existing?.photos.orEmpty(), emoji = existing?.emoji, cover = existing?.cover, about = existing?.about)
             d.copy(notes = listOf(note) + d.notes.filter { it.id != noteId })
         }
         return noteId
@@ -721,6 +723,35 @@ object NotesStore {
 
     fun note(id: Long): Note? = _data.value.notes.firstOrNull { it.id == id }
 
+    /** Gli appunti attaccati a [key] (un evento, un'abitudine: [AttachedNotes]). */
+    fun attached(key: String): Note? = _data.value.notes.firstOrNull { it.about == key }
+
+    /**
+     * Scrive gli appunti di [key]: [title] = il nome della cosa (prima riga, per cercarla), [body] = gli appunti.
+     * Appunti vuoti = la nota se ne va. Restituisce l'id della nota, null se non c'è più.
+     */
+    fun saveAttached(key: String, title: String, body: String): Long? {
+        val existing = attached(key)
+        if (body.isBlank()) {
+            existing?.let { deleteNote(it.id) }
+            return null
+        }
+        val text = AttachedNotes.text(title, body)
+        if (existing != null) return saveNote(existing.id, text)
+        val now = System.currentTimeMillis()
+        val note = Note(newId(), text, now, createdAt = now, about = key)
+        update { d -> d.copy(notes = listOf(note) + d.notes) }
+        return note.id
+    }
+
+    /** Cambia solo gli appunti di una nota attaccata (le spunte dalle notifiche), il titolo resta. */
+    fun editAttachedBody(noteId: Long, change: (String) -> String) {
+        val note = note(noteId) ?: return
+        val (title, body) = NoteText.split(note.text)
+        val next = change(body)
+        if (next != body) saveNote(noteId, NoteText.join(title, next))
+    }
+
     /** Tutti i dati in JSON, per il backup. */
     fun exportJson(): String = serialize(_data.value)
 
@@ -775,7 +806,8 @@ object NotesStore {
                     .apply { if (it.photos.isNotEmpty()) put("photo", it.photo).put("photos", JSONArray(it.photos)) }
                     .apply { it.archivedAt?.let { at -> put("archivedAt", at) } }
                     .apply { it.emoji?.let { e -> put("emoji", e) } }
-                    .apply { it.cover?.let { c -> put("cover", c) } })
+                    .apply { it.cover?.let { c -> put("cover", c) } }
+                    .apply { it.about?.let { a -> put("about", a) } })
             }
         })
         .put("habits", JSONArray().apply {
@@ -845,7 +877,7 @@ object NotesStore {
                 o.optLong("updatedAt").let { updated ->
                     Note(o.getLong("id"), o.optString("text"), updated, o.optBoolean("pinned"), o.optLong("createdAt", updated), notePhotos(o),
                         o.optLong("archivedAt", 0L).takeIf { it > 0L }, o.optString("emoji").takeIf { it.isNotBlank() },
-                        o.optString("cover").takeIf { it.isNotBlank() })
+                        o.optString("cover").takeIf { it.isNotBlank() }, o.optString("about").takeIf { it.isNotBlank() })
                 }
             },
             habits = (0 until habits.length()).map { i ->

@@ -78,10 +78,11 @@ class MorningWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         val day = LocalDate.now(zone)
         val calendar = CalendarRepository.hasPermission(context)
         // Le stesse righe di "Adesso" nella Home: tutta la giornata, orari assoluti (la notifica resta lì ore).
+        val todayEvents = if (calendar) runCatching { CalendarRepository.eventsOn(context, day) }.getOrNull() else null
         val adesso = Briefing.build(
             now = LocalDateTime.now(zone),
             forecast = forecast,
-            today = if (calendar) runCatching { CalendarRepository.eventsOn(context, day) }.getOrNull() else null,
+            today = todayEvents,
             tomorrow = null,
             tasks = notes.openItems,
             zone = zone,
@@ -99,7 +100,12 @@ class MorningWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         } else {
             "Buongiorno!"
         }
-        val groups = MorningText.groups(
+        // Gli appunti delle cose di oggi in una riga (idea 21, 2026-11-23): "📝 Oggi: badge, cambio con Marco".
+        val memo = com.platinum20.dashboard.notes.AttachedNotes.morning(
+            todayEvents.orEmpty().mapNotNull { e -> com.platinum20.dashboard.notes.AttachedNotes.forEvent(notes.notes, e.eventId, e.begin, zone) }
+                .distinctBy { it.id }.map { com.platinum20.dashboard.notes.AttachedNotes.body(it) },
+        )
+        val groups = MorningText.withMemo(MorningText.groups(
             today = forecast?.today,
             air = forecast?.air,
             adesso = adesso,
@@ -109,7 +115,7 @@ class MorningWorker(context: Context, params: WorkerParameters) : CoroutineWorke
                 com.platinum20.dashboard.widget.AgendaRows.todayItems(com.platinum20.dashboard.widget.TasksWidget.loadDays(context, zone), day, zone)
                     .map { listOfNotNull(it.time, (if (it.done) "✓ " else "") + it.title).joinToString("  ") }
             }.getOrNull(),
-        )
+        ), memo)
         // A notifica chiusa si legge una riga sola: quella più utile di "Adesso", come nella Home.
         val summary = adesso.firstOrNull { it.kind != BriefKind.WEATHER }?.text
             ?: groups.firstOrNull()?.lines?.firstOrNull() ?: "Apri Canvas per il riepilogo della giornata."

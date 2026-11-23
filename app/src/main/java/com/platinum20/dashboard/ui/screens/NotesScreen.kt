@@ -317,8 +317,8 @@ fun NotesScreen(
         // (mesi di eventi) era un'unica colonna e togliere un filtro la ridisegnava intera, a scatti.
         // Un nuovo ritardo letto ridisegna le righe dei treni con gli orari spostati.
         val trains by com.platinum20.dashboard.trips.TrainLive.statuses.collectAsState()
-        val entries = remember(groups, today, trains) {
-            timelineEntries(groups, today, months = true)
+        val entries = remember(groups, today, trains, data.notes) {
+            timelineEntries(groups, today, months = true, notes = data.notes)
         }
         val entryKeys = remember(entries) { timelineKeys(entries.map { it.first.key }) }
         // Quello che compare di nuovo (salvato col +, arrivato dalla banca) si accende un attimo.
