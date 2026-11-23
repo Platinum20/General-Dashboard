@@ -114,7 +114,6 @@ fun BoxScope.PullToSearchIndicator(state: PullToSearchState) {
             shape = CircleShape,
             color = if (armed) MaterialTheme.colorScheme.primary else Color.Transparent,
             contentColor = if (armed) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-            border = cardBorder(),
             modifier = Modifier.size(48.dp).glass(CircleShape),
         ) {
             Box(contentAlignment = Alignment.Center) {

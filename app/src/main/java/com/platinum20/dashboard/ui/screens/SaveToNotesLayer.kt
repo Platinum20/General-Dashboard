@@ -69,6 +69,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
@@ -203,7 +204,7 @@ internal fun BoxScope.BottomBubble(
         Box(
             Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.12f))
+                .background(Color.Black.copy(alpha = Glass.scrim(MaterialTheme.colorScheme.background.luminance() < 0.5f)))
                 .pointerInput(Unit) { detectTapGestures { onDismiss() } },
         )
     }
@@ -229,8 +230,7 @@ internal fun BoxScope.BottomBubble(
                     shape = shape,
                     color = Color.Transparent,
                     contentColor = MaterialTheme.colorScheme.onSurface,
-                    border = cardBorder(),
-                    modifier = Modifier.fillMaxWidth().glass(shape),
+                    modifier = Modifier.fillMaxWidth().glass(shape, overScrim = true),
                 ) {
                     // Con la tastiera aperta lo spazio è poco: le righe scorrono invece di uscire dallo schermo.
                     Column(Modifier.verticalScroll(rememberScrollState()).padding(vertical = 4.dp), content = content)
@@ -240,8 +240,7 @@ internal fun BoxScope.BottomBubble(
                         shape = CircleShape,
                         color = Color.Transparent,
                         contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        border = cardBorder(),
-                        modifier = Modifier.align(Alignment.CenterHorizontally).glass(CircleShape),
+                        modifier = Modifier.align(Alignment.CenterHorizontally).glass(CircleShape, overScrim = true),
                     ) {
                         Text(
                             "Portalo di lato per chiuderlo",
