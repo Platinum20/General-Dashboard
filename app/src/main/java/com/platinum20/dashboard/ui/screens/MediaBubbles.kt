@@ -172,7 +172,7 @@ private fun pageRows(context: Context, media: ResumeItem): List<BubbleAction> = 
     ResumeKind.YOUTUBE -> {
         val liked = com.platinum20.dashboard.media.youtube.YtFavorites.items.value.any { it.id == media.key }
         listOf(
-            row(
+            act(
                 BubbleGroup.SEGNA,
                 if (liked) Icons.Rounded.ThumbUp else Icons.Rounded.ThumbUpOffAlt,
                 if (liked) "Ti piace" else "Mi piace",
@@ -195,7 +195,7 @@ private fun pageRows(context: Context, media: ResumeItem): List<BubbleAction> = 
                 com.platinum20.dashboard.media.radio.RadioStore.toggleFavorite(station)
             },
             // Sveglia con questa radio (1.529): all'ora già scelta, Annulla rimette com'era.
-            row(
+            act(
                 BubbleGroup.CAMBIA, Icons.Rounded.Alarm,
                 if (already) "Ti sveglia questa radio" else "Svegliami con questa radio",
                 (if (alarm.weekdaysOnly) "dal lunedì al venerdì alle " else "ogni giorno alle ") + alarm.timeLabel,

@@ -390,6 +390,7 @@ private fun BubbleChips(title: String, chips: List<BubbleChip>, selector: Boolea
 }
 
 /** Un chip: icona e nome se c'è posto, solo il nome se no; nei selettori le scelte non attive sono solo icona. */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 internal fun BubbleChipCell(c: BubbleChip, named: Boolean, modifier: Modifier, onClick: () -> Unit) {
     val on = c.selected

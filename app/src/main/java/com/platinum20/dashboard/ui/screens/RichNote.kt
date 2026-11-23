@@ -1114,8 +1114,8 @@ internal fun RichNoteField(
                                 CaptureFeedback.tell(context, said, Icons.Outlined.Delete, "Annulla") { emit(before) }
                             }
                             ActionBubble.show(
+                                BubbleHead("Tabella", "riga ${r + 1} · colonna ${('A' + c)}"),
                                 *listOfNotNull(
-                                    BubbleHead("Tabella", "riga ${r + 1} · colonna ${('A' + c)}"),
                                     choice(
                                         "Aggiungi una riga",
                                         BubbleChip("Sopra", icon = Icons.Outlined.VerticalAlignTop) { put(NoteTable.addRow(g, r), r to c) },

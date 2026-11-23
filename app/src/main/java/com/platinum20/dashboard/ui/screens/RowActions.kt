@@ -234,7 +234,7 @@ internal fun showNoteBubble(context: android.content.Context, n: Note, openRoute
                 NotesStore.toggleNoteArchive(n.id)
                 undo("Archiviata", Icons.Outlined.Archive) { NotesStore.toggleNoteArchive(n.id) }
             } else act(BubbleGroup.METTI, Icons.Outlined.Unarchive, "Rimetti negli appunti", "torna nella card della Home") { NotesStore.toggleNoteArchive(n.id) },
-            if (list == null) null else row(
+            if (list == null) null else act(
                 BubbleGroup.METTI, Icons.Outlined.Widgets, "Mostra nel widget",
                 if (com.platinum20.dashboard.widget.NoteWidget.placed(context)) "il widget Nota mostra questa" else "poi aggiungi il widget Nota",
             ) {

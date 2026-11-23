@@ -270,7 +270,7 @@ fun ReaderScreen(
                                 val recent = com.platinum20.dashboard.notes.NoteInbox.recent(NotesStore.data.value.notes, 5, SavedLinks::livesElsewhere)
                                 // Niente da scorrere: le ultime tre note, sotto Nuova (negli Appunti).
                                 if (recent.isEmpty()) keep(phrase, null) else ActionBubble.show(
-                                    BubbleHead("Aggiungi a una nota", phrase.take(40)),
+                                    BubbleHead("Aggiungi a una nota", phrase.orEmpty().take(40)),
                                     choice("Ultime", *recent.take(3).map { n -> BubbleChip(n.title) { keep(phrase, n.id) } }.toTypedArray()),
                                     choice("", BubbleChip("Nuova nota", icon = Icons.Outlined.Add) { keep(phrase, null) }),
                                 )
