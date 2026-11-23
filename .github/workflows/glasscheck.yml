@@ -9,6 +9,7 @@ on:
     paths:
       - ".github/workflows/glasscheck.yml"
       - "app/src/androidTest/java/com/platinum20/dashboard/GlassDeviceCheck.kt"
+      - "app/src/androidTest/java/com/platinum20/dashboard/GlassListCheck.kt"
 
 permissions:
   contents: write
@@ -47,7 +48,7 @@ jobs:
             adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
             adb shell settings put secure show_ime_with_hard_keyboard 1
             for p in RECORD_AUDIO READ_CALENDAR WRITE_CALENDAR POST_NOTIFICATIONS; do adb shell pm grant com.platinum20.dashboard android.permission.$p || true; done
-            adb shell am instrument -w -e class com.platinum20.dashboard.GlassDeviceCheck com.platinum20.dashboard.test/androidx.test.runner.AndroidJUnitRunner | tee instrument.txt || true
+            adb shell am instrument -w -e class com.platinum20.dashboard.GlassListCheck,com.platinum20.dashboard.GlassDeviceCheck com.platinum20.dashboard.test/androidx.test.runner.AndroidJUnitRunner | tee instrument.txt || true
             (cat instrument.txt; echo; echo ---- log; adb logcat -d -s GlassCheck:V AndroidRuntime:E libc:F DEBUG:F OpenGLRenderer:E) > glasscheck.txt || true
             mkdir -p shots && adb pull /sdcard/Android/data/com.platinum20.dashboard/files/glass-check shots/ || true
       - name: Risultato
