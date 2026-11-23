@@ -77,12 +77,17 @@ class GlassListCheck {
     fun bubbleOverPages() {
         lateinit var list: LazyListState
         var page by mutableStateOf("cover")
+        // a = il vetro legge la pagina (AnimatedContent, come il NavHost); b = legge un Box attorno, come MainActivity ora;
+        // c = solo il Box attorno, l'AnimatedContent senza livello suo.
+        var mode by mutableStateOf("a")
         compose.setContent {
             GeneralDashboardTheme(AppTheme.CANVAS) {
-                val backdrop = remember { Backdrop() }
-                CompositionLocalProvider(LocalBackdrop provides backdrop) {
+                val pages = remember { Backdrop() }
+                val screen = remember { Backdrop() }
+                CompositionLocalProvider(LocalBackdrop provides if (mode == "a") pages else screen) {
                     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-                        AnimatedContent(page, Modifier.fillMaxSize().backdropSource(backdrop), label = "pagine") { p ->
+                        Box(Modifier.fillMaxSize().then(if (mode != "a") Modifier.backdropSource(screen) else Modifier)) {
+                        AnimatedContent(page, Modifier.fillMaxSize().then(if (mode != "c") Modifier.backdropSource(pages) else Modifier), label = "pagine") { p ->
                             list = remember { LazyListState() }
                             FeedList(
                                 Loadable(data = (0 until 60).toList()), empty = "", listState = list,
@@ -100,6 +105,7 @@ class GlassListCheck {
                                 }
                             }
                         }
+                        }
                         ActionBubbleLayer()
                     }
                 }
@@ -115,14 +121,12 @@ class GlassListCheck {
         }
         fun close() { instr.runOnMainSync { ActionBubble.dismiss() }; compose.mainClock.advanceTimeBy(800); Thread.sleep(300) }
         fun scroll(index: Int) { compose.runOnUiThread { kotlinx.coroutines.MainScope().launch { list.scrollToItem(index) } }; compose.mainClock.advanceTimeBy(500); Thread.sleep(500) }
-        for (p in listOf("cover", "photo")) {
-            compose.runOnUiThread { page = p }
+        for (m in listOf("a", "b", "c")) {
+            compose.runOnUiThread { mode = m; page = "cover" }
             compose.mainClock.advanceTimeBy(1500); Thread.sleep(500)
-            bubble(); shot("1-$p-in-cima"); close()
-            scroll(4)
-            bubble(); shot("2-$p-scorsa-poco"); close()
+            bubble(); shot("$m-1-in-cima"); close()
             scroll(25)
-            bubble(); shot("3-$p-scorsa-tanto"); close()
+            bubble(); shot("$m-2-scorsa"); close()
             scroll(0)
         }
         Log.i("GlassCheck", "list done")
