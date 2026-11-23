@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.609.0
+**Il vetro sfoca davvero tutto quello che c'è sotto**
+- Fumetti (anche tenendo premuto in Media e nelle playlist), coda e impostazioni del video sfocano anche il mini player e la barra in basso: prima lì il vetro li faceva sparire invece di sfocarli
+- Così il vetro è uguale ovunque, qualunque cosa ci sia sotto
+
 ## 1.608.0
 **Le note entrano in tutta l'app**
 - Scrivi @ in una nota per collegare eventi, turni, treni, brani, video, articoli e altre note; la cosa citata mostra "Citato in"
