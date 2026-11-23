@@ -262,6 +262,8 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
                 }
             }
         }
+        // Le note che citano questa cosa con "@" (2026-11-23).
+        CitedIn(listOf(com.platinum20.dashboard.notes.NoteFormat.APP_LINK + com.platinum20.dashboard.Routes.noteItem(kind, id)), Modifier.padding(top = 12.dp))
     }
 
     when (val p = picker) {

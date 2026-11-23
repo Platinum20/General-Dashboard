@@ -769,6 +769,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                         pageScroll.keepLine(scope, top, bottom, typing, viewTop, minOf(viewBottom, barTop), lineRoom)
                     },
                     sendToTodo = true,
+                    noteId = id,
                     onAllDone = { allDone() },
                     find = finding,
                     findAt = findAt.coerceAtMost((found.size - 1).coerceAtLeast(0)),
