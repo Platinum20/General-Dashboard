@@ -881,8 +881,9 @@ private fun MorningSettings() {
         // L'orario sta a destra della riga; la prova col tocco lungo (1.576), non più due righe a parte.
         val actions = {
             ActionBubble.show(
-                BubbleAction(Icons.Outlined.Send, "Invia una prova", detail = "Arriva subito quella di oggi") { sendTest() },
-                BubbleAction(Icons.Outlined.Schedule, "Cambia orario", detail = "Adesso alle ${morning.timeLabel}") { pickTime = true },
+                BubbleHead("Notifica del mattino", "alle ${morning.timeLabel}"),
+                act(BubbleGroup.CAMBIA, Icons.Outlined.Schedule, "Cambia orario", "adesso alle ${morning.timeLabel}") { pickTime = true },
+                act(BubbleGroup.CREA, Icons.Outlined.Send, "Invia una prova", "arriva subito quella di oggi") { sendTest() },
             )
         }
         SettingsItem(
@@ -1154,16 +1155,15 @@ private fun SavedDownloadSetting() {
             value = quality.label,
             showChevron = true,
             onClick = {
-                ActionBubble.show(*com.platinum20.dashboard.media.SavedQuality.entries.map { q ->
-                    BubbleAction(
-                        icon = if (q == quality) Icons.Outlined.Check else Icons.Outlined.Hd,
-                        title = q.label,
-                        detail = q.detail,
-                    ) {
-                        AppSettings.setSavedQuality(q.height)
-                        com.platinum20.dashboard.work.SavedDownloadWorker.now(context)
-                    }
-                }.toTypedArray())
+                ActionBubble.show(
+                    BubbleHead("Qualità dei video", quality.detail),
+                    choice("Qualità", *com.platinum20.dashboard.media.SavedQuality.entries.map { q ->
+                        BubbleChip(q.label, selected = q == quality) {
+                            AppSettings.setSavedQuality(q.height)
+                            com.platinum20.dashboard.work.SavedDownloadWorker.now(context)
+                        }
+                    }.toTypedArray()),
+                )
             },
         )
     }
@@ -1203,10 +1203,11 @@ private fun LiveTripSettings() {
     }
     val trainActions = {
         ActionBubble.show(
-            BubbleAction(
-                Icons.Outlined.PlayCircle,
+            BubbleHead("Viaggio dal vivo"),
+            act(
+                BubbleGroup.CREA, Icons.Outlined.PlayCircle,
                 if (demo) "Ferma la prova" else "Prova con un treno finto",
-                detail = if (demo) "Il treno finto sta viaggiando" else "Dalla partenza all'arrivo",
+                if (demo) "il treno finto sta viaggiando" else "dalla partenza all'arrivo",
             ) { toggleDemo() },
         )
     }
@@ -1387,13 +1388,12 @@ private fun SponsorCategoryRow(category: SbCategory, action: SbAction) {
             .fillMaxWidth()
             .bouncyPress(0.98f)
             .clickable {
-                ActionBubble.show(*category.actions.map { choice ->
-                    BubbleAction(
-                        icon = if (choice == action) Icons.Outlined.Check else sponsorIcon(choice),
-                        title = category.actionLabel(choice),
-                        detail = category.actionDetail(choice),
-                    ) { AppSettings.setSponsorAction(category, choice) }
-                }.toTypedArray())
+                ActionBubble.show(
+                    BubbleHead("Sponsor nei video", category.actionDetail(action)),
+                    choice(category.label, *category.actions.map { c ->
+                        BubbleChip(category.actionLabel(c), selected = c == action) { AppSettings.setSponsorAction(category, c) }
+                    }.toTypedArray()),
+                )
             }
             .heightIn(min = 56.dp)
             .padding(start = 14.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),

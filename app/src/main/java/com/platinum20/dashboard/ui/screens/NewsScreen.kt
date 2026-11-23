@@ -176,7 +176,7 @@ fun NewsScreen(
                     item(key = "saved") { SavedArticlesBlock(Modifier.padding(bottom = 8.dp)) }
                     itemsIndexed(feed.fresh, key = { _, s -> "n:" + s.key }) { index, story ->
                         Column(Modifier.animateItem()) {
-                            val actions = { ActionBubble.show(*storyActions(context, story) { NewsHistory.settle(story.items.map { it.link }) }) }
+                            val actions = { ActionBubble.show(storyHead(story), *storyActions(context, story) { NewsHistory.settle(story.items.map { it.link }) }) }
                             if (index == 0) {
                                 StoryLead(story, read = story.items.any { it.link in read }, onOpen = open, onLongClick = actions, modifier = Modifier.padding(bottom = 6.dp))
                             } else {
@@ -197,7 +197,7 @@ fun NewsScreen(
                     }
                     itemsIndexed(feed.seen, key = { _, s -> "v:" + s.key }) { index, story ->
                         Column(Modifier.animateItem()) {
-                            val actions = { ActionBubble.show(*storyActions(context, story) {}) }
+                            val actions = { ActionBubble.show(storyHead(story), *storyActions(context, story) {}) }
                             // Come un giornale: anche fra le già viste la prima storia ha la foto grande, poi titoli puliti.
                             if (index == 0) {
                                 StoryLead(story, read = story.items.any { it.link in read }, onOpen = open, onLongClick = actions, modifier = Modifier.padding(vertical = 6.dp))

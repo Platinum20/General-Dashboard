@@ -63,10 +63,11 @@ internal fun ShiftAccountRow(tile: AccountTile) {
     val open: () -> Unit = { inApp?.openRoute?.invoke(Routes.SHIFTS) }
     val actions = {
         ActionBubble.show(
-            BubbleAction(Icons.Outlined.Work, when { !linked -> "Accedi"; expired -> "Rientra"; else -> "Accedi di nuovo" }, detail = "I turni nel calendario") { open() },
+            BubbleHead("Account", "Creators Pro"),
+            BubbleAction(Icons.Outlined.Work, when { !linked -> "Accedi"; expired -> "Rientra"; else -> "Apri" }, slot = BubbleSlot.MAIN) { open() },
             // Anche se nessun turno è stato riconosciuto: è proprio allora che serve mandare i dati (Antonio, 1.378).
             *(if (linked || hasData) captureActions(context, "turni-dati-letti") { ShiftStore.capturesText() } else emptyArray()),
-            *(if (linked) arrayOf(BubbleAction(Icons.Outlined.LinkOff, "Esci", "Canvas dimentica l'accesso a Creators Pro", danger = true) { CreatorsLink.forget(context) }) else emptyArray()),
+            *(if (linked) arrayOf(Slot.logout(confirm = "Tocca ancora: Canvas dimentica l'accesso a Creators Pro") { CreatorsLink.forget(context) }) else emptyArray()),
         )
     }
     SettingsItem(

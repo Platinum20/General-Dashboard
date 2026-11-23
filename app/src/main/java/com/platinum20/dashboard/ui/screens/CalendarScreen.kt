@@ -221,31 +221,25 @@ fun EventDetailScreen(
             haptic(Haptic.CONFIRM)
             showTicket = true
         } else null,
-        more =
-            // Condividi, che prima stava tenendo premuta la riga (Antonio, 2026-11-11).
-            listOfNotNull(current?.let { ev -> BubbleAction(Icons.Outlined.Share, "Condividi", "titolo, giorno e ora") { shareText(context, eventShareText(ev.title, ev.begin)) } }),
+        // "Altro" = il fumetto del tieni premuto, senza Apri. Eliminare dal calendario non si annulla: due tocchi.
+        head = current?.let { ev -> BubbleHead(if (shift != null) "Turno" else "Evento", ev.title + if (ev.allDay) "" else " · " + clock(ev.begin)) },
+        editDetail = "titolo, orario, luogo, avviso",
+        deleteConfirm = if (current?.recurring == true) "Tocca ancora: tutte le volte, anche dal telefono" else "Tocca ancora: sparisce anche dal telefono",
+        more = listOfNotNull(current?.let { ev -> Slot.share { shareText(context, eventShareText(ev.title, ev.begin)) } }),
         onEdit = if (writable) ({ withWrite { current?.let { onEdit(it.id) } } }) else null,
-        // Eliminare dal calendario non si può annullare: si conferma nel solito fumetto in basso.
         onDelete = if (writable) ({
-            current?.let { ev -> ActionBubble.show(
-                BubbleAction(
-                    Icons.Outlined.Delete,
-                    "Elimina l'evento",
-                    detail = if (ev.recurring) "Tutte le volte, anche dal calendario del telefono" else "Sparisce anche dal calendario del telefono",
-                    danger = true,
-                ) {
-                    withWrite {
-                        scope.launch {
-                            if (CalendarRepository.delete(context, ev.id)) {
-                                haptic(Haptic.CONFIRM)
-                                onBack()
-                            } else {
-                                tell(CalendarPermission.DELETE_FAILED)
-                            }
+            current?.let { ev ->
+                withWrite {
+                    scope.launch {
+                        if (CalendarRepository.delete(context, ev.id)) {
+                            haptic(Haptic.CONFIRM)
+                            onBack()
+                        } else {
+                            tell(CalendarPermission.DELETE_FAILED)
                         }
                     }
-                },
-            ) }
+                }
+            }
         }) else null,
     ) {
         if (current == null) {
@@ -579,13 +573,10 @@ private fun EventForm(
                         .fillMaxWidth()
                         .clickable {
                             ActionBubble.show(
-                                *calendars.map { cal ->
-                                    BubbleAction(
-                                        if (cal.id == draft.calendarId) Icons.Outlined.CheckCircle else Icons.Outlined.CalendarMonth,
-                                        cal.name,
-                                        detail = cal.account.takeIf { it.isNotBlank() && it != cal.name }.orEmpty(),
-                                    ) { onChange(draft.copy(calendarId = cal.id)) }
-                                }.toTypedArray(),
+                                BubbleHead("Calendario", "dove salvarlo"),
+                                choice("Calendario", *calendars.map { cal ->
+                                    BubbleChip(cal.name, selected = cal.id == draft.calendarId) { onChange(draft.copy(calendarId = cal.id)) }
+                                }.toTypedArray()),
                             )
                         }
                         .padding(horizontal = 16.dp, vertical = 12.dp),

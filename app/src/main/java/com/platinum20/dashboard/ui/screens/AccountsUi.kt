@@ -116,7 +116,10 @@ internal fun AccountTrailing(tile: AccountTile, onFix: () -> Unit) {
 
 /** "Salva i dati letti" e "Condividi" nel fumetto (WindTre, turni): per correggere la lettura quando un numero non torna. */
 internal fun captureActions(context: Context, file: String, text: () -> String): Array<BubbleAction> = arrayOf(
-    BubbleAction(Icons.Outlined.SaveAlt, "Salva i dati letti", detail = "Un file in Download da allegare") {
+    choice(
+        "Dati letti",
+        BubbleChip("Condividi", icon = Icons.Outlined.Share) { shareTextFile(context, "$file.txt", text()) },
+        BubbleChip("Salva in Download", icon = Icons.Outlined.SaveAlt) {
         val where = saveTextToDownloads(context, stampedName(file), text())
         CaptureFeedback.show(
             CaptureNotice(
@@ -127,8 +130,8 @@ internal fun captureActions(context: Context, file: String, text: () -> String):
                 fly = false,
             ),
         )
-    },
-    BubbleAction(Icons.Outlined.Share, "Condividi i dati letti", "un file di testo con quello che Canvas legge") { shareTextFile(context, "$file.txt", text()) },
+        },
+    ),
 )
 
 /** Spotify o YouTube: un solo accesso per servizio, serve sia al player sia al feed nell'app. */
@@ -164,17 +167,18 @@ private fun MediaAccountRow(service: MediaService, tile: AccountTile, onLogin: (
 
     val actions = {
         ActionBubble.show(
+            BubbleHead("Account", service.label),
             *listOfNotNull(
-                if (!connected) BubbleAction(Icons.AutoMirrored.Outlined.Login, "Accedi", detail = service.label) { onLogin(service) } else null,
+                if (!connected) BubbleAction(Icons.AutoMirrored.Outlined.Login, "Accedi", slot = BubbleSlot.MAIN) { onLogin(service) } else null,
                 // Il collegamento ufficiale si rifà sempre da qui, anche dopo «Esci».
-                if (!official) BubbleAction(Icons.Outlined.Link, "Collegamento ufficiale", detail = "Feed e player") { connectOfficial() } else null,
+                if (!official) act(BubbleGroup.CAMBIA, Icons.Outlined.Link, "Collegamento ufficiale", "feed e player") { connectOfficial() } else null,
                 if (service == MediaService.SPOTIFY) {
-                    BubbleAction(
-                        Icons.Outlined.Key, "Chiave di Spotify",
-                        detail = if (spotifyClientId == SpotifyAuth.DEFAULT_CLIENT_ID) "Predefinita" else "La tua",
+                    act(
+                        BubbleGroup.CAMBIA, Icons.Outlined.Key, "Chiave di Spotify",
+                        if (spotifyClientId == SpotifyAuth.DEFAULT_CLIENT_ID) "predefinita" else "la tua",
                     ) { editKey = true }
                 } else null,
-                if (connected) BubbleAction(Icons.Outlined.LinkOff, "Esci", "Canvas dimentica l'accesso", danger = true) { logout() } else null,
+                if (connected) Slot.logout(confirm = "Tocca ancora: Canvas dimentica l'accesso") { logout() } else null,
             ).toTypedArray(),
         )
     }

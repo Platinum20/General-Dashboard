@@ -295,9 +295,9 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
     }
     fun pickCover() = coverPick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
     fun coverActions(nid: Long, now: String?): Array<BubbleAction> = listOfNotNull(
-        BubbleAction(Icons.Outlined.Image, if (now == null) "Aggiungi una copertina" else "Cambia la copertina", "una foto in cima alla nota") { pickCover() },
+        act(BubbleGroup.CAMBIA, Icons.Outlined.Image, if (now == null) "Aggiungi una copertina" else "Cambia la copertina", "una foto in cima alla nota") { pickCover() },
         now?.let {
-            BubbleAction(Icons.Outlined.Delete, "Togli la copertina", "con Annulla", danger = true) {
+            Slot.remove {
                 NotesStore.setNoteCover(nid, null)
                 CaptureFeedback.tell(context, "Copertina tolta", Icons.Outlined.Delete, "Annulla") { NotesStore.setNoteCover(nid, it) }
             }
@@ -328,13 +328,13 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
         val index = photos.indexOf(path)
         val nid = id
         return listOfNotNull(
-            if (open) BubbleAction(Icons.Outlined.Fullscreen, "Apri a tutto schermo", "scorri di lato fra le foto") { viewer = index.coerceAtLeast(0) } else null,
-            if (index > 0 && nid != null) BubbleAction(Icons.Outlined.Star, "Metti per prima", "diventa la copertina nel Calendario") {
+            if (open) Slot.open { viewer = index.coerceAtLeast(0) } else null,
+            if (index > 0 && nid != null) act(BubbleGroup.CAMBIA, Icons.Outlined.Star, "Metti per prima", "diventa la copertina nel Calendario") {
                 haptic(Haptic.CONFIRM)
                 NotesStore.editNotePhotos(nid) { NotePhotos.toFront(it, path) }
             } else null,
             // Testo da una foto (1.588): quello che c'è scritto nella foto va in fondo alla nota.
-            BubbleAction(Icons.Outlined.DocumentScanner, "Copia il testo nella nota", "quello scritto nella foto, in fondo") {
+            act(BubbleGroup.CREA, Icons.Outlined.DocumentScanner, "Copia il testo nella nota", "quello scritto nella foto, in fondo") {
                 scope.launch {
                     val rows = PhotoAttach.rows(context, android.net.Uri.fromFile(java.io.File(path)))
                     if (rows.isEmpty()) { CaptureFeedback.tell(context, "Nella foto non ho trovato testo"); return@launch }
@@ -346,9 +346,9 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                     CaptureFeedback.tell(context, "Testo copiato nella nota", Icons.Outlined.DocumentScanner)
                 }
             },
-            BubbleAction(Icons.Outlined.Rotate90DegreesCw, "Ruota", "di un quarto di giro") { rotatePhoto(path) },
-            BubbleAction(Icons.Outlined.Share, "Condividi la foto", "solo questa foto") { NotePhotoFiles.share(context, "", listOf(path)) },
-            BubbleAction(Icons.Outlined.Delete, "Togli dalla nota", "con Annulla", danger = true) { removePhoto(path) },
+            act(BubbleGroup.CAMBIA, Icons.Outlined.Rotate90DegreesCw, "Ruota", "di un quarto di giro") { rotatePhoto(path) },
+            Slot.share { NotePhotoFiles.share(context, "", listOf(path)) },
+            Slot.remove { removePhoto(path) },
         ).toTypedArray()
     }
 
@@ -452,6 +452,7 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
         haptic(Haptic.LONG_PRESS)
         if (list.isEmpty()) { CaptureFeedback.tell(context, "Nessuna versione precedente: si tengono quando cambi la nota"); return }
         ActionBubble.show(
+            BubbleHead("Versioni precedenti", title.text),
             *list.take(8).map { v ->
                 BubbleAction(Icons.Outlined.History, NoteText.moment(v.at, v.at), NoteText.versionLine(v.text, text)) {
                     val before = text
@@ -463,7 +464,7 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
     }
 
     // ---- Da elenco di brani a Spotify (1.606, idea 18) ----
-    fun songsToSpotify(songs: List<String>) {
+    fun songsToSpotify(songs: List<String>): BubbleAction {
         val name = com.platinum20.dashboard.media.spotify.SpotifyPlaylists.cleanName(title.text.ifBlank { "Dalla nota" })
         fun withTracks(then: (List<com.platinum20.dashboard.media.spotify.SpItem>) -> Unit) {
             CaptureFeedback.tell(context, "Cerco ${songs.size} brani su Spotify…", Icons.AutoMirrored.Outlined.QueueMusic)
@@ -477,8 +478,9 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                 }
             }
         }
-        ActionBubble.show(
-            BubbleAction(Icons.AutoMirrored.Outlined.PlaylistAdd, "Crea playlist \"$name\"", "va in Musica, la nota resta") {
+        return choice(
+            "Brani su Spotify · ${songs.size}",
+            BubbleChip("Crea playlist", icon = Icons.AutoMirrored.Outlined.PlaylistAdd) {
                 withTracks { tracks ->
                     scope.launch {
                         com.platinum20.dashboard.media.spotify.SpotifyStore.createPlaylistWith(name, tracks).fold(
@@ -493,7 +495,7 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                     }
                 }
             },
-            BubbleAction(Icons.AutoMirrored.Outlined.QueueMusic, "Metti in coda", "partono dopo quello che ascolti") {
+            BubbleChip("In coda", icon = Icons.AutoMirrored.Outlined.QueueMusic) {
                 withTracks { tracks ->
                     tracks.forEach { t ->
                         CanvasPlayer.add(ResumeItem(ResumeKind.SPOTIFY, t.uri, t.title, t.subtitle, t.image, durationMs = t.durationMs, at = System.currentTimeMillis()))
@@ -508,74 +510,82 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
     fun add() {
         haptic(Haptic.LONG_PRESS)
         ActionBubble.show(
-            *listOfNotNull(
-                BubbleAction(Icons.Outlined.Image, "Foto nel testo", "dove c'è il cursore, larga quanto la nota") { pickInline() },
-                BubbleAction(Icons.Outlined.AddPhotoAlternate, "Foto in cima", "dalla galleria, anche più insieme") { pickPhotos() },
-                BubbleAction(Icons.Outlined.PhotoCamera, "Scatta una foto", "con la fotocamera, va subito nella nota") { camera.launch(ReceiptReader.photoUri(context)) },
-                BubbleAction(Icons.Outlined.Mic, "Detta", "il testo va dove c'è il cursore") { dictate() },
-                BubbleAction(Icons.Outlined.Draw, "Disegna", "a mano, va fra le foto") { draw() },
-                BubbleAction(Icons.Outlined.GraphicEq, "Registra un audio", "si ascolta toccandolo nella nota") { record() },
-            ).toTypedArray(),
+            BubbleHead("Aggiungi", "nella nota"),
+            choice(
+                "Foto",
+                BubbleChip("Nel testo", icon = Icons.Outlined.Image) { pickInline() },
+                BubbleChip("In cima", icon = Icons.Outlined.AddPhotoAlternate) { pickPhotos() },
+                BubbleChip("Scatta", icon = Icons.Outlined.PhotoCamera) { camera.launch(ReceiptReader.photoUri(context)) },
+            ),
+            choice(
+                "Voce e disegno",
+                BubbleChip("Detta", icon = Icons.Outlined.Mic) { dictate() },
+                BubbleChip("Vocale", icon = Icons.Outlined.GraphicEq) { record() },
+                BubbleChip("Disegno", icon = Icons.Outlined.Draw) { draw() },
+            ),
         )
     }
 
-    /** La riga "Emoji della nota" (1.586): una fila di emoji da toccare, e Togli se c'è già. */
-    fun emojiAction(nid: Long, now: String?): BubbleAction = BubbleAction(
-        Icons.Outlined.EmojiEmotions, "Emoji della nota", "si vede davanti al titolo, anche in Appunti",
-        chips = NOTE_EMOJIS.map { e -> BubbleChip(e, selected = e == now) { NotesStore.setNoteEmoji(nid, if (e == now) null else e) } } +
-            listOfNotNull(if (now != null) BubbleChip("Togli") { NotesStore.setNoteEmoji(nid, null) } else null),
-    )
+    /** "Emoji" (PDF Fila-unica): righe da quattro, quella di adesso blu, Nessuna in fondo se ce n'è una. */
+    fun emojiAction(nid: Long, now: String?, few: Boolean = false): BubbleAction {
+        val all = if (few) (listOfNotNull(now) + NOTE_EMOJIS).distinct().take(if (now != null) 7 else 8) else NOTE_EMOJIS
+        return choice(
+            "Emoji",
+            *all.map { e -> BubbleChip(e, selected = e == now, emoji = e) { NotesStore.setNoteEmoji(nid, if (e == now) null else e) } }.toTypedArray(),
+            *listOfNotNull(if (now != null) BubbleChip("Nessuna") { NotesStore.setNoteEmoji(nid, null) } else null).toTypedArray(),
+        )
+    }
 
     fun more() {
         haptic(Haptic.LONG_PRESS)
+        val nid = id?.takeIf { current != null }
+        val hasDone = NoteLines.hasDone(body.text)
         ActionBubble.show(
+            BubbleHead("Nota", listOfNotNull(current?.emoji, title.text.ifBlank { "Nuova nota" }).joinToString(" ")),
             *listOfNotNull(
-                id?.takeIf { current != null }?.let { nid ->
-                    BubbleAction(
-                        if (pinned) Icons.Filled.PushPinFilled else Icons.Outlined.PushPin,
-                        if (pinned) "Togli da in alto" else "Fissa in alto",
-                        if (pinned) "torna in ordine con le altre" else "resta prima fra gli Appunti",
-                    ) {
-                        haptic(if (pinned) Haptic.TOGGLE_OFF else Haptic.TOGGLE_ON)
-                        NotesStore.togglePin(nid)
-                    }
-                },
-                id?.takeIf { current != null }?.let { nid -> emojiAction(nid, current?.emoji) },
-                extras.lineAction({ save(); id }, title.text, body.text, body.selection.end),
-                extras.placeAction({ save(); id }, id),
-                id?.takeIf { current != null }?.let { nid ->
-                    BubbleAction(Icons.Outlined.Image, if (current?.cover == null) "Aggiungi una copertina" else "Copertina", "una foto in cima alla nota") {
-                        if (current?.cover == null) pickCover() else ActionBubble.show(*coverActions(nid, current?.cover))
-                    }
-                },
-                if (body.text.isBlank()) null else BubbleAction(Icons.Outlined.Search, "Cerca nella nota", "le parole trovate si colorano") {
-                    findAt = 0
-                    finding = ""
-                },
-                // Per le liste (1.555): le fatte in fondo, via, o tutte da rifare (la valigia).
-                // "Ordina la lista" (1.586): dalla A alla Z, o prima quelle da fare (le spuntate scendono).
-                if (!NoteLines.hasList(body.text)) null else BubbleAction(Icons.AutoMirrored.Outlined.Sort, "Ordina la lista", "dalla A alla Z, o prima quelle da fare") {
-                    ActionBubble.show(
-                        *listOfNotNull(
-                            BubbleAction(Icons.Outlined.SortByAlpha, "Dalla A alla Z", "le fatte restano in fondo") {
-                                val before = body.text
-                                body = TextFieldValue(NoteLines.sortAlpha(before))
+                // Scelte (righe di chip, una per categoria): emoji, Ricordamelo, lista, esporta.
+                nid?.let { emojiAction(it, current?.emoji, few = true) },
+                extras.remindChoice({ save(); id }, title.text, body.text, body.selection.end, id),
+                if (!NoteLines.hasList(body.text)) null else choice(
+                    "Lista",
+                    *listOfNotNull(
+                        if (!hasDone) null else BubbleChip("Fatte giù", icon = Icons.Outlined.VerticalAlignBottom) {
+                            body = TextFieldValue(NoteLines.doneToBottom(body.text))
+                            save()
+                        },
+                        BubbleChip("A-Z", icon = Icons.Outlined.SortByAlpha) {
+                            val before = body.text
+                            body = TextFieldValue(NoteLines.sortAlpha(before))
+                            save()
+                            CaptureFeedback.tell(context, "Lista in ordine", Icons.Outlined.SortByAlpha, "Annulla") {
+                                body = TextFieldValue(before)
                                 save()
-                                CaptureFeedback.tell(context, "Lista in ordine", Icons.Outlined.SortByAlpha, "Annulla") {
-                                    body = TextFieldValue(before)
-                                    save()
-                                }
-                            },
-                            if (!NoteLines.hasDone(body.text)) null else BubbleAction(Icons.Outlined.VerticalAlignBottom, "Prima quelle da fare", "le spuntate scendono, l'ordine resta") {
-                                body = TextFieldValue(NoteLines.doneToBottom(body.text))
+                            }
+                        },
+                        if (!hasDone) null else BubbleChip("Togli fatte", icon = Icons.Outlined.RemoveDone) {
+                            val before = body.text
+                            body = TextFieldValue(NoteLines.removeDone(before))
+                            save()
+                            CaptureFeedback.tell(context, "Fatte tolte", Icons.Outlined.Delete, "Annulla") {
+                                body = TextFieldValue(before)
                                 save()
-                            },
-                        ).toTypedArray(),
-                    )
-                },
+                            }
+                        },
+                    ).toTypedArray(),
+                ),
+                if (text.isBlank() && photos.isEmpty()) null else choice(
+                    "Esporta",
+                    *listOfNotNull(
+                        if (text.isBlank()) null else BubbleChip("Copia il testo", icon = Icons.Outlined.ContentCopy) {
+                            Clip.copy(context, "Nota", NoteFormat.plain(text), "Testo copiato")
+                        },
+                        BubbleChip("PDF", icon = Icons.Outlined.PictureAsPdf) { exportPdf() },
+                    ).toTypedArray(),
+                ),
+                // Righe: Segna › Cambia › Vai a › Crea › Metti in.
                 // "Ricomincia" (2026-11-23, idea 15): la valigia, la spesa del sabato, di nuovo pronte.
-                if (!NoteLines.hasDone(body.text)) null else BubbleAction(
-                    Icons.Outlined.Replay, "Ricomincia",
+                if (!hasDone) null else act(
+                    BubbleGroup.SEGNA, Icons.Outlined.Replay, "Ricomincia",
                     NoteLists.doneCount(text).let { if (it == 1) "toglie la spunta, il testo resta" else "toglie le $it spunte, il testo resta" },
                 ) {
                     val before = body.text
@@ -586,25 +596,24 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                         save()
                     }
                 },
-                if (!NoteLines.hasDone(body.text)) null else BubbleAction(Icons.Outlined.RemoveDone, "Togli le fatte", "con Annulla") {
-                    val before = body.text
-                    body = TextFieldValue(NoteLines.removeDone(before))
-                    save()
-                    CaptureFeedback.tell(context, "Fatte tolte", Icons.Outlined.Delete, "Annulla") {
-                        body = TextFieldValue(before)
-                        save()
-                    }
+                nid?.let {
+                    act(BubbleGroup.CAMBIA, Icons.Outlined.Image, if (current?.cover == null) "Aggiungi una copertina" else "Cambia la copertina", "una foto in cima alla nota") { pickCover() }
+                },
+                id?.takeIf { NoteVersions.of(it).isNotEmpty() }?.let { act(BubbleGroup.CAMBIA, Icons.Outlined.History, "Versioni precedenti", "rimetti com'era prima") { versions() } },
+                if (body.text.isBlank()) null else act(BubbleGroup.VAI, Icons.Outlined.Search, "Cerca nella nota", "le parole trovate si colorano") {
+                    findAt = 0
+                    finding = ""
                 },
                 // "Usa come modello" (1.586): una nota nuova uguale, con le spunte da rifare (la valigia, la spesa fissa).
-                if (text.isBlank()) null else BubbleAction(Icons.Outlined.FileCopy, "Duplica", "una copia nuova, tutto da rifare") {
+                if (text.isBlank()) null else act(BubbleGroup.CREA, Icons.Outlined.FileCopy, "Duplica", "una copia con tutto da rifare") {
                     save()
                     val copy = NoteText.join(NoteText.copyTitle(title.text), NoteLines.uncheckAll(body.text))
-                    val nid = NotesStore.saveNote(null, copy) ?: return@BubbleAction
-                    current?.emoji?.let { NotesStore.setNoteEmoji(nid, it) }
-                    inApp?.openRoute(Routes.noteEdit(nid))
+                    val made = NotesStore.saveNote(null, copy) ?: return@act
+                    current?.emoji?.let { NotesStore.setNoteEmoji(made, it) }
+                    inApp?.openRoute(Routes.noteEdit(made))
                 },
                 // "Ascolta" (1.606, idea 29): la nota letta con la voce delle News, nel player come un podcast.
-                if (body.text.isBlank()) null else BubbleAction(Icons.Outlined.Headphones, "Ascolta", "letta con la voce delle News") {
+                if (body.text.isBlank()) null else act(BubbleGroup.METTI, Icons.Outlined.Headphones, "Ascolta", "con la voce delle News") {
                     save()
                     val script = com.platinum20.dashboard.notes.NoteSpoken.script(title.text, body.text)
                     val name = title.text.ifBlank { "Nota" }
@@ -613,33 +622,31 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                     )
                 },
                 // Un elenco di brani "Artista – Titolo" (1.606, idea 18): Canvas li cerca su Spotify.
-                com.platinum20.dashboard.notes.NoteSpoken.songs(body.text).takeIf { it.isNotEmpty() }?.let { songs ->
-                    BubbleAction(Icons.AutoMirrored.Outlined.QueueMusic, "Brani su Spotify", "${songs.size} righe: playlist o in coda") { songsToSpotify(songs) }
-                },
+                com.platinum20.dashboard.notes.NoteSpoken.songs(body.text).takeIf { it.isNotEmpty() }?.let { songsToSpotify(it) },
                 // Il widget Nota (2026-11-23, idea 8): questa nota sulla schermata del telefono.
-                id?.takeIf { current != null && text.isNotBlank() }?.let { nid ->
-                    BubbleAction(
-                        Icons.Outlined.Widgets, "Mostra nel widget",
-                        if (com.platinum20.dashboard.widget.NoteWidget.placed(context)) "il widget Nota mostra questa" else "poi aggiungi il widget Nota alla schermata",
+                nid?.takeIf { text.isNotBlank() }?.let { n ->
+                    act(
+                        BubbleGroup.METTI, Icons.Outlined.Widgets, "Mostra nel widget",
+                        if (com.platinum20.dashboard.widget.NoteWidget.placed(context)) "il widget Nota mostra questa" else "sulla schermata del telefono",
                     ) {
                         save()
-                        com.platinum20.dashboard.widget.NoteWidget.choose(context, nid)
+                        com.platinum20.dashboard.widget.NoteWidget.choose(context, n)
                         CaptureFeedback.tell(context, "Nel widget Nota", Icons.Outlined.Widgets)
                     }
                 },
-                id?.takeIf { NoteVersions.of(it).isNotEmpty() }?.let { BubbleAction(Icons.Outlined.History, "Versioni precedenti", "rimetti com'era prima, con Annulla") { versions() } },
-                if (text.isBlank() && photos.isEmpty()) null else BubbleAction(Icons.Outlined.PictureAsPdf, "Esporta in PDF", "testo e foto su fogli A4, nei Download") { exportPdf() },
-                if (text.isBlank()) null else BubbleAction(Icons.Outlined.ContentCopy, "Copia il testo", "senza le foto") {
-                    Clip.copy(context, "Nota", NoteFormat.plain(text), "Testo copiato")
+                // Barra: Fissa · Condividi · Elimina.
+                nid?.let { n ->
+                    Slot.pin(pinned) {
+                        haptic(if (pinned) Haptic.TOGGLE_OFF else Haptic.TOGGLE_ON)
+                        NotesStore.togglePin(n)
+                    }
                 },
-                if (text.isBlank() && photos.isEmpty()) null else BubbleAction(
-                    Icons.Outlined.Share, "Condividi", if (photos.isEmpty()) "il testo, con le app del telefono" else "testo e foto insieme",
-                ) { NotePhotoFiles.share(context, NoteFormat.plain(text), photos) },
-                BubbleAction(Icons.Outlined.Delete, "Elimina", "con le sue foto", danger = true) {
+                if (text.isBlank() && photos.isEmpty()) null else Slot.share { NotePhotoFiles.share(context, NoteFormat.plain(text), photos) },
+                Slot.delete {
                     deleted = true
-                    id?.let { nid ->
-                        NotesStore.note(nid)?.let(DeletedNote::put)
-                        NotesStore.deleteNote(nid)
+                    id?.let { n ->
+                        NotesStore.note(n)?.let(DeletedNote::put)
+                        NotesStore.deleteNote(n)
                     }
                     onBack()
                 },
@@ -768,8 +775,8 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                             .height(150.dp)
                             .clip(RoundedCornerShape(18.dp))
                             .combinedClickable(
-                                onLongClick = { id?.let { nid -> haptic(Haptic.LONG_PRESS); ActionBubble.show(*coverActions(nid, path)) } },
-                            ) { id?.let { nid -> haptic(Haptic.TICK); ActionBubble.show(*coverActions(nid, path)) } },
+                                onLongClick = { id?.let { nid -> haptic(Haptic.LONG_PRESS); ActionBubble.show(BubbleHead("Copertina"), *coverActions(nid, path)) } },
+                            ) { id?.let { nid -> haptic(Haptic.TICK); ActionBubble.show(BubbleHead("Copertina"), *coverActions(nid, path)) } },
                     )
                 }
                 Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp), verticalAlignment = Alignment.Top) {
@@ -782,8 +789,8 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                                 .padding(end = 10.dp)
                                 .combinedClickable(
                                     onClickLabel = "Cambia l'emoji",
-                                    onLongClick = { id?.let { nid -> haptic(Haptic.LONG_PRESS); ActionBubble.show(emojiAction(nid, e)) } },
-                                ) { id?.let { nid -> haptic(Haptic.TICK); ActionBubble.show(emojiAction(nid, e)) } },
+                                    onLongClick = { id?.let { nid -> haptic(Haptic.LONG_PRESS); ActionBubble.show(BubbleHead("Emoji della nota", title.text), emojiAction(nid, e)) } },
+                                ) { id?.let { nid -> haptic(Haptic.TICK); ActionBubble.show(BubbleHead("Emoji della nota", title.text), emojiAction(nid, e)) } },
                         )
                     }
                     BasicTextField(
@@ -823,7 +830,7 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                     PhotoStrip(
                         photos = photos,
                         onOpen = { viewer = it },
-                        onMenu = { path -> haptic(Haptic.LONG_PRESS); ActionBubble.show(*photoActions(path, open = true)) },
+                        onMenu = { path -> haptic(Haptic.LONG_PRESS); ActionBubble.show(BubbleHead("Foto"), *photoActions(path, open = true)) },
                         onMove = { from, to -> id?.let { nid -> NotesStore.editNotePhotos(nid) { NotePhotos.move(it, from, to) } } },
                         onArranging = { arranging = it },
                         onAdd = { haptic(Haptic.TICK); pickPhotos() },
@@ -923,7 +930,7 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                     start = start.coerceIn(0, photos.size - 1),
                     onClose = { viewer = null },
                     onRemove = { path -> removePhoto(path) },
-                    onMore = { path -> haptic(Haptic.LONG_PRESS); ActionBubble.show(*photoActions(path, open = false)) },
+                    onMore = { path -> haptic(Haptic.LONG_PRESS); ActionBubble.show(BubbleHead("Foto"), *photoActions(path, open = false)) },
                 )
             }
         }

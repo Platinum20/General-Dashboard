@@ -52,15 +52,13 @@ internal fun ContiCard(onOpenSim: () -> Unit) {
         onLongClick = if (!linked) null else ({
             haptic(Haptic.LONG_PRESS)
             ActionBubble.show(
-                BubbleAction(Icons.Outlined.SimCard, "Apri", detail = "Giga, minuti e credito") { onOpenSim() },
-                BubbleAction(Icons.Outlined.Refresh, "Aggiorna adesso", detail = link.line.orEmpty()) {
+                BubbleHead("SIM", "WindTre" + link.line?.let { " · $it" }.orEmpty()),
+                Slot.open { onOpenSim() },
+                act(BubbleGroup.CAMBIA, Icons.Outlined.Refresh, "Aggiorna adesso", "rilegge giga, minuti e credito") {
                     scope.launch {
                         val ok = WindTreLink.refresh(context)
                         if (!ok) CaptureFeedback.tell(context, "WindTre non ha risposto: rifai l'accesso da Impostazioni", Icons.Outlined.SimCard)
                     }
-                },
-                BubbleAction(Icons.Outlined.Share, "Condividi i dati letti", detail = "Se un numero è sbagliato") {
-                    shareTextFile(context, "windtre-dati-letti.txt", SimStore.capturesText())
                 },
             )
         }),

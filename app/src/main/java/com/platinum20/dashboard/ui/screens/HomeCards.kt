@@ -181,7 +181,7 @@ internal fun CalendarCard(
     val extras = buildList<Triple<TimelineEntry, (() -> Unit)?, () -> Unit>> {
         if (habits.isNotEmpty()) add(Triple(
             TimelineEntry(key = "habits", kind = BriefKind.HABIT, text = habitsLine(habits, today), dayLabel = null),
-            null, { ActionBubble.show(*habitsBubble(habits, today) { openItem(ItemKind.HABIT, it.id) }) },
+            null, { showHabits(habits, today) { openItem(ItemKind.HABIT, it.id) } },
         ))
     }
     fun <T> withExtras(list: List<T>, items: List<T>): List<T> =

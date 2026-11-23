@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculateZoom
@@ -207,9 +208,8 @@ fun ReaderScreen(
             }
         },
         more = listOf(
-            if (saved) BubbleAction(Icons.Filled.Bookmark, "Togli da Da leggere", "sparisce dagli Appunti") { SavedLinks.remove(context, link) }
-            else BubbleAction(Icons.Outlined.BookmarkAdd, "Leggi dopo", "lo trovi negli Appunti") { SavedLinks.save(context, link) },
-            BubbleAction(Icons.Outlined.Share, "Condividi il link", "con le app del telefono") {
+            Slot.save(saved) { if (saved) SavedLinks.remove(context, link) else SavedLinks.save(context, link) },
+            Slot.share {
                 val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, url).putExtra(Intent.EXTRA_SUBJECT, title)
                 runCatching { context.startActivity(Intent.createChooser(send, null)) }
             },
@@ -268,10 +268,11 @@ fun ReaderScreen(
                             TextToolbarExtra("Salva negli Appunti", needsSelection = true) { phrase -> keep(phrase, null) },
                             TextToolbarExtra("Aggiungi a una nota", needsSelection = true) { phrase ->
                                 val recent = com.platinum20.dashboard.notes.NoteInbox.recent(NotesStore.data.value.notes, 5, SavedLinks::livesElsewhere)
+                                // Niente da scorrere: le ultime tre note, sotto Nuova (negli Appunti).
                                 if (recent.isEmpty()) keep(phrase, null) else ActionBubble.show(
-                                    *recent.map { n ->
-                                        BubbleAction(Icons.Outlined.BookmarkAdd, n.title, "in fondo alla nota, con il link") { keep(phrase, n.id) }
-                                    }.toTypedArray(),
+                                    BubbleHead("Aggiungi a una nota", phrase.orEmpty().take(40)),
+                                    choice("Ultime", *recent.take(3).map { n -> BubbleChip(n.title) { keep(phrase, n.id) } }.toTypedArray()),
+                                    choice("", BubbleChip("Nuova nota", icon = Icons.Outlined.Add) { keep(phrase, null) }),
                                 )
                             },
                         ),

@@ -62,6 +62,12 @@ internal fun DetailPage(
     meta: String? = null,
     primary: DetailAction? = null,
     more: List<BubbleAction> = emptyList(),
+    /** La testata del fumetto di "Altro" (lo stesso del tieni premuto, senza Apri); senza, la riga [meta]. */
+    head: BubbleHead? = null,
+    /** Per ciò che non si può annullare: Elimina si tocca due volte e mostra questa riga. */
+    deleteConfirm: String? = null,
+    /** Il sottotitolo di Modifica nel fumetto. */
+    editDetail: String = "cambia i dettagli",
     /** Lo scorrimento della pagina, per chi deve leggerlo (il lettore: avanzamento e punto da riprendere). */
     scroll: androidx.compose.foundation.ScrollState? = null,
     /** Sotto la riga piccola in alto, per esempio la barra di avanzamento del lettore. */
@@ -72,8 +78,8 @@ internal fun DetailPage(
     val left = primary ?: onEdit?.let { DetailAction(Icons.Outlined.Edit, "Modifica", it) }
     val extra = more +
         listOfNotNull(
-            onEdit?.takeIf { primary != null }?.let { BubbleAction(Icons.Outlined.Edit, "Modifica", "cambia i dettagli", onClick = it) },
-            onDelete?.let { BubbleAction(Icons.Outlined.Delete, "Elimina", "sparisce da Canvas", danger = true, onClick = it) },
+            onEdit?.takeIf { primary != null }?.let { act(BubbleGroup.CAMBIA, Icons.Outlined.Edit, "Modifica", editDetail, onClick = it) },
+            onDelete?.let { Slot.delete(confirm = deleteConfirm, onClick = it) },
         )
     Scaffold(
         topBar = {
@@ -127,7 +133,7 @@ internal fun DetailPage(
                     if (extra.isNotEmpty()) {
                         RoundIconButton(Icons.Outlined.MoreHoriz, "Altro") {
                             haptic(Haptic.LONG_PRESS)
-                            ActionBubble.show(*extra.toTypedArray())
+                            ActionBubble.show(head ?: meta?.let { BubbleHead(it) }, *extra.toTypedArray())
                         }
                     }
                 }

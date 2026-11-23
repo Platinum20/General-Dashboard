@@ -69,31 +69,24 @@ internal object PlaylistManage {
         editing = null
     }
 
-    /** Il fumetto di "Altro". [onGone] = la playlist non c'è più: si torna indietro. */
+    /** Il fumetto di "Altro": lo stesso del tieni premuto, senza Apri (ci sei già). [onGone] = non c'è più: si torna indietro. */
     fun openMenu(context: Context, playlist: SpItem, onGone: () -> Unit) {
         val known = infos[playlist.id]
         val canEdit = known?.second == true
         val name = title(playlist)
         val actions = buildList {
             if (canEdit) {
-                add(BubbleAction(Icons.Outlined.Edit, "Modifica", "Nome, descrizione, privata") { editing = known?.first })
-                add(BubbleAction(Icons.Outlined.SwapVert, "Riordina e togli brani", "Trascini per spostare, tocchi per togliere") {
+                add(act(BubbleGroup.CAMBIA, Icons.Outlined.Edit, "Modifica", "nome, descrizione, privata") { editing = known?.first })
+                add(act(BubbleGroup.CAMBIA, Icons.Outlined.SwapVert, "Riordina e togli brani", "trascini o tocchi per togliere") {
                     arranging[playlist.id] = true
                 })
-            }
-            if (canEdit || SpotifyStore.inLibrary(playlist.id)) {
-                add(
-                    BubbleAction(
-                        Icons.Outlined.Delete,
-                        if (canEdit) "Elimina playlist" else "Togli dalla libreria",
-                        if (canEdit) "Sparisce da Spotify, anche sul PC" else "Non la segui più",
-                        danger = true,
-                    ) { delete(context, playlist, name, onGone) },
-                )
+                add(Slot.delete(confirm = "Tocca ancora: sparisce da Spotify, anche sul PC") { delete(context, playlist, name, onGone) })
+            } else if (SpotifyStore.inLibrary(playlist.id)) {
+                add(Slot.remove { delete(context, playlist, name, onGone) })
             }
         }
         if (actions.isEmpty()) CaptureFeedback.tell(context, "Questa playlist non è tua: puoi solo ascoltarla")
-        else ActionBubble.show(*actions.toTypedArray())
+        else ActionBubble.show(BubbleHead("Playlist", name), *actions.toTypedArray())
     }
 
     /** Apre "Modifica playlist" sui dettagli già letti. */
@@ -114,15 +107,20 @@ internal object PlaylistManage {
         }
     }
 
-    /** Tocco su un brano mentre si riordina: toglierlo, o portarlo in cima o in fondo senza trascinarlo per tutta la lista. */
+    /** Tocco su un brano mentre si riordina: portarlo in cima o in fondo senza trascinarlo, o toglierlo dalla playlist. */
     fun trackMenu(context: Context, playlist: SpItem, track: SpItem, index: Int, count: Int) {
         val name = title(playlist)
-        val actions = buildList {
-            if (index > 0) add(BubbleAction(Icons.Rounded.VerticalAlignTop, "Sposta in cima", "diventa il primo brano") { move(context, playlist, index, 0) })
-            if (index < count - 1) add(BubbleAction(Icons.Rounded.VerticalAlignBottom, "Sposta in fondo", "diventa l'ultimo brano") { move(context, playlist, index, count - 1) })
-            add(BubbleAction(Icons.Rounded.PlaylistRemove, "Togli da $name", track.title, danger = true) { remove(context, playlist, track, index, name) })
+        val chips = buildList {
+            if (index > 0) add(BubbleChip("In cima", icon = Icons.Rounded.VerticalAlignTop) { move(context, playlist, index, 0) })
+            if (index < count - 1) add(BubbleChip("In fondo", icon = Icons.Rounded.VerticalAlignBottom) { move(context, playlist, index, count - 1) })
         }
-        ActionBubble.show(*actions.toTypedArray())
+        ActionBubble.show(
+            BubbleHead("Brano", track.title),
+            *listOfNotNull(
+                chips.takeIf { it.isNotEmpty() }?.let { choice("Sposta", *it.toTypedArray()) },
+                Slot.remove { remove(context, playlist, track, index, name) },
+            ).toTypedArray(),
+        )
     }
 
     fun move(context: Context, playlist: SpItem, from: Int, to: Int) {
@@ -224,53 +222,4 @@ internal fun PlaylistEditLayer() {
         confirmButton = { ConfirmButton(enabled = ready, onClick = { save() }) { Text(if (busy) "Salvo…" else "Salva") } },
         dismissButton = { DismissButton(enabled = !busy, onClick = { PlaylistManage.closeEditor() }) { Text("Annulla") } },
     )
-}
-
-/**
- * Le righe di una playlist nel fumetto del tieni premuto (1.512, Antonio: "anche tenendo premuto sulle playlist devono
- * uscire modifica, eccetera, elimina"): Riproduci sempre; Modifica, Riordina ed Elimina appena si sa se è tua.
- */
-@Composable
-internal fun PlaylistBubbleRows(playlist: SpItem) {
-    val context = LocalContext.current
-    val haptic = rememberHaptic()
-    val inApp = LocalInAppNav.current
-    androidx.compose.runtime.LaunchedEffect(playlist.id) { PlaylistManage.load(playlist.id) }
-    val canEdit = PlaylistManage.infos[playlist.id]?.second == true
-    val inLibrary = canEdit || SpotifyStore.inLibrary(playlist.id)
-    val name = PlaylistManage.title(playlist)
-    fun close() {
-        haptic(Haptic.CONFIRM)
-        com.platinum20.dashboard.capture.SavedLinks.dismiss()
-    }
-    BubbleRow(icon = Icons.Rounded.PlayArrow, title = "Riproduci", detail = name) {
-        close()
-        com.platinum20.dashboard.media.spotify.SpotifyPlayer.play(context, playlist)
-    }
-    RowDivider()
-    if (canEdit) {
-        BubbleRow(icon = Icons.Outlined.Edit, title = "Modifica", detail = "Nome, descrizione, privata") {
-            close()
-            PlaylistManage.edit(playlist.id)
-        }
-        RowDivider()
-        BubbleRow(icon = Icons.Outlined.SwapVert, title = "Riordina e togli brani", detail = "Si apre la playlist") {
-            close()
-            PlaylistManage.arranging[playlist.id] = true
-            inApp?.openRoute?.invoke(com.platinum20.dashboard.Routes.spotifyItem(playlist.copy(title = name)))
-        }
-        RowDivider()
-    }
-    if (inLibrary) {
-        BubbleRow(
-            icon = Icons.Outlined.Delete,
-            title = if (canEdit) "Elimina playlist" else "Togli dalla libreria",
-            detail = if (canEdit) "Sparisce da Spotify, anche sul PC" else "Non la segui più",
-            danger = true,
-        ) {
-            close()
-            PlaylistManage.delete(context, playlist, name) {}
-        }
-        RowDivider()
-    }
 }

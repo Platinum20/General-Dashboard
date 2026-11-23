@@ -35,10 +35,10 @@ internal object CaptureWhenAsk {
     fun askDay(context: Context, scope: CoroutineScope, text: String) {
         val now = LocalDateTime.now()
         val today = now.toLocalDate()
-        val chips = CaptureWhen.days(today).map { day ->
+        val chips = CaptureWhen.days(today).take(3).map { day ->
             BubbleChip(CaptureWhen.dayLabel(day, today)) { askTime(context, scope, text, day) }
-        } + BubbleChip("Altro giorno") { picking = Picking(text, null) }
-        ActionBubble.show(BubbleAction(Icons.Outlined.CalendarMonth, "Quando? · ${text.trim()}", chips = chips))
+        } + BubbleChip("Scegli") { picking = Picking(text, null) }
+        ActionBubble.show(BubbleHead("Quando?", text.trim()), choice("", *chips.toTypedArray()))
     }
 
     fun askTime(context: Context, scope: CoroutineScope, text: String, day: LocalDate) {
@@ -46,7 +46,7 @@ internal object CaptureWhenAsk {
         val chips = listOf(BubbleChip("Tutto il giorno") { save(context, scope, text, day, null) }) +
             CaptureWhen.hours(day, now).map { t -> BubbleChip(CaptureWhen.hourLabel(t)) { save(context, scope, text, day, t) } } +
             BubbleChip("Altra ora") { picking = Picking(text, day) }
-        ActionBubble.show(BubbleAction(Icons.Outlined.Schedule, "A che ora? · ${CaptureWhen.dayLabel(day, now.toLocalDate())}", chips = chips))
+        ActionBubble.show(BubbleHead("A che ora?", CaptureWhen.dayLabel(day, now.toLocalDate())), choice("", *chips.toTypedArray()))
     }
 
     fun save(context: Context, scope: CoroutineScope, text: String, day: LocalDate, time: LocalTime?) {

@@ -67,7 +67,7 @@ private fun LinkRow(icon: ImageVector, title: String, line: String, right: Strin
             .combinedClickable(
                 onLongClick = {
                     haptic(Haptic.LONG_PRESS)
-                    ActionBubble.show(BubbleAction(Icons.AutoMirrored.Outlined.OpenInNew, "Apri", title) { onOpen() })
+                    ActionBubble.show(BubbleHead("Citato in", title), Slot.open { onOpen() })
                 },
             ) { haptic(Haptic.TICK); onOpen() }
             .padding(horizontal = 16.dp, vertical = 11.dp),
