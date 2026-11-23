@@ -234,7 +234,6 @@ import androidx.compose.runtime.setValue
 import com.platinum20.dashboard.ui.screens.Backdrop
 import com.platinum20.dashboard.ui.screens.LocalBackdrop
 import com.platinum20.dashboard.ui.screens.glassSource
-import com.platinum20.dashboard.ui.screens.backdropSource
 
 /** Cosa aprire quando l'app parte da widget o notifica. */
 data class OpenRequest(
@@ -1261,9 +1260,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     // Le pagine sono la sorgente del vetro: barra in basso e mini player le sfocano sotto di sé.
     val hazeState = remember { HazeState() }
     val backdrop = remember { Backdrop() }
-    // Tutto lo schermo sotto i fumetti (pagine + barra + mini player): i fumetti, la coda e le impostazioni del video
-    // sfocano questo, non solo le pagine. Prima sopra il mini player o la barra il vetro non sfocava niente (1.608).
-    val screenBackdrop = remember { Backdrop() }
     CompositionLocalProvider(
         LocalHazeState provides hazeState,
         LocalBackdrop provides backdrop,
@@ -1277,7 +1273,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     }
     // Dove finisce la pagina (sopra la barra): lo legge il mini player, disegnato sopra lo Scaffold.
     var scaffoldPadding by remember { mutableStateOf(androidx.compose.foundation.layout.PaddingValues()) }
-    Box(Modifier.fillMaxSize().then(if (android.os.Build.VERSION.SDK_INT >= 33) Modifier.backdropSource(screenBackdrop) else Modifier)) {
     Box(Modifier.fillMaxSize()) {
     Scaffold(
         bottomBar = {
@@ -1766,8 +1761,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         modifier = Modifier.padding(scaffoldPadding).padding(bottom = miniLift),
     )
     }
-    }
-    CompositionLocalProvider(LocalBackdrop provides screenBackdrop) {
     SaveToNotesLayer()
     com.platinum20.dashboard.ui.screens.VideoSettingsLayer()
     com.platinum20.dashboard.ui.screens.QueueLayer()
@@ -1775,7 +1768,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     com.platinum20.dashboard.ui.screens.PlaylistNameLayer()
     WhatsNewLayer()
     CaptureFeedbackLayer(onNotes = currentRoute == Routes.NOTES)
-    }
     }
     }
 }
