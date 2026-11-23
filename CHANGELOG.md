@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.601.0
+**Sveglia veloce dalla notifica del turno**
+- In fondo alla notifica del turno ci sono tre tasti: sveglia fra 5, 10 o 15 minuti
+- Suona come la sveglia dell'orologio, anche col telefono in vibrazione o silenzioso, e si apre a tutto schermo
+- Dopo il tocco vedi l'orario con "Togli"; quando suona puoi fermarla o rimandarla di 5 minuti
+
 ## 1.600.0
 **La tastiera si chiude quando scorri**
 - In ogni pagina, note comprese, trascinare lo schermo su o giù chiude la tastiera; tocca il testo per riaprirla

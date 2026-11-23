@@ -27,6 +27,7 @@ import com.platinum20.dashboard.tickets.TicketQrStore
 import com.platinum20.dashboard.trips.LiveCard
 import com.platinum20.dashboard.trips.LivePhase
 import com.platinum20.dashboard.trips.LiveTrip
+import com.platinum20.dashboard.trips.QuickAlarm
 import com.platinum20.dashboard.trips.ShiftLive
 import com.platinum20.dashboard.trips.ShiftPhase
 import com.platinum20.dashboard.shifts.CreatorsLink
@@ -195,6 +196,12 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
             if (card.phase == LivePhase.ON_BOARD || event.trip != null) {
                 if (TicketQrStore.cached(context, event.eventId).isNotEmpty()) {
                     builder.addAction(0, "Biglietto", TicketActivity.pending(context, event.eventId))
+                }
+            }
+            // Turno: in fondo i tasti della sveglia veloce, 5 / 10 / 15 min (Antonio, 2026-11-23). Il sistema ne mostra tre.
+            if (event.trip == null && !card.done) {
+                QuickAlarm.MINUTES.forEachIndexed { i, minutes ->
+                    builder.addAction(0, QuickAlarm.buttonTitle(minutes, first = i == 0), QuickAlarm.setIntent(context, minutes))
                 }
             }
             NotificationManagerCompat.from(context).notify(id, builder.build())
