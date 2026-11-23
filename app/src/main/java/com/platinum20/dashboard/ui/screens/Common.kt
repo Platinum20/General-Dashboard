@@ -620,7 +620,7 @@ fun Modifier.glass(shape: Shape, color: Color? = null, overScrim: Boolean = fals
     val rim = Glass.rim(dark, MaterialTheme.colorScheme.outlineVariant, colored)
     val base = if (backdrop != null && Build.VERSION.SDK_INT >= 33) {
         // Da Android 13 il vetro è "liquido": oltre a sfocare, piega la pagina sui bordi.
-        this.clip(shape).liquidGlass(backdrop, shape, tint, dim)
+        this.clip(shape).liquidGlass(backdrop, shape, tint, dim, floor = MaterialTheme.colorScheme.background)
     } else if (state == null) {
         this.clip(shape).background(card)
     } else {

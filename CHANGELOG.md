@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.613.0
+**Il vetro sfoca davvero ovunque**
+- Nelle playlist e nei mix il fumetto era trasparente e dietro si vedevano le righe nitide: ora è scuro e sfocato come nella pagina dell'artista
+- I fumetti, la coda e le impostazioni del video sfocano anche il mini player e la barra sotto, senza più chiudere l'app
+- Le pagine non si ridisegnano più di continuo dietro il vetro: meno batteria
+
 ## 1.612.0
 **Turni: di nuovo l'orario di fine giusto**
 - Tutti i turni finivano un'ora dopo: ora finiscono all'ora vera, come su Creators Pro
