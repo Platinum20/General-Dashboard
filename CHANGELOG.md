@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.607.0
+**La riga che tocchi sale in cima**
+- Tocchi una riga della nota per scrivere: la nota scorre e quella riga va in cima allo schermo, subito sotto la testata
+- Vale con la tastiera chiusa, con la tastiera già aperta e toccando sotto l'ultima riga
+- La tastiera resta aperta: si chiude solo se trascini tu la pagina col dito
+
 ## 1.606.0
 **Un solo vetro in tutta l'app**
 - Barra, +, fumetti, coda, impostazioni del video e finestre hanno lo stesso vetro: stessa sfocatura, stesso velo, stesso bordo
