@@ -1,0 +1,72 @@
+[trasforma/fumetto_voce] ime=false body=[ ] una voce
+[trasforma/numeri] ime=false body=1. una voce
+[trasforma/fumetto_barra] ime=true body=1. una voce
+[trasforma/riquadro] ime=true body=!! una voce
+[spunta_senza_tastiera/spuntata] ime=false body=[x] pane⏎[ ] latte
+[anteprima/anteprima] ime=true body=[🔗 example.com](https://example.com)⏎
+[spunte/prima] ime=false body=[ ] maglie⏎  [ ] calze⏎[ ] scarpe
+[spunte/sotto_voce_spuntata] ime=false body=[ ] maglie⏎  [x] calze⏎[ ] scarpe
+spunte: prima di Sotto-voce -> [ ] maglie
+  [ ] calze
+[x] scarpe
+[spunte/spuntata_rientrata] ime=true body=[ ] maglie⏎  [ ] calze⏎  [x] scarpe
+[tocco_sotto/tocco_sotto] ime=true body=[ ] uno⏎[ ] 
+[tag/cerca_nota] ime=true body=vedi @Spe
+[tag/tag_nota] ime=true body=vedi [🛒 Spesa settimanale](nota:124042853031) 
+[tag/cerca_evento] ime=true body=vedi [🛒 Spesa settimanale](nota:124042853031)  e @Dent
+[tag/tag_evento] ime=true body=vedi [🛒 Spesa settimanale](nota:124042853031)  e [Dentista Rossi](app:home/calendar/event?id=1&begin=1795522799634&end=1795526399634) 
+[tag/indietro_sul_tag] ime=true body=vedi [🛒 Spesa settimanale](nota:124042853031)  e [Dentista Rossi](app:home/calendar/event?id=1&begin=1795522799634&end=1795526399634)
+[blocchi/Linea] ime=true body=---⏎
+[blocchi/Due_colonne] ime=true body=---⏎‖  ‖  ‖⏎
+[blocchi/Due_colonne_scritta] ime=true body=---⏎‖ Cella ‖  ‖⏎
+[blocchi/Bacheca] ime=true body=---⏎‖ Cella ‖  ‖⏎[bacheca]⏎
+[blocchi/Tabella] ime=true body=---⏎‖ Cella ‖  ‖⏎[bacheca]⏎|  |  |⏎|  |  |
+[blocchi/Tabella_scritta] ime=true body=---⏎‖ Cella ‖  ‖⏎[bacheca]⏎| Cella |  |⏎|  |  |
+[fumetto_riga/fumetto] ime=false body=[ ] prima⏎[ ] seconda
+[fumetto_riga/mandata_in_da_fare] ime=false body=[ ] prima
+barra: scritto -> [ ] uno
+[ ] scarpe
+barra: subito dopo Sotto-voce -> [ ] uno
+  [ ] scarpe
+[barra_dopo_parola/sotto_voce] ime=true body=[ ] uno⏎  [ ] scarpe
+barra: dopo 1,2 s -> [ ] uno
+  [ ] scarpe
+barra: e poi x -> [ ] uno
+  [ ] scarpex
+[barra_dopo_parola/punti] ime=true body=[ ] uno⏎  [ ] scarpex⏎  - pane
+barra: Punti dopo pane -> [ ] uno
+  [ ] scarpex
+  - pane
+[annulla/annullato] ime=true body=ciao
+[annulla/ripetuto] ime=true body=ciao mondo
+[tastiera_scrivi/dopo_12_righe] ime=true body=riga 1⏎riga 2⏎riga 3⏎riga 4⏎riga 5⏎riga 6⏎riga 7⏎riga 8⏎riga 9⏎riga 10⏎riga 11⏎riga 12⏎riga 13⏎riga 14⏎riga 15⏎riga 16⏎riga 17⏎riga 18⏎riga 19⏎riga 20⏎riga 21⏎riga 22⏎riga 23⏎riga 24⏎riga 25⏎nuova riga 0⏎nuova riga 1⏎nuova riga 2⏎nuova riga 3⏎nuova riga 4⏎nuova riga 5⏎nuova riga 6⏎nuova riga 7⏎nuova riga 8⏎nuova riga 9⏎nuova riga 10⏎nuova riga 11
+[scorciatoie/scorciatoie] ime=true body=- a⏎[] b⏎1. c⏎2. d⏎> e⏎## f⏎---⏎fine
+[tastiera_tocco/dopo_il_tocco_0] ime=true body=riga numero 1⏎riga numero 2⏎riga numero 3⏎riga numero 4⏎riga numero 5⏎riga numero 6⏎riga numero 7⏎riga numero 8⏎riga numero 9⏎riga numero 10⏎riga numero 11⏎riga numero 12⏎riga numero 13⏎riga numero 14⏎riga numero 15⏎riga numero 16⏎riga numero 17⏎riga numero 18⏎riga numero 19⏎riga numero 20⏎riga numero 21⏎riga numero 22⏎riga numero 23⏎riga numero 24⏎riga numero 25⏎riga numero 26⏎riga numero 27⏎riga numero 28⏎riga numero 29⏎riga numero 30⏎riga numero 31⏎riga numero 32⏎riga numero 33⏎riga numero 34⏎riga numero 35⏎riga numero 36⏎riga numero 37⏎riga numero 38⏎riga numero 39⏎riga numero 40
+[slash/menu_aperto] ime=true body=/
+[slash/filtrato] ime=true body=/tit
+[slash/titolo_scelto] ime=true body=## Capitolo
+[indietro/indietro_su_voce_vuota] ime=true body=- uno⏎
+[tutto_fatto/tutto_fatto] ime=false body=[x] pane⏎[x] latte
+[foto/foto_e_copertina] ime=false body=sopra⏎[🖼 Foto](img:/data/user/0/com.platinum20.dashboard/files/prova.png)⏎sotto
+[foto/fumetto_foto] ime=false body=sopra⏎[🖼 Foto](img:/data/user/0/com.platinum20.dashboard/files/prova.png)⏎sotto
+[foto/fumetto_copertina] ime=false body=sopra⏎sotto
+[emoji/altro] ime=false body=Porto
+[emoji/emoji_nel_titolo] ime=false body=Porto
+[emoji/cambia_emoji] ime=false body=Porto
+[sottonota/sottonota] ime=true body=[📄 Nuova pagina](nota:256944901065)⏎
+[titolo/invio_nel_titolo] ime=true body=latte
+[aa/scelta] ime=true body=parola importante
+[aa/grassetto] ime=true body=**parola** importante
+[aa/colori] ime=true body=**parola** importante
+[aa/rosso] ime=true body=**parola** {r:importante}
+[aa/aa_aperto] ime=true body=**parola** {r:importante}
+[tastiera_trascina/trascinata] ime=false body=riga 1⏎riga 2⏎riga 3⏎riga 4⏎riga 5⏎riga 6⏎riga 7⏎riga 8⏎riga 9⏎riga 10⏎riga 11⏎riga 12⏎riga 13⏎riga 14⏎riga 15⏎riga 16⏎riga 17⏎riga 18⏎riga 19⏎riga 20⏎riga 21⏎riga 22⏎riga 23⏎riga 24⏎riga 25⏎riga 26⏎riga 27⏎riga 28⏎riga 29⏎riga 30⏎riga 31⏎riga 32⏎riga 33⏎riga 34⏎riga 35⏎riga 36⏎riga 37⏎riga 38⏎riga 39⏎riga 40
+[punti/due_punti_e_vuoto] ime=true body=- uno⏎- due⏎- 
+[punti/uscito_dalla_lista] ime=true body=- uno⏎- due⏎testo
+[tocco_in_cima/primo_tocco] ime=true body=riga numero 1⏎riga numero 2⏎riga numero 3⏎riga numero 4⏎riga numero 5⏎riga numero 6⏎riga numero 7⏎riga numero 8⏎riga numero 9⏎riga numero 10⏎riga numero 11⏎riga numero 12⏎riga numero 13⏎riga numero 14⏎riga numero 15⏎riga numero 16⏎riga numero 17⏎riga numero 18⏎riga numero 19⏎riga numero 20⏎riga numero 21⏎riga numero 22⏎riga numero 23⏎riga numero 24⏎riga numero 25⏎riga numero 26⏎riga numero 27⏎riga numero 28⏎riga numero 29⏎riga numero 30⏎riga numero 31⏎riga numero 32⏎riga numero 33⏎riga numero 34⏎riga numero 35⏎riga numero 36⏎riga numero 37⏎riga numero 38⏎riga numero 39⏎riga numero 40
+primo tocco: cursore fondo=456.0 schermo=2400.0
+[tocco_in_cima/secondo_tocco] ime=true body=riga numero 1⏎riga numero 2⏎riga numero 3⏎riga numero 4⏎riga numero 5⏎riga numero 6⏎riga numero 7⏎riga numero 8⏎riga numero 9⏎riga numero 10⏎riga numero 11⏎riga numero 12⏎riga numero 13⏎riga numero 14⏎riga numero 15⏎riga numero 16⏎riga numero 17⏎riga numero 18⏎riga numero 19⏎riga numero 20⏎riga numero 21⏎riga numero 22⏎riga numero 23⏎riga numero 24⏎riga numero 25⏎riga numero 26⏎riga numero 27⏎riga numero 28⏎riga numero 29⏎riga numero 30⏎riga numero 31⏎riga numero 32⏎riga numero 33⏎riga numero 34⏎riga numero 35⏎riga numero 36⏎riga numero 37⏎riga numero 38⏎riga numero 39⏎riga numero 40
+secondo tocco: cursore fondo=1302.0
+[vocale/aggiungi] ime=false body=prima
+[vocale/registro] ime=false body=prima
+[vocale/vocale_nella_nota] ime=false body=prima⏎[🎙 Audio 0:03](audio:/data/user/0/com.platinum20.dashboard/files/note-audio/1795436576930.m4a)
