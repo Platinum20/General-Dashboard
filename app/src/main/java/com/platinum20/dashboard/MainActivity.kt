@@ -1302,7 +1302,9 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         val pullSearch = rememberPullToSearch(enabled = showBottomBar || pageFilter != null) {
             navController.navigate(Routes.search(pageFilter)) { launchSingleTop = true }
         }
-        Box(Modifier.fillMaxSize().nestedScroll(pullSearch.connection)) {
+        // Trascinare qualunque pagina chiude la tastiera (KeyboardDismiss.kt): sta fuori, vede ogni scorrimento.
+        val hideKeyboard = com.platinum20.dashboard.ui.screens.rememberHideKeyboardOnDrag()
+        Box(Modifier.fillMaxSize().nestedScroll(hideKeyboard).nestedScroll(pullSearch.connection)) {
         // Gli elementi condivisi fra le pagine (riga → scheda, card Calendario → pagina): vedi SharedItems.kt.
         androidx.compose.animation.SharedTransitionLayout(Modifier.fillMaxSize()) {
         CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalSharedScope provides this) {

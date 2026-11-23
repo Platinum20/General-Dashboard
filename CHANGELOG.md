@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.600.0
+**La tastiera si chiude quando scorri**
+- In ogni pagina, note comprese, trascinare lo schermo su o giù chiude la tastiera; tocca il testo per riaprirla
+- Mentre scrivi la nota continua a tenere la riga sopra la tastiera senza chiuderla
+
 ## 1.599.0
 **Sotto-voci spuntate restano al loro posto**
 - Spuntando una voce rientrata (sotto un'altra) resta rientrata, non torna più al bordo: nella nota, in Home e nel widget
