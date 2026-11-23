@@ -357,7 +357,7 @@ internal fun ShareChoice(
             Column {
                 ShareRow(
                     if (image != null) "Nuova nota" else "Nuovo in Canvas",
-                    if (image != null) "con la foto, scrivi dopo" else "nota, promemoria o pacco: lo capisce Canvas",
+                    if (image != null) "con la foto, scrivi dopo" else "Canvas capisce cos'è",
                     onNew,
                 )
                 recent.forEach { n ->

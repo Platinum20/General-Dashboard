@@ -191,7 +191,7 @@ internal fun mailNoteActions(context: android.content.Context, m: MailMessage, o
     }
     val recent = com.platinum20.dashboard.notes.NoteInbox.recent(NotesStore.data.value.notes, 2, com.platinum20.dashboard.capture.SavedLinks::livesElsewhere)
     return listOf(new) + recent.map { n ->
-        BubbleAction(Icons.Outlined.Mail, "Aggiungi a \"${n.title}\"", "le stesse righe in fondo alla nota") {
+        BubbleAction(Icons.Outlined.Mail, "Aggiungi a \"${n.title}\"", "le stesse righe, in fondo") {
             if (com.platinum20.dashboard.notes.NoteInbox.appendTo(n.id, lines)) done(n.id, n.title)
         }
     }

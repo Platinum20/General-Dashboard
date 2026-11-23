@@ -116,7 +116,7 @@ internal fun BoxScope.SaveToNotesLayer() {
         val annotateNav = LocalInAppNav.current
         if (playing != null && annotateNav != null) {
             val at = playing.positionMs
-            BubbleRow(icon = Icons.Rounded.EditNote, title = "Annota a ${com.platinum20.dashboard.notes.NoteSeek.clock(at)}", detail = "Una nota col minuto: toccandolo riparte da lì") {
+            BubbleRow(icon = Icons.Rounded.EditNote, title = "Annota a ${com.platinum20.dashboard.notes.NoteSeek.clock(at)}", detail = "toccando il minuto riparte da lì") {
                 haptic(Haptic.CONFIRM)
                 SavedLinks.dismiss()
                 com.platinum20.dashboard.notes.NoteSeek.init(context)

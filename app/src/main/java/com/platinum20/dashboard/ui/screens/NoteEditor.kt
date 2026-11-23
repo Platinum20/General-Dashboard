@@ -471,7 +471,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
             }
         }
         ActionBubble.show(
-            BubbleAction(Icons.AutoMirrored.Outlined.PlaylistAdd, "Crea playlist \"$name\"", "va in Musica, la nota resta com'è") {
+            BubbleAction(Icons.AutoMirrored.Outlined.PlaylistAdd, "Crea playlist \"$name\"", "va in Musica, la nota resta") {
                 withTracks { tracks ->
                     scope.launch {
                         com.platinum20.dashboard.media.spotify.SpotifyStore.createPlaylistWith(name, tracks).fold(
