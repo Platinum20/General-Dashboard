@@ -1,0 +1,40 @@
+
+com.platinum20.dashboard.GlassListCheck:.
+
+Time: 29.9
+
+OK (1 test)
+
+
+
+com.platinum20.dashboard.GlassDeviceCheck:.
+
+Time: 34.632
+
+OK (1 test)
+
+
+
+---- log
+--------- beginning of main
+11-23 18:59:48.939  1097  1893 E OpenGLRenderer: Unable to match the desired swap behavior.
+11-23 18:59:49.240  1097  1893 E OpenGLRenderer: Unable to match the desired swap behavior.
+11-23 18:59:49.283   834   908 E OpenGLRenderer: Unable to match the desired swap behavior.
+11-23 18:59:54.088  1097  1893 E OpenGLRenderer: Unable to match the desired swap behavior.
+11-23 18:59:54.094  1097  1893 E OpenGLRenderer: Unable to match the desired swap behavior.
+11-23 18:59:58.091   834   908 E OpenGLRenderer: Unable to match the desired swap behavior.
+11-23 18:59:58.573  1097  1893 E OpenGLRenderer: Unable to match the desired swap behavior.
+11-23 19:00:02.890  1097  1893 E OpenGLRenderer: Unable to match the desired swap behavior.
+11-23 19:00:09.285   834   908 E OpenGLRenderer: Unable to match the desired swap behavior.
+11-23 19:00:22.219  3398  3823 I GlassCheck: shot a-1-in-cima
+11-23 19:00:25.413  3398  3823 I GlassCheck: shot a-2-scorsa
+11-23 19:00:29.267  3398  3823 I GlassCheck: shot b-1-in-cima
+11-23 19:00:32.660  3398  3823 I GlassCheck: shot b-2-scorsa
+11-23 19:00:35.701  3398  3823 I GlassCheck: shot c-1-in-cima
+11-23 19:00:38.089  3398  3823 I GlassCheck: shot c-2-scorsa
+11-23 19:00:39.038  3398  3823 I GlassCheck: list done
+11-23 19:01:03.777  4841  4932 I GlassCheck: shot 01-home
+11-23 19:01:08.416  4841  4932 I GlassCheck: shot 02-bubble
+11-23 19:01:08.417  4841  4932 I GlassCheck: bubble shown, app alive
+11-23 19:01:11.347  4841  4932 I GlassCheck: shot 03-after
+11-23 19:01:11.347  4841  4932 I GlassCheck: done
