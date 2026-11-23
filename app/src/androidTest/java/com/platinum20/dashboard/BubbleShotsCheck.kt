@@ -239,13 +239,11 @@ class BubbleShotsCheck {
 
     @Test
     fun noteAltro() {
-        note("Spesa\n[x] pane\n[ ] latte\n[ ] uova")
+        id = NotesStore.saveNote(null, "Spesa\n[x] pane\n[ ] latte\n[ ] uova")!!
         NotesStore.setNoteEmoji(id, "🛒")
-        settle(500)
+        screen { NoteEditorScreen(id) {} }
+        settle(1500)
         step("07-nota-altro") {
-            focusBody()
-            field().performTextInputSelection(TextRange(NotesStore.note(id)!!.text.length))
-            settle(300)
             tap("Altro")
             shot("07-nota-altro")
         }
@@ -255,7 +253,8 @@ class BubbleShotsCheck {
             show { ActionBubble.dismiss() }
         }
         step("10-emoji") {
-            compose.onAllNodesWithText("🛒", useUnmergedTree = true).onFirst().performClick()
+            settle(500)
+            compose.onAllNodes(clickLabel("Cambia l'emoji")).onFirst().performClick()
             shot("10-emoji")
             show { ActionBubble.dismiss() }
         }
@@ -329,17 +328,9 @@ class BubbleShotsCheck {
 
     @Test
     fun board() {
-        val e = NoteLines.insertBlock("Bacheca\n", "Bacheca\n".length, NoteLines.BOARD)
-        note(e.text)
+        note("Bacheca\n${NoteLines.BOARD}\n[ ] Comprare il pane\n[ ] Chiamare Luca")
         step("25-scheda") {
-            val text = NotesStore.note(id)!!.text
-            val bodyText = text.substringAfter('\n')
-            val board = NoteLines.parse(bodyText).first { it.kind == NoteLines.Kind.BOARD }
-            val card = NoteLines.boardItems(bodyText, board.index).firstOrNull()
-            log("scheda: ${card?.let { NoteLines.plainLine(bodyText.substring(it.start, it.end)) }}")
-            if (card != null) {
-                compose.onAllNodesWithText(NoteLines.plainLine(bodyText.substring(card.start, card.end)), useUnmergedTree = true).onFirst().performClick()
-            }
+            tapText("Comprare il pane")
             shot("25-scheda")
         }
     }
