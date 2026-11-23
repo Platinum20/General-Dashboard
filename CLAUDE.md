@@ -52,6 +52,8 @@ Reminders: `TaskReminderWorker`, `HabitReminderWorker`, `notes/ReminderText.kt`.
 Notes from elsewhere: `notes/NoteInbox.kt` (append to a note / "Dalle news"), `notes/NoteSeek.kt` (`[▶ 6:52](seek:…)` player
 timestamps, "Annota" in SaveToNotesLayer), `notes/NoteSpoken.kt` (Ascolta script, song lines → Spotify), `mail/MailFacts.kt`,
 `ExtraTextToolbar.kt` `WithTextExtras` (extra items in the long-press text menu: reader, editor "Detta qui"). Share/tiles: `QuickCaptureActivity`.
+`afterEdit` keeps them intact), `notes/NoteHistory.kt` (undo/redo), `NoteTable` (| a | b | rows), `NoteAudio` (audio: links), `NoteVersions` (older texts), `NotePdf`; `NoteDrawing.kt`, `NoteTableUi.kt` (`NoteTableBlock`: cells edited inline), `notes/NotePhotos.kt`. `notes/NoteLists.kt` = note checklists as rows in Home Da fare + Ricomincia/Duplica;
+`notes/NotePhotoText.kt` = OCR text of note photos (own file, scanned from MainActivity) for search; `NotesSearch` gives the matching line.
 `richText`: one ParagraphStyle (TextIndent = hanging indent) per line, the `\n` between them drawn as ZWSP (a `\n` inside
 a paragraph = blank line). Page scroll while typing = `keepLineDelta` in NoteEditor (`keepInView`), not bringIntoView.
 
@@ -83,7 +85,7 @@ documents scan. `security/Vault.kt` = Keystore for tokens.
 **Widgets** (`widget/`): `WidgetKit.kt` `CanvasWidget` + `Widgets.refresh` (call when data changes), deep links
 `Widgets.open` → `OpenRequest`. `DashboardWidget` "Oggi" (weather + hours + one "PROSSIMO" line, `AgendaRows.next`),
 `TodoWidget` "Da fare" (habits + to-dos, tick in place, pure `TodoWidgetRows`), `SimWidget` (ring), `TasksWidget`
-"Calendario" (`AgendaRows.build`), `MoreWidgets.kt` News/Meteo/Scrivi. Never rename widget classes (placed ones vanish).
+"Calendario" (`AgendaRows.build`), `NoteWidget` "Nota" (chosen note via "Mostra nel widget", ticks, `NoteWidgetRows`), `MoreWidgets.kt` News/Meteo/Scrivi. Never rename widget classes (placed ones vanish).
 
 **Other**: `search/` (Cerca ovunque),
 `work/` (Morning, Refresh, RainAlert, UpdateCheck), `update/` (self-update, `UpdateTrust`, `WhatsNew` from

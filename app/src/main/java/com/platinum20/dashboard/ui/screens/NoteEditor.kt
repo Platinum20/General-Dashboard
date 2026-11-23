@@ -6,6 +6,9 @@ import com.platinum20.dashboard.media.ResumeKind
 import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material.icons.automirrored.outlined.QueueMusic
 import androidx.compose.material.icons.automirrored.outlined.PlaylistAdd
+import com.platinum20.dashboard.notes.NoteLists
+import androidx.compose.material.icons.outlined.Widgets
+import androidx.compose.material.icons.outlined.Replay
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -171,7 +174,7 @@ import kotlin.math.roundToInt
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
+fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
     val context = LocalContext.current
     NotesStore.init(context)
     com.platinum20.dashboard.notes.NoteSeek.init(context)
@@ -200,7 +203,8 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
     val lineRoom = with(androidx.compose.ui.platform.LocalDensity.current) { 24.dp.toPx() }
     val bodyFocus = remember { FocusRequester() }
     // "Cerca nella nota" (1.579): null = chiuso.
-    var finding by remember { mutableStateOf<String?>(null) }
+    // Aperta da Cerca ovunque (2026-11-23, idea 9): la ricerca nella nota parte già con la parola trovata.
+    var finding by remember { mutableStateOf(find.takeIf { it.isNotBlank() }) }
     var findAt by remember { mutableIntStateOf(0) }
     val found = remember(body.text, finding) { finding?.let { NoteLines.matches(body.text, it) }.orEmpty() }
     BackHandler(enabled = finding != null) { finding = null }
@@ -564,9 +568,18 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                         ).toTypedArray(),
                     )
                 },
-                if (!NoteLines.hasDone(body.text)) null else BubbleAction(Icons.Outlined.CheckBoxOutlineBlank, "Togli tutte le spunte", "per rifare la stessa lista") {
-                    body = TextFieldValue(NoteLines.uncheckAll(body.text))
+                // "Ricomincia" (2026-11-23, idea 15): la valigia, la spesa del sabato, di nuovo pronte.
+                if (!NoteLines.hasDone(body.text)) null else BubbleAction(
+                    Icons.Outlined.Replay, "Ricomincia",
+                    NoteLists.doneCount(text).let { if (it == 1) "toglie la spunta, il testo resta" else "toglie le $it spunte, il testo resta" },
+                ) {
+                    val before = body.text
+                    body = TextFieldValue(NoteLines.uncheckAll(before))
                     save()
+                    CaptureFeedback.tell(context, "Lista da rifare", Icons.Outlined.Replay, "Annulla") {
+                        body = TextFieldValue(before)
+                        save()
+                    }
                 },
                 if (!NoteLines.hasDone(body.text)) null else BubbleAction(Icons.Outlined.RemoveDone, "Togli le fatte", "con Annulla") {
                     val before = body.text
@@ -578,7 +591,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     }
                 },
                 // "Usa come modello" (1.586): una nota nuova uguale, con le spunte da rifare (la valigia, la spesa fissa).
-                if (text.isBlank()) null else BubbleAction(Icons.Outlined.FileCopy, "Usa come modello", "nota nuova, uguale, tutto da rifare") {
+                if (text.isBlank()) null else BubbleAction(Icons.Outlined.FileCopy, "Duplica", "una copia nuova, tutto da rifare") {
                     save()
                     val copy = NoteText.join(NoteText.copyTitle(title.text), NoteLines.uncheckAll(body.text))
                     val nid = NotesStore.saveNote(null, copy) ?: return@BubbleAction
@@ -597,6 +610,17 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                 // Un elenco di brani "Artista – Titolo" (1.606, idea 18): Canvas li cerca su Spotify.
                 com.platinum20.dashboard.notes.NoteSpoken.songs(body.text).takeIf { it.isNotEmpty() }?.let { songs ->
                     BubbleAction(Icons.AutoMirrored.Outlined.QueueMusic, "Brani su Spotify", "${songs.size} righe: playlist o in coda") { songsToSpotify(songs) }
+                },
+                // Il widget Nota (2026-11-23, idea 8): questa nota sulla schermata del telefono.
+                id?.takeIf { current != null && text.isNotBlank() }?.let { nid ->
+                    BubbleAction(
+                        Icons.Outlined.Widgets, "Mostra nel widget",
+                        if (com.platinum20.dashboard.widget.NoteWidget.placed(context)) "il widget Nota mostra questa" else "poi aggiungi il widget Nota alla schermata",
+                    ) {
+                        save()
+                        com.platinum20.dashboard.widget.NoteWidget.choose(context, nid)
+                        CaptureFeedback.tell(context, "Nel widget Nota", Icons.Outlined.Widgets)
+                    }
                 },
                 id?.takeIf { NoteVersions.of(it).isNotEmpty() }?.let { BubbleAction(Icons.Outlined.History, "Versioni precedenti", "rimetti com'era prima, con Annulla") { versions() } },
                 if (text.isBlank() && photos.isEmpty()) null else BubbleAction(Icons.Outlined.PictureAsPdf, "Esporta in PDF", "testo e foto su fogli A4, nei Download") { exportPdf() },
