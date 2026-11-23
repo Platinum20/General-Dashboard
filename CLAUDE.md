@@ -20,6 +20,7 @@ layers (queue, video settings, What's new) drawn OUTSIDE the NavHost. Calendario
   INSIDE the card, "DA FARE ›"), `SectionHeader`, `OpenableHeader`, `RowDivider`, `CanvasChip`, `RoundIconButton`,
   `IconTile`, `CanvasButton` (`ButtonLevel`), `CanvasCheck` (CanvasCheck.kt = THE square tick, never circles), `bouncyPress`, haptics, `RollingText`, `LoadingPulse`/`Placeholder`
   (no spinners), `Clip.copy`, `relativeTime`, `rememberRowAtStart` (Media LazyRows), `PlusAction`.
+- `KeyboardDismiss.kt`: root nestedScroll in MainActivity = a finger drag on any page hides the keyboard (code scrolls don't).
 - `Motion.kt`: only `Motion.settle()`, `Motion.lively()`, `Motion.gesture()` + `Motion.fling`; `Modifier.entrance()`.
 - `ActionBubble.kt` = every menu/confirm (glass bubble, bottom center). `GlassDialog.kt` `CanvasDialog` = every dialog.
   `SaveToNotesLayer.kt` (`BottomBubble`, `BubbleRow`), `SwipeAway.kt`, `Pickers.kt`, `CanvasSearchField` (SearchField.kt).
