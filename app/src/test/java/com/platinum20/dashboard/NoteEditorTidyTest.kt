@@ -14,6 +14,8 @@ import androidx.compose.ui.unit.sp
 import com.platinum20.dashboard.notes.NoteLines
 import com.platinum20.dashboard.ui.screens.RichNoteField
 import com.platinum20.dashboard.ui.screens.keepLineDelta
+import com.platinum20.dashboard.ui.screens.LineFollow
+import com.platinum20.dashboard.ui.screens.followMode
 import com.platinum20.dashboard.ui.screens.richText
 import com.platinum20.dashboard.ui.screens.editorShown
 import com.platinum20.dashboard.ui.screens.mentionMark
@@ -92,14 +94,28 @@ class NoteEditorTidyTest {
     @Test
     fun typingLineGoesUpNeverUnderTheKeyboard() {
         // Parte visibile da 100 a 500 (sopra la tastiera).
-        assertEquals(0f, keepLineDelta(200f, 224f, typing = true, visTop = 100f, visBottom = 500f, margin = 24f), 0.01f)
+        assertEquals(0f, keepLineDelta(200f, 224f, LineFollow.TYPING, visTop = 100f, visBottom = 500f, margin = 24f), 0.01f)
         // Scrivendo oltre metà: la riga torna a un terzo.
-        assertEquals(400f - 220f, keepLineDelta(400f, 424f, typing = true, visTop = 100f, visBottom = 500f, margin = 24f), 0.01f)
+        assertEquals(400f - 220f, keepLineDelta(400f, 424f, LineFollow.TYPING, visTop = 100f, visBottom = 500f, margin = 24f), 0.01f)
         // Sotto la tastiera (fuori dalla parte visibile): sale.
-        assertTrue(keepLineDelta(700f, 724f, typing = true, visTop = 100f, visBottom = 500f, margin = 24f) > 400f)
+        assertTrue(keepLineDelta(700f, 724f, LineFollow.TYPING, visTop = 100f, visBottom = 500f, margin = 24f) > 400f)
         // Muovendo solo il cursore basta che si veda.
-        assertEquals(0f, keepLineDelta(400f, 424f, typing = false, visTop = 100f, visBottom = 500f, margin = 24f), 0.01f)
-        assertEquals(700f + 24f - 476f, keepLineDelta(700f, 724f, typing = false, visTop = 100f, visBottom = 500f, margin = 24f), 0.01f)
+        assertEquals(0f, keepLineDelta(400f, 424f, LineFollow.MOVE, visTop = 100f, visBottom = 500f, margin = 24f), 0.01f)
+        assertEquals(700f + 24f - 476f, keepLineDelta(700f, 724f, LineFollow.MOVE, visTop = 100f, visBottom = 500f, margin = 24f), 0.01f)
+    }
+
+    @Test
+    fun tappedLineGoesToTheTop() {
+        // Toccata a metà: sale fin sotto la testata (100 + metà margine).
+        assertEquals(400f - 112f, keepLineDelta(400f, 424f, LineFollow.TAPPED, visTop = 100f, visBottom = 500f, margin = 24f), 0.01f)
+        // Toccata sotto la tastiera: sale lo stesso in cima.
+        assertEquals(700f - 112f, keepLineDelta(700f, 724f, LineFollow.TAPPED, visTop = 100f, visBottom = 500f, margin = 24f), 0.01f)
+        // Il tocco mette in cima; la tastiera che si apre lo lascia; scrivere o una selezione no.
+        assertTrue(followMode(typing = false, moved = true, collapsed = true, sinceTapMs = 50, wasAtTop = false))
+        assertTrue(followMode(typing = false, moved = false, collapsed = true, sinceTapMs = 5_000, wasAtTop = true))
+        assertFalse(followMode(typing = true, moved = true, collapsed = true, sinceTapMs = 50, wasAtTop = true))
+        assertFalse(followMode(typing = false, moved = true, collapsed = false, sinceTapMs = 50, wasAtTop = false))
+        assertFalse(followMode(typing = false, moved = true, collapsed = true, sinceTapMs = 5_000, wasAtTop = true))
     }
 
     @Test

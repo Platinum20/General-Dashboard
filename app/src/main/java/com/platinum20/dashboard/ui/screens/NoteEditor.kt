@@ -765,8 +765,8 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     placeholder = "Scrivi qui…",
                     focusRequester = bodyFocus,
                     onFocusChange = { bodyFocused = it },
-                    keepInView = { top, bottom, typing ->
-                        pageScroll.keepLine(scope, top, bottom, typing, viewTop, minOf(viewBottom, barTop), lineRoom)
+                    keepInView = { top, bottom, mode ->
+                        pageScroll.keepLine(scope, top, bottom, mode, viewTop, minOf(viewBottom, barTop), lineRoom)
                     },
                     sendToTodo = true,
                     onAllDone = { allDone() },
@@ -1106,14 +1106,15 @@ private fun PhotoViewer(
 
 /**
  * Tiene la riga del cursore ([top]..[bottom], sullo schermo) nella parte visibile [visTop]..[visBottom] (sopra barra e
- * tastiera). Scrivendo, quando la riga scende oltre metà, la pagina la riporta in alto (un terzo): sotto resta spazio
- * vuoto e non si scrive mai sotto la tastiera. Muovendo solo il cursore basta che si veda.
+ * tastiera). Toccata (1.606): la riga va in cima, subito sotto la testata. Scrivendo, quando la riga scende oltre metà,
+ * la pagina la riporta in alto (un terzo): non si scrive mai sotto la tastiera. Muovendo solo il cursore basta che si veda.
  */
-internal fun keepLineDelta(top: Float, bottom: Float, typing: Boolean, visTop: Float, visBottom: Float, margin: Float): Float {
+internal fun keepLineDelta(top: Float, bottom: Float, mode: LineFollow, visTop: Float, visBottom: Float, margin: Float): Float {
     val h = visBottom - visTop
     if (h <= margin * 3) return 0f
     return when {
-        typing && bottom > visTop + h * 0.55f -> top - (visTop + h * 0.3f)
+        mode == LineFollow.TAPPED -> top - (visTop + margin * 0.5f)
+        mode == LineFollow.TYPING && bottom > visTop + h * 0.55f -> top - (visTop + h * 0.3f)
         bottom > visBottom - margin -> bottom - (visBottom - margin)
         top < visTop + margin -> top - (visTop + margin)
         else -> 0f
@@ -1121,9 +1122,9 @@ internal fun keepLineDelta(top: Float, bottom: Float, typing: Boolean, visTop: F
 }
 
 private fun androidx.compose.foundation.ScrollState.keepLine(
-    scope: kotlinx.coroutines.CoroutineScope, top: Float, bottom: Float, typing: Boolean, visTop: Float, visBottom: Float, margin: Float,
+    scope: kotlinx.coroutines.CoroutineScope, top: Float, bottom: Float, mode: LineFollow, visTop: Float, visBottom: Float, margin: Float,
 ) {
-    val delta = keepLineDelta(top, bottom, typing, visTop, visBottom, margin)
+    val delta = keepLineDelta(top, bottom, mode, visTop, visBottom, margin)
     if (kotlin.math.abs(delta) < 1f) return
     scope.launch { animateScrollBy(delta, Motion.settle()) }
 }

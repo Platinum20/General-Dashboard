@@ -140,6 +140,9 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import com.platinum20.dashboard.notes.NoteHistory
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
@@ -250,7 +253,7 @@ internal fun RichNoteField(
      * Chi scorre la pagina (1.594): riceve la riga del cursore (alto e basso, sullo schermo) a ogni cambio e quando la
      * tastiera si apre, e la tiene sopra la tastiera. Senza, il campo chiede da solo di restare in vista.
      */
-    keepInView: ((top: Float, bottom: Float, typing: Boolean) -> Unit)? = null,
+    keepInView: ((top: Float, bottom: Float, mode: LineFollow) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val haptic = rememberHaptic()
@@ -383,10 +386,18 @@ internal fun RichNoteField(
     val keep by rememberUpdatedState(keepInView)
     // La tastiera che si apre (o cresce) rifà il conto: la riga del cursore non resta sotto.
     val imeBottom = WindowInsets.ime.getBottom(LocalDensity.current)
-    LaunchedEffect(value.text, value.selection, focused, imeBottom) {
+    // Il tocco sul testo (1.606): la riga toccata va in cima. Resta così anche mentre la tastiera si apre, finché non si scrive.
+    var tapAt by remember { mutableStateOf(0L) }
+    var tapCount by remember { mutableStateOf(0) }
+    var followedSelection by remember { mutableStateOf(value.selection) }
+    var atTop by remember { mutableStateOf(false) }
+    LaunchedEffect(value.text, value.selection, focused, imeBottom, tapCount) {
         if (!focused || readOnly) return@LaunchedEffect
         val typing = value.text != followedText
+        val moved = value.selection != followedSelection
         followedText = value.text
+        followedSelection = value.selection
+        atTop = followMode(typing, moved, value.selection.collapsed, android.os.SystemClock.uptimeMillis() - tapAt, atTop)
         withFrameNanos { }
         val l = layout ?: return@LaunchedEffect
         val at = transformation.filter(AnnotatedString(value.text)).offsetMapping.originalToTransformed(value.selection.end)
@@ -396,7 +407,7 @@ internal fun RichNoteField(
         val where = fieldAt
         if (pager != null && where != null && where.isAttached) {
             val top = where.localToRoot(androidx.compose.ui.geometry.Offset(0f, cursor.top)).y
-            pager(top, top + cursor.height, typing)
+            pager(top, top + cursor.height, if (atTop) LineFollow.TAPPED else if (typing) LineFollow.TYPING else LineFollow.MOVE)
             return@LaunchedEffect
         }
         // Un rettangolo più alto dello schermo: la pagina scorre finché la riga sta in alto, con un po' di righe sopra.
@@ -545,6 +556,7 @@ internal fun RichNoteField(
             modifier = Modifier
                 .fillMaxWidth()
                 .onGloballyPositioned { fieldAt = it }
+                .tapWatch { tapAt = android.os.SystemClock.uptimeMillis(); tapCount++ }
                 .bringIntoViewRequester(follow)
                 .heightIn(min = minHeight)
                 .focusRequester(mainFocus)
@@ -1691,3 +1703,34 @@ internal fun colorActions(apply: (Char?) -> Unit): List<BubbleAction> = listOf(
     BubbleAction(Icons.Outlined.FormatColorFill, "Colore dello sfondo", "come un evidenziatore", chips = NOTE_COLORS.map { (c, n) -> BubbleChip(n) { apply(c.uppercaseChar()) } }),
     BubbleAction(Icons.Outlined.FormatColorReset, "Togli il colore", "il testo torna normale") { apply(null) },
 )
+
+/** Come la pagina tiene la riga del cursore: solo in vista, scrivendo (sale a un terzo), toccata (in cima). */
+enum class LineFollow { MOVE, TYPING, TAPPED }
+
+/**
+ * La riga sta in cima? Sì subito dopo un tocco che mette il cursore (non una selezione), e resta sì mentre la tastiera
+ * si apre; scrivere o spostare il cursore in altro modo la rimette normale.
+ */
+internal fun followMode(typing: Boolean, moved: Boolean, collapsed: Boolean, sinceTapMs: Long, wasAtTop: Boolean): Boolean = when {
+    typing -> false
+    sinceTapMs in 0..600 -> collapsed
+    moved -> false
+    else -> wasAtTop
+}
+
+/** Vede i tocchi brevi sul campo senza consumarli (il campo mette lo stesso il cursore); un trascinamento non conta. */
+private fun Modifier.tapWatch(onTap: () -> Unit): Modifier = pointerInput(Unit) {
+    awaitEachGesture {
+        val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        var far = false
+        while (true) {
+            val event = awaitPointerEvent(PointerEventPass.Initial)
+            val change = event.changes.firstOrNull { it.id == down.id } ?: return@awaitEachGesture
+            if ((change.position - down.position).getDistance() > viewConfiguration.touchSlop) far = true
+            if (!change.pressed) {
+                if (!far && change.uptimeMillis - down.uptimeMillis < viewConfiguration.longPressTimeoutMillis) onTap()
+                return@awaitEachGesture
+            }
+        }
+    }
+}
