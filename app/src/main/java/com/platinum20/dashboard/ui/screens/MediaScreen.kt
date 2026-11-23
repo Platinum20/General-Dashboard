@@ -307,8 +307,9 @@ fun MediaScreen(
                         items(subsRow, key = { "sub-" + it.id }) { v ->
                             androidx.compose.foundation.layout.Box(Modifier.width(big)) { VideoCard(v, onClick = { onPlayVideo(v.watchUrl) }) }
                         }
-                        // Mentre il feed arriva (primo avvio, app reinstallata) tessere grigie, mai una fila vuota (1.594).
-                        if (youTubeOn && subsRow.isEmpty() && subs.error == null && subs.data.isNullOrEmpty()) items(2, key = { "subs-wait-$it" }) {
+                        // Mentre il feed arriva (primo avvio, app reinstallata) tessere grigie, mai una fila vuota (1.594). Arrivato vuoto
+                        // (nessuna iscrizione) le tessere spariscono: grigie per sempre sembrerebbero un caricamento bloccato.
+                        if (youTubeOn && subsRow.isEmpty() && subs.error == null && (subs.data == null || subs.loading)) items(2, key = { "subs-wait-$it" }) {
                             Placeholder(big, bigHeight, shape = MaterialTheme.shapes.large)
                         }
                         if (youTubeOn && subsRow.isNotEmpty() && !subsEnded) item(key = "subs-more") {

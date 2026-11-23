@@ -599,16 +599,19 @@ private fun habitItems(habits: List<Habit>, onDeleted: (Habit) -> Unit): LazyLis
                         }
                     }
                     // La spunta quadrata di Canvas, grande perché è l'azione della scheda.
-                    Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                    // Tutto il quadrato da 48 si tocca, non solo la spunta (come il tasto di prima).
+                    val toggleHabit = {
+                        haptic(if (!doneToday) Haptic.CONFIRM else Haptic.TICK)
+                        NotesStore.toggleHabit(habit.id)
+                    }
+                    Box(Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).clickable(onClick = toggleHabit), contentAlignment = Alignment.Center) {
                         CanvasCheck(
                             doneToday,
                             size = 28.dp,
                             border = MaterialTheme.colorScheme.outline,
                             description = if (doneToday) "Fatta oggi" else "Segna fatta oggi",
-                        ) {
-                            haptic(if (!doneToday) Haptic.CONFIRM else Haptic.TICK)
-                            NotesStore.toggleHabit(habit.id)
-                        }
+                            onToggle = toggleHabit,
+                        )
                     }
                 }
             }
@@ -727,11 +730,12 @@ private fun TaskRow(task: TaskItem, onDeleted: (TaskItem) -> Unit, trailing: (@C
             .padding(start = 4.dp, top = 2.dp, bottom = 2.dp, end = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-            CanvasCheck(task.done, description = if (task.done) "Da fare" else "Fatto") {
-                haptic(if (task.done) Haptic.TICK else Haptic.CONFIRM)
-                NotesStore.toggleTask(task.id)
-            }
+        val toggleTask = {
+            haptic(if (task.done) Haptic.TICK else Haptic.CONFIRM)
+            NotesStore.toggleTask(task.id)
+        }
+        Box(Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).clickable(onClick = toggleTask), contentAlignment = Alignment.Center) {
+            CanvasCheck(task.done, description = if (task.done) "Da fare" else "Fatto", onToggle = toggleTask)
         }
         Column(
             Modifier
