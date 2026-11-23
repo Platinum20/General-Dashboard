@@ -60,7 +60,7 @@ object RecapReader {
         .replace(Regex("https?://\\S+|www\\.\\S+"), "")
         .replace(Regex("[«»“”\"„]"), "")
         .replace(Regex("[‘’]"), "'")
-        .replace(Regex("[#*_|~^<>\\[\\]{}]"), " ")
+        .replace(Regex("[#*_|~^<>\\[\\]\\{\\}]"), " ")
         .replace(Regex("\\s*[–—]\\s*"), ", ")
         .replace(Regex("\\s+"), " ")
         .trim()

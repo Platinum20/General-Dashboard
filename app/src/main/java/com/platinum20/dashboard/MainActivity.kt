@@ -1046,7 +1046,8 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
             openCalendar = { navController.openCalendar() },
             openEvent = { navController.navigate(Routes.calendarEvent(it.eventId, it.begin, it.end)) },
             newEvent = { navController.navigate(Routes.calendarEdit(null, it)) },
-            openRoute = { navController.navigate(it) },
+            // Un indirizzo che non c'è più (un link @ vecchio in una nota) non deve chiudere l'app.
+            openRoute = { runCatching { navController.navigate(it) } },
             openTab = { navController.switchTab(it) },
         )
     }
