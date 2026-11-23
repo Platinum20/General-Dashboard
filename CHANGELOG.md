@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.608.0
+**Il vetro sfoca davvero tutto quello che c'è sotto**
+- Fumetti (anche tenendo premuto in Media e nelle playlist), coda e impostazioni del video sfocano anche il mini player e la barra in basso: prima lì il vetro li faceva sparire invece di sfocarli
+- Così il vetro è uguale ovunque, qualunque cosa ci sia sotto
+
 ## 1.606.0
 **Un solo vetro in tutta l'app**
 - Barra, +, fumetti, coda, impostazioni del video e finestre hanno lo stesso vetro: stessa sfocatura, stesso velo, stesso bordo
