@@ -391,6 +391,13 @@ internal fun RichNoteField(
     var tapCount by remember { mutableStateOf(0) }
     var followedSelection by remember { mutableStateOf(value.selection) }
     var atTop by remember { mutableStateOf(false) }
+    // Il tocco lo dice anche il campo stesso (premuto e lasciato): con la tastiera già aperta il dito può non arrivare qui.
+    val fieldTouch = remember { MutableInteractionSource() }
+    LaunchedEffect(fieldTouch) {
+        fieldTouch.interactions.collect {
+            if (it is androidx.compose.foundation.interaction.PressInteraction.Release) { tapAt = android.os.SystemClock.uptimeMillis(); tapCount++ }
+        }
+    }
     LaunchedEffect(value.text, value.selection, focused, imeBottom, tapCount) {
         if (!focused || readOnly) return@LaunchedEffect
         val typing = value.text != followedText
@@ -408,6 +415,14 @@ internal fun RichNoteField(
         if (pager != null && where != null && where.isAttached) {
             val top = where.localToRoot(androidx.compose.ui.geometry.Offset(0f, cursor.top)).y
             pager(top, top + cursor.height, if (atTop) LineFollow.TAPPED else if (typing) LineFollow.TYPING else LineFollow.MOVE)
+            // Il campo, dopo il tocco, chiede da solo di mostrare il cursore e quello ferma lo scorrimento appena partito:
+            // poco dopo si riguarda dov'è la riga e, se non è ancora in cima, si finisce il lavoro.
+            if (atTop) repeat(2) {
+                kotlinx.coroutines.delay(220)
+                if (!where.isAttached) return@LaunchedEffect
+                val again = where.localToRoot(androidx.compose.ui.geometry.Offset(0f, cursor.top)).y
+                keep?.invoke(again, again + cursor.height, LineFollow.TAPPED)
+            }
             return@LaunchedEffect
         }
         // Un rettangolo più alto dello schermo: la pagina scorre finché la riga sta in alto, con un po' di righe sopra.
@@ -553,6 +568,7 @@ internal fun RichNoteField(
                     field()
                 }
             },
+            interactionSource = fieldTouch,
             modifier = Modifier
                 .fillMaxWidth()
                 .onGloballyPositioned { fieldAt = it }
