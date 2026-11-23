@@ -32,6 +32,12 @@ import androidx.compose.material.icons.rounded.PlaylistPlay
 import androidx.compose.material.icons.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Radio
 import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.material.icons.outlined.FileCopy
+import androidx.compose.material.icons.outlined.Replay
+import androidx.compose.material.icons.outlined.Widgets
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.runtime.setValue
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -58,6 +64,7 @@ import com.platinum20.dashboard.capture.SavedLinks
 import com.platinum20.dashboard.media.CanvasPlayer
 import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.ResumeKind
+import com.platinum20.dashboard.notes.NoteLists
 import com.platinum20.dashboard.notes.NotesStore
 
 /**
@@ -102,13 +109,22 @@ internal fun LaterCard(
     items: List<LooseItem>,
     onOpen: () -> Unit,
     habits: List<com.platinum20.dashboard.notes.Habit> = emptyList(),
+    /** Le note: quelle con delle spunte aperte diventano una riga di "Da fare" (2026-11-23, idea 4). */
+    notes: List<com.platinum20.dashboard.notes.Note> = emptyList(),
 ) {
     val open = rememberDueOpen()
     val openItem = rememberOpenItem()
     val now = java.time.LocalDateTime.now()
     val today = now.toLocalDate()
-    // Le abitudini di oggi ancora da fare contano come le altre cose da fare.
-    val count = items.size + habits.count { !it.isDone(today) }
+    // Le liste già in vista restano anche finite: spuntando l'ultima voce la riga non sparisce sotto il dito.
+    var keptLists by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(emptyList<Long>()) }
+    val lists = if (kind == LooseCardKind.TODO) remember(notes, keptLists) { NoteLists.rows(notes, keptLists.toSet()) } else emptyList()
+    androidx.compose.runtime.LaunchedEffect(lists) {
+        val ids = lists.map { it.noteId }
+        if (!keptLists.containsAll(ids)) keptLists = (keptLists + ids).distinct()
+    }
+    // Le abitudini di oggi ancora da fare contano come le altre cose da fare, e ogni lista aperta come una.
+    val count = items.size + habits.count { !it.isDone(today) } + lists.count { it.open > 0 }
     val haptic = rememberHaptic()
     val rowActions = rememberRowActions()
     val (savedOpen, savedLong) = rememberSavedTaps()
@@ -127,7 +143,9 @@ internal fun LaterCard(
                     onTick = { haptic(if (h.isDone(today)) Haptic.TICK else Haptic.CONFIRM); NotesStore.toggleHabit(h.id, today) },
                 )
             }
-            if (items.isEmpty() && habits.isEmpty()) {
+            // Poi le liste delle note: una riga sola che si apre sotto, le spunte si mettono lì.
+            lists.forEach { row -> NoteListRow(row) }
+            if (items.isEmpty() && habits.isEmpty() && lists.isEmpty()) {
                 Text(kind.empty, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
             }
             items.forEach { item ->
@@ -195,6 +213,112 @@ private fun LooseRow(item: LooseItem, onClick: () -> Unit, onLongClick: () -> Un
             Icon(Icons.Filled.PushPin, contentDescription = "Fissata", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
         }
     }
+}
+
+/**
+ * Una lista di una nota in "Da fare" (Antonio, 2026-11-23, idea 4): "Spesa · 3 da fare su 5 · dalla nota". Toccando si
+ * apre sotto con le voci da spuntare (quelle spuntate adesso restano, sbiadite); tenendo premuto il fumetto con Apri la
+ * nota, Ricomincia, Duplica e Mostra nel widget.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun NoteListRow(row: NoteLists.Row) {
+    val haptic = rememberHaptic()
+    val context = LocalContext.current
+    val inApp = LocalInAppNav.current
+    var expanded by androidx.compose.runtime.saveable.rememberSaveable(row.noteId) { androidx.compose.runtime.mutableStateOf(false) }
+    // Le voci spuntate da qui restano in vista finché la riga è aperta (non spariscono sotto il dito).
+    var ticked by remember(row.noteId) { androidx.compose.runtime.mutableStateOf(emptySet<Int>()) }
+    val turn by androidx.compose.animation.core.animateFloatAsState(if (expanded) 180f else 0f, Motion.settle(), label = "listArrow")
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .bouncyPress()
+                .combinedClickable(
+                    onClick = { haptic(Haptic.TICK); expanded = !expanded; if (!expanded) ticked = emptySet() },
+                    onLongClick = { haptic(Haptic.LONG_PRESS); noteListActions(context, row) { inApp?.openRoute?.invoke(it) } },
+                )
+                .padding(horizontal = 16.dp, vertical = 5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) {
+                IconTile(Icons.Outlined.Checklist, TileAccent.NEUTRAL, size = 32.dp, iconSize = 18.dp)
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(row.title, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(NoteLists.line(row), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            Spacer(Modifier.width(8.dp))
+            Icon(
+                Icons.Rounded.KeyboardArrowDown,
+                contentDescription = if (expanded) "Chiudi la lista" else "Apri la lista",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(22.dp).graphicsLayer { rotationZ = turn },
+            )
+        }
+        androidx.compose.animation.AnimatedVisibility(expanded) {
+            Column(Modifier.fillMaxWidth().padding(start = 44.dp, bottom = 4.dp)) {
+                row.entries.filter { !it.done || it.index in ticked }.forEach { e ->
+                    val tick = {
+                        haptic(if (e.done) Haptic.TICK else Haptic.CONFIRM)
+                        ticked = ticked + e.index
+                        NotesStore.editNoteText(row.noteId) { com.platinum20.dashboard.notes.Checklist.toggle(it, e.index) }
+                    }
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable(onClick = tick)
+                            .graphicsLayer { alpha = if (e.done) 0.5f else 1f }
+                            .padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        CanvasCheck(e.done, size = 19.dp, description = if (e.done) "Da fare" else "Fatto", onToggle = tick)
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            e.text,
+                            style = MaterialTheme.typography.bodyMedium.let { if (e.done) it.copy(textDecoration = TextDecoration.LineThrough) else it },
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                if (row.open == 0 && ticked.isEmpty()) {
+                    Text("Tutto fatto", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 16.dp, top = 6.dp, bottom = 6.dp))
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Le azioni di una lista (tenendo premuto, in Da fare e nell'editor): apri, Ricomincia, Duplica, Mostra nel widget.
+ * Stesse parole ovunque (regola della pressione lunga).
+ */
+internal fun noteListActions(context: android.content.Context, row: NoteLists.Row, openRoute: (String) -> Unit) {
+    val note = NotesStore.note(row.noteId) ?: return
+    val done = NoteLists.doneCount(note.text)
+    ActionBubble.show(
+        *listOfNotNull(
+            BubbleAction(Icons.AutoMirrored.Outlined.StickyNote2, "Apri la nota", "per scrivere o cambiare le voci") {
+                openRoute(com.platinum20.dashboard.Routes.noteEdit(row.noteId))
+            },
+            if (done == 0) null else BubbleAction(Icons.Outlined.Replay, "Ricomincia", if (done == 1) "toglie la spunta, il testo resta" else "toglie le $done spunte, il testo resta") {
+                NotesStore.editNoteText(row.noteId) { NoteLists.restart(it) }
+                CaptureFeedback.tell(context, "Lista da rifare", Icons.Outlined.Replay, "Annulla") {
+                    NotesStore.editNoteText(row.noteId) { note.text }
+                }
+            },
+            BubbleAction(Icons.Outlined.FileCopy, "Duplica", "una copia nuova, tutto da rifare") {
+                NotesStore.duplicateNote(row.noteId)?.let { openRoute(com.platinum20.dashboard.Routes.noteEdit(it)) }
+            },
+            BubbleAction(Icons.Outlined.Widgets, "Mostra nel widget", if (com.platinum20.dashboard.widget.NoteWidget.placed(context)) "il widget Nota mostra questa" else "poi aggiungi il widget Nota alla schermata") {
+                com.platinum20.dashboard.widget.NoteWidget.choose(context, row.noteId)
+                CaptureFeedback.tell(context, "Nel widget Nota", Icons.Outlined.Widgets)
+            },
+        ).toTypedArray(),
+    )
 }
 
 /** Un'abitudine in "Da fare": la spunta di oggi, il nome, la serie a destra. Fatta = spenta fino a domani. */

@@ -343,7 +343,7 @@ fun HomeScreen(
                     openResumeItem(context, item) { route -> inApp?.openRoute?.invoke(route) }
                 })
             }
-            HomeCard.LATER -> LaterCard(LooseCardKind.TODO, todos, habits = notes.habits, onOpen = {
+            HomeCard.LATER -> LaterCard(LooseCardKind.TODO, todos, habits = notes.habits, notes = notes.notes, onOpen = {
                 haptic(Haptic.TICK)
                 inApp?.openRoute?.invoke(Routes.LATER_ARCHIVE)
             })

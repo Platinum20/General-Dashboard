@@ -68,7 +68,7 @@ object Widgets {
 
     /** Ogni widget con il suo disegno: il nome della classe resta quello di sempre, se no spariscono dalla Home. */
     internal val all: List<Pair<Class<out CanvasWidget>, CanvasWidget>> by lazy {
-        listOf(DashboardWidget(), TasksWidget(), TodoWidget(), NewsWidget(), SimWidget(), WeatherWidget(), CaptureWidget())
+        listOf(DashboardWidget(), TasksWidget(), TodoWidget(), NoteWidget(), NewsWidget(), SimWidget(), WeatherWidget(), CaptureWidget())
             .map { it::class.java to it }
     }
 
