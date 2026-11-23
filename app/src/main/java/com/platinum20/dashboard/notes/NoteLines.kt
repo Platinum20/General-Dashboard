@@ -641,8 +641,11 @@ object NoteLines {
         // Qualcosa tolto (o sostituito) fra [a] e [b].
         val hit = blocks.filter { a <= it.last && b > it.first }
         // Indietro in una riga vuota subito sotto un pezzo (1.604): se ne va la riga vuota, il pezzo resta.
-        if (ins.isEmpty() && b == a + 1 && old[a] == '\n' && (b == old.length || old[b] == '\n') && blocks.any { it.last == a }) {
-            return Edit(old.removeRange(a, b), a)
+        // Fra più "a capo" di fila il confronto può indicare l'ultimo: si risale fino a quello attaccato al pezzo.
+        if (ins.isEmpty() && b == a + 1 && old[a] == '\n') {
+            var d = a
+            while (d > 0 && old[d - 1] == '\n' && blocks.none { it.last == d }) d--
+            if (blocks.any { it.last == d } && (d + 1 == old.length || old[d + 1] == '\n')) return Edit(old.removeRange(d, d + 1), d)
         }
         if (hit.isEmpty()) {
             // Indietro all'inizio del pezzo: la riga sopra resta dov'è (se era vuota se ne va lei).

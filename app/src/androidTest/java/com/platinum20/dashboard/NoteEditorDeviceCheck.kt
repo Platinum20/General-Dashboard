@@ -135,7 +135,8 @@ class NoteEditorDeviceCheck {
 
     /** Scrive [s] con i tasti (solo ASCII), dove c'è il cursore. */
     private fun type(s: String) {
-        shell("input text '" + s.replace(" ", "%s") + "'")
+        // Niente shell in mezzo: il testo arriva così com'è, gli spazi come %s.
+        shell("input text " + s.replace(" ", "%s"))
         settle(250)
     }
 
