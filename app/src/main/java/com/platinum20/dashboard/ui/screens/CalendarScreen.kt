@@ -403,6 +403,8 @@ fun EventDetailScreen(
                 DetailNote("Questo calendario è di sola lettura: l'evento si può guardare ma non modificare.")
             }
         }
+        // Le note che citano questo evento, turno o treno con "@" (2026-11-23).
+        CitedIn(listOf(com.platinum20.dashboard.notes.NoteFormat.APP_LINK + com.platinum20.dashboard.Routes.calendarEvent(eventId)), Modifier.padding(top = 12.dp))
     }
 }
 

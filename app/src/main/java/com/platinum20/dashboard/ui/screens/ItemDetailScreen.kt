@@ -1,5 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -264,6 +266,8 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
         }
         // Gli appunti fissi dell'abitudine (idea 24, 2026-11-23): la scheda della palestra sotto mano quando la spunti.
         if (kind == ItemKind.HABIT) AttachedNotesBlock(com.platinum20.dashboard.notes.AttachedNotes.habit(id), detail.title)
+        // Le note che citano questa cosa con "@" (2026-11-23).
+        CitedIn(listOf(com.platinum20.dashboard.notes.NoteFormat.APP_LINK + com.platinum20.dashboard.Routes.noteItem(kind, id)), Modifier.padding(top = 12.dp))
     }
 
     when (val p = picker) {

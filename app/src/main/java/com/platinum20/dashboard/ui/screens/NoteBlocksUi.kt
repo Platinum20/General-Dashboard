@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Link
@@ -172,6 +173,7 @@ internal fun NotePageRow(emoji: String, title: String, modifier: Modifier, onOpe
 @Composable
 internal fun NoteBookmarkCard(url: String, card: LinkPreview.Card?, fallback: String, modifier: Modifier, onOpen: () -> Unit, onLongPress: (() -> Unit)?) {
     val colors = MaterialTheme.colorScheme
+    val video = InAppLinks.target(url) is LinkTarget.YouTube
     Row(
         modifier
             .padding(vertical = 4.dp)
@@ -185,6 +187,10 @@ internal fun NoteBookmarkCard(url: String, card: LinkPreview.Card?, fallback: St
         Box(Modifier.width(76.dp).fillMaxHeight().background(colors.surfaceVariant), contentAlignment = Alignment.Center) {
             Icon(Icons.Outlined.Link, contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(22.dp))
             card?.image?.let { AsyncImage(model = it, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxWidth().fillMaxHeight()) }
+            // Un video (2026-11-23): il tasto play sopra la miniatura, si guarda nel player di Canvas.
+            if (video) Box(Modifier.size(30.dp).clip(androidx.compose.foundation.shape.CircleShape).background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.55f)), contentAlignment = Alignment.Center) {
+                Icon(Icons.Filled.PlayArrow, contentDescription = "Guarda", tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(20.dp))
+            }
         }
         Column(Modifier.weight(1f).padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
@@ -196,7 +202,7 @@ internal fun NoteBookmarkCard(url: String, card: LinkPreview.Card?, fallback: St
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                card?.site ?: url.substringAfter("://"),
+                (card?.site ?: url.substringAfter("://")) + if (video) " · si guarda qui" else "",
                 style = MaterialTheme.typography.labelMedium,
                 color = colors.onSurfaceVariant,
                 maxLines = 1,
