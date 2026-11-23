@@ -123,7 +123,8 @@ class BubbleShotsCheck {
     }
 
     private fun shot(name: String) {
-        settle(1200)
+        // L'emulatore disegna piano: si aspetta che il fumetto sia salito tutto.
+        settle(4000)
         runCatching {
             instr.uiAutomation.takeScreenshot()?.let { b -> File(outDir, "$name.png").outputStream().use { b.compress(Bitmap.CompressFormat.PNG, 100, it) } }
         }
