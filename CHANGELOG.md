@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.603.0
+**Tasti della sveglia più corti**
+- Nella notifica del turno i tre tasti dicono solo "5 min", "10 min" e "15 min"
+
 ## 1.602.0
 **Giro di controllo: piccoli bug sistemati**
 - Uscendo da una nota mentre registri un audio, l'audio resta nella nota invece di perdersi
