@@ -117,6 +117,9 @@ import com.platinum20.dashboard.docs.DocumentsStore
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Badge
 import androidx.compose.material.icons.outlined.LocalShipping
+import androidx.compose.material.icons.outlined.Work
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Tag
 import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.Edit
@@ -251,6 +254,8 @@ internal fun RichNoteField(
      * tastiera si apre, e la tiene sopra la tastiera. Senza, il campo chiede da solo di restare in vista.
      */
     keepInView: ((top: Float, bottom: Float, typing: Boolean) -> Unit)? = null,
+    /** La nota di questo campo (2026-11-23): l'evento messo in calendario da una data la richiama con "@". */
+    noteId: Long? = null,
 ) {
     val context = LocalContext.current
     val haptic = rememberHaptic()
@@ -366,9 +371,20 @@ internal fun RichNoteField(
     val marker = androidx.compose.ui.graphics.Color(0x66FFD54F)
     // Mentre si scrive in una tabella la sua ultima riga è più alta: sotto ci sta il + per una riga nuova (1.590).
     val tallAt = activeTable?.let { NoteTable.blockAt(value.text, it) }?.let { NoteLines.parse(value.text)[it.last].start }
-    val transformation = remember(faded, value.text, found, findAt, accent, folds, tallAt, blockSp) {
+    // Le parti intelligenti (2026-11-23): #etichette in blu, date e codici di spedizione sottolineati, codici in una bolla.
+    val smart = remember(value.text) { com.platinum20.dashboard.notes.NoteSmart.find(value.text, com.platinum20.dashboard.notes.NoteFormat.linkRanges(value.text)) }
+    val smartStyles = remember(smart, accent) {
+        smart.map { sm ->
+            sm.range to when (sm.kind) {
+                com.platinum20.dashboard.notes.NoteSmart.Kind.TAG -> SpanStyle(color = accent, fontWeight = FontWeight.SemiBold)
+                com.platinum20.dashboard.notes.NoteSmart.Kind.CODE -> SpanStyle(color = accent, background = accent.copy(alpha = 0.12f), fontWeight = FontWeight.SemiBold)
+                else -> SpanStyle(color = accent, textDecoration = TextDecoration.Underline)
+            }
+        }
+    }
+    val transformation = remember(faded, value.text, found, findAt, accent, folds, tallAt, blockSp, smartStyles) {
         VisualTransformation { input ->
-            richText(input.text, faded, found.mapIndexed { i, r -> r to if (i == findAt) foundNow else foundStyle }, accent, marker = marker, folds = folds, tall = tallAt, sizes = blockSp)
+            richText(input.text, faded, smartStyles + found.mapIndexed { i, r -> r to if (i == findAt) foundNow else foundStyle }, accent, marker = marker, folds = folds, tall = tallAt, sizes = blockSp)
         }
     }
     fun hiddenLine(line: NoteLines.Line) = folds.any { line.start in it }
@@ -732,6 +748,40 @@ internal fun RichNoteField(
                     )
                 }
             }
+            // Le parti intelligenti si toccano (2026-11-23): etichetta = la sua pagina, data = in calendario, codice = copiato,
+            // codice di spedizione = segui il pacco. Tieni premuto = le stesse scelte nel fumetto.
+            if (!readOnly) smart.filter { sm -> folds.none { f -> sm.range.first in f } && !NoteLines.lineAt(text, sm.range.first).isBlock }.forEach { sm ->
+                val s0 = shown.toShown(sm.range.first)
+                val e0 = shown.toShown(sm.range.last + 1).coerceAtMost(drawn)
+                if (s0 >= e0) return@forEach
+                val firstRow = l.getLineForOffset(s0)
+                val lastRow = l.getLineForOffset((e0 - 1).coerceAtLeast(s0))
+                for (row in firstRow..lastRow) androidx.compose.runtime.key("s${sm.range.first}-$row") {
+                    val x0 = if (row == firstRow) l.getHorizontalPosition(s0, true) else l.getLineLeft(row)
+                    val x1 = if (row == lastRow) l.getHorizontalPosition(e0, true) else l.getLineRight(row)
+                    val top = l.getLineTop(row)
+                    val w = with(density) { (x1 - x0).coerceAtLeast(1f).toDp() }
+                    val h = with(density) { (l.getLineBottom(row) - top).toDp() }
+                    val acts = { smartActions(context, inApp, sm, current.text, noteId, fieldClipboard) }
+                    Box(
+                        Modifier
+                            .offset { IntOffset(minOf(x0, x1).toInt(), top.toInt()) }
+                            .size(w, h)
+                            .combinedClickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onLongClick = { acts().takeIf { it.isNotEmpty() }?.let { haptic(Haptic.LONG_PRESS); ActionBubble.show(*it.toTypedArray()) } },
+                            ) {
+                                haptic(Haptic.TICK)
+                                when (sm.kind) {
+                                    com.platinum20.dashboard.notes.NoteSmart.Kind.TAG -> inApp?.openRoute?.invoke(Routes.tag(sm.value))
+                                    com.platinum20.dashboard.notes.NoteSmart.Kind.CODE -> copySmart(context, fieldClipboard, sm.value)
+                                    else -> acts().takeIf { it.isNotEmpty() }?.let { ActionBubble.show(*it.toTypedArray()) }
+                                }
+                            },
+                    )
+                }
+            }
             // Le righe che si chiudono (1.588): accanto a ogni titolo con qualcosa sotto, la freccetta; chiuso dice quante righe.
             shown.lines.filter { it.kind == NoteLines.Kind.HEADING && !hiddenLine(it) && shown.toShown(it.start) < drawn }.forEach { line ->
                 val count = NoteLines.sectionSize(text, line.index)
@@ -836,11 +886,11 @@ internal fun RichNoteField(
                             val card = previews[url]
                             NoteBookmarkCard(
                                 url = url, card = card, fallback = NoteLines.host(url), modifier = place,
-                                onOpen = { haptic(Haptic.TICK); openNoteLink(inApp, url, card?.title ?: url) },
+                                onOpen = { haptic(Haptic.TICK); openBookmark(inApp, url, card) },
                                 onLongPress = if (readOnly) null else ({
                                     haptic(Haptic.LONG_PRESS)
                                     ActionBubble.show(
-                                        BubbleAction(Icons.AutoMirrored.Outlined.OpenInNew, "Apri", "la pagina, dentro Canvas") { openNoteLink(inApp, url, card?.title ?: url) },
+                                        BubbleAction(Icons.AutoMirrored.Outlined.OpenInNew, "Apri", if (InAppLinks.target(url) is LinkTarget.YouTube) "il video, nel player di Canvas" else "l'articolo, nel lettore di Canvas") { openBookmark(inApp, url, card) },
                                         BubbleAction(Icons.Outlined.Link, "Diventa un link nel testo", "solo il titolo, sottolineato") {
                                             val title = (card?.title ?: NoteLines.host(url)).replace('[', '(').replace(']', ')')
                                             replaceLine(line.index, "[$title]($url)")
@@ -1057,6 +1107,69 @@ internal fun openNoteLink(inApp: InAppNav?, url: String, label: String) {
     }
 }
 
+/**
+ * Apre l'anteprima di un link (2026-11-23): un video YouTube o un brano Spotify parte nel player di Canvas,
+ * una pagina si apre nel lettore come un articolo delle News.
+ */
+internal fun openBookmark(inApp: InAppNav?, url: String, card: com.platinum20.dashboard.notes.LinkPreview.Card?) {
+    if (InAppLinks.target(url) is LinkTarget.Web) inApp?.openRoute?.invoke(Routes.reader(url, card?.site ?: NoteLines.host(url), card?.title.orEmpty()))
+    else openNoteLink(inApp, url, card?.title ?: url)
+}
+
+/** Copia un codice o una password della nota e lo dice nel fumetto in basso (2026-11-23). */
+internal fun copySmart(context: android.content.Context, clip: androidx.compose.ui.platform.ClipboardManager, value: String) {
+    clip.setText(androidx.compose.ui.text.AnnotatedString(value))
+    com.platinum20.dashboard.capture.CaptureFeedback.tell(context, "Copiato negli appunti del telefono", Icons.Outlined.ContentCopy)
+}
+
+/** Le scelte di una parte intelligente della nota (2026-11-23): data, etichetta, codice, codice di spedizione. */
+internal fun smartActions(
+    context: android.content.Context,
+    inApp: InAppNav?,
+    sm: com.platinum20.dashboard.notes.NoteSmart.Smart,
+    text: String,
+    noteId: Long?,
+    clip: androidx.compose.ui.platform.ClipboardManager,
+): List<BubbleAction> = when (sm.kind) {
+    com.platinum20.dashboard.notes.NoteSmart.Kind.DATE -> {
+        val due = com.platinum20.dashboard.notes.NoteSmart.dateOf(sm.value)
+        val title = com.platinum20.dashboard.notes.NoteSmart.titleAround(text, sm)
+        if (due == null) emptyList() else listOf(
+            BubbleAction(Icons.Outlined.Event, "Metti in calendario", "\"$title\", ${dueLabel(due)}") {
+                val at = due.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+                val task = NotesStore.addTaskAt(title, at)
+                val nid = noteId
+                if (nid != null) NotesStore.note(nid)?.let { n ->
+                    NotesStore.setTaskNotes(task.id, "[${n.plainTitle.ifEmpty { "Nota" }.replace('[', '(').replace(']', ')')}](${NoteFormat.NOTE_LINK}$nid)")
+                }
+                com.platinum20.dashboard.capture.CaptureFeedback.tell(context, "In calendario: ${dueLabel(due)}", Icons.Outlined.Event, "Annulla") { NotesStore.deleteTask(task.id) }
+            },
+            BubbleAction(Icons.Outlined.CalendarMonth, "Vedi quel giorno", "il calendario su ${dueLabel(due).substringBefore(',')}") {
+                inApp?.openRoute?.invoke(Routes.NOTES)
+            },
+        )
+    }
+    com.platinum20.dashboard.notes.NoteSmart.Kind.TAG -> listOf(
+        BubbleAction(Icons.Outlined.Tag, "Tutto con #${sm.value}", "note, cose da fare e date con questa etichetta") { inApp?.openRoute?.invoke(Routes.tag(sm.value)) },
+    )
+    com.platinum20.dashboard.notes.NoteSmart.Kind.CODE -> listOf(
+        BubbleAction(Icons.Outlined.ContentCopy, "Copia", "per incollarlo dove serve") { copySmart(context, clip, sm.value) },
+    )
+    com.platinum20.dashboard.notes.NoteSmart.Kind.PARCEL -> {
+        val known = NotesStore.data.value.parcels.firstOrNull { it.code.equals(sm.value, ignoreCase = true) }
+        listOf(
+            if (known != null) BubbleAction(Icons.Outlined.LocalShipping, "Apri il pacco", known.title) {
+                inApp?.openRoute?.invoke(Routes.noteItem(ItemKind.PARCEL, known.id))
+            } else BubbleAction(Icons.Outlined.LocalShipping, "Segui il pacco", "in arrivo nel calendario, con avvisi") {
+                val title = com.platinum20.dashboard.notes.NoteSmart.titleAround(text, sm).ifEmpty { "Pacco" }
+                val id = NotesStore.addParcel(title, sm.value, null)
+                inApp?.openRoute?.invoke(Routes.noteItem(ItemKind.PARCEL, id))
+            },
+            BubbleAction(Icons.Outlined.ContentCopy, "Copia il codice", sm.value) { copySmart(context, clip, sm.value) },
+        )
+    }
+}
+
 /** "ven 28 nov, 15:00" per il tasto Calendario della barra; a mezzanotte solo il giorno. */
 internal fun dueLabel(due: java.time.LocalDateTime): String {
     val day = due.format(java.time.format.DateTimeFormatter.ofPattern("EEE d MMM", java.util.Locale.ITALIAN))
@@ -1074,6 +1187,10 @@ internal fun mentionTargets(
     /** Gli eventi del calendario del telefono (1.598), dal mese scorso ai prossimi tre. */
     events: List<com.platinum20.dashboard.calendar.CalendarEvent> = emptyList(),
     now: Long = System.currentTimeMillis(),
+    /** I turni (2026-11-23): i prossimi si collegano, e le persone in doppio hanno la loro pagina. */
+    shifts: List<com.platinum20.dashboard.shifts.Shift> = emptyList(),
+    /** Le playlist di Spotify (2026-11-23): toccando il link si apre la pagina della playlist. */
+    playlists: List<com.platinum20.dashboard.media.spotify.SpItem> = emptyList(),
 ): List<MentionTarget> {
     fun hit(t: String) = t.isNotBlank() && t.contains(query, ignoreCase = true)
     val out = mutableListOf<MentionTarget>()
@@ -1082,6 +1199,17 @@ internal fun mentionTargets(
     // Eventi: uno per evento (le ripetizioni no), prima i più vicini a oggi.
     events.filter { hit(it.title) }.sortedBy { kotlin.math.abs(it.begin - now) }.distinctBy { it.eventId }.take(4)
         .forEach { out += MentionTarget(Icons.Outlined.Event, it.title, NoteFormat.APP_LINK + Routes.calendarEvent(it.eventId, it.begin, it.end)) }
+    com.platinum20.dashboard.notes.NoteSmart.people(shifts.map { it.mates }).map(com.platinum20.dashboard.notes.NoteSmart::firstName).distinct()
+        .filter { hit(it) }.take(2)
+        .forEach { out += MentionTarget(Icons.Outlined.Person, it, NoteFormat.APP_LINK + Routes.person(it)) }
+    shifts.filter { it.end >= now && (hit(it.title) || it.mates.any(::hit) || hit("turno")) }.sortedBy { it.start }.take(3)
+        .forEach { sh ->
+            val day = java.time.Instant.ofEpochMilli(sh.start).atZone(java.time.ZoneId.systemDefault())
+            val label = "${sh.title} · " + day.format(java.time.format.DateTimeFormatter.ofPattern("EEE d", java.util.Locale.ITALIAN))
+            out += MentionTarget(Icons.Outlined.Work, label, NoteFormat.APP_LINK + Routes.calendarEvent(sh.eventId, sh.start, sh.end))
+        }
+    playlists.filter { hit(it.title) }.take(3)
+        .forEach { out += MentionTarget(Icons.Outlined.MusicNote, it.title, NoteFormat.APP_LINK + Routes.spotifyItem(it)) }
     data.tasks.filter { !it.done && hit(it.text) }.sortedBy { it.dueAt ?: Long.MAX_VALUE }.take(4)
         .forEach { out += MentionTarget(if (it.dueAt != null) Icons.Outlined.Event else Icons.Outlined.TaskAlt, it.text, NoteFormat.APP_LINK + Routes.noteItem(ItemKind.TASK, it.id)) }
     data.habits.filter { hit(it.title) }.take(3)
@@ -1139,7 +1267,10 @@ internal fun mentionMark(url: String, data: com.platinum20.dashboard.notes.Notes
         )
     }
     if (route.startsWith("home/document/")) return MentionMark(Icons.Outlined.Badge)
+    if (route.startsWith("home/calendar/event?id=-")) return MentionMark(Icons.Outlined.Work)
     if (route.startsWith("home/calendar/event")) return MentionMark(Icons.Outlined.Event)
+    if (route.startsWith("notes/person/")) return MentionMark(Icons.Outlined.Person)
+    if (route.startsWith("media/spotify/item/")) return MentionMark(Icons.Outlined.MusicNote)
     return MentionMark(pageIcon(route))
 }
 
@@ -1428,7 +1559,12 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                         com.platinum20.dashboard.calendar.CalendarRepository.eventsFrom(context, java.time.LocalDate.now().minusDays(30), 120).values.flatten()
                     }.getOrDefault(emptyList())
                 }
-                val hits = remember(data, docs, events, mention.second) { mentionTargets(data, docs, mention.second, events) }
+                val shifts by com.platinum20.dashboard.shifts.ShiftStore.shifts.collectAsStateWithLifecycle()
+                val playlists by com.platinum20.dashboard.media.spotify.SpotifyStore.playlists.collectAsStateWithLifecycle()
+                val lists = playlists.data.orEmpty()
+                val hits = remember(data, docs, events, mention.second, shifts, lists) {
+                    mentionTargets(data, docs, mention.second, events, shifts = shifts, playlists = lists)
+                }
                 if (hits.isEmpty()) BarLabel(Icons.Outlined.Close, if (mention.second.isEmpty()) "Scrivi un nome" else "Niente con \"${mention.second}\"") {}
                 hits.forEach { h ->
                     BarLabel(h.icon, h.title.take(28)) {

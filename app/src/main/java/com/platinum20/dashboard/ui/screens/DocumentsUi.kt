@@ -305,6 +305,8 @@ internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
             onClick = { pickDate = true },
             onClear = doc.expiry?.let { { DocumentsStore.setExpiry(id, null) } },
         )
+        // Le note che citano questo documento con "@" (2026-11-23).
+        CitedIn(listOf(com.platinum20.dashboard.notes.NoteFormat.APP_LINK + com.platinum20.dashboard.Routes.document(id)), Modifier.padding(top = 12.dp))
     }
     if (pickDate) {
         DatePickDialog(doc.expiry ?: LocalDate.now().plusYears(10), onDismiss = { pickDate = false }) {
