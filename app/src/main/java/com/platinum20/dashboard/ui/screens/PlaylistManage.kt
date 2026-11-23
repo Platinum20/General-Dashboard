@@ -111,8 +111,8 @@ internal object PlaylistManage {
     fun trackMenu(context: Context, playlist: SpItem, track: SpItem, index: Int, count: Int) {
         val name = title(playlist)
         val chips = buildList {
-            if (index > 0) add(BubbleChip("In cima") { move(context, playlist, index, 0) })
-            if (index < count - 1) add(BubbleChip("In fondo") { move(context, playlist, index, count - 1) })
+            if (index > 0) add(BubbleChip("In cima", icon = Icons.Rounded.VerticalAlignTop) { move(context, playlist, index, 0) })
+            if (index < count - 1) add(BubbleChip("In fondo", icon = Icons.Rounded.VerticalAlignBottom) { move(context, playlist, index, count - 1) })
         }
         ActionBubble.show(
             BubbleHead("Brano", track.title),

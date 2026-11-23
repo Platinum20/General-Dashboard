@@ -24,5 +24,5 @@ internal fun goToCreator(context: android.content.Context, item: ResumeItem, ope
 internal fun goToCreatorAction(context: android.content.Context, item: ResumeItem, openRoute: ((String) -> Unit)?): BubbleAction? {
     val open = openRoute ?: return null
     val (title, icon) = goToCreatorLabel(item) ?: return null
-    return BubbleAction(icon, title, detail = item.subtitle) { goToCreator(context, item, open) }
+    return BubbleAction(icon, title, detail = item.subtitle, group = BubbleGroup.VAI) { goToCreator(context, item, open) }
 }

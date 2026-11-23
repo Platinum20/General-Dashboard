@@ -163,16 +163,11 @@ private fun EpisodeLine(episode: Episode, now: PodcastNow?, savedMs: Long, today
  * altre cose con una pagina (regola del tocco lungo, 1.513). Salvato su Spotify si segue da lì: c'è solo Apri.
  */
 internal fun podcastActions(podcast: Podcast, followed: Boolean, onSpotify: Boolean, onOpen: () -> Unit) {
-    val open = BubbleAction(Icons.Rounded.OpenInFull, "Apri", podcast.title) { onOpen() }
-    if (onSpotify && !followed) return ActionBubble.show(open.copy(detail = "Nella tua libreria di Spotify"))
-    ActionBubble.show(
-        open,
-        BubbleAction(
-            if (followed) Icons.Rounded.RemoveCircleOutline else Icons.Rounded.AddCircleOutline,
-            if (followed) "Non seguire più" else "Segui il podcast",
-            podcast.author,
-        ) { PodcastStore.toggleFollow(podcast) },
-    )
+    val head = BubbleHead("Podcast", podcast.title)
+    val open = Slot.open { onOpen() }
+    // Salvato su Spotify si segue da lì: c'è solo Apri.
+    if (onSpotify && !followed) return ActionBubble.show(head, open)
+    ActionBubble.show(head, open, Slot.follow(followed) { PodcastStore.toggleFollow(podcast) })
 }
 
 /** "12:05" o "1:02:03". */

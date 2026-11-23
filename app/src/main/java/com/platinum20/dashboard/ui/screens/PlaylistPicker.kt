@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.rounded.MoreHoriz
 import android.content.Context
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -46,7 +47,7 @@ internal object PlaylistPicker {
         private set
 
     /** Il fumetto con le playlist dove si può scrivere: si leggono adesso, sono poche e cambiano. */
-    fun open(context: Context, track: SpItem) {
+    fun open(context: Context, track: SpItem, all: Boolean = false) {
         scope.launch {
             val result = SpotifyStore.editablePlaylists()
             val playlists = result.data
@@ -54,12 +55,21 @@ internal object PlaylistPicker {
                 CaptureFeedback.tell(context, result.error ?: "Spotify non risponde, riprova")
                 return@launch
             }
-            val chips = SpotifyPlaylists.ordered(playlists, SpotifyStore.lastPlaylist).map { p ->
-                BubbleChip(p.title) { add(context, p, track) }
-            }
-            val create = BubbleAction(Icons.Rounded.Add, "Nuova playlist", "Con ${track.title} dentro") { naming = Naming(track) }
-            if (chips.isEmpty()) ActionBubble.show(create)
-            else ActionBubble.show(BubbleAction(Icons.Rounded.PlaylistAdd, "Aggiungi ${track.title} a", chips = chips), create)
+            // Niente da scorrere: le tre usate per ultime, sotto Nuova e Tutte (che allarga lo stesso fumetto).
+            val ordered = SpotifyPlaylists.ordered(playlists, SpotifyStore.lastPlaylist)
+            val shown = if (all) ordered else ordered.take(3)
+            val chips = shown.map { p -> BubbleChip(p.title) { add(context, p, track) } }
+            val more = listOfNotNull(
+                BubbleChip("Nuova", icon = Icons.Rounded.Add) { naming = Naming(track) },
+                if (ordered.size > shown.size) BubbleChip("Tutte", icon = Icons.Rounded.MoreHoriz) { open(context, track, all = true) } else null,
+            )
+            ActionBubble.show(
+                BubbleHead("Aggiungi a una playlist", track.title),
+                *listOfNotNull(
+                    chips.takeIf { it.isNotEmpty() }?.let { choice(if (all) "Le tue playlist" else "Ultime", *it.toTypedArray()) },
+                    choice("", *more.toTypedArray()),
+                ).toTypedArray(),
+            )
         }
     }
 

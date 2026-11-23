@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.rounded.PlayArrow
 import android.content.Context
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Edit
@@ -107,11 +108,11 @@ internal fun showMediaBubble(
         if (queue && SavedLinks.queueable(item)) add(
             choice(
                 "Coda",
-                BubbleChip("Subito dopo") {
+                BubbleChip("Subito dopo", icon = Icons.Rounded.PlaylistPlay) {
                     CanvasPlayer.addNext(item)
                     CaptureFeedback.tell(context, "Dopo questo: ${item.title}", Icons.Rounded.PlaylistPlay)
                 },
-                BubbleChip("In fondo") {
+                BubbleChip("In fondo", icon = Icons.Rounded.QueueMusic) {
                     CanvasPlayer.add(item)
                     CaptureFeedback.tell(context, "In coda: ${item.title}", Icons.Rounded.QueueMusic)
                 },
@@ -119,7 +120,7 @@ internal fun showMediaBubble(
         )
         // Una raccolta di Spotify parte da qui senza aprirla.
         if (page != null && item.key.startsWith("spotify:") && kind != "Artista") add(
-            choice("Riproduci", BubbleChip("Ora") { com.platinum20.dashboard.media.spotify.SpotifyPlayer.playLink(context, item.key, item.title, item.subtitle, item.image) }),
+            choice("Riproduci", BubbleChip("Ora", icon = Icons.Rounded.PlayArrow) { com.platinum20.dashboard.media.spotify.SpotifyPlayer.playLink(context, item.key, item.title, item.subtitle, item.image) }),
         )
         addAll(pageRows(context, item))
         if (playlistId != null) addAll(playlistRows(playlistId, item, openRoute))

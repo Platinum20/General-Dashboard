@@ -1,6 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,6 +45,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -89,6 +94,8 @@ internal data class BubbleAction(
     val group: BubbleGroup = BubbleGroup.CAMBIA,
     /** Per ciò che non si può annullare: il primo tocco fa diventare il tasto "Ancora" e mostra questa riga, il secondo esegue. */
     val confirm: String? = null,
+    /** Fila di [chips] in cui si sceglie una cosa sola: la scelta di adesso si allarga col nome, le altre solo icona. */
+    val selector: Boolean = false,
     val onClick: () -> Unit = {},
 )
 
@@ -126,12 +133,43 @@ internal object Slot {
 internal fun act(group: BubbleGroup, icon: ImageVector, title: String, detail: String, onLongClick: (() -> Unit)? = null, onClick: () -> Unit) =
     BubbleAction(icon, title, detail, group = group, onLongClick = onLongClick, onClick = onClick)
 
-/** Una fila di scelte della stessa cosa: tocchi un chip, si applica e il fumetto si chiude. */
+/**
+ * Una categoria di scelte (Antonio, PDF "Fila-unica"): chip uguali che riempiono la riga, al massimo quattro
+ * per riga e sempre col nome; se sono di più vanno su più righe (7 = 4 + 3). Tocchi, si applica, si chiude.
+ */
 internal fun choice(title: String, vararg chips: BubbleChip) =
     BubbleAction(Icons.Outlined.Tune, title, chips = chips.toList())
 
-/** Un chip dentro una riga del fumetto: [selected] = quello di adesso. */
-internal data class BubbleChip(val label: String, val selected: Boolean = false, val onClick: () -> Unit)
+/** Un selettore (si sceglie una cosa sola, con le icone): la scelta di adesso si allarga e mostra il nome. */
+internal fun selector(title: String, vararg chips: BubbleChip) =
+    BubbleAction(Icons.Outlined.Tune, title, chips = chips.toList(), selector = true)
+
+/**
+ * Un chip dentro una riga del fumetto: [selected] = quello di adesso. [icon] facoltativa (sparisce se manca
+ * spazio, il nome resta); [emoji] o [color] al posto dell'icona per emoji e colori.
+ */
+internal data class BubbleChip(
+    val label: String,
+    val selected: Boolean = false,
+    val icon: ImageVector? = null,
+    val emoji: String? = null,
+    val color: androidx.compose.ui.graphics.Color? = null,
+    val onClick: () -> Unit,
+)
+
+/** Le righe di una categoria: al massimo [max] chip per riga, righe il più possibile pari, le più piene sopra. */
+internal fun <T> chipRows(chips: List<T>, max: Int = 4): List<List<T>> {
+    if (chips.size <= max) return listOf(chips)
+    val n = (chips.size + max - 1) / max
+    val base = chips.size / n
+    val extra = chips.size % n
+    var at = 0
+    return List(n) { i -> val k = base + if (i < extra) 1 else 0; chips.subList(at, at + k).also { at += k } }
+}
+
+/** Un selettore con tutte icone (o colori, o emoji) sta su una riga sola: la scelta larga, le altre strette. */
+internal fun selectorFitsOneRow(chips: List<BubbleChip>): Boolean =
+    chips.size <= 8 && chips.all { it.icon != null || it.color != null }
 
 /** Le parti del fumetto già al loro posto: pura, così l'ordine si controlla nei test. */
 internal data class BubbleLayout(val chips: List<BubbleAction>, val rows: List<BubbleAction>, val bar: List<BubbleAction>)
@@ -213,11 +251,11 @@ internal fun BoxScope.ActionBubbleLayer() {
             }
             Box(Modifier.graphicsLayer { alpha = appear.value; translationY = (1f - appear.value) * 12.dp.toPx() }) { content() }
         }
-        layout.chips.forEach { a ->
+        layout.chips.forEachIndexed { k, a ->
             val i = index++
-            if (i > 0 || lastHead != null) RowDivider()
+            if (k == 0 && lastHead != null) RowDivider()
             Appear(i) {
-                BubbleChips(a.title, a.chips) { chip ->
+                BubbleChips(a.title, a.chips, a.selector, first = k == 0, last = k == layout.chips.lastIndex) { chip ->
                     haptic(Haptic.CONFIRM)
                     ActionBubble.dismiss()
                     chip.onClick()
@@ -318,24 +356,83 @@ private fun BubbleBar(bar: List<BubbleAction>, armed: BubbleAction?, onTap: (Bub
 }
 
 /**
- * Una fila di chip del fumetto: un titolo piccolo e le scelte in fila, che vanno a capo. Sta dentro lo
- * stesso blocco di vetro delle altre righe, senza un riquadro suo (Antonio: "una bolla sopra l'altra").
+ * Una categoria di chip: il nome piccolo sopra, poi righe di chip elastici che riempiono la larghezza
+ * (due = metà, tre = terzi, quattro = quarti). Niente da scorrere, niente che va a capo da solo.
  */
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-private fun BubbleChips(title: String, chips: List<BubbleChip>, onPick: (BubbleChip) -> Unit) {
+private fun BubbleChips(title: String, chips: List<BubbleChip>, selector: Boolean, first: Boolean, last: Boolean, onPick: (BubbleChip) -> Unit) {
     Column(
-        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = if (first) 10.dp else 2.dp, bottom = if (last) 10.dp else 2.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         if (title.isNotBlank()) {
-            Text(title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                title,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(start = 4.dp),
+            )
         }
-        androidx.compose.foundation.layout.FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+        val wide = selector && selectorFitsOneRow(chips)
+        val rows = if (wide) listOf(chips) else chipRows(chips)
+        rows.forEach { row ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                row.forEach { c ->
+                    val named = !wide || c.selected
+                    val weight = if (wide && c.selected) 3f else 1f
+                    BubbleChipCell(c, named, Modifier.weight(weight)) { onPick(c) }
+                }
+            }
+        }
+    }
+}
+
+/** Un chip: icona e nome se c'è posto, solo il nome se no; nei selettori le scelte non attive sono solo icona. */
+@Composable
+internal fun BubbleChipCell(c: BubbleChip, named: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    val on = c.selected
+    val fill = when {
+        c.color != null -> c.color
+        on -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+    }
+    val ink = when {
+        c.color != null -> if (c.color.luminance() > 0.45f) androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.White
+        on -> MaterialTheme.colorScheme.onPrimary
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+    val style = MaterialTheme.typography.labelLarge
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    androidx.compose.foundation.layout.BoxWithConstraints(
+        modifier
+            .heightIn(min = 40.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(fill)
+            .then(if (c.color != null && on) Modifier.border(2.dp, MaterialTheme.colorScheme.onSurface, RoundedCornerShape(20.dp)) else Modifier)
+            .bouncyPress(0.96f)
+            .combinedClickable(onClick = onClick, onClickLabel = c.label)
+            .semantics { contentDescription = c.label; selected = on },
+        contentAlignment = Alignment.Center,
+    ) {
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val textW = with(density) { measurer.measure(c.label, style).size.width.toDp() }
+        val room = maxWidth - 16.dp
+        val showText = named && (c.color == null || on)
+        val showIcon = c.emoji != null || (c.icon != null && (!showText || textW + 24.dp <= room))
+        Row(
+            Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterHorizontally),
         ) {
-            chips.forEach { c -> CanvasChip(selected = c.selected, onClick = { onPick(c) }, label = c.label) }
+            if (showIcon) {
+                if (c.emoji != null) Text(c.emoji, style = MaterialTheme.typography.titleMedium)
+                else c.icon?.let { Icon(it, contentDescription = null, tint = ink, modifier = Modifier.size(19.dp)) }
+            }
+            if (showText && c.emoji == null) {
+                Text(c.label, style = style, color = ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
         }
     }
 }

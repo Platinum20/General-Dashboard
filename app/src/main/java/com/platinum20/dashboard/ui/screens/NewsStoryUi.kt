@@ -89,20 +89,23 @@ private fun NewsStory.metaLine(): String = sourcesLine + (newest?.let { "  ·  "
 internal fun storyActions(context: Context, story: NewsStory, onMarkRead: () -> Unit): Array<BubbleAction> {
     val lead = story.headline
     return arrayOf(
-        BubbleAction(Icons.Outlined.BookmarkAdd, "Leggi dopo", lead.source.name) { SavedLinks.save(context, lead.savedLink()) },
-        BubbleAction(Icons.Outlined.Headphones, "Ascolta", "Con la voce di lettura") { listenArticle(context, lead) },
-        // Come nell'"Altro" dell'articolo, senza aprirlo (2026-11-13).
-        BubbleAction(Icons.Outlined.Share, "Condividi il link", lead.source.name) { runCatching { shareText(context, lead.link) } },
-        BubbleAction(Icons.Outlined.DoneAll, "Segna come letta", "non la vedi più fra le nuove") {
+        act(BubbleGroup.SEGNA, Icons.Outlined.DoneAll, "Segna come letta", "non la vedi più fra le nuove") {
             NewsHistory.init(context)
             story.items.forEach { NewsHistory.markRead(it.link) }
             onMarkRead()
         },
-        BubbleAction(Icons.Outlined.VisibilityOff, "Nascondi ${lead.source.name}", "Si riattiva in Impostazioni › News") {
+        act(BubbleGroup.CAMBIA, Icons.Outlined.VisibilityOff, "Nascondi ${lead.source.name}", "si riattiva in Impostazioni › News") {
             AppSettings.setNewsSourceHidden(lead.source.id, true)
         },
+        act(BubbleGroup.METTI, Icons.Outlined.Headphones, "Ascolta", "con la voce di lettura") { listenArticle(context, lead) },
+        Slot.save(false) { SavedLinks.save(context, lead.savedLink()) },
+        // Come nell'"Altro" dell'articolo, senza aprirlo (2026-11-13).
+        Slot.share { runCatching { shareText(context, lead.link) } },
     )
 }
+
+/** La testata del fumetto di una storia: la fonte e il titolo. */
+internal fun storyHead(story: NewsStory) = BubbleHead("Notizia", story.headline.title)
 
 /** Un articolo a voce: il testo già pulito dal lettore se c'è, altrimenti titolo e sommario. */
 internal fun listenArticle(context: Context, item: NewsItem) {

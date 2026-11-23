@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.outlined.HideImage
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.horizontalScroll
@@ -112,8 +113,8 @@ internal fun docActions(context: android.content.Context, scope: kotlinx.corouti
 internal fun docPdfChoice(context: android.content.Context, scope: kotlinx.coroutines.CoroutineScope, doc: Document) = choice(
     "PDF fronte e retro",
     *listOfNotNull(
-        BubbleChip("Condividi") { exportDocPdf(context, scope, doc, save = false) },
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) BubbleChip("Salva in Download") { exportDocPdf(context, scope, doc, save = true) } else null,
+        BubbleChip("Condividi", icon = Icons.Outlined.Share) { exportDocPdf(context, scope, doc, save = false) },
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) BubbleChip("Salva in Download", icon = Icons.Outlined.Download) { exportDocPdf(context, scope, doc, save = true) } else null,
     ).toTypedArray(),
 )
 
@@ -256,9 +257,9 @@ internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
     // "Altro" = il fumetto del tieni premuto, senza Apri, più il retro (scelte della stessa cosa).
     val back = choice(
         "Retro",
-        BubbleChip(if (doc.back == null) "Con la fotocamera" else "Rifai con la fotocamera") { runCatching { camera.launch(ReceiptReader.photoUri(context)) } },
-        BubbleChip("Dalla galleria") { gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
-        *listOfNotNull(if (doc.back != null) BubbleChip("Togli") { DocumentsStore.removeBack(id) } else null).toTypedArray(),
+        BubbleChip(if (doc.back == null) "Fotocamera" else "Rifai", icon = Icons.Outlined.PhotoCamera) { runCatching { camera.launch(ReceiptReader.photoUri(context)) } },
+        BubbleChip("Galleria", icon = Icons.Outlined.PhotoLibrary) { gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+        *listOfNotNull(if (doc.back != null) BubbleChip("Togli", icon = Icons.Outlined.HideImage) { DocumentsStore.removeBack(id) } else null).toTypedArray(),
     )
     val more = docActions(context, scope, doc, open = null, extra = listOf(back)).toList()
         .filter { it.slot != BubbleSlot.AWAY }

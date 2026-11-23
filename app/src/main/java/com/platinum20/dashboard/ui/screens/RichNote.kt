@@ -1,5 +1,10 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.outlined.CheckBox
+import androidx.compose.material.icons.outlined.East
+import androidx.compose.material.icons.outlined.West
+import androidx.compose.material.icons.outlined.VerticalAlignBottom
+import androidx.compose.material.icons.outlined.VerticalAlignTop
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -689,7 +694,7 @@ internal fun RichNoteField(
                             onLongClickLabel = if (readOnly) null else "Scelte della riga",
                             onLongClick = if (readOnly) null else ({
                                 haptic(Haptic.LONG_PRESS)
-                                ActionBubble.show(*lineActions(context, lineNow, current, emit, sendToTodo).toTypedArray())
+                                ActionBubble.show(lineHead(lineNow, current.text), *lineActions(context, lineNow, current, emit, sendToTodo).toTypedArray())
                             }),
                             onClick = {
                                 // Il tocco che chiude un tieni premuto non spunta.
@@ -734,7 +739,7 @@ internal fun RichNoteField(
                             enabled = !readOnly,
                             onLongClick = {
                                 haptic(Haptic.LONG_PRESS)
-                                ActionBubble.show(*markActions(context, lineNow, current, emit).toTypedArray())
+                                ActionBubble.show(lineHead(lineNow, current.text), *markActions(context, lineNow, current, emit).toTypedArray())
                             },
                             onClick = {},
                         ),
@@ -774,12 +779,13 @@ internal fun RichNoteField(
                                 onLongClick = {
                                     haptic(Haptic.LONG_PRESS)
                                     ActionBubble.show(
-                                        BubbleAction(Icons.AutoMirrored.Outlined.OpenInNew, "Apri", if (url.startsWith(NoteFormat.NOTE_LINK)) "la nota collegata" else "la pagina, dentro Canvas") { openNoteLink(inApp, url, label) },
-                                        BubbleAction(Icons.Outlined.Edit, "Modifica il testo", "il cursore va sul link") {
+                                        BubbleHead("Link", label),
+                                        Slot.open { openNoteLink(inApp, url, label) },
+                                        act(BubbleGroup.CAMBIA, Icons.Outlined.Edit, "Modifica il testo", "il cursore va sul link") {
                                             emit(TextFieldValue(current.text, TextRange(span.end)))
                                             focusRequester?.requestFocus()
                                         },
-                                        BubbleAction(Icons.Outlined.LinkOff, "Togli il link", "resta il testo") {
+                                        BubbleAction(Icons.Outlined.LinkOff, "Togli", danger = true, slot = BubbleSlot.AWAY) {
                                             val e = NoteFormat.link(current.text, span.start, span.start, null)
                                             emit(TextFieldValue(e.text, TextRange(e.end)))
                                         },
@@ -811,13 +817,13 @@ internal fun RichNoteField(
                             .combinedClickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
-                                onLongClick = { acts().takeIf { it.isNotEmpty() }?.let { haptic(Haptic.LONG_PRESS); ActionBubble.show(*it.toTypedArray()) } },
+                                onLongClick = { acts().takeIf { it.isNotEmpty() }?.let { haptic(Haptic.LONG_PRESS); ActionBubble.show(smartHead(sm), *it.toTypedArray()) } },
                             ) {
                                 haptic(Haptic.TICK)
                                 when (sm.kind) {
                                     com.platinum20.dashboard.notes.NoteSmart.Kind.TAG -> inApp?.openRoute?.invoke(Routes.tag(sm.value))
                                     com.platinum20.dashboard.notes.NoteSmart.Kind.CODE -> copySmart(context, fieldClipboard, sm.value)
-                                    else -> acts().takeIf { it.isNotEmpty() }?.let { ActionBubble.show(*it.toTypedArray()) }
+                                    else -> acts().takeIf { it.isNotEmpty() }?.let { ActionBubble.show(smartHead(sm), *it.toTypedArray()) }
                                 }
                             },
                     )
@@ -893,11 +899,12 @@ internal fun RichNoteField(
                                 onLongPress = {
                                     haptic(Haptic.LONG_PRESS)
                                     ActionBubble.show(
-                                        BubbleAction(Icons.AutoMirrored.Outlined.Notes, "Diventa testo normale", "prima la sinistra, poi la destra") {
+                                        BubbleHead("Due colonne"),
+                                        act(BubbleGroup.CAMBIA, Icons.AutoMirrored.Outlined.Notes, "Diventa testo normale", "prima la sinistra, poi la destra") {
                                             change(TextFieldValue(NoteLines.uncolumn(current.text, line.index), TextRange(line.start)), typed = false)
                                         },
-                                        BubbleAction(Icons.Outlined.SwapHoriz, "Scambia le colonne", "la destra va a sinistra") { replaceLine(line.index, NoteLines.columnsLine(b, a)) },
-                                        BubbleAction(Icons.Outlined.Delete, "Togli le colonne", "con Annulla", danger = true) { undoable("Colonne tolte") { replaceLine(line.index, null) } },
+                                        act(BubbleGroup.CAMBIA, Icons.Outlined.SwapHoriz, "Scambia le colonne", "la destra va a sinistra") { replaceLine(line.index, NoteLines.columnsLine(b, a)) },
+                                        Slot.remove { undoable("Colonne tolte") { replaceLine(line.index, null) } },
                                     )
                                 },
                             )
@@ -915,8 +922,9 @@ internal fun RichNoteField(
                                 onLongPress = if (readOnly) null else ({
                                     haptic(Haptic.LONG_PRESS)
                                     ActionBubble.show(
-                                        BubbleAction(Icons.AutoMirrored.Outlined.OpenInNew, "Apri la sotto-nota", "la pagina dentro questa nota") { openNoteLink(inApp, "${NoteFormat.NOTE_LINK}$id", name) },
-                                        BubbleAction(Icons.Outlined.Delete, "Togli da questa nota", "resta fra le note, con Annulla", danger = true) { undoable("Tolta dalla nota") { replaceLine(line.index, null) } },
+                                        BubbleHead("Sotto-nota", name),
+                                        Slot.open { openNoteLink(inApp, "${NoteFormat.NOTE_LINK}$id", name) },
+                                        Slot.remove { undoable("Tolta dalla nota, resta fra le note") { replaceLine(line.index, null) } },
                                     )
                                 }),
                             )
@@ -931,15 +939,14 @@ internal fun RichNoteField(
                                 onLongPress = if (readOnly) null else ({
                                     haptic(Haptic.LONG_PRESS)
                                     ActionBubble.show(
-                                        BubbleAction(Icons.AutoMirrored.Outlined.OpenInNew, "Apri", if (InAppLinks.target(url) is LinkTarget.YouTube) "il video, nel player di Canvas" else "l'articolo, nel lettore di Canvas") { openBookmark(inApp, url, card) },
-                                        BubbleAction(Icons.Outlined.Link, "Diventa un link nel testo", "solo il titolo, sottolineato") {
+                                        BubbleHead("Anteprima", card?.title ?: NoteLines.host(url)),
+                                        Slot.open { openBookmark(inApp, url, card) },
+                                        act(BubbleGroup.CAMBIA, Icons.Outlined.Link, "Diventa un link nel testo", "solo il titolo, sottolineato") {
                                             val title = (card?.title ?: NoteLines.host(url)).replace('[', '(').replace(']', ')')
                                             replaceLine(line.index, "[$title]($url)")
                                         },
-                                        BubbleAction(Icons.Outlined.ContentCopy, "Copia l'indirizzo", "per incollarlo altrove") {
-                                            fieldClipboard.setText(androidx.compose.ui.text.AnnotatedString(url))
-                                        },
-                                        BubbleAction(Icons.Outlined.Delete, "Togli l'anteprima", "con Annulla", danger = true) { undoable("Anteprima tolta") { replaceLine(line.index, null) } },
+                                        Slot.copy { fieldClipboard.setText(androidx.compose.ui.text.AnnotatedString(url)) },
+                                        Slot.remove { undoable("Anteprima tolta") { replaceLine(line.index, null) } },
                                     )
                                 }),
                             )
@@ -953,14 +960,15 @@ internal fun RichNoteField(
                                 onCard = { c ->
                                     haptic(Haptic.LONG_PRESS)
                                     ActionBubble.show(
-                                        BubbleAction(
-                                            Icons.Outlined.ViewColumn, "Sposta in", "la colonna della scheda",
-                                            chips = listOf("Da fare", "In corso", "Fatto").mapIndexed { i, n ->
+                                        BubbleHead("Scheda", c.title),
+                                        choice(
+                                            "Sposta in",
+                                            *listOf("Da fare", "In corso", "Fatto").mapIndexed { i, n ->
                                                 BubbleChip(n, selected = c.state == i) { change(TextFieldValue(NoteLines.setState(current.text, c.line, i), current.selection), typed = false) }
-                                            },
+                                            }.toTypedArray(),
                                         ),
-                                        BubbleAction(Icons.Outlined.Edit, "Cambia il testo", "della scheda") { boardDialog = Triple(line.index, c.line, c.title) },
-                                        BubbleAction(Icons.Outlined.Delete, "Togli la scheda", "con Annulla", danger = true) {
+                                        act(BubbleGroup.CAMBIA, Icons.Outlined.Edit, "Cambia il testo", "della scheda") { boardDialog = Triple(line.index, c.line, c.title) },
+                                        Slot.remove {
                                             undoable("Scheda tolta") { change(TextFieldValue(NoteLines.remove(current.text, c.line), current.selection), typed = false) }
                                         },
                                     )
@@ -969,9 +977,10 @@ internal fun RichNoteField(
                                 onLongPress = if (readOnly) null else ({
                                     haptic(Haptic.LONG_PRESS)
                                     ActionBubble.show(
-                                        BubbleAction(Icons.Outlined.Add, "Aggiungi una scheda", "in Da fare") { boardDialog = Triple(line.index, -1, "") },
-                                        BubbleAction(Icons.AutoMirrored.Outlined.FormatListBulleted, "Diventa una lista", "le schede tornano voci da spuntare") { replaceLine(line.index, null) },
-                                        BubbleAction(Icons.Outlined.Delete, "Togli la bacheca", "con le sue schede, con Annulla", danger = true) {
+                                        BubbleHead("Bacheca"),
+                                        act(BubbleGroup.CAMBIA, Icons.AutoMirrored.Outlined.FormatListBulleted, "Diventa una lista", "le schede tornano voci da spuntare") { replaceLine(line.index, null) },
+                                        act(BubbleGroup.CREA, Icons.Outlined.Add, "Aggiungi una scheda", "in Da fare") { boardDialog = Triple(line.index, -1, "") },
+                                        Slot.remove {
                                             undoable("Bacheca tolta") {
                                                 val now = current.text
                                                 val bl = NoteLines.parse(now).getOrNull(line.index) ?: return@undoable
@@ -990,10 +999,9 @@ internal fun RichNoteField(
                             fun photoActions() {
                                 haptic(Haptic.LONG_PRESS)
                                 ActionBubble.show(
-                                    BubbleAction(Icons.Outlined.Share, "Condividi la foto", "solo questa foto") {
-                                        com.platinum20.dashboard.notes.NotePhotoFiles.share(context, "", listOf(path))
-                                    },
-                                    BubbleAction(Icons.Outlined.Delete, "Togli la foto", "con Annulla", danger = true) { undoable("Foto tolta") { replaceLine(line.index, null) } },
+                                    BubbleHead("Foto"),
+                                    Slot.share { com.platinum20.dashboard.notes.NotePhotoFiles.share(context, "", listOf(path)) },
+                                    Slot.remove { undoable("Foto tolta") { replaceLine(line.index, null) } },
                                 )
                             }
                             NoteImageBlock(path, place, onTap = { if (!readOnly) photoActions() }, onLongPress = if (readOnly) null else ({ photoActions() }))
@@ -1033,9 +1041,10 @@ internal fun RichNoteField(
                         onLongPress = if (readOnly) null else ({
                             haptic(Haptic.LONG_PRESS)
                             ActionBubble.show(
-                                BubbleAction(Icons.Outlined.Delete, "Togli il vocale", "con Annulla", danger = true) {
+                                BubbleHead("Vocale", link.second),
+                                Slot.remove {
                                     val before = current
-                                    val l2 = NoteLines.parse(before.text).firstOrNull { it.start == line.start && it.kind == NoteLines.Kind.AUDIO } ?: return@BubbleAction
+                                    val l2 = NoteLines.parse(before.text).firstOrNull { it.start == line.start && it.kind == NoteLines.Kind.AUDIO } ?: return@remove
                                     val t = NoteLines.remove(before.text, l2.index)
                                     NoteAudio.stopPlaying()
                                     emit(TextFieldValue(t, TextRange(l2.start.coerceIn(0, t.length))))
@@ -1099,8 +1108,6 @@ internal fun RichNoteField(
                         onLongPress = { r, c ->
                             haptic(Haptic.LONG_PRESS)
                             val g = NoteTable.grid(current.text, block)
-                            val rowName = g[r].firstOrNull { it.isNotBlank() }?.let { "\"$it\"" } ?: "la riga ${r + 1}"
-                            val colName = g.first().getOrNull(c)?.takeIf { it.isNotBlank() }?.let { "\"$it\"" } ?: "la colonna ${c + 1}"
                             fun undoable(next: List<List<String>>, said: String) {
                                 val before = current
                                 put(next)
@@ -1108,23 +1115,22 @@ internal fun RichNoteField(
                             }
                             ActionBubble.show(
                                 *listOfNotNull(
-                                    BubbleAction(
-                                        Icons.Outlined.Add, "Aggiungi una riga", "vuota, accanto a $rowName",
-                                        chips = listOf(
-                                            BubbleChip("Sopra") { put(NoteTable.addRow(g, r), r to c) },
-                                            BubbleChip("Sotto") { put(NoteTable.addRow(g, r + 1), r + 1 to c) },
-                                        ),
+                                    BubbleHead("Tabella", "riga ${r + 1} · colonna ${('A' + c)}"),
+                                    choice(
+                                        "Aggiungi una riga",
+                                        BubbleChip("Sopra", icon = Icons.Outlined.VerticalAlignTop) { put(NoteTable.addRow(g, r), r to c) },
+                                        BubbleChip("Sotto", icon = Icons.Outlined.VerticalAlignBottom) { put(NoteTable.addRow(g, r + 1), r + 1 to c) },
                                     ),
-                                    BubbleAction(
-                                        Icons.Outlined.Add, "Aggiungi una colonna", "vuota, accanto a $colName",
-                                        chips = listOf(
-                                            BubbleChip("A sinistra") { put(NoteTable.addColumn(g, c), r to c) },
-                                            BubbleChip("A destra") { put(NoteTable.addColumn(g, c + 1), r to c + 1) },
-                                        ),
+                                    choice(
+                                        "Aggiungi una colonna",
+                                        BubbleChip("A sinistra", icon = Icons.Outlined.West) { put(NoteTable.addColumn(g, c), r to c) },
+                                        BubbleChip("A destra", icon = Icons.Outlined.East) { put(NoteTable.addColumn(g, c + 1), r to c + 1) },
                                     ),
-                                    if (g.size > 1) BubbleAction(Icons.Outlined.Delete, "Togli la riga", "$rowName, con Annulla", danger = true) { undoable(NoteTable.dropRow(g, r), "Riga tolta") } else null,
-                                    if (g.first().size > 1) BubbleAction(Icons.Outlined.Delete, "Togli la colonna", "$colName, con Annulla", danger = true) { undoable(NoteTable.dropColumn(g, c), "Colonna tolta") } else null,
-                                    BubbleAction(Icons.Outlined.Delete, "Togli la tabella", "con Annulla", danger = true) { undoable(emptyList(), "Tabella tolta") },
+                                    listOfNotNull(
+                                        if (g.size > 1) BubbleChip("la riga ${r + 1}") { undoable(NoteTable.dropRow(g, r), "Riga tolta") } else null,
+                                        if (g.first().size > 1) BubbleChip("la colonna ${('A' + c)}") { undoable(NoteTable.dropColumn(g, c), "Colonna tolta") } else null,
+                                    ).takeIf { it.isNotEmpty() }?.let { choice("Togli", *it.toTypedArray()) },
+                                    Slot.delete { undoable(emptyList(), "Tabella tolta") },
                                 ).toTypedArray(),
                             )
                         },
@@ -1163,6 +1169,17 @@ internal fun copySmart(context: android.content.Context, clip: androidx.compose.
     com.platinum20.dashboard.capture.CaptureFeedback.tell(context, "Copiato negli appunti del telefono", Icons.Outlined.ContentCopy)
 }
 
+/** La testata del fumetto di una parte intelligente: "DATA · venerdì 28". */
+internal fun smartHead(sm: com.platinum20.dashboard.notes.NoteSmart.Smart) = BubbleHead(
+    when (sm.kind) {
+        com.platinum20.dashboard.notes.NoteSmart.Kind.DATE -> "Data"
+        com.platinum20.dashboard.notes.NoteSmart.Kind.TAG -> "Etichetta"
+        com.platinum20.dashboard.notes.NoteSmart.Kind.CODE -> "Codice"
+        com.platinum20.dashboard.notes.NoteSmart.Kind.PARCEL -> "Pacco"
+    },
+    if (sm.kind == com.platinum20.dashboard.notes.NoteSmart.Kind.TAG) "#${sm.value}" else sm.value,
+)
+
 /** Le scelte di una parte intelligente della nota (2026-11-23): data, etichetta, codice, codice di spedizione. */
 internal fun smartActions(
     context: android.content.Context,
@@ -1176,7 +1193,7 @@ internal fun smartActions(
         val due = com.platinum20.dashboard.notes.NoteSmart.dateOf(sm.value)
         val title = com.platinum20.dashboard.notes.NoteSmart.titleAround(text, sm)
         if (due == null) emptyList() else listOf(
-            BubbleAction(Icons.Outlined.Event, "Metti in calendario", "\"$title\", ${dueLabel(due)}") {
+            act(BubbleGroup.METTI, Icons.Outlined.Event, "Metti in calendario", "\"$title\", ${dueLabel(due)}") {
                 val at = due.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
                 val task = NotesStore.addTaskAt(title, at)
                 val nid = noteId
@@ -1185,28 +1202,28 @@ internal fun smartActions(
                 }
                 com.platinum20.dashboard.capture.CaptureFeedback.tell(context, "In calendario: ${dueLabel(due)}", Icons.Outlined.Event, "Annulla") { NotesStore.deleteTask(task.id) }
             },
-            BubbleAction(Icons.Outlined.CalendarMonth, "Vedi quel giorno", "il calendario su ${dueLabel(due).substringBefore(',')}") {
+            act(BubbleGroup.VAI, Icons.Outlined.CalendarMonth, "Vedi quel giorno", "il calendario su ${dueLabel(due).substringBefore(',')}") {
                 inApp?.openRoute?.invoke(Routes.NOTES)
             },
         )
     }
     com.platinum20.dashboard.notes.NoteSmart.Kind.TAG -> listOf(
-        BubbleAction(Icons.Outlined.Tag, "Tutto con #${sm.value}", "note, cose da fare e date con questa etichetta") { inApp?.openRoute?.invoke(Routes.tag(sm.value)) },
+        act(BubbleGroup.VAI, Icons.Outlined.Tag, "Tutto con #${sm.value}", "note, cose da fare e date con questa etichetta") { inApp?.openRoute?.invoke(Routes.tag(sm.value)) },
     )
     com.platinum20.dashboard.notes.NoteSmart.Kind.CODE -> listOf(
-        BubbleAction(Icons.Outlined.ContentCopy, "Copia", "per incollarlo dove serve") { copySmart(context, clip, sm.value) },
+        Slot.copy { copySmart(context, clip, sm.value) },
     )
     com.platinum20.dashboard.notes.NoteSmart.Kind.PARCEL -> {
         val known = NotesStore.data.value.parcels.firstOrNull { it.code.equals(sm.value, ignoreCase = true) }
         listOf(
-            if (known != null) BubbleAction(Icons.Outlined.LocalShipping, "Apri il pacco", known.title) {
+            if (known != null) Slot.open {
                 inApp?.openRoute?.invoke(Routes.noteItem(ItemKind.PARCEL, known.id))
-            } else BubbleAction(Icons.Outlined.LocalShipping, "Segui il pacco", "in arrivo nel calendario, con avvisi") {
+            } else Slot.follow(false) {
                 val title = com.platinum20.dashboard.notes.NoteSmart.titleAround(text, sm).ifEmpty { "Pacco" }
                 val id = NotesStore.addParcel(title, sm.value, null)
                 inApp?.openRoute?.invoke(Routes.noteItem(ItemKind.PARCEL, id))
             },
-            BubbleAction(Icons.Outlined.ContentCopy, "Copia il codice", sm.value) { copySmart(context, clip, sm.value) },
+            Slot.copy { copySmart(context, clip, sm.value) },
         )
     }
 }
@@ -1326,20 +1343,20 @@ private fun markActions(
     fun set(next: String, at: Int = line.start) = emit(TextFieldValue(next, TextRange(at.coerceIn(0, next.length))))
     return when (line.kind) {
         NoteLines.Kind.DIVIDER -> listOf(
-            BubbleAction(Icons.Outlined.Delete, "Togli la linea", "con Annulla", danger = true) {
+            Slot.remove {
                 set(NoteLines.remove(text, line.index))
                 CaptureFeedback.tell(context, "Linea tolta", Icons.Outlined.Delete, "Annulla") { emit(TextFieldValue(text, value.selection)) }
             },
         )
         else -> listOfNotNull(
-            if (line.kind == NoteLines.Kind.CALLOUT) BubbleAction(
-                Icons.Outlined.EmojiEmotions, "Emoji del riquadro", "tocca quella che vuoi",
-                chips = CALLOUT_EMOJIS.map { e ->
-                    BubbleChip(e, selected = NoteLines.calloutEmoji(text.substring(line.start, line.end)) == e) { set(NoteLines.setCalloutEmoji(text, line.index, e), line.end) }
-                },
+            if (line.kind == NoteLines.Kind.CALLOUT) choice(
+                "Emoji",
+                *CALLOUT_EMOJIS.map { e ->
+                    BubbleChip(e, selected = NoteLines.calloutEmoji(text.substring(line.start, line.end)) == e, emoji = e) { set(NoteLines.setCalloutEmoji(text, line.index, e), line.end) }
+                }.toTypedArray(),
             ) else null,
             transformAction(line.kind) { k -> set(NoteLines.renumber(NoteLines.transform(text, line.start, line.start, k)).text) },
-            BubbleAction(Icons.Outlined.Delete, "Togli la riga", "con Annulla", danger = true) {
+            Slot.remove {
                 set(NoteLines.remove(text, line.index))
                 CaptureFeedback.tell(context, "Riga tolta", Icons.Outlined.Delete, "Annulla") { emit(TextFieldValue(text, value.selection)) }
             },
@@ -1493,9 +1510,11 @@ private fun lineActions(
     val words = NoteLines.plainLine(text.substring(line.start, line.end))
     return listOfNotNull(
         transformAction(line.kind) { k -> set(NoteLines.renumber(NoteLines.transform(text, line.start, line.start, k)).text) },
-        if (line.index > 0) BubbleAction(Icons.Outlined.ArrowUpward, "Sposta su", "scambia con la riga sopra") { set(NoteLines.move(text, line.index, up = true)) } else null,
-        if (line.index < count - 1) BubbleAction(Icons.Outlined.ArrowDownward, "Sposta giù", "scambia con la riga sotto") { set(NoteLines.move(text, line.index, up = false)) } else null,
-        if (sendToTodo && words.isNotEmpty()) BubbleAction(Icons.Outlined.TaskAlt, "Manda in Da fare", "la trovi nella card della Home") {
+        listOfNotNull(
+            if (line.index > 0) BubbleChip("Su", icon = Icons.Outlined.ArrowUpward) { set(NoteLines.move(text, line.index, up = true)) } else null,
+            if (line.index < count - 1) BubbleChip("Giù", icon = Icons.Outlined.ArrowDownward) { set(NoteLines.move(text, line.index, up = false)) } else null,
+        ).takeIf { it.isNotEmpty() }?.let { choice("Sposta", *it.toTypedArray()) },
+        if (sendToTodo && words.isNotEmpty()) act(BubbleGroup.METTI, Icons.Outlined.TaskAlt, "Manda in Da fare", "la trovi nella card della Home") {
             NotesStore.addTodo(words)?.let { task ->
                 set(NoteLines.remove(text, line.index))
                 CaptureFeedback.tell(context, "In Da fare", Icons.Outlined.TaskAlt, "Annulla") {
@@ -1504,7 +1523,7 @@ private fun lineActions(
                 }
             }
         } else null,
-        BubbleAction(Icons.Outlined.Delete, "Togli la riga", "con Annulla", danger = true) {
+        Slot.remove {
             set(NoteLines.remove(text, line.index))
             CaptureFeedback.tell(context, "Riga tolta", Icons.Outlined.Delete, "Annulla") { emit(TextFieldValue(text, value.selection)) }
         },
@@ -1629,7 +1648,7 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                 BarIcon(Icons.Outlined.Link, "Link (copia prima l'indirizzo)", on = NoteFormat.Kind.LINK in active) { link() }
                 BarIcon(Icons.Outlined.Palette, "Colore del testo o dello sfondo", on = NoteFormat.Kind.COLOR in active) {
                     haptic(Haptic.TICK)
-                    ActionBubble.show(*colorActions { code ->
+                    ActionBubble.show(BubbleHead("Colore"), *colorActions { code ->
                         val now = target.value()
                         val e = NoteFormat.color(now.text, now.selection.min, now.selection.max, code)
                         target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
@@ -1639,7 +1658,7 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                 BarIcon(Icons.Outlined.Transform, "Trasforma in") {
                     haptic(Haptic.TICK)
                     val now = target.value()
-                    ActionBubble.show(transformAction(NoteLines.lineAt(now.text, now.selection.min).kind) { k ->
+                    ActionBubble.show(BubbleHead("Trasforma in"), transformAction(NoteLines.lineAt(now.text, now.selection.min).kind) { k ->
                         val n = target.value()
                         val e = NoteLines.renumber(NoteLines.transform(n.text, n.selection.min, n.selection.max, k))
                         target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
@@ -1843,13 +1862,32 @@ private fun AudioPill(path: String, label: String, modifier: Modifier, onLongPre
 }
 
 /** "Trasforma in" (1.590): la riga diventa un'altra cosa; il chip acceso è quello che è adesso. */
-internal fun transformAction(now: NoteLines.Kind, to: (NoteLines.Kind) -> Unit): BubbleAction = BubbleAction(
-    Icons.Outlined.Transform, "Trasforma in", "la riga diventa un'altra cosa",
-    chips = listOf(
-        "Testo" to NoteLines.Kind.TEXT, "Titolo" to NoteLines.Kind.HEADING, "Punti" to NoteLines.Kind.BULLET,
-        "Numeri" to NoteLines.Kind.NUMBER, "Spunta" to NoteLines.Kind.CHECK, "Citazione" to NoteLines.Kind.QUOTE,
-        "Riquadro" to NoteLines.Kind.CALLOUT,
-    ).map { (label, k) -> BubbleChip(label, selected = now == k) { to(k) } },
+internal fun transformAction(now: NoteLines.Kind, to: (NoteLines.Kind) -> Unit): BubbleAction = selector(
+    "È una riga di",
+    *LINE_KINDS.map { (icon, label, k) -> BubbleChip(label, selected = now == k, icon = icon) { to(k) } }.toTypedArray(),
+)
+
+/** I tipi di riga con le icone della barra sopra la tastiera: un selettore, quello di adesso si allarga col nome. */
+internal val LINE_KINDS = listOf(
+    Triple(Icons.AutoMirrored.Outlined.Notes, "Testo", NoteLines.Kind.TEXT),
+    Triple(Icons.Outlined.Title, "Titolo", NoteLines.Kind.HEADING),
+    Triple(Icons.AutoMirrored.Outlined.FormatListBulleted, "Punti", NoteLines.Kind.BULLET),
+    Triple(Icons.Outlined.FormatListNumbered, "Numeri", NoteLines.Kind.NUMBER),
+    Triple(Icons.Outlined.CheckBox, "Spunta", NoteLines.Kind.CHECK),
+    Triple(Icons.Outlined.FormatQuote, "Citazione", NoteLines.Kind.QUOTE),
+    Triple(Icons.Outlined.Lightbulb, "Riquadro", NoteLines.Kind.CALLOUT),
+)
+
+/** La testata del fumetto di una riga: che riga è e le sue parole. */
+internal fun lineHead(line: NoteLines.Line, text: String): BubbleHead = BubbleHead(
+    when (line.kind) {
+        NoteLines.Kind.DIVIDER -> "Linea"
+        NoteLines.Kind.CALLOUT -> "Riquadro"
+        NoteLines.Kind.QUOTE -> "Citazione"
+        NoteLines.Kind.CHECK -> "Voce"
+        else -> "Riga"
+    },
+    NoteLines.plainLine(text.substring(line.start, line.end)).take(40),
 )
 
 /** I colori del testo (1.590): lettera del segno, nome. Uno per riga: rosso, arancio, verde, blu, viola. */
@@ -1868,10 +1906,16 @@ internal fun noteColor(code: Char): androidx.compose.ui.graphics.Color {
 }
 
 /** Il fumetto dei colori: testo o sfondo, e Togli. */
-internal fun colorActions(apply: (Char?) -> Unit): List<BubbleAction> = listOf(
-    BubbleAction(Icons.Outlined.FormatColorText, "Colore del testo", "sulle parole scelte", chips = NOTE_COLORS.map { (c, n) -> BubbleChip(n) { apply(c) } }),
-    BubbleAction(Icons.Outlined.FormatColorFill, "Colore dello sfondo", "come un evidenziatore", chips = NOTE_COLORS.map { (c, n) -> BubbleChip(n) { apply(c.uppercaseChar()) } }),
-    BubbleAction(Icons.Outlined.FormatColorReset, "Togli il colore", "il testo torna normale") { apply(null) },
+internal fun colorActions(now: Char? = null, apply: (Char?) -> Unit): List<BubbleAction> = listOf(
+    selector(
+        "Testo",
+        *NOTE_COLORS.map { (c, n) -> BubbleChip(n, selected = now == c, color = noteColor(c)) { apply(c) } }.toTypedArray(),
+        BubbleChip("Normale", icon = Icons.Outlined.FormatColorReset) { apply(null) },
+    ),
+    selector(
+        "Sfondo",
+        *NOTE_COLORS.map { (c, n) -> BubbleChip(n, selected = now == c.uppercaseChar(), color = noteColor(c.uppercaseChar())) { apply(c.uppercaseChar()) } }.toTypedArray(),
+    ),
 )
 
 /** Con la tastiera già aperta il campo mette il cursore anche più di un secondo dopo il tocco (aspetta il doppio tocco). */

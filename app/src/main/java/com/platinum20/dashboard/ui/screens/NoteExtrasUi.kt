@@ -56,24 +56,23 @@ internal class NoteExtras(val context: Context) {
     internal var askLocation: ((() -> Unit) -> Unit)? = null
     internal var askAlways: (() -> Unit)? = null
 
-    /** "Ricordamelo" sulla riga dove sta il cursore; null se lì non c'è niente da ricordare. */
-    fun lineAction(noteId: () -> Long?, title: String, body: String, cursor: Int): BubbleAction? {
-        val line = LineReminder.lineAt(body, cursor) ?: return null
-        return BubbleAction(Icons.Outlined.NotificationsActive, "Ricordamelo", "\"$line\"") {
-            val id = noteId() ?: return@BubbleAction
-            val now = LocalDateTime.now()
-            ActionBubble.show(
-                *listOfNotNull(
-                    LineReminder.tonight(now)?.let { at ->
-                        BubbleAction(Icons.Outlined.Bedtime, "Stasera alle 19", "quando torni a casa di solito") { remind(id, title, line, at) }
-                    },
-                    LineReminder.tomorrowMorning(now).let { at ->
-                        BubbleAction(Icons.Outlined.WbSunny, "Domani mattina alle 9", "con la notifica del mattino") { remind(id, title, line, at) }
-                    },
-                    BubbleAction(Icons.Outlined.CalendarMonth, "Scegli giorno e ora", "apre il calendario") { pickLine = Triple(id, title, line) },
-                ).toTypedArray(),
-            )
-        }
+    /**
+     * "Ricordamelo" (PDF Fila-unica): due righe divise in due, tutte col nome. Stasera e Domani per la riga del
+     * cursore (se c'è), Scegli giorno, e In un posto per tutta la nota.
+     */
+    fun remindChoice(noteId: () -> Long?, title: String, body: String, cursor: Int, current: Long?): BubbleAction {
+        val line = LineReminder.lineAt(body, cursor)
+        val now = LocalDateTime.now()
+        val place = current?.let { NotePlaces.of(it) }
+        return choice(
+            if (line != null) "Ricordamelo · ${line.take(28)}" else "Ricordamelo",
+            *listOfNotNull(
+                line?.let { l -> LineReminder.tonight(now)?.let { at -> BubbleChip("Stasera 19", icon = Icons.Outlined.Bedtime) { noteId()?.let { remind(it, title, l, at) } } } },
+                line?.let { l -> LineReminder.tomorrowMorning(now).let { at -> BubbleChip("Domani 9", icon = Icons.Outlined.WbSunny) { noteId()?.let { remind(it, title, l, at) } } } },
+                line?.let { l -> BubbleChip("Scegli giorno", icon = Icons.Outlined.CalendarMonth) { noteId()?.let { pickLine = Triple(it, title, l) } } },
+                BubbleChip(place?.name ?: "In un posto", selected = place != null, icon = Icons.Outlined.Place) { placeBubble(noteId, current) },
+            ).toTypedArray(),
+        )
     }
 
     /** La riga diventa un promemoria con l'ora e il link alla nota: la notifica apre la nota. */
@@ -86,33 +85,25 @@ internal class NoteExtras(val context: Context) {
         }
     }
 
-    /** Il posto della nota: quando ci arrivi, la notifica con la lista. */
-    fun placeAction(noteId: () -> Long?, current: Long?): BubbleAction {
+    /** Il posto della nota: quando ci arrivi, la notifica con la lista. Qui adesso o Cerca, e Togli se c'è già. */
+    fun placeBubble(noteId: () -> Long?, current: Long?) {
         val place = current?.let { NotePlaces.of(it) }
-        return BubbleAction(
-            Icons.Outlined.Place,
-            if (place == null) "Ricordamelo in un posto" else "Quando arrivi a ${place.name}",
-            if (place == null) "la lista ti arriva quando sei lì" else "cambia il posto o toglilo",
-        ) {
-            ActionBubble.show(
-                *listOfNotNull(
-                    BubbleAction(Icons.Outlined.MyLocation, "Dove sono adesso", "il posto in cui ti trovi") {
-                        val id = noteId() ?: return@BubbleAction
-                        askLocation?.invoke { here(id) }
-                    },
-                    BubbleAction(Icons.Outlined.Search, "Cerca un posto", "un negozio, una via, una città") {
-                        val id = noteId() ?: return@BubbleAction
-                        askLocation?.invoke { searchFor = id }
-                    },
-                    place?.let { p ->
-                        BubbleAction(Icons.Outlined.Delete, "Togli il posto", "niente più avviso a ${p.name}", danger = true) {
-                            NotePlaces.remove(context, p.noteId)
-                            CaptureFeedback.tell(context, "Posto tolto", Icons.Outlined.Place, "Annulla") { NotePlaces.set(context, p) }
-                        }
-                    },
-                ).toTypedArray(),
-            )
-        }
+        ActionBubble.show(
+            BubbleHead("In un posto", place?.name ?: "la lista ti arriva quando sei lì"),
+            *listOfNotNull(
+                choice(
+                    "Dove",
+                    BubbleChip("Qui adesso", icon = Icons.Outlined.MyLocation) { noteId()?.let { id -> askLocation?.invoke { here(id) } } },
+                    BubbleChip("Cerca", icon = Icons.Outlined.Search) { noteId()?.let { id -> askLocation?.invoke { searchFor = id } } },
+                ),
+                place?.let { p ->
+                    Slot.remove {
+                        NotePlaces.remove(context, p.noteId)
+                        CaptureFeedback.tell(context, "Posto tolto", Icons.Outlined.Place, "Annulla") { NotePlaces.set(context, p) }
+                    }
+                },
+            ).toTypedArray(),
+        )
     }
 
     private fun here(noteId: Long) {
@@ -154,6 +145,7 @@ internal class NoteExtras(val context: Context) {
                 return@launch
             }
             ActionBubble.show(
+                BubbleHead("Posti trovati", query),
                 *found.map { a ->
                     val name = a.featureName?.takeIf { it.any(Char::isLetter) } ?: a.thoroughfare ?: a.locality ?: query
                     val where = listOfNotNull(a.thoroughfare?.takeIf { it != name }, a.locality?.takeIf { it != name }).joinToString(", ").ifEmpty { "qui intorno" }

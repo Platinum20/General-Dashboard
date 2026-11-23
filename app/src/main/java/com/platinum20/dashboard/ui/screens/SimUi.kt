@@ -337,9 +337,10 @@ internal fun WindTreAccountRow(tile: AccountTile) {
     val open: () -> Unit = { inApp?.openRoute?.invoke(Routes.SIM) }
     val actions = {
         ActionBubble.show(
-            BubbleAction(Icons.Outlined.SimCard, if (linked) "Apri la SIM" else "Accedi", detail = "Giga, minuti e credito") { open() },
+            BubbleHead("Account", "WindTre"),
+            if (linked) Slot.open { open() } else BubbleAction(Icons.Outlined.SimCard, "Accedi", slot = BubbleSlot.MAIN) { open() },
             *(if (linked) captureActions(context, "windtre-dati-letti") { SimStore.capturesText() } else emptyArray()),
-            *(if (linked) arrayOf(BubbleAction(Icons.Outlined.LinkOff, "Esci", "Canvas dimentica l'accesso a WindTre", danger = true) { WindTreLink.forget(context) }) else emptyArray()),
+            *(if (linked) arrayOf(Slot.logout(confirm = "Tocca ancora: Canvas dimentica l'accesso a WindTre") { WindTreLink.forget(context) }) else emptyArray()),
         )
     }
     SettingsItem(

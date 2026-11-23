@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.outlined.NotificationsOff
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.clickable
@@ -318,21 +319,26 @@ private fun lineEdit(kind: ItemKind, id: Long, data: NotesData, line: LineKind):
                 LineKind.REPEAT -> LineEdit.Tap(onClick = {
                     ActionBubble.show(
                         BubbleHead("Si ripete", t.text),
-                        choice(
-                            "Si ripete",
-                            BubbleChip("No", selected = t.repeat == null) { NotesStore.setTaskRepeat(id, null) },
-                            *com.platinum20.dashboard.notes.Repeat.entries.map { r ->
-                                BubbleChip(r.label.replaceFirstChar { it.uppercase() }, selected = t.repeat == r) { NotesStore.setTaskRepeat(id, r) }
-                            }.toTypedArray(),
-                        ),
+                        *listOfNotNull(
+                            choice(
+                                "Ogni",
+                                *com.platinum20.dashboard.notes.Repeat.entries.map { r ->
+                                    BubbleChip(r.label.replaceFirstChar { it.uppercase() }, selected = t.repeat == r) { NotesStore.setTaskRepeat(id, r) }
+                                }.toTypedArray(),
+                            ),
+                            // "Non si ripete" è Togli, il tasto rosso, come per la data.
+                            t.repeat?.let { Slot.remove { NotesStore.setTaskRepeat(id, null) } },
+                        ).toTypedArray(),
                     )
                 })
                 LineKind.ALERT -> LineEdit.Tap(onClick = {
                     ActionBubble.show(
                         BubbleHead("Avviso", t.text),
-                        choice("Avviso", *com.platinum20.dashboard.notes.Alert.entries.map { a ->
+                        choice("Avviso", *com.platinum20.dashboard.notes.Alert.entries.filter { it != com.platinum20.dashboard.notes.Alert.NONE }.map { a ->
                             BubbleChip(WhenText.alert(t.copy(alert = a)), selected = t.alert == a) { NotesStore.setTaskAlert(id, a) }
                         }.toTypedArray()),
+                        // Nessun avviso = Togli, come "non si ripete".
+                        BubbleAction(Icons.Outlined.NotificationsOff, "Nessuno", danger = true, slot = BubbleSlot.AWAY) { NotesStore.setTaskAlert(id, com.platinum20.dashboard.notes.Alert.NONE) },
                     )
                 })
                 LineKind.PLACE -> LineEdit.Field(t.place, "Luogo", number = false, prose = true) { NotesStore.setTaskPlace(id, it) }
@@ -356,9 +362,9 @@ private fun lineEdit(kind: ItemKind, id: Long, data: NotesData, line: LineKind):
                     ActionBubble.show(
                         BubbleHead("Quante volte", h.title),
                         choice(
-                            "A settimana",
-                            BubbleChip("Ogni giorno", selected = h.perWeek == 0) { NotesStore.saveHabit(id, h.title, 0, h.remindAt) },
+                            "Giorni a settimana",
                             *(1..6).map { n -> BubbleChip("$n", selected = h.perWeek == n) { NotesStore.saveHabit(id, h.title, n, h.remindAt) } }.toTypedArray(),
+                            BubbleChip("Ogni giorno", selected = h.perWeek == 0) { NotesStore.saveHabit(id, h.title, 0, h.remindAt) },
                         ),
                     )
                 })

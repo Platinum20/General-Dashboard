@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.rounded.PlaylistPlay
 import com.platinum20.dashboard.media.coverImage
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -537,19 +538,30 @@ internal fun playSaved(context: android.content.Context, saved: List<com.platinu
 /** Tenendo premuta la playlist Salvati: le stesse azioni di una playlist (regola della pressione lunga). */
 internal fun savedListActions(context: android.content.Context, saved: List<com.platinum20.dashboard.capture.SavedLinks.Later>, video: Boolean, open: () -> Unit) {
     val playable = savedPlayable(saved.map { it.item })
+    val icons = androidx.compose.material.icons.Icons.Rounded
     ActionBubble.show(
+        BubbleHead("Playlist", "Salvati · " + savedCountLine(saved.size, video)),
         *listOfNotNull(
-            BubbleAction(androidx.compose.material.icons.Icons.Rounded.Bookmark, "Apri", detail = savedCountLine(saved.size, video), onClick = open),
-            if (playable.isEmpty()) null else BubbleAction(androidx.compose.material.icons.Icons.Rounded.PlayArrow, "Riproduci", detail = "Dal più recente") {
-                playSaved(context, saved, shuffle = false, open = open)
-            },
-            if (playable.size < 2) null else BubbleAction(androidx.compose.material.icons.Icons.Rounded.Shuffle, "Casuale", detail = "In ordine sparso") {
-                playSaved(context, saved, shuffle = true, open = open)
-            },
-            if (playable.isEmpty()) null else BubbleAction(androidx.compose.material.icons.Icons.Rounded.QueueMusic, "Aggiungi alla coda", detail = "Tutti in fondo") {
-                playable.forEach(CanvasPlayer::add)
-                com.platinum20.dashboard.capture.CaptureFeedback.tell(context, "In coda: ${playable.size} salvati", androidx.compose.material.icons.Icons.Rounded.QueueMusic)
-            },
+            // Riproduci (Ora · Casuale) e In coda: due righe divise in due, come ogni raccolta.
+            if (playable.isEmpty()) null else choice(
+                "Riproduci",
+                *listOfNotNull(
+                    BubbleChip("Ora", icon = icons.PlayArrow) { playSaved(context, saved, shuffle = false, open = open) },
+                    if (playable.size < 2) null else BubbleChip("Casuale", icon = icons.Shuffle) { playSaved(context, saved, shuffle = true, open = open) },
+                ).toTypedArray(),
+            ),
+            if (playable.isEmpty()) null else choice(
+                "In coda",
+                BubbleChip("Subito dopo", icon = icons.PlaylistPlay) {
+                    playable.reversed().forEach(CanvasPlayer::addNext)
+                    com.platinum20.dashboard.capture.CaptureFeedback.tell(context, "Dopo questo: ${playable.size} salvati", icons.PlaylistPlay)
+                },
+                BubbleChip("In fondo", icon = icons.QueueMusic) {
+                    playable.forEach(CanvasPlayer::add)
+                    com.platinum20.dashboard.capture.CaptureFeedback.tell(context, "In coda: ${playable.size} salvati", icons.QueueMusic)
+                },
+            ),
+            Slot.open(open),
         ).toTypedArray(),
     )
 }

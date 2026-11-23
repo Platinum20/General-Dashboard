@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
@@ -166,7 +167,11 @@ fun FromMailCard(onOpenMail: (String) -> Unit) {
                 if (index > 0 || consent) RowDivider()
                 MailRow(m, onClick = { haptic(Haptic.TICK); onOpenMail(m.id) }, onLongClick = {
                     haptic(Haptic.LONG_PRESS)
-                    ActionBubble.show(*mailNoteActions(context, m, inApp?.let { nav -> { id: Long -> nav.openRoute(com.platinum20.dashboard.Routes.noteEdit(id)) } }).toTypedArray())
+                    ActionBubble.show(
+                        BubbleHead("Mail", m.subject.ifBlank { m.from }),
+                        *mailNoteActions(context, m, inApp?.let { nav -> { id: Long -> nav.openRoute(com.platinum20.dashboard.Routes.noteEdit(id)) } }).toTypedArray(),
+                        Slot.open { onOpenMail(m.id) },
+                    )
                 })
             }
         }
@@ -185,16 +190,20 @@ internal fun mailNoteActions(context: android.content.Context, m: MailMessage, o
         if (openNote == null) CaptureFeedback.tell(context, "In \"$name\"", Icons.Outlined.Mail)
         else CaptureFeedback.tell(context, "In \"$name\"", Icons.Outlined.Mail, "Apri") { openNote(id) }
     }
-    val new = BubbleAction(Icons.Outlined.Mail, "Salva in nota", preview) {
+    // Niente da scorrere (PDF Fila-unica): le ultime tre note scritte, sotto Nuova nota con le righe utili ([preview]).
+    val new = BubbleChip("Nuova nota", icon = Icons.Outlined.Add) {
         val title = com.platinum20.dashboard.mail.MailFacts.noteTitle(m)
         done(NotesStore.saveNote(null, com.platinum20.dashboard.notes.NoteInbox.appended(title, lines)), title)
     }
-    val recent = com.platinum20.dashboard.notes.NoteInbox.recent(NotesStore.data.value.notes, 2, com.platinum20.dashboard.capture.SavedLinks::livesElsewhere)
-    return listOf(new) + recent.map { n ->
-        BubbleAction(Icons.Outlined.Mail, "Aggiungi a \"${n.title}\"", "le stesse righe, in fondo") {
-            if (com.platinum20.dashboard.notes.NoteInbox.appendTo(n.id, lines)) done(n.id, n.title)
-        }
-    }
+    val recent = com.platinum20.dashboard.notes.NoteInbox.recent(NotesStore.data.value.notes, 3, com.platinum20.dashboard.capture.SavedLinks::livesElsewhere)
+    return listOfNotNull(
+        recent.takeIf { it.isNotEmpty() }?.let { list ->
+            choice("Aggiungi a una nota · $preview".take(48), *list.map { n ->
+                BubbleChip(n.title) { if (com.platinum20.dashboard.notes.NoteInbox.appendTo(n.id, lines)) done(n.id, n.title) }
+            }.toTypedArray())
+        },
+        choice(if (recent.isEmpty()) "Salva in nota · $preview".take(48) else "", new),
+    )
 }
 
 /** Quante mail importanti si vedono nella card in Home. */
@@ -384,12 +393,13 @@ internal fun GmailAccountRow(tile: AccountTile) {
 
     val actions = {
         ActionBubble.show(
+            BubbleHead("Account", "Gmail"),
             *listOfNotNull(
-                if (!connected || broken) BubbleAction(Icons.Outlined.Mail, if (connected) "Ricollega" else "Collega", detail = "Con la password per app") { fix() } else null,
-                if (connected && !broken) BubbleAction(Icons.Outlined.Refresh, "Leggi adesso", detail = "Pacchi e prenotazioni") { if (!syncing) syncNow() } else null,
-                if (oauth && !imap) BubbleAction(Icons.Outlined.Key, "Usa la password per app", detail = "Mai più da ricollegare") { askPassword = true } else null,
+                if (!connected || broken) BubbleAction(Icons.Outlined.Mail, if (connected) "Ricollega" else "Collega", slot = BubbleSlot.MAIN) { fix() } else null,
+                if (connected && !broken) act(BubbleGroup.CAMBIA, Icons.Outlined.Refresh, "Leggi adesso", "pacchi e prenotazioni") { if (!syncing) syncNow() } else null,
+                if (oauth && !imap) act(BubbleGroup.CAMBIA, Icons.Outlined.Key, "Usa la password per app", "mai più da ricollegare") { askPassword = true } else null,
                 if (connected) {
-                    BubbleAction(Icons.Outlined.LinkOff, "Scollega Gmail", detail = "Smette di leggere le mail", danger = true) {
+                    Slot.logout(confirm = "Tocca ancora: Canvas smette di leggere le mail") {
                         scope.launch {
                             MailWorker.cancel(context)
                             GmailImap.unlink(context)
@@ -448,7 +458,7 @@ fun MailScreen(id: String, onBack: () -> Unit) {
         },
         more = mail?.let { m -> mailNoteActions(context, m, LocalInAppNav.current?.let { nav -> { id: Long -> nav.openRoute(com.platinum20.dashboard.Routes.noteEdit(id)) } }) }.orEmpty() + listOfNotNull(
             mail?.let { m ->
-                BubbleAction(Icons.Outlined.ContentCopy, "Copia il testo", "tutto il testo della mail") {
+                Slot.copy {
                     Clip.copy(context, "Mail", m.body.ifEmpty { m.snippet }, "Testo copiato")
                 }
             },

@@ -85,6 +85,8 @@ class SlashEntry(
     val icon: ImageVector,
     val label: String,
     val key: String,
+    /** Il nome sul chip del pannello, più corto quando la categoria lo dice già ("Foto" › "Nel testo"). */
+    val chip: String = label,
     /** Riceve il testo già senza la "/" scritta. */
     val run: (TextFieldValue) -> Unit,
 )
@@ -127,16 +129,19 @@ internal fun slashEntries(target: RichBar.Target, openPage: (Long, String) -> Un
         val e = NoteLines.renumber(NoteLines.setKind(now.text, now.selection.min, now.selection.max, k))
         target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
     }
+    // Una categoria per riga, al massimo quattro chip uguali col nome (PDF Fila-unica, Antonio 2026-11-23).
     val text = "Testo"
-    val blocks = "Linee e tabelle"
+    val list = "Lista"
+    val blocks = "Blocchi"
+    val layout = "Disposizione"
     return listOf(
         SlashEntry("testo", text, Icons.AutoMirrored.Outlined.Notes, "Testo", "") { },
-        SlashEntry("titolo", text, Icons.Outlined.Title, "Titolo", "#", kind(NoteLines.Kind.HEADING)),
-        SlashEntry("punti", text, Icons.AutoMirrored.Outlined.FormatListBulleted, "Punti", "-", kind(NoteLines.Kind.BULLET)),
-        SlashEntry("numeri", text, Icons.Outlined.FormatListNumbered, "Numeri", "1.", kind(NoteLines.Kind.NUMBER)),
-        SlashEntry("spunta", text, Icons.Outlined.CheckBoxOutlineBlank, "Spunta", "[ ]", kind(NoteLines.Kind.CHECK)),
-        SlashEntry("citazione", text, Icons.Outlined.FormatQuote, "Citazione", ">", kind(NoteLines.Kind.QUOTE)),
-        SlashEntry("riquadro", text, Icons.Outlined.Lightbulb, "Riquadro", "!!", kind(NoteLines.Kind.CALLOUT)),
+        SlashEntry("titolo", text, Icons.Outlined.Title, "Titolo", "#", run = kind(NoteLines.Kind.HEADING)),
+        SlashEntry("citazione", text, Icons.Outlined.FormatQuote, "Citazione", ">", run = kind(NoteLines.Kind.QUOTE)),
+        SlashEntry("punti", list, Icons.AutoMirrored.Outlined.FormatListBulleted, "Punti", "-", run = kind(NoteLines.Kind.BULLET)),
+        SlashEntry("numeri", list, Icons.Outlined.FormatListNumbered, "Numeri", "1.", run = kind(NoteLines.Kind.NUMBER)),
+        SlashEntry("spunta", list, Icons.Outlined.CheckBoxOutlineBlank, "Spunta", "[ ]", run = kind(NoteLines.Kind.CHECK)),
+        SlashEntry("riquadro", blocks, Icons.Outlined.Lightbulb, "Riquadro", "!!", run = kind(NoteLines.Kind.CALLOUT)),
         SlashEntry("linea", blocks, Icons.Outlined.HorizontalRule, "Linea", "---") { now ->
             val e = NoteLines.insertDivider(now.text, now.selection.end)
             target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
@@ -146,27 +151,31 @@ internal fun slashEntries(target: RichBar.Target, openPage: (Long, String) -> Un
             target.set(TextFieldValue(t, TextRange(now.selection.end.coerceAtMost(t.length))))
             RichBar.openTable = line
         },
-        SlashEntry("colonne", blocks, Icons.Outlined.ViewColumn, "Due colonne", "‖") { now ->
+        SlashEntry("colonne", layout, Icons.Outlined.ViewColumn, "Due colonne", "‖") { now ->
             val e = NoteLines.insertBlock(now.text, now.selection.end, NoteLines.COLUMNS_NEW)
             target.set(TextFieldValue(e.text, TextRange(e.start)))
             RichBar.openTable = NoteLines.insertedBlockIndex(e)
         },
-        SlashEntry("bacheca", blocks, Icons.Outlined.ViewKanban, "Bacheca", "") { now ->
+        SlashEntry("bacheca", layout, Icons.Outlined.ViewKanban, "Bacheca", "") { now ->
             val e = NoteLines.insertBlock(now.text, now.selection.end, NoteLines.BOARD)
             target.set(TextFieldValue(e.text, TextRange(e.start)))
         },
-    ) + target.extras.map { x -> SlashEntry(x.label, "Media", x.icon, x.label, "") { x.run() } } + listOf(
-        SlashEntry("sottonota", "Collegamenti", Icons.Outlined.Description, "Sotto-nota", "") { now ->
+    ) + target.extras.mapIndexed { i, x ->
+        // Le prime tre sono foto, le altre voce e disegno: due righe, ognuna col suo nome.
+        val group = if (i < 3) "Foto" else "Voce e disegno"
+        SlashEntry(x.label, group, x.icon, x.label, "", chip = if (group == "Foto") x.label.removePrefix("Foto ").replaceFirstChar { it.uppercase() } else x.label) { x.run() }
+    } + listOf(
+        SlashEntry("collega", "Collega", Icons.Outlined.AlternateEmail, "Nota o pagina di Canvas", "@", chip = "Un'altra nota") { now ->
+            val at = now.selection.end
+            target.set(TextFieldValue(now.text.substring(0, at) + "@" + now.text.substring(at), TextRange(at + 1)))
+        },
+        SlashEntry("sottonota", "Collega", Icons.Outlined.Description, "Sotto-nota", "") { now ->
             // Una nota nuova dentro questa (1.590): la riga che la apre, e si apre subito per scriverci.
             val title = "Nuova pagina"
             val id = com.platinum20.dashboard.notes.NotesStore.saveNote(null, title) ?: return@SlashEntry
             val e = NoteLines.insertBlock(now.text, now.selection.end, NoteLines.pageLine(title, id))
             target.set(TextFieldValue(e.text, TextRange(e.start)))
             openPage(id, title)
-        },
-        SlashEntry("collega", "Collegamenti", Icons.Outlined.AlternateEmail, "Nota o pagina di Canvas", "@") { now ->
-            val at = now.selection.end
-            target.set(TextFieldValue(now.text.substring(0, at) + "@" + now.text.substring(at), TextRange(at + 1)))
         },
     )
 }
@@ -199,7 +208,7 @@ internal fun SlashMenu(target: RichBar.Target, query: String) {
     val place = slashPlace(
         anchorTop = anchor?.top ?: 0f, anchorBottom = anchor?.bottom ?: 0f,
         limit = (windowH - imeBottom - room).toFloat(), top = topInset.toFloat(), gap = gap.toFloat(),
-        minBelow = with(density) { 200.dp.toPx() }, max = with(density) { 380.dp.toPx() },
+        minBelow = with(density) { 200.dp.toPx() }, max = with(density) { 460.dp.toPx() },
     )
     val maxHeight = with(density) { place.second.toDp() }.coerceAtLeast(120.dp)
     Box(Modifier.fillMaxSize().onGloballyPositioned { anchor = it.boundsInWindow() })
@@ -240,28 +249,22 @@ internal fun SlashMenu(target: RichBar.Target, query: String) {
                 .background(colors.surfaceContainerHigh.copy(alpha = 0.97f))
                 .border(cardBorder(), shape),
         ) {
-            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).padding(vertical = 6.dp)) {
+            // Un pannello di righe di chip, una per categoria: niente lista da scorrere (scorre solo se lo spazio è poco).
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).padding(horizontal = 8.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (found == null) {
                     val rec = recent.mapNotNull { id -> entries.firstOrNull { it.id == id } }
-                    if (rec.isNotEmpty()) {
-                        SlashHeader("Usati di recente")
-                        rec.forEach { SlashRow(it, false) { pick(it) } }
-                        SlashSeparator()
-                    }
-                    entries.groupBy { it.group }.entries.forEachIndexed { i, (group, list) ->
-                        if (i > 0) SlashSeparator()
-                        SlashHeader(group)
-                        list.forEach { SlashRow(it, false) { pick(it) } }
-                    }
+                    if (rec.isNotEmpty()) SlashChips("Usati di recente", rec, null) { pick(it) }
+                    entries.groupBy { it.group }.forEach { (group, list) -> SlashChips(group, list, null) { pick(it) } }
                 } else if (found.isEmpty()) {
                     Text(
                         "Niente con \"/$query\"",
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
                     )
                 } else {
-                    found.forEachIndexed { i, e -> SlashRow(e, i == 0) { pick(e) } }
+                    // Scrivendo: solo quelle giuste, al massimo quattro, col nome intero; la prima è blu (Invio).
+                    SlashChips("", found.take(4), found.first(), full = true) { pick(it) }
                 }
             }
             Box(Modifier.fillMaxWidth().height(1.dp).background(colors.outlineVariant.copy(alpha = 0.6f)))
@@ -274,45 +277,33 @@ internal fun SlashMenu(target: RichBar.Target, query: String) {
             ) {
                 Text("Chiudi", style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
                 Box(Modifier.weight(1f))
-                if (first != null) Text("Invio = la prima", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
+                if (first != null) Text("Invio = ${first.label}", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
             }
         }
     }
 }
 
+/** Una categoria del pannello: il nome piccolo sopra e i chip uguali che riempiono la riga (quattro al massimo per riga). */
 @Composable
-private fun SlashHeader(title: String) {
-    Text(
-        title.uppercase(),
-        style = MaterialTheme.typography.labelSmall,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 4.dp),
-    )
-}
-
-@Composable
-private fun SlashSeparator() {
-    Box(Modifier.padding(horizontal = 12.dp, vertical = 6.dp).fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)))
-}
-
-@Composable
-private fun SlashRow(entry: SlashEntry, on: Boolean, onClick: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    Row(
-        Modifier
-            .padding(horizontal = 6.dp)
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .then(if (on) Modifier.background(colors.primary.copy(alpha = 0.16f)) else Modifier)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 9.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Icon(entry.icon, contentDescription = null, tint = if (on) colors.primary else colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
-        Text(entry.label, style = MaterialTheme.typography.bodyLarge, color = colors.onSurface, maxLines = 1, modifier = Modifier.weight(1f))
-        if (entry.key.isNotEmpty()) Text(entry.key, style = MaterialTheme.typography.labelMedium, fontFamily = FontFamily.Monospace, color = colors.onSurfaceVariant)
+private fun SlashChips(title: String, list: List<SlashEntry>, first: SlashEntry?, full: Boolean = false, onPick: (SlashEntry) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        if (title.isNotEmpty()) {
+            Text(
+                title,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp),
+            )
+        }
+        chipRows(list).forEach { row ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                row.forEach { e ->
+                    val chip = BubbleChip(if (full) e.label else e.chip, selected = e == first, icon = e.icon) { onPick(e) }
+                    BubbleChipCell(chip, named = true, modifier = Modifier.weight(1f)) { onPick(e) }
+                }
+            }
+        }
     }
 }
 

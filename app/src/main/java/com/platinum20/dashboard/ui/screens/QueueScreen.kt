@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.rounded.VerticalAlignBottom
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -228,12 +229,8 @@ private fun UpcomingList(now: QueueEntry?, upcoming: List<QueueEntry>, modifier:
                     Modifier.padding(top = 8.dp, start = 8.dp).combinedClickable(onClick = {}, onLongClick = {
                         view.haptic(Haptic.LONG_PRESS)
                         ActionBubble.show(
-                            BubbleAction(
-                                Icons.Outlined.ClearAll,
-                                "Svuota la coda",
-                                detail = if (upcoming.size == 1) "1 voce dopo questa" else "${upcoming.size} voci dopo questa",
-                                danger = true,
-                            ) { CanvasPlayer.clearUpcoming() },
+                            BubbleHead("Coda", if (upcoming.size == 1) "1 voce dopo questa" else "${upcoming.size} voci dopo questa"),
+                            Slot.clear(confirm = "Tocca ancora: la coda si svuota") { CanvasPlayer.clearUpcoming() },
                         )
                     }),
                 )
@@ -360,14 +357,17 @@ private fun SwipeQueueRow(entry: QueueEntry, modifier: Modifier = Modifier, hand
             // Tenendo premuta una voce: quello che fanno tocco, maniglia e gesto di lato, in un fumetto (2026-11-13).
             onLongClick = {
                 haptic(Haptic.LONG_PRESS)
-                val first = CanvasPlayer.queue.value.upcoming.firstOrNull()
-                ActionBubble.show(*listOfNotNull(
-                    BubbleAction(Icons.Rounded.PlayArrow, "Riproduci ora", detail = entry.item.title) { CanvasPlayer.jump(entry.id) },
-                    first?.takeIf { it.id != entry.id }?.let { top ->
-                        BubbleAction(Icons.Rounded.VerticalAlignTop, "Subito dopo", detail = "In cima alla coda") { CanvasPlayer.moveTo(entry.id, top.id) }
-                    },
+                val upcoming = CanvasPlayer.queue.value.upcoming
+                val first = upcoming.firstOrNull()
+                val last = upcoming.lastOrNull()
+                ActionBubble.show(BubbleHead(mediaKindLabel(entry.item), entry.item.title), *listOfNotNull(
+                    listOfNotNull(
+                        first?.takeIf { it.id != entry.id }?.let { top -> BubbleChip("Subito dopo", icon = Icons.Rounded.VerticalAlignTop) { CanvasPlayer.moveTo(entry.id, top.id) } },
+                        last?.takeIf { it.id != entry.id }?.let { end -> BubbleChip("In fondo", icon = Icons.Rounded.VerticalAlignBottom) { CanvasPlayer.moveTo(entry.id, end.id) } },
+                    ).takeIf { it.isNotEmpty() }?.let { choice("Sposta", *it.toTypedArray()) },
                     goToCreatorAction(context, entry.item, inApp?.openRoute),
-                    BubbleAction(Icons.Outlined.RemoveCircleOutline, "Togli dalla coda", "con Annulla", danger = true) { removeWithUndo() },
+                    Slot.play { CanvasPlayer.jump(entry.id) },
+                    Slot.remove { removeWithUndo() },
                 ).toTypedArray())
             },
         )

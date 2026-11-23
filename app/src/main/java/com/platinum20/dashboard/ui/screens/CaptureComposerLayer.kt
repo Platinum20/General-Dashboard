@@ -241,12 +241,12 @@ private fun rememberPhotoAttach(onReading: (Boolean) -> Unit): () -> Unit {
         choosing = true
         keyboard?.hide()
         ActionBubble.show(
-            BubbleAction(Icons.Outlined.PhotoCamera, "Scatta una foto", "Scontrino, documento, biglietto: capisce da sé") {
-                go { camera.launch(ReceiptReader.photoUri(context)) }
-            },
-            BubbleAction(Icons.Outlined.PhotoLibrary, "Scegli una foto o un video", "La foto la legge, il video lo guardi qui") {
-                go { gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) }
-            },
+            BubbleHead("Allega", "scontrino, documento, biglietto: capisce da sé"),
+            choice(
+                "Foto o video",
+                BubbleChip("Scatta", icon = Icons.Outlined.PhotoCamera) { go { camera.launch(ReceiptReader.photoUri(context)) } },
+                BubbleChip("Galleria", icon = Icons.Outlined.PhotoLibrary) { go { gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) } },
+            ),
         )
     }
 }
