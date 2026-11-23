@@ -170,6 +170,20 @@ class ShiftParseTest {
     }
 
     @Test
+    fun laFineDelloSlotNonAggiungeUnOra() {
+        // La fine dello slot scritta con l'ora vera (11:00Z = 12 italiane) mentre l'inizio è sfasato d'inverno:
+        // prima il turno 7–12 diventava 7–13 (Antonio, 1.611). La fine resta la fascia.
+        val json = creatorsJson.replace(
+            "{\"id\":\"ev1\",\"startedAt\":\"2026-11-10T05:00:00.000Z\",",
+            "{\"id\":\"ev1\",\"startedAt\":\"2026-11-10T05:00:00.000Z\",\"endedAt\":\"2026-11-10T11:00:00.000Z\",",
+        )
+        assertTrue(json.contains("2026-11-10T11:00:00.000Z"))
+        val read = ShiftParse.read(json, zone = zone, url = creatorsUrl)!!
+        assertEquals(at(10, 7), read.mine[0].start)
+        assertEquals(at(10, 12), read.mine[0].end)
+    }
+
+    @Test
     fun unaCreatorNonTogliLeAltre() {
         val other = Shift("x", at(11, 7), at(11, 12), scope = "cp:2")
         val gone = Shift("y", at(14, 7), at(14, 12), scope = "cp:1")
