@@ -1125,6 +1125,7 @@ private fun androidx.compose.foundation.ScrollState.keepLine(
     scope: kotlinx.coroutines.CoroutineScope, top: Float, bottom: Float, mode: LineFollow, visTop: Float, visBottom: Float, margin: Float,
 ) {
     val delta = keepLineDelta(top, bottom, mode, visTop, visBottom, margin)
+    android.util.Log.i("NoteCheck", "keepLine $mode top=$top vis=$visTop..$visBottom delta=$delta scroll=$value/$maxValue")
     if (kotlin.math.abs(delta) < 1f) return
     scope.launch { animateScrollBy(delta, Motion.settle()) }
 }

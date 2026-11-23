@@ -405,6 +405,7 @@ internal fun RichNoteField(
         followedText = value.text
         followedSelection = value.selection
         atTop = followMode(typing, moved, value.selection.collapsed, android.os.SystemClock.uptimeMillis() - tapAt, atTop)
+        android.util.Log.i("NoteCheck", "segui: typing=$typing moved=$moved sel=${value.selection} tap=${android.os.SystemClock.uptimeMillis() - tapAt} atTop=$atTop ime=$imeBottom")
         withFrameNanos { }
         val l = layout ?: return@LaunchedEffect
         val at = transformation.filter(AnnotatedString(value.text)).offsetMapping.originalToTransformed(value.selection.end)
@@ -1744,6 +1745,7 @@ private fun Modifier.tapWatch(onTap: () -> Unit): Modifier = pointerInput(Unit) 
             val change = event.changes.firstOrNull { it.id == down.id } ?: return@awaitEachGesture
             if ((change.position - down.position).getDistance() > viewConfiguration.touchSlop) far = true
             if (!change.pressed) {
+                android.util.Log.i("NoteCheck", "tapWatch far=$far")
                 if (!far && change.uptimeMillis - down.uptimeMillis < viewConfiguration.longPressTimeoutMillis) onTap()
                 return@awaitEachGesture
             }
