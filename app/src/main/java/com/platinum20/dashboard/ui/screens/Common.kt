@@ -2,6 +2,8 @@ package com.platinum20.dashboard.ui.screens
 
 import android.os.Build
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.drawBehind
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
@@ -600,20 +602,25 @@ fun Modifier.glassSource(hazeState: HazeState, backdrop: Backdrop): Modifier =
 val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
 
 /**
- * Vetro sfocato: la pagina sotto si intravede, sfocata e velata del colore delle card.
- * Velo leggero perché sotto si veda davvero la pagina. Da Android 12 la sfocatura è vera
- * (Haze di suo la accende solo da Android 13); prima resta un velo semitrasparente senza sfocatura.
+ * Vetro sfocato: la pagina sotto si intravede, sfocata e velata del colore delle card, con il bordo di
+ * [Glass.rim] già disegnato (chi lo usa non aggiunge bordi suoi). Numeri tutti in [Glass].
+ * Da Android 13 vetro liquido, da 12 Haze con sfocatura vera, prima un velo quasi pieno.
+ * [overScrim]: il vetro sta sopra il velo di [Glass.scrim] (fumetti, coda, impostazioni del video).
  */
-fun Modifier.glass(shape: Shape, color: Color? = null): Modifier = composed {
+fun Modifier.glass(shape: Shape, color: Color? = null, overScrim: Boolean = false): Modifier = composed {
     val state = LocalHazeState.current
     // [color]: vetro colorato (il + della barra); altrimenti il velo del colore delle card.
+    val colored = color != null
     val card = color ?: MaterialTheme.colorScheme.card
     val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val backdrop = LocalBackdrop.current
-    val tint = card.copy(alpha = if (color != null) 0.78f else if (dark) 0.42f else 0.38f)
-    if (backdrop != null && Build.VERSION.SDK_INT >= 33) {
-        // Da Android 13 il vetro è "liquido": oltre a sfocare, piega la pagina sui bordi. Velo più leggero: si vede sotto.
-        this.clip(shape).liquidGlass(backdrop, shape, card.copy(alpha = if (color != null) 0.82f else if (dark) 0.40f else 0.34f))
+    // Sopra il velo scuro di un fumetto il vetro legge la pagina senza velo: lo rimette lui, se no sembra un buco chiaro.
+    val dim = if (overScrim) Glass.scrim(dark) else 0f
+    val tint = card.copy(alpha = Glass.tint(dark, colored))
+    val rim = Glass.rim(dark, MaterialTheme.colorScheme.outlineVariant, colored)
+    val base = if (backdrop != null && Build.VERSION.SDK_INT >= 33) {
+        // Da Android 13 il vetro è "liquido": oltre a sfocare, piega la pagina sui bordi.
+        this.clip(shape).liquidGlass(backdrop, shape, tint, dim)
     } else if (state == null) {
         this.clip(shape).background(card)
     } else {
@@ -622,12 +629,14 @@ fun Modifier.glass(shape: Shape, color: Color? = null): Modifier = composed {
             HazeStyle(
                 backgroundColor = MaterialTheme.colorScheme.background,
                 tint = HazeTint(tint),
-                blurRadius = 14.dp,
-                noiseFactor = 0.04f,
-                fallbackTint = HazeTint(card.copy(alpha = if (color != null) 0.95f else 0.82f)),
+                blurRadius = Glass.BLUR,
+                noiseFactor = 0f,
+                fallbackTint = HazeTint(card.copy(alpha = Glass.solidTint(colored))),
             ),
         ) { blurEnabled = Build.VERSION.SDK_INT >= 31 }
+            .then(if (dim > 0f) Modifier.drawBehind { drawRect(Color.Black.copy(alpha = dim)) } else Modifier)
     }
+    base.border(1.dp, rim, shape)
 }
 
 /** Colori delle icone nei quadratini (griglia Media, righe delle Impostazioni): chiaro e scuro. */

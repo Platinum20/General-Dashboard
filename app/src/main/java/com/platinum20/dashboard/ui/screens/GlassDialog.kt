@@ -16,7 +16,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.luminance
@@ -67,7 +66,7 @@ fun CanvasDialog(
 fun Modifier.glassDialog(shape: Shape): Modifier = composed {
     val window = (LocalView.current.parent as? DialogWindowProvider)?.window
     val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val radius = with(LocalDensity.current) { 28.dp.roundToPx() }
+    val radius = with(LocalDensity.current) { Glass.BLUR.roundToPx() }
     var blurred by remember { mutableStateOf(false) }
     // Il velo scuro di partenza, da rimettere se la sfocatura si spegne.
     val baseDim = remember(window) { window?.attributes?.dimAmount ?: 0.6f }
@@ -75,7 +74,7 @@ fun Modifier.glassDialog(shape: Shape): Modifier = composed {
         DisposableEffect(window, dark) {
             val listener = Consumer<Boolean> { on ->
                 blurred = on
-                window.blurBehind(on, radius, if (on) (if (dark) 0.35f else 0.12f) else baseDim)
+                window.blurBehind(on, radius, if (on) Glass.scrim(dark) else baseDim)
             }
             val manager = window.windowManager
             // Nei test e su qualche telefono il servizio non risponde: resta la finestra piena.
@@ -87,13 +86,11 @@ fun Modifier.glassDialog(shape: Shape): Modifier = composed {
         }
     }
     val card = MaterialTheme.colorScheme.card
-    // Un filo di luce sul bordo alto, come il vetro della barra.
-    val rim = Brush.verticalGradient(
-        listOf(Color.White.copy(alpha = if (dark) 0.22f else 0.70f), MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
-    )
+    // Stesso velo e stesso bordo del vetro della barra e dei fumetti ([Glass]).
+    val rim = Glass.rim(dark, MaterialTheme.colorScheme.outlineVariant)
     this
         .clip(shape)
-        .background(card.copy(alpha = if (blurred) (if (dark) 0.70f else 0.74f) else 1f))
+        .background(card.copy(alpha = if (blurred) Glass.tint(dark) else 1f))
         .border(1.dp, rim, shape)
 }
 
