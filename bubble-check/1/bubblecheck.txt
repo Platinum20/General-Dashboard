@@ -1,0 +1,35 @@
+
+com.platinum20.dashboard.BubbleShotsCheck:..........
+
+Time: 118.354
+
+OK (10 tests)
+
+
+
+---- log
+--------- beginning of main
+11-23 23:30:57.878  3402  3739 I BubbleCheck: foto 21-quante-volte
+11-23 23:31:14.803  3402  3739 I BubbleCheck: foto 15-colore
+11-23 23:31:30.577  3402  3739 I BubbleCheck: scheda: null
+11-23 23:31:31.940  3402  3739 I BubbleCheck: foto 25-scheda
+11-23 23:31:38.601  3402  3739 I BubbleCheck: foto 01-coda
+11-23 23:31:40.616  3402  3739 I BubbleCheck: foto 02-raccolte
+11-23 23:31:42.602  3402  3739 I BubbleCheck: foto 04-brano-riordino
+11-23 23:31:44.265  3402  3739 I BubbleCheck: foto 18-account
+11-23 23:31:45.860  3402  3739 I BubbleCheck: foto 22-quando
+11-23 23:31:47.525  3402  3739 I BubbleCheck: foto 27-mail-nota
+11-23 23:31:55.868  3402  3739 I BubbleCheck: foto 14-tabella
+11-23 23:32:03.183  3402  3739 I BubbleCheck: foto 19-si-ripete
+11-23 23:32:05.823  3402  3739 I BubbleCheck: foto 20-avviso
+11-23 23:32:12.678  3402  3739 I BubbleCheck: foto 13-riquadro
+11-23 23:32:19.310  3402  3739 I BubbleCheck: foto 11-riga
+11-23 23:32:25.010  3402  3739 I BubbleCheck: foto 12-trasforma
+11-23 23:32:33.594  3402  3739 I BubbleCheck: foto 08-slash
+11-23 23:32:35.684  3402  3739 I BubbleCheck: foto 09-slash-ta
+11-23 23:32:44.050  3402  3739 I BubbleCheck: NON RIUSCITA 07-nota-altro: AssertionError Failed to inject touch input.
+11-23 23:32:44.050  3402  3739 I BubbleCheck: Reason: Expected exactly '1' node but could not find any node that satisfies: (ContentDescription = 'Altro' (ignoreCase: false))
+11-23 23:32:44.058  3402  3739 I BubbleCheck: NON RIUSCITA 17-in-un-posto: AssertionError Failed to inject touch input.
+11-23 23:32:44.058  3402  3739 I BubbleCheck: Can't retrieve node at index '0' of 'Text + EditableText contains 'In un posto' (ignoreCase: false)'
+11-23 23:32:44.058  3402  3739 I BubbleCheck: There are no existing nodes for that selector.
+11-23 23:32:45.504  3402  3739 I BubbleCheck: foto 10-emoji
