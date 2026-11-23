@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.612.0
+**Turni: di nuovo l'orario di fine giusto**
+- Tutti i turni finivano un'ora dopo: ora finiscono all'ora vera, come su Creators Pro
+- Un turno allungato davvero si allunga ancora, preso dalla busta paga
+
 ## 1.611.0
 **Appunti in fondo, e della giusta altezza**
 - Sulle pagine di eventi, turni, treni e abitudini la card Appunti è sempre l'ultima, dopo tutte le altre (anche dopo "Citato in")
