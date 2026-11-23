@@ -15,6 +15,7 @@ import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Snooze
 import androidx.compose.material.icons.outlined.Work
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -58,21 +59,21 @@ fun InvitesRow(
                 haptic(Haptic.TICK)
                 val choices = invites.map { invite ->
                     when (invite) {
-                        Invite.SHIFTS -> BubbleAction(Icons.Outlined.Work, "Rientra nei turni", "L'accesso a Creators Pro è scaduto") {
+                        Invite.SHIFTS -> act(BubbleGroup.CAMBIA, Icons.Outlined.Work, "Rientra nei turni", "l'accesso a Creators Pro è scaduto") {
                             inApp?.openRoute?.invoke(Routes.SHIFTS)
                         }
-                        Invite.AGENDA -> BubbleAction(Icons.Outlined.CalendarMonth, "Consenti l'agenda", "Gli impegni del telefono nel Calendario", onClick = onAllowCalendar)
-                        Invite.AUTOFILL -> BubbleAction(Icons.Outlined.AutoAwesome, "Attiva Compila da solo", "Pacchi e scadenze dalle notifiche", onClick = onOpenAutoFill)
+                        Invite.AGENDA -> act(BubbleGroup.CAMBIA, Icons.Outlined.CalendarMonth, "Consenti l'agenda", "gli impegni del telefono qui", onClick = onAllowCalendar)
+                        Invite.AUTOFILL -> act(BubbleGroup.CAMBIA, Icons.Outlined.AutoAwesome, "Attiva Compila da solo", "pacchi e scadenze dalle notifiche", onClick = onOpenAutoFill)
                     }
                 }
                 // "Non ora" toglie solo gli inviti: un accesso scaduto resta finché non rientri.
                 val later = if (Invite.AGENDA in invites || Invite.AUTOFILL in invites) {
-                    listOf(BubbleAction(Icons.Outlined.Close, "Non ora", "Agenda e Compila da solo restano nelle Impostazioni") {
+                    listOf(act(BubbleGroup.METTI, Icons.Outlined.Snooze, "Non ora", "le ritrovi nelle Impostazioni") {
                         if (Invite.AGENDA in invites) hideAgenda(context)
                         if (Invite.AUTOFILL in invites) onDismissAutoFill()
                     })
                 } else emptyList()
-                ActionBubble.show(*(choices + later).toTypedArray())
+                ActionBubble.show(BubbleHead("Da sistemare", if (invites.size == 1) "1 cosa" else "${invites.size} cose"), *(choices + later).toTypedArray())
             }
             .padding(horizontal = 4.dp, vertical = 2.dp),
     ) {

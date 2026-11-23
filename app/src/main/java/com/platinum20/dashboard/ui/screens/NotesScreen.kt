@@ -457,13 +457,10 @@ fun NotesScreen(
                             TimelineRow(entry, top = index > 0, bottom = true, onClick = { openRow(row) },
                                 onLongClick = done.takeIf { it.isNotEmpty() }?.let { finished -> {
                                     haptic(Haptic.LONG_PRESS)
+                                    // Le fatte di oggi: testata e il tasto ④, come ogni fumetto.
                                     ActionBubble.show(
-                                        BubbleAction(
-                                            Icons.Outlined.Delete,
-                                            "Elimina i completati",
-                                            detail = if (finished.size == 1) "1 promemoria fatto" else "${finished.size} promemoria fatti",
-                                            danger = true,
-                                        ) {
+                                        BubbleHead("Fatte", if (finished.size == 1) "1 di oggi" else "${finished.size} di oggi"),
+                                        Slot.delete {
                                             NotesStore.clearDone { t -> finished.any { it.id == t.id } }
                                             offerUndo(finished, if (finished.size == 1) "Eliminato 1 completato" else "Eliminati ${finished.size} completati")
                                         },
@@ -499,12 +496,12 @@ fun NotesScreen(
                             // Tenendo premuto: lo stesso fumetto, come ogni cosa con delle azioni (regola del tocco lungo).
                             onLongClick = {
                                 haptic(Haptic.LONG_PRESS)
-                                ActionBubble.show(*habitsBubble(data.habits, today) { openItem(ItemKind.HABIT, it.id) })
+                                showHabits(data.habits, today) { openItem(ItemKind.HABIT, it.id) }
                             },
                         ) {
                             // Le abitudini si segnano dal fumetto in basso, non aprendo la lista sul posto (1.421).
                             haptic(Haptic.TICK)
-                            ActionBubble.show(*habitsBubble(data.habits, today) { openItem(ItemKind.HABIT, it.id) })
+                            showHabits(data.habits, today) { openItem(ItemKind.HABIT, it.id) }
                         }
                     }
                 }
@@ -766,6 +763,7 @@ private fun TaskRow(task: TaskItem, onDeleted: (TaskItem) -> Unit, trailing: (@C
 @Composable
 private fun NoteCard(note: Note, onOpen: () -> Unit, onDelete: () -> Unit, modifier: Modifier = Modifier) {
     val haptic = rememberHaptic()
+    val inApp = LocalInAppNav.current
     val context = LocalContext.current
     // Una nota di "Salva nelle note": l'icona dice cos'è e il tocco riapre la cosa.
     val saved = remember(note.text) { SavedLinks.find(note.text) }
@@ -779,20 +777,7 @@ private fun NoteCard(note: Note, onOpen: () -> Unit, onDelete: () -> Unit, modif
                 onClick = onOpen,
                 onLongClick = {
                     haptic(Haptic.LONG_PRESS)
-                    ActionBubble.show(
-                        BubbleAction(
-                            if (note.pinned) Icons.Filled.PushPinFilled else Icons.Outlined.PushPin,
-                            if (note.pinned) "Togli da in alto" else "Fissa in alto",
-                            detail = note.title,
-                        ) { NotesStore.togglePin(note.id) },
-                        BubbleAction(Icons.Outlined.Share, "Condividi", "con le app del telefono") {
-                            val share = android.content.Intent(android.content.Intent.ACTION_SEND)
-                                .setType("text/plain")
-                                .putExtra(android.content.Intent.EXTRA_TEXT, saved?.let(SavedLinks::shareText) ?: note.text)
-                            context.startActivity(android.content.Intent.createChooser(share, null))
-                        },
-                        BubbleAction(Icons.Outlined.Delete, "Elimina", "la nota sparisce", danger = true, onClick = onDelete),
-                    )
+                    showNoteBubble(context, note, openRoute = { r -> inApp?.openRoute?.invoke(r) })
                 },
             ),
     ) {

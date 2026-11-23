@@ -96,26 +96,29 @@ internal fun docLine(doc: Document, today: LocalDate = LocalDate.now()): String 
  * Tenendo premuto un documento nella Home: le azioni della sua scheda senza entrarci (Antonio, 2026-11-13).
  * Elimina chiede conferma: con il documento vanno via anche le foto.
  */
-internal fun docActions(context: android.content.Context, scope: kotlinx.coroutines.CoroutineScope, doc: Document, open: () -> Unit): Array<BubbleAction> =
-    listOfNotNull(
-        BubbleAction(Icons.Outlined.Badge, "Apri", detail = doc.title, onClick = open),
+internal fun docActions(context: android.content.Context, scope: kotlinx.coroutines.CoroutineScope, doc: Document, open: (() -> Unit)?, extra: List<BubbleAction> = emptyList()): Array<BubbleAction> =
+    (listOfNotNull(
+        docPdfChoice(context, scope, doc),
+    ) + extra + listOfNotNull(
+        open?.let { Slot.open(it) },
         doc.number?.takeIf { it.isNotBlank() }?.let { number ->
-            BubbleAction(Icons.Outlined.ContentCopy, "Copia il numero", detail = number) {
-                Clip.copy(context, "Numero del documento", number, "Numero copiato")
-            }
+            Slot.copy { Clip.copy(context, "Numero del documento", number, "Numero copiato") }
         },
-        BubbleAction(Icons.Outlined.Share, "Condividi PDF", "Fronte e retro su un foglio A4") { exportDocPdf(context, scope, doc, save = false) },
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            BubbleAction(Icons.Outlined.Download, "Salva PDF in Download", "lo trovi nella cartella Download") { exportDocPdf(context, scope, doc, save = true) }
-        } else null,
-        BubbleAction(Icons.Outlined.Delete, "Elimina", "chiede conferma", danger = true) {
-            ActionBubble.show(
-                BubbleAction(Icons.Outlined.Delete, "Elimina ${doc.title}", detail = "Con le sue foto", danger = true) {
-                    DocumentsStore.delete(doc.id)
-                },
-            )
-        },
-    ).toTypedArray()
+        // Con il documento vanno via anche le foto, senza Annulla: si tocca due volte.
+        Slot.delete(confirm = "Tocca ancora: sparisce con le sue foto") { DocumentsStore.delete(doc.id) },
+    )).toTypedArray()
+
+/** "PDF fronte e retro": condividerlo o salvarlo sono la stessa cosa, una fila di scelte. */
+internal fun docPdfChoice(context: android.content.Context, scope: kotlinx.coroutines.CoroutineScope, doc: Document) = choice(
+    "PDF fronte e retro",
+    *listOfNotNull(
+        BubbleChip("Condividi") { exportDocPdf(context, scope, doc, save = false) },
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) BubbleChip("Salva in Download") { exportDocPdf(context, scope, doc, save = true) } else null,
+    ).toTypedArray(),
+)
+
+/** La testata del documento. */
+internal fun docHead(doc: Document) = BubbleHead("Documento", doc.title)
 
 /** Card "Documenti" della Home: compare solo quando c'è almeno un documento fotografato con la graffetta. */
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
@@ -147,7 +150,7 @@ internal fun DocumentsCard(onOpen: (Long) -> Unit) {
                         .bouncyPress(0.96f)
                         .combinedClickable(onClick = { onOpen(doc.id) }, onLongClick = {
                             haptic(Haptic.LONG_PRESS)
-                            ActionBubble.show(*docActions(context, scope, doc) { onOpen(doc.id) })
+                            ActionBubble.show(docHead(doc), *docActions(context, scope, doc, open = { onOpen(doc.id) }))
                         }),
                 ) {
                     coil3.compose.AsyncImage(
@@ -250,20 +253,15 @@ internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
         }
         return
     }
-    fun exportPdf(save: Boolean) = exportDocPdf(context, scope, doc, save)
-    val more = buildList {
-        add(BubbleAction(Icons.Outlined.Share, "Condividi PDF", "Fronte e retro su un foglio A4") { exportPdf(save = false) })
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            add(BubbleAction(Icons.Outlined.Download, "Salva PDF in Download", "lo trovi nella cartella Download") { exportPdf(save = true) })
-        }
-        add(BubbleAction(Icons.Outlined.PhotoCamera, if (doc.back == null) "Fotografa il retro" else "Rifai il retro", "con la fotocamera") {
-            runCatching { camera.launch(ReceiptReader.photoUri(context)) }
-        })
-        add(BubbleAction(Icons.Outlined.PhotoLibrary, "Retro dalla galleria", "scegli una foto che hai già") {
-            gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-        })
-        if (doc.back != null) add(BubbleAction(Icons.Outlined.RemoveCircleOutline, "Togli il retro", "resta solo il fronte") { DocumentsStore.removeBack(id) })
-    }
+    // "Altro" = il fumetto del tieni premuto, senza Apri, più il retro (scelte della stessa cosa).
+    val back = choice(
+        "Retro",
+        BubbleChip(if (doc.back == null) "Con la fotocamera" else "Rifai con la fotocamera") { runCatching { camera.launch(ReceiptReader.photoUri(context)) } },
+        BubbleChip("Dalla galleria") { gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+        *listOfNotNull(if (doc.back != null) BubbleChip("Togli") { DocumentsStore.removeBack(id) } else null).toTypedArray(),
+    )
+    val more = docActions(context, scope, doc, open = null, extra = listOf(back)).toList()
+        .filter { it.slot != BubbleSlot.AWAY }
     DetailPage(
         onBack = onBack,
         onEdit = null,
@@ -272,6 +270,8 @@ internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
             DocumentsStore.delete(id)
         },
         meta = "Documento",
+        head = docHead(doc),
+        deleteConfirm = "Tocca ancora: sparisce con le sue foto",
         // "Mostra" (1.528): la foto a tutto schermo con la luminosità al massimo, per farla vedere a chi la chiede.
         primary = DetailAction(Icons.Outlined.Fullscreen, "Mostra") { zoom = doc.front },
         more = more,
@@ -279,9 +279,9 @@ internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
         EditableDetailTitle(doc.id, doc.title, MaterialTheme.colorScheme.primary) { DocumentsStore.rename(id, it) }
         fun sideActions(back: Boolean) {
             val cut = if (back) doc.backFull else doc.frontFull
-            ActionBubble.show(*listOfNotNull(
-                BubbleAction(Icons.Outlined.Rotate90DegreesCw, "Ruota", "di un quarto di giro") { scope.launch { DocumentsStore.turn(context, id, back) } },
-                cut?.let { BubbleAction(Icons.Outlined.CropFree, "Foto intera", "Togli il ritaglio") { DocumentsStore.useFull(id, back) } },
+            ActionBubble.show(BubbleHead(if (back) "Retro" else "Fronte", doc.title), *listOfNotNull(
+                act(BubbleGroup.CAMBIA, Icons.Outlined.Rotate90DegreesCw, "Ruota", "di un quarto di giro") { scope.launch { DocumentsStore.turn(context, id, back) } },
+                cut?.let { act(BubbleGroup.CAMBIA, Icons.Outlined.CropFree, "Foto intera", "toglie il ritaglio") { DocumentsStore.useFull(id, back) } },
             ).toTypedArray())
         }
         // Come nel portafoglio (1.528, Antonio scelta B): il fronte davanti, il retro che spunta dietro; tocca il

@@ -139,7 +139,7 @@ internal fun LaterCard(
                 HabitTodoRow(
                     h, now,
                     onClick = { haptic(Haptic.TICK); openItem(ItemKind.HABIT, h.id) },
-                    onLongClick = { haptic(Haptic.LONG_PRESS); ActionBubble.show(*habitActions(h, today) { openItem(ItemKind.HABIT, it.id) }) },
+                    onLongClick = { haptic(Haptic.LONG_PRESS); showHabit(h, today) { openItem(ItemKind.HABIT, it.id) } },
                     onTick = { haptic(if (h.isDone(today)) Haptic.TICK else Haptic.CONFIRM); NotesStore.toggleHabit(h.id, today) },
                 )
             }
@@ -298,27 +298,7 @@ private fun NoteListRow(row: NoteLists.Row) {
  */
 internal fun noteListActions(context: android.content.Context, row: NoteLists.Row, openRoute: (String) -> Unit) {
     val note = NotesStore.note(row.noteId) ?: return
-    val done = NoteLists.doneCount(note.text)
-    ActionBubble.show(
-        *listOfNotNull(
-            BubbleAction(Icons.AutoMirrored.Outlined.StickyNote2, "Apri la nota", "per scrivere o cambiare le voci") {
-                openRoute(com.platinum20.dashboard.Routes.noteEdit(row.noteId))
-            },
-            if (done == 0) null else BubbleAction(Icons.Outlined.Replay, "Ricomincia", if (done == 1) "toglie la spunta, il testo resta" else "toglie le $done spunte, il testo resta") {
-                NotesStore.editNoteText(row.noteId) { NoteLists.restart(it) }
-                CaptureFeedback.tell(context, "Lista da rifare", Icons.Outlined.Replay, "Annulla") {
-                    NotesStore.editNoteText(row.noteId) { note.text }
-                }
-            },
-            BubbleAction(Icons.Outlined.FileCopy, "Duplica", "una copia nuova, tutto da rifare") {
-                NotesStore.duplicateNote(row.noteId)?.let { openRoute(com.platinum20.dashboard.Routes.noteEdit(it)) }
-            },
-            BubbleAction(Icons.Outlined.Widgets, "Mostra nel widget", if (com.platinum20.dashboard.widget.NoteWidget.placed(context)) "il widget Nota mostra questa" else "poi aggiungi il widget Nota alla schermata") {
-                com.platinum20.dashboard.widget.NoteWidget.choose(context, row.noteId)
-                CaptureFeedback.tell(context, "Nel widget Nota", Icons.Outlined.Widgets)
-            },
-        ).toTypedArray(),
-    )
+    showNoteBubble(context, note, openRoute)
 }
 
 /** Un'abitudine in "Da fare": la spunta di oggi, il nome, la serie a destra. Fatta = spenta fino a domani. */
@@ -491,7 +471,7 @@ fun LaterArchiveScreen(kind: LooseCardKind = LooseCardKind.TODO, onBack: () -> U
                     HabitTodoRow(
                         h, now,
                         onClick = { haptic(Haptic.TICK); openItem(ItemKind.HABIT, h.id) },
-                        onLongClick = { haptic(Haptic.LONG_PRESS); ActionBubble.show(*habitActions(h, today) { openItem(ItemKind.HABIT, it.id) }) },
+                        onLongClick = { haptic(Haptic.LONG_PRESS); showHabit(h, today) { openItem(ItemKind.HABIT, it.id) } },
                         onTick = { haptic(if (h.isDone(today)) Haptic.TICK else Haptic.CONFIRM); NotesStore.toggleHabit(h.id, today) },
                     )
                 }
@@ -513,53 +493,16 @@ fun LaterArchiveScreen(kind: LooseCardKind = LooseCardKind.TODO, onBack: () -> U
     }
 }
 
-/** "Togli dai salvati", ultima riga di ogni fumetto delle cose salvate. */
-private fun forgetAction(note: com.platinum20.dashboard.notes.Note, title: String) =
-    BubbleAction(Icons.Rounded.BookmarkRemove, "Togli dai salvati", "sparisce dagli Appunti", danger = true, onClick = { SavedLinks.forget(note, "Tolto: $title") })
-
 /**
- * Tenendo premuto un video, un brano o un episodio salvato (Antonio, 2026-11-13): le stesse azioni degli altri media.
- * Riproduci adesso, subito dopo quello che suona o in fondo alla coda; per i brani di Spotify anche Radio e playlist.
+ * Tenendo premuto un video, un brano o un episodio salvato (Antonio, 2026-11-13): lo stesso fumetto che ha in Media,
+ * con ② "Salvato" (toccandolo esce dagli Appunti, con Annulla).
  */
-internal fun savedMediaActions(context: android.content.Context, later: SavedLinks.Later, openRoute: (String) -> Unit) {
-    val item = later.item
-    val seed = com.platinum20.dashboard.media.spotify.MadeStore.seedOf(item)
-    val queue = SavedLinks.queueable(item)
-    ActionBubble.show(
-        *listOfNotNull(
-            BubbleAction(Icons.Rounded.PlayArrow, "Riproduci", detail = item.title) {
-                SavedLinks.pageRoute(item)?.let(openRoute) ?: openResumeItem(context, item, openRoute = openRoute)
-            },
-            if (!queue) null else BubbleAction(Icons.Rounded.PlaylistPlay, "Riproduci dopo", detail = "Subito dopo quello che suona") {
-                CanvasPlayer.addNext(item)
-                CaptureFeedback.tell(context, "Dopo questo: ${item.title}", Icons.Rounded.PlaylistPlay)
-            },
-            if (!queue) null else BubbleAction(Icons.Rounded.QueueMusic, "Aggiungi alla coda", detail = "In fondo") {
-                CanvasPlayer.add(item)
-                CaptureFeedback.tell(context, "In coda: ${item.title}", Icons.Rounded.QueueMusic)
-            },
-            seed?.let {
-                BubbleAction(Icons.Rounded.Radio, "Radio", detail = "Brani simili a ${item.title}") {
-                    CaptureFeedback.tell(context, "Preparo la radio di ${item.title}", Icons.Rounded.Radio)
-                    com.platinum20.dashboard.media.spotify.MadeStore.startRadio(context, it) { error -> CaptureFeedback.tell(context, error) }
-                }
-            },
-            seed?.let { BubbleAction(Icons.Rounded.PlaylistAdd, "Aggiungi a una playlist", detail = "Una delle tue o una nuova") { PlaylistPicker.open(context, it) } },
-            goToCreatorAction(context, item, openRoute),
-            forgetAction(later.note, item.title),
-        ).toTypedArray(),
-    )
-}
+internal fun savedMediaActions(context: android.content.Context, later: SavedLinks.Later, openRoute: (String) -> Unit) =
+    showMediaBubble(context, later.item, openRoute)
 
-/** Tenendo premuto un articolo salvato: leggilo, mandalo a qualcuno o toglilo. */
-private fun savedArticleActions(context: android.content.Context, entry: SavedLinks.ToRead, read: () -> Unit) {
-    val title = entry.article.title.ifBlank { "Articolo" }
-    ActionBubble.show(
-        BubbleAction(Icons.AutoMirrored.Rounded.Article, "Leggi", detail = title, onClick = read),
-        BubbleAction(Icons.Rounded.Share, "Condividi", "il link dell'articolo") { shareText(context, entry.article.url) },
-        forgetAction(entry.note, title),
-    )
-}
+/** Tenendo premuto un articolo salvato: lo stesso fumetto della notizia, già Salvato. */
+private fun savedArticleActions(context: android.content.Context, entry: SavedLinks.ToRead, read: () -> Unit) =
+    showArticleBubble(context, entry.article, null, read = read)
 
 /**
  * "Salvati" in cima a News: gli articoli messi da parte. Aprendone uno esce dalla lista (l'hai letto),

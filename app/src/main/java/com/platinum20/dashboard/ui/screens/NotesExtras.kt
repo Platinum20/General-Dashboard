@@ -96,12 +96,13 @@ fun ChipRow(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
 
 /**
  * Un pacco in "In arrivo", come un conto alla rovescia: cosa arriva, il corriere e a destra quanto manca
- * ("Domani", "3 giorni"). Il camioncino apre il tracciamento; tenendo premuto si segna arrivato (o non ancora).
+ * ("Domani", "3 giorni"). Il camioncino apre il tracciamento; tenendo premuto il fumetto del pacco.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ParcelCard(parcel: Parcel, onClick: () -> Unit) {
     val inApp = LocalInAppNav.current
+    val context = LocalContext.current
     val today = LocalDate.now()
     val haptic = rememberHaptic()
     val expected = parcel.expected
@@ -114,9 +115,15 @@ fun ParcelCard(parcel: Parcel, onClick: () -> Unit) {
             .bouncyPress(0.98f)
             .combinedClickable(
                 onClick = onClick,
+                // Tenendo premuto: il fumetto del pacco, uguale a quello del calendario (prima lo segnava arrivato senza dirlo).
                 onLongClick = {
-                    haptic(if (parcel.delivered) Haptic.TICK else Haptic.CONFIRM)
-                    NotesStore.toggleDelivered(parcel.id)
+                    haptic(Haptic.LONG_PRESS)
+                    parcelBubble(
+                        parcel,
+                        openItem = onClick,
+                        openWeb = { u, t -> inApp?.openWeb(u, t) },
+                        share = { shareText(context, it) },
+                    ) { msg, restore -> com.platinum20.dashboard.capture.CaptureFeedback.tell(context, msg, androidx.compose.material.icons.Icons.Outlined.LocalShipping, "Annulla") { restore() } }
                 },
             ),
     ) {

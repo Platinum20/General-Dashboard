@@ -227,10 +227,12 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
         primary = action?.let { (icon, text, onClick) -> DetailAction(icon, text, onClick) },
         // La pagina del corriere si apre dentro Canvas, non nel browser.
         // Le azioni che prima stavano tenendo premuta la riga (Antonio, 2026-11-11): qui, con un tocco.
+        // "Altro" = il fumetto del tieni premuto, senza Apri (ci sei già).
+        head = detail?.let { BubbleHead(kind.metaLabel(), it.title) },
         more = listOfNotNull(
-            tracking?.let { open -> BubbleAction(Icons.Outlined.LocalShipping, "Traccia la spedizione", "dove si trova il pacco adesso", onClick = open) },
+            tracking?.let { open -> act(BubbleGroup.VAI, Icons.Outlined.LocalShipping, "Traccia la spedizione", "dove si trova adesso, in Canvas", onClick = open) },
             task?.let { snoozeAction(it) },
-            shareLine?.let { text -> BubbleAction(Icons.Outlined.Share, "Condividi", "con le app del telefono") { shareText(context, text) } },
+            shareLine?.let { text -> Slot.share { shareText(context, text) } },
         ),
     ) {
         if (detail == null) {
@@ -248,7 +250,7 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
                 WhenText3(statusLine?.text.orEmpty(), whenLine.text, ""),
                 onClick = edit?.let { e -> { picker = e.picker ?: run { e.onClick(); null } } },
                 // Tieni premuto: le scelte del quando nel fumetto, come ogni riga (regola della pressione lunga).
-                onLongClick = edit?.onClear?.let { clear -> { ActionBubble.show(BubbleAction(Icons.Outlined.EventBusy, "Togli la data", "torna senza scadenza", danger = true, onClick = clear)) } },
+                onLongClick = edit?.onClear?.let { clear -> { ActionBubble.show(BubbleHead("Data", whenLine.text), Slot.remove(onClick = clear)) } },
             )
         }
         val rest = if (whenLine != null) detail.lines.filter { it.kind != LineKind.WHEN && it.kind != LineKind.STATUS } else detail.lines
@@ -315,16 +317,23 @@ private fun lineEdit(kind: ItemKind, id: Long, data: NotesData, line: LineKind):
                 LineKind.ALL_DAY -> LineEdit.Tap(onClick = { NotesStore.setTaskAllDay(id, !t.allDay) })
                 LineKind.REPEAT -> LineEdit.Tap(onClick = {
                     ActionBubble.show(
-                        BubbleAction(Icons.Outlined.Repeat, "Non si ripete", detail = if (t.repeat == null) "adesso" else "") { NotesStore.setTaskRepeat(id, null) },
-                        *com.platinum20.dashboard.notes.Repeat.entries.map { r ->
-                            BubbleAction(Icons.Outlined.Repeat, r.label.replaceFirstChar { it.uppercase() }, detail = if (t.repeat == r) "adesso" else "") { NotesStore.setTaskRepeat(id, r) }
-                        }.toTypedArray(),
+                        BubbleHead("Si ripete", t.text),
+                        choice(
+                            "Si ripete",
+                            BubbleChip("No", selected = t.repeat == null) { NotesStore.setTaskRepeat(id, null) },
+                            *com.platinum20.dashboard.notes.Repeat.entries.map { r ->
+                                BubbleChip(r.label.replaceFirstChar { it.uppercase() }, selected = t.repeat == r) { NotesStore.setTaskRepeat(id, r) }
+                            }.toTypedArray(),
+                        ),
                     )
                 })
                 LineKind.ALERT -> LineEdit.Tap(onClick = {
-                    ActionBubble.show(*com.platinum20.dashboard.notes.Alert.entries.map { a ->
-                        BubbleAction(Icons.Outlined.Notifications, WhenText.alert(t.copy(alert = a)), detail = if (t.alert == a) "adesso" else "") { NotesStore.setTaskAlert(id, a) }
-                    }.toTypedArray())
+                    ActionBubble.show(
+                        BubbleHead("Avviso", t.text),
+                        choice("Avviso", *com.platinum20.dashboard.notes.Alert.entries.map { a ->
+                            BubbleChip(WhenText.alert(t.copy(alert = a)), selected = t.alert == a) { NotesStore.setTaskAlert(id, a) }
+                        }.toTypedArray()),
+                    )
                 })
                 LineKind.PLACE -> LineEdit.Field(t.place, "Luogo", number = false, prose = true) { NotesStore.setTaskPlace(id, it) }
                 LineKind.NOTES -> LineEdit.Field(t.notes, "Note", number = false, prose = true) { NotesStore.setTaskNotes(id, it) }
@@ -345,8 +354,12 @@ private fun lineEdit(kind: ItemKind, id: Long, data: NotesData, line: LineKind):
             when (line) {
                 LineKind.REPEAT -> LineEdit.Tap(onClick = {
                     ActionBubble.show(
-                        BubbleAction(Icons.Outlined.Repeat, "Ogni giorno", "la serie conta ogni giorno") { NotesStore.saveHabit(id, h.title, 0, h.remindAt) },
-                        *(1..6).map { n -> BubbleAction(Icons.Outlined.Repeat, "$n volte a settimana", "basta farla $n giorni su 7") { NotesStore.saveHabit(id, h.title, n, h.remindAt) } }.toTypedArray(),
+                        BubbleHead("Quante volte", h.title),
+                        choice(
+                            "A settimana",
+                            BubbleChip("Ogni giorno", selected = h.perWeek == 0) { NotesStore.saveHabit(id, h.title, 0, h.remindAt) },
+                            *(1..6).map { n -> BubbleChip("$n", selected = h.perWeek == n) { NotesStore.saveHabit(id, h.title, n, h.remindAt) } }.toTypedArray(),
+                        ),
                     )
                 })
                 LineKind.WHEN -> LineEdit.Tap(

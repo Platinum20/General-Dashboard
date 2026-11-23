@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
+import androidx.compose.material.icons.outlined.CheckBox as OutlinedCheckBoxIcon
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Done
 import androidx.compose.material.icons.outlined.Delete
@@ -127,29 +128,41 @@ fun HabitsTodayDialog(habits: List<Habit>, today: LocalDate, onToggle: (Habit) -
  * nel calendario si apre questo, una riga per abitudine; toccandone una si segna (o si toglie) per oggi.
  * Tenendone premuta una salgono le sue azioni (1.535, Antonio non trovava come cancellarle): [habitActions].
  */
-internal fun habitsBubble(habits: List<Habit>, today: java.time.LocalDate, open: (Habit) -> Unit): Array<BubbleAction> =
-    habits.map { h ->
-        val done = h.isDone(today)
-        BubbleAction(
-            icon = if (done) Icons.Filled.CheckBox else Icons.Outlined.CheckBoxOutlineBlank,
-            title = h.title,
-            detail = if (done) "Fatta oggi · tieni premuto per altro" else "Tocca per segnarla · tieni premuto per altro",
-            onClick = { NotesStore.toggleHabit(h.id, today) },
-            onLongClick = { ActionBubble.show(*habitActions(h, today, open)) },
-        )
-    }.toTypedArray()
+internal fun showHabits(habits: List<Habit>, today: java.time.LocalDate, open: (Habit) -> Unit) {
+    ActionBubble.show(
+        BubbleHead("Abitudini di oggi", "tocca per segnare, tieni premuto per altro"),
+        *habits.map { h ->
+            val done = h.isDone(today)
+            val flame = habitFlame(h, today)
+            BubbleAction(
+                icon = if (done) Icons.Filled.CheckBox else Icons.Outlined.CheckBoxOutlineBlank,
+                title = h.title,
+                detail = when {
+                    done -> "fatta oggi" + (flame?.let { " · 🔥 $it" } ?: "")
+                    flame != null -> "🔥 $flame giorni"
+                    else -> "manca oggi"
+                },
+                group = BubbleGroup.SEGNA,
+                onClick = { NotesStore.toggleHabit(h.id, today) },
+                onLongClick = { showHabit(h, today, open) },
+            )
+        }.toTypedArray(),
+    )
+}
 
-/** Le azioni di un'abitudine: segnarla per oggi, aprirne la pagina, eliminarla (con "Annulla" che rimette la serie). */
-internal fun habitActions(h: Habit, today: java.time.LocalDate, open: (Habit) -> Unit): Array<BubbleAction> {
+/** Il fumetto di un'abitudine: Fatto per oggi, poi Apri · Elimina (con "Annulla" che rimette la serie). */
+internal fun showHabit(h: Habit, today: java.time.LocalDate, open: (Habit) -> Unit) {
     val done = h.isDone(today)
-    return arrayOf(
+    ActionBubble.show(
+        BubbleHead("Abitudine", h.title + (habitFlame(h, today)?.let { " · 🔥 $it" } ?: "")),
         BubbleAction(
-            if (done) Icons.Outlined.CheckBoxOutlineBlank else Icons.Filled.CheckBox,
-            if (done) "Togli da oggi" else "Fatta oggi",
-            detail = h.title,
+            if (done) Icons.Outlined.CheckBoxOutlineBlank else Icons.Outlined.OutlinedCheckBoxIcon,
+            if (done) "Togli da oggi" else "Fatto",
+            if (done) "non più fatta oggi" else "segnata per oggi, la serie sale",
+            group = BubbleGroup.SEGNA,
         ) { NotesStore.toggleHabit(h.id, today) },
-        BubbleAction(Icons.Outlined.Edit, "Apri e modifica", detail = "Nome, giorni, promemoria") { open(h) },
-        BubbleAction(Icons.Outlined.Delete, "Elimina", detail = h.title, danger = true) {
+        Slot.open { open(h) },
+        Slot.delete {
             NotesStore.deleteHabit(h.id)
             CaptureFeedback.show(
                 CaptureNotice(CaptureMode.HABIT, "Abitudine eliminata", undo = { NotesStore.restoreHabit(h) }, icon = Icons.Outlined.Delete, fly = false),

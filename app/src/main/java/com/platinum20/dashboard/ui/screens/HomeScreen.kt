@@ -503,11 +503,12 @@ private fun WeatherCard(
         // Tenendo premuto, le azioni del meteo (regola del tocco lungo, revisione Meteo 2026-11-22).
         onLongClick = {
             ActionBubble.show(
-                BubbleAction(Icons.Outlined.WbSunny, "Apri meteo", "Le prossime ore e la settimana", onClick = onClick),
-                BubbleAction(Icons.Outlined.Refresh, "Aggiorna", "Rilegge adesso il meteo") { WeatherStore.refresh(context, force = true) },
-                BubbleAction(Icons.Outlined.LocationOn, "Cambia località", "La tua posizione o una città") {
+                BubbleHead("Meteo"),
+                act(BubbleGroup.CAMBIA, Icons.Outlined.Refresh, "Aggiorna adesso", "rilegge il meteo") { WeatherStore.refresh(context, force = true) },
+                act(BubbleGroup.CAMBIA, Icons.Outlined.LocationOn, "Cambia località", "la tua posizione o una città") {
                     inApp?.openRoute?.invoke(Routes.WEATHER_PLACE)
                 },
+                Slot.open(onClick),
             )
         },
         modifier = Modifier.fillMaxWidth().sharedItem(SharedKeys.WEATHER, rounded = true).bouncyPress(0.98f),
