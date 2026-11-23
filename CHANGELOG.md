@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.608.0
+**Le note entrano in tutta l'app**
+- Scrivi @ in una nota per collegare eventi, turni, treni, brani, video, articoli e altre note; la cosa citata mostra "Citato in"
+- Date, #etichette, codici e numeri di spedizione nelle note si toccano: in calendario, pagina etichetta, copia, segui il pacco
+- Eventi, turni, treni e abitudini hanno il loro blocco Appunti; la prima cosa da fare compare anche nella notifica dal vivo e del mattino
+- "Ricordamelo" su una riga, note legate a un posto, e a fine evento le voci rimaste da spostare in Da fare
+- Le liste delle note diventano righe in Da fare, c'è il widget Nota, Ricomincia e Duplica; Cerca trova la riga giusta e il testo nelle foto
+- Nel player "Annota a 6:52": il minuto nella nota fa ripartire il video o il podcast da lì
+- Nel lettore tieni premuta una frase: "Salva negli Appunti" con il link all'articolo
+- Una nota con un elenco di brani diventa una playlist Spotify o va in coda; "Ascolta" legge la nota con la voce delle News
+- Da una mail in Dalla posta: "Salva in nota" tiene solo codice, orari e indirizzo
+- Condividi → Canvas da qualsiasi app (anche foto) con nuova nota o "Aggiungi a…", riquadro "Nota Canvas" nella tendina, "Detta qui" tenendo premuto nella nota
+
 ## 1.607.0
 **La riga che tocchi sale in cima**
 - Tocchi una riga della nota per scrivere: la nota scorre e quella riga va in cima allo schermo, subito sotto la testata

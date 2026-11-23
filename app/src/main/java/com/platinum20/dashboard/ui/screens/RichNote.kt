@@ -1138,6 +1138,7 @@ internal fun openNoteLink(inApp: InAppNav?, url: String, label: String) {
         url.startsWith(NoteFormat.APP_LINK) ->
             inApp?.openRoute?.invoke(url.removePrefix(NoteFormat.APP_LINK).replace("%20", " ").replace("%28", "(").replace("%29", ")"))
         url.startsWith(NoteAudio.SCHEME) -> NoteAudio.toggle(url.removePrefix(NoteAudio.SCHEME))
+        url.startsWith(com.platinum20.dashboard.notes.NoteSeek.SCHEME) -> com.platinum20.dashboard.notes.NoteSeek.open(url)
         else -> inApp?.openWeb?.invoke(url, label)
     }
 }
