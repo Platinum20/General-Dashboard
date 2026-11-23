@@ -140,7 +140,6 @@ import com.platinum20.dashboard.ui.screens.Springs
 import com.platinum20.dashboard.ui.screens.Motion
 import com.platinum20.dashboard.ui.screens.bouncyPress
 import com.platinum20.dashboard.ui.screens.card
-import com.platinum20.dashboard.ui.screens.cardBorder
 import com.platinum20.dashboard.ui.screens.LocalHazeState
 import com.platinum20.dashboard.ui.screens.glass
 import dev.chrisbanes.haze.HazeState
@@ -235,7 +234,6 @@ import androidx.compose.runtime.setValue
 import com.platinum20.dashboard.ui.screens.Backdrop
 import com.platinum20.dashboard.ui.screens.LocalBackdrop
 import com.platinum20.dashboard.ui.screens.glassSource
-import androidx.compose.foundation.BorderStroke
 
 /** Cosa aprire quando l'app parte da widget o notifica. */
 data class OpenRequest(
@@ -267,6 +265,8 @@ data class OpenRequest(
         const val SIM = "sim"
         /** Dal widget Da fare: la pagina intera di Da fare (come toccando la card della Home). */
         const val LATER = "later"
+        /** Dal widget Nota: la nota nell'editor (url = id). */
+        const val NOTE = "note"
         /** Widget Scrivi e "+" del Calendario: la barra si apre già pronta per scrivere, o in ascolto. */
         const val WRITE = "write"
         const val VOICE = "voice"
@@ -307,6 +307,8 @@ class MainActivity : ComponentActivity() {
         }
         AppSettings.init(this)
         com.platinum20.dashboard.trips.TrainLive.init(this)
+        // Gli avvisi dei posti delle note: il sistema li perde, si rimettono a ogni avvio (idea 11).
+        runCatching { com.platinum20.dashboard.notes.NotePlaces.registerAll(this) }
         WebFetcher.init(this)
         DiskCache.init(this)
         // Le liste del blocco pubblicità si caricano in sottofondo, pronte per la prima pagina web.
@@ -416,7 +418,7 @@ object Routes {
     const val SEARCH_PATTERN = "home/search?f={f}"
     fun search(filter: SearchFilter?) = if (filter == null) SEARCH else "$SEARCH?f=${filter.name}"
     const val NOTES = "notes"
-    const val NOTE_EDIT = "notes/edit?id={id}"
+    const val NOTE_EDIT = "notes/edit?id={id}&find={find}"
     const val MEDIA = "media"
     const val VIDEO = "media/video"
     const val VIDEO_PATTERN = "media/video?uri={uri}"
@@ -470,12 +472,20 @@ object Routes {
 
     fun login(service: MediaService) = "settings/login/${service.name}"
 
-    fun noteEdit(id: Long?) = "notes/edit?id=${id ?: -1L}"
+    /** [find] = la parola cercata in Cerca ovunque: la nota si apre su quella riga, con la parola colorata. */
+    fun noteEdit(id: Long?, find: String = "") =
+        "notes/edit?id=${id ?: -1L}" + if (find.isEmpty()) "" else "&find=${android.net.Uri.encode(find)}"
 
     /** La pagina a schermo intero di un promemoria, una data, un pacco, o un'abitudine. */
     const val NOTE_ITEM = "notes/item/{kind}/{id}"
 
     fun noteItem(kind: ItemKind, id: Long) = "notes/item/${kind.name}/$id"
+
+    /** La pagina di un'etichetta delle note (#casa) e di una persona dei turni (@Marco), 2026-11-23. */
+    const val TAG = "notes/tag/{name}"
+    fun tag(name: String) = "notes/tag/${Uri.encode(name)}"
+    const val PERSON = "notes/person/{name}"
+    fun person(name: String) = "notes/person/${Uri.encode(name)}"
     const val READER = "news/reader?url={url}&source={source}&title={title}"
     const val WEB_PAGE = "news/web?url={url}&source={source}"
 
@@ -571,8 +581,7 @@ private fun CanvasNavBar(
         Surface(
             shape = barShape,
             color = androidx.compose.ui.graphics.Color.Transparent,
-            border = cardBorder(),
-            // Niente ombra: sotto un fondo trasparente scurirebbe il vetro rendendolo opaco.
+            // Niente ombra: sotto un fondo trasparente scurirebbe il vetro rendendolo opaco. Il bordo lo mette glass().
             modifier = Modifier.weight(1f).heightIn(min = 60.dp).glass(barShape),
         ) {
             AnimatedContent(
@@ -715,7 +724,6 @@ private fun CanvasNavBar(
                 // Vetro colorato come la pillola accanto: stesso materiale, tinta del tema.
                 color = androidx.compose.ui.graphics.Color.Transparent,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f)),
                 modifier = Modifier.fillMaxSize().bouncyPress(0.88f).glass(CircleShape, MaterialTheme.colorScheme.primary)
                     .semantics {
                         contentDescription = when {
@@ -754,7 +762,6 @@ private fun CanvasNavBar(
                 Surface(
                     shape = CircleShape,
                     color = androidx.compose.ui.graphics.Color.Transparent,
-                    border = cardBorder(),
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .offset { IntOffset(0, (-62.dp.toPx() - drag * 0.6f).roundToInt()) }
@@ -1098,6 +1105,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 }
                 OpenRequest.SIM -> navController.navigate(Routes.SIM)
                 OpenRequest.LATER -> navController.navigate(Routes.LATER_ARCHIVE)
+                OpenRequest.NOTE -> request.url.toLongOrNull()?.let { openNote(it) }
                 OpenRequest.WRITE -> CaptureComposer.open()
                 OpenRequest.VOICE -> voiceRequested = true
                 OpenRequest.RECAP -> Unit
@@ -1142,6 +1150,11 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             CaptureFeedback.tell(context, "Non sono riuscito a leggere le note: ne ho salvato una copia, puoi ripristinare un backup")
             NotesStore.readProblemShown()
         }
+    }
+    // Il testo nelle foto delle note (2026-11-23, idea 30): letto con calma, qualche secondo dopo l'ultima modifica.
+    LaunchedEffect(notes.notes) {
+        kotlinx.coroutines.delay(4_000)
+        com.platinum20.dashboard.notes.NotePhotoText.scan(context, notes.notes)
     }
     val dueToday = remember(notes) {
         val endOfDay = LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
@@ -1545,10 +1558,14 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             }
             composable(
                 Routes.NOTE_EDIT,
-                arguments = listOf(navArgument("id") { type = NavType.LongType; defaultValue = -1L }),
+                arguments = listOf(
+                    navArgument("id") { type = NavType.LongType; defaultValue = -1L },
+                    navArgument("find") { type = NavType.StringType; defaultValue = "" },
+                ),
             ) { entry ->
                 NoteEditorScreen(
                     noteId = entry.arguments?.getLong("id")?.takeIf { it >= 0 },
+                    find = entry.arguments?.getString("find").orEmpty(),
                     onBack = { navController.popBackStack() },
                 )
             }
@@ -1575,6 +1592,12 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onPickPlace = { navController.navigate(Routes.WEATHER_PLACE) },
                 )
                 }
+            }
+            composable(Routes.TAG, arguments = listOf(navArgument("name") { type = NavType.StringType })) { entry ->
+                com.platinum20.dashboard.ui.screens.TagScreen(name = entry.arguments?.getString("name").orEmpty(), onBack = { navController.popBackStack() })
+            }
+            composable(Routes.PERSON, arguments = listOf(navArgument("name") { type = NavType.StringType })) { entry ->
+                com.platinum20.dashboard.ui.screens.PersonScreen(name = entry.arguments?.getString("name").orEmpty(), onBack = { navController.popBackStack() })
             }
             composable(Routes.LATER_ARCHIVE) {
                 com.platinum20.dashboard.ui.screens.LaterArchiveScreen(onBack = { navController.popBackStack() })

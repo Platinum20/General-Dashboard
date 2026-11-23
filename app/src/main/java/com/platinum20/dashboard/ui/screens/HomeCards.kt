@@ -170,7 +170,8 @@ internal fun CalendarCard(
     // Le cose senza scadenza non stanno nei giorni: hanno la card "Per dopo" (LaterCard, Antonio 2026-11-12).
     // Un nuovo ritardo letto ridisegna le righe dei treni con gli orari spostati.
     val trains by com.platinum20.dashboard.trips.TrainLive.statuses.collectAsState()
-    val all = remember(pending, today, trains) { timelineEntries(pending.withoutLoose(), today) }
+    val allNotes by com.platinum20.dashboard.notes.NotesStore.data.collectAsState()
+    val all = remember(pending, today, trains, allNotes.notes) { timelineEntries(pending.withoutLoose(), today, notes = allNotes.notes) }
     val todayCount = all.count { it.second.day == today && !it.first.past }
     // Dopo oggi tutto domani e sempre le prossime 3 cose, anche più avanti (Antonio, 2026-11-22).
     val (later, _) = calendarCardCut(all.drop(todayCount).map { it.second.day }, today)

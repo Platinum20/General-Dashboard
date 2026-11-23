@@ -116,6 +116,12 @@ object NoteFormat {
     /** Un link messo con "@" (1.589): verso un'altra nota o una pagina di Canvas. Si comporta come un pezzo unico. */
     fun isMention(url: String): Boolean = url.startsWith(NOTE_LINK) || url.startsWith(APP_LINK)
 
+    /** Gli indirizzi dei link "@" di un testo, per "Citato in" (2026-11-23). */
+    fun mentionUrls(text: String): List<String> = linkRx.findAll(text).map { it.groupValues[2] }.filter(::isMention).toList()
+
+    /** I posti dei link (con "@" o no) e degli indirizzi nudi: lì dentro non si cercano date, etichette e codici. */
+    fun linkRanges(text: String): List<IntRange> = linkRx.findAll(text).map { it.range }.toList() + urlRx.findAll(text).map { it.range }
+
     /** Il posto dell'icona davanti a un link "@" (1.596), al posto della "[": uno spazio stretto senza "a capo". */
     const val MENTION_OPEN = "\u202F"
 

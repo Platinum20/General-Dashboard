@@ -7,6 +7,8 @@
     <string name="widget_tasks_description">Oggi e i prossimi giorni: eventi, turni, treni, date</string>
     <string name="widget_todo_label">Da fare</string>
     <string name="widget_todo_description">Le cose da fare e le abitudini, da spuntare col dito</string>
+    <string name="widget_note_label">Nota</string>
+    <string name="widget_note_description">Una nota sulla schermata, con le spunte da mettere col dito</string>
     <string name="widget_news_label">News</string>
     <string name="widget_news_description">Le storie nuove dall\'ultima visita</string>
     <string name="widget_sim_label">SIM</string>

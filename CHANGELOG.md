@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.607.0
+**La riga che tocchi sale in cima**
+- Tocchi una riga della nota per scrivere: la nota scorre e quella riga va in cima allo schermo, subito sotto la testata
+- Vale con la tastiera chiusa, con la tastiera già aperta e toccando sotto l'ultima riga
+- La tastiera resta aperta: si chiude solo se trascini tu la pagina col dito
+
+## 1.606.0
+**Un solo vetro in tutta l'app**
+- Barra, +, fumetti, coda, impostazioni del video e finestre hanno lo stesso vetro: stessa sfocatura, stesso velo, stesso bordo
+- Le finestre di dialogo non sono più quasi bianche piene: si vede la pagina sfocata dietro, come nei fumetti
+- Un fumetto sopra il velo scuro non sembra più un buco chiaro nella pagina
+- Mentre un fumetto compare o lo trascini di lato, la pagina sfocata sotto resta ferma invece di scivolare o ingrandirsi
+- Un solo bordo, con il filo di luce in alto: prima alcuni pezzi avevano due bordi uno sopra l'altro
+
 ## 1.605.0
 **Note provate a fondo su un telefono vero**
 - La tastiera non si chiude più quando tocchi una riga e la pagina scorre da sola per mostrarla: si chiude solo trascinando col dito

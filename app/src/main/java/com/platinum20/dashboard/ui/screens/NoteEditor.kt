@@ -1,5 +1,8 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.notes.NoteLists
+import androidx.compose.material.icons.outlined.Widgets
+import androidx.compose.material.icons.outlined.Replay
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -165,7 +168,7 @@ import kotlin.math.roundToInt
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
+fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
     val context = LocalContext.current
     NotesStore.init(context)
     val haptic = rememberHaptic()
@@ -194,13 +197,16 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
     val lineRoom = with(androidx.compose.ui.platform.LocalDensity.current) { 24.dp.toPx() }
     val bodyFocus = remember { FocusRequester() }
     // "Cerca nella nota" (1.579): null = chiuso.
-    var finding by remember { mutableStateOf<String?>(null) }
+    // Aperta da Cerca ovunque (2026-11-23, idea 9): la ricerca nella nota parte già con la parola trovata.
+    var finding by remember { mutableStateOf(find.takeIf { it.isNotBlank() }) }
     var findAt by remember { mutableIntStateOf(0) }
     val found = remember(body.text, finding) { finding?.let { NoteLines.matches(body.text, it) }.orEmpty() }
     BackHandler(enabled = finding != null) { finding = null }
     // L'indice dei titoli (1.586): il titolo toccato e un numero che cambia a ogni tocco.
     var reveal by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     val inApp = LocalInAppNav.current
+    // "Ricordamelo" sulla riga e il posto della nota (idee 16 e 11, NoteExtrasUi.kt).
+    val extras = rememberNoteExtras()
 
     fun save(next: String = NoteText.join(title.text, body.text)) {
         id = NotesStore.saveNote(id, next) ?: id
@@ -485,6 +491,8 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     }
                 },
                 id?.takeIf { current != null }?.let { nid -> emojiAction(nid, current?.emoji) },
+                extras.lineAction({ save(); id }, title.text, body.text, body.selection.end),
+                extras.placeAction({ save(); id }, id),
                 id?.takeIf { current != null }?.let { nid ->
                     BubbleAction(Icons.Outlined.Image, if (current?.cover == null) "Aggiungi una copertina" else "Copertina", "una foto in cima alla nota") {
                         if (current?.cover == null) pickCover() else ActionBubble.show(*coverActions(nid, current?.cover))
@@ -515,9 +523,18 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                         ).toTypedArray(),
                     )
                 },
-                if (!NoteLines.hasDone(body.text)) null else BubbleAction(Icons.Outlined.CheckBoxOutlineBlank, "Togli tutte le spunte", "per rifare la stessa lista") {
-                    body = TextFieldValue(NoteLines.uncheckAll(body.text))
+                // "Ricomincia" (2026-11-23, idea 15): la valigia, la spesa del sabato, di nuovo pronte.
+                if (!NoteLines.hasDone(body.text)) null else BubbleAction(
+                    Icons.Outlined.Replay, "Ricomincia",
+                    NoteLists.doneCount(text).let { if (it == 1) "toglie la spunta, il testo resta" else "toglie le $it spunte, il testo resta" },
+                ) {
+                    val before = body.text
+                    body = TextFieldValue(NoteLines.uncheckAll(before))
                     save()
+                    CaptureFeedback.tell(context, "Lista da rifare", Icons.Outlined.Replay, "Annulla") {
+                        body = TextFieldValue(before)
+                        save()
+                    }
                 },
                 if (!NoteLines.hasDone(body.text)) null else BubbleAction(Icons.Outlined.RemoveDone, "Togli le fatte", "con Annulla") {
                     val before = body.text
@@ -529,12 +546,23 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     }
                 },
                 // "Usa come modello" (1.586): una nota nuova uguale, con le spunte da rifare (la valigia, la spesa fissa).
-                if (text.isBlank()) null else BubbleAction(Icons.Outlined.FileCopy, "Usa come modello", "nota nuova, uguale, tutto da rifare") {
+                if (text.isBlank()) null else BubbleAction(Icons.Outlined.FileCopy, "Duplica", "una copia nuova, tutto da rifare") {
                     save()
                     val copy = NoteText.join(NoteText.copyTitle(title.text), NoteLines.uncheckAll(body.text))
                     val nid = NotesStore.saveNote(null, copy) ?: return@BubbleAction
                     current?.emoji?.let { NotesStore.setNoteEmoji(nid, it) }
                     inApp?.openRoute(Routes.noteEdit(nid))
+                },
+                // Il widget Nota (2026-11-23, idea 8): questa nota sulla schermata del telefono.
+                id?.takeIf { current != null && text.isNotBlank() }?.let { nid ->
+                    BubbleAction(
+                        Icons.Outlined.Widgets, "Mostra nel widget",
+                        if (com.platinum20.dashboard.widget.NoteWidget.placed(context)) "il widget Nota mostra questa" else "poi aggiungi il widget Nota alla schermata",
+                    ) {
+                        save()
+                        com.platinum20.dashboard.widget.NoteWidget.choose(context, nid)
+                        CaptureFeedback.tell(context, "Nel widget Nota", Icons.Outlined.Widgets)
+                    }
                 },
                 id?.takeIf { NoteVersions.of(it).isNotEmpty() }?.let { BubbleAction(Icons.Outlined.History, "Versioni precedenti", "rimetti com'era prima, con Annulla") { versions() } },
                 if (text.isBlank() && photos.isEmpty()) null else BubbleAction(Icons.Outlined.PictureAsPdf, "Esporta in PDF", "testo e foto su fogli A4, nei Download") { exportPdf() },
@@ -771,6 +799,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     },
                     tappedBelow = tappedBelow,
                     sendToTodo = true,
+                    noteId = id,
                     onAllDone = { allDone() },
                     find = finding,
                     findAt = findAt.coerceAtMost((found.size - 1).coerceAtLeast(0)),

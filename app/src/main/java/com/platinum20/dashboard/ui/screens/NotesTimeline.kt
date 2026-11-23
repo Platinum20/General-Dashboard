@@ -387,7 +387,10 @@ internal fun timelineEntries(
      * Il calendario unico: ogni mese ha il suo segno, anche il primo e quello di oggi (Antonio).
      */
     months: Boolean = false,
+    /** Tutte le note: gli appunti di un evento danno la riga "📝 …" sotto il nome ([AttachedNotes]). */
+    notes: List<com.platinum20.dashboard.notes.Note> = emptyList(),
 ): List<Pair<TimelineEntry, DueRow>> {
+    val attached = notes.filter { it.about != null }
     val hour = DateTimeFormatter.ofPattern("HH:mm")
     fun Long.time() = Instant.ofEpochMilli(this).atZone(zone).format(hour)
     // Il mese si confronta con la riga prima; da adesso in poi con oggi, così sotto "OGGI" non si ripete il mese.
@@ -441,6 +444,11 @@ internal fun timelineEntries(
                 r.simRenewal -> com.platinum20.dashboard.today.BriefKind.EVENT to com.platinum20.dashboard.today.Upcoming.SIM_RENEWAL
                 else -> com.platinum20.dashboard.today.BriefKind.FREE to ""
             }
+            val memo = r.event?.takeIf { attached.isNotEmpty() }?.let { e ->
+                com.platinum20.dashboard.notes.AttachedNotes.forEvent(attached, e.eventId, e.begin, zone)
+                    ?.let { com.platinum20.dashboard.notes.AttachedNotes.line(com.platinum20.dashboard.notes.AttachedNotes.body(it)) }
+            }
+            val stops = r.event?.let { tripStops(it, today, zone) }
             TimelineEntry(
                 key = r.key,
                 kind = kind,
@@ -469,10 +477,11 @@ internal fun timelineEntries(
                     r.event != null && !r.event.allDay -> r.event.begin.time()
                     else -> null
                 },
-                trip = r.event?.let { tripStops(it, today, zone) },
+                trip = if (memo != null) stops?.copy(memo = memo) else stops,
                 detail = r.task?.takeIf { it.allDay && !g.past && day != null }
                     ?.let { com.platinum20.dashboard.notes.WhenText.dateLine(it.yearsAtNext(today, zone), day!!, today) }
-                    ?: r.note?.let(::photoLine),
+                    ?: r.note?.let(::photoLine)
+                    ?: memo?.takeIf { stops == null },
                 // Nel calendario restano solo le foto (1.482): i video e gli articoli salvati stanno in Media e in News.
                 image = r.note?.photo?.takeIf { it.isNotEmpty() },
             ) to r

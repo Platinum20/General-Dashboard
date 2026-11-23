@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -69,9 +70,13 @@ fun NotesSearchPanel(
     var query by rememberSaveable { mutableStateOf("") }
     // Ogni risultato si apre a schermo intero, come gli eventi del calendario.
     val openItem = rememberOpenItem()
+    val inApp = LocalInAppNav.current
     BackHandler(onBack = onClose)
     LaunchedEffect(query) { onQuery(query) }
-    val hits = if (showNotes) NotesSearch.search(data, query) else emptyList()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    remember { com.platinum20.dashboard.notes.NotePhotoText.init(context) }
+    val photoText by com.platinum20.dashboard.notes.NotePhotoText.texts.collectAsState()
+    val hits = if (showNotes) NotesSearch.search(data, query, photoText) else emptyList()
 
     LazyColumn(contentPadding = padding, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item(key = "field") {
@@ -92,9 +97,12 @@ fun NotesSearchPanel(
                 Section(title = "${kind.label} · ${group.size}", modifier = Modifier.animateItem()) {
                     val shown = if (kind in more) group else group.take(perGroup)
                     shown.forEachIndexed { i, hit ->
-                        HitRow(hit, data) {
+                        HitRow(hit, data, query) {
                             when (hit.kind) {
-                                SearchKind.NOTE -> onOpenNote(hit.id)
+                                // Trovata in una riga del testo: la nota si apre lì, con la parola colorata (idea 9).
+                                SearchKind.NOTE -> if (hit.line != null && !hit.inPhoto && inApp != null &&
+                                    data.notes.firstOrNull { it.id == hit.id }?.let { com.platinum20.dashboard.capture.SavedLinks.find(it.text) } == null
+                                ) inApp.openRoute(com.platinum20.dashboard.Routes.noteEdit(hit.id, query.trim())) else onOpenNote(hit.id)
                                 SearchKind.PARCEL -> openItem(ItemKind.PARCEL, hit.id)
                                 SearchKind.TASK -> openItem(ItemKind.TASK, hit.id)
                                 SearchKind.DATE -> openItem(ItemKind.TASK, hit.id)
@@ -125,7 +133,7 @@ fun NotesSearchPanel(
 }
 
 @Composable
-private fun HitRow(hit: SearchHit, data: NotesData, onClick: () -> Unit) {
+private fun HitRow(hit: SearchHit, data: NotesData, query: String, onClick: () -> Unit) {
     val detail = when (hit.kind) {
         SearchKind.TASK -> data.tasks.firstOrNull { it.id == hit.id }?.let { if (it.done) "Completato" else "Da fare" }
         SearchKind.NOTE -> data.notes.firstOrNull { it.id == hit.id }?.let { "Modificata " + relativeTime(Instant.ofEpochMilli(it.updatedAt)) }
@@ -143,9 +151,35 @@ private fun HitRow(hit: SearchHit, data: NotesData, onClick: () -> Unit) {
     ) {
         Column(Modifier.weight(1f)) {
             Text(hit.title, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            if (detail != null) {
+            // Nelle note la riga dove sta la parola, con la parola in evidenza (2026-11-23, idee 9 e 30).
+            val line = hit.line
+            if (line != null) {
+                Text(
+                    foundLine(line, query, hit.inPhoto, MaterialTheme.colorScheme.primary),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            } else if (detail != null) {
                 Text(detail, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
 }
+
+/** "Password wifi: mare2024!" con "wifi" in blu e in grassetto; dalla foto: Nella foto: "…". */
+private fun foundLine(line: String, query: String, inPhoto: Boolean, accent: androidx.compose.ui.graphics.Color) =
+    androidx.compose.ui.text.buildAnnotatedString {
+        val prefix = if (inPhoto) "Nella foto: \u201C" else ""
+        append(prefix)
+        append(line)
+        if (inPhoto) append("\u201D")
+        NotesSearch.matchRange(line, query)?.let { r ->
+            addStyle(
+                androidx.compose.ui.text.SpanStyle(color = accent, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
+                prefix.length + r.first,
+                prefix.length + r.last + 1,
+            )
+        }
+    }

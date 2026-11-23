@@ -169,6 +169,8 @@ data class TripStops(
     val plannedArrive: String? = null,
     /** Il ritardo ("+97 min") dentro [middle], da colorare in arancio: attenzione. */
     val late: String? = null,
+    /** La prima cosa da fare dei suoi appunti ("📝 Portare badge", idea 1, 2026-11-23). */
+    val memo: String? = null,
 ) {
     /**
      * Lo spazio (dp) fra inizio e fine: uguale per tutti, non più in base alla durata, che è già scritta in mezzo
@@ -492,6 +494,9 @@ internal fun TripBlock(
                         )
                         // Le due righe stanno insieme al centro fra partenza e arrivo.
                         trip.below?.let {
+                            Text(it, style = MaterialTheme.typography.labelMedium, color = sub, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                        trip.memo?.let {
                             Text(it, style = MaterialTheme.typography.labelMedium, color = sub, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }

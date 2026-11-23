@@ -19,11 +19,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.unit.IntSize
@@ -69,13 +71,16 @@ fun Modifier.backdropSource(backdrop: Backdrop): Modifier = composed {
  * Il chiamante ritaglia già sulla [shape].
  */
 @RequiresApi(33)
-internal fun Modifier.liquidGlass(backdrop: Backdrop, shape: Shape, tint: Color): Modifier = composed {
+internal fun Modifier.liquidGlass(backdrop: Backdrop, shape: Shape, tint: Color, dim: Float = 0f): Modifier = composed {
     val effectLayer = rememberGraphicsLayer()
     // Se lo shader non si compila (driver strani, test), resta il vetro sfocato senza lente.
     val shader = remember { runCatching { RuntimeShader(LIQUID_GLASS_SHADER) }.getOrNull() }
+    // Dove sta il vetro si legge al momento del disegno, non dallo stato di un frame prima: trascinando un fumetto
+    // o mentre cresce (scaleIn, il + che si ingrandisce) la pagina sotto restava indietro o ingrandita male.
+    val where = remember { arrayOfNulls<LayoutCoordinates>(1) }
     var position by remember { mutableStateOf(Offset.Zero) }
     this
-        .onGloballyPositioned { position = it.positionInRoot() }
+        .onGloballyPositioned { where[0] = it; position = it.positionInRoot() }
         .drawWithContent {
             val source = backdrop.layer
             @Suppress("UNUSED_VARIABLE") val frame = backdrop.frame
@@ -86,7 +91,7 @@ internal fun Modifier.liquidGlass(backdrop: Backdrop, shape: Shape, tint: Color)
                     is Outline.Rounded -> outline.roundRect.topLeftCornerRadius.x
                     else -> 0f
                 }
-                val blur = 16.dp.toPx()
+                val blur = Glass.BLUR.toPx()
                 val blurEffect = RenderEffect.createBlurEffect(blur, blur, Shader.TileMode.CLAMP)
                 val lens = shader?.let {
                     runCatching {
@@ -99,15 +104,34 @@ internal fun Modifier.liquidGlass(backdrop: Backdrop, shape: Shape, tint: Color)
                     }.getOrNull()
                 }
                 effectLayer.renderEffect = (lens ?: blurEffect).asComposeRenderEffect()
-                val offset = position - backdrop.origin
+                @Suppress("UNUSED_VARIABLE") val moved = position
+                val coords = where[0]?.takeIf { it.isAttached }
+                val topLeft = coords?.localToRoot(Offset.Zero) ?: position
+                val zoom = coords?.let { glassScale(topLeft.x, it.localToRoot(Offset(size.width, 0f)).x, size.width) } ?: 1f
+                val offset = topLeft - backdrop.origin
                 effectLayer.record(IntSize(ceil(size.width + 2 * pad).toInt(), ceil(size.height + 2 * pad).toInt())) {
-                    translate(-offset.x + pad, -offset.y + pad) { drawLayer(source) }
+                    translate(pad, pad) {
+                        scale(1f / zoom, 1f / zoom, pivot = Offset.Zero) {
+                            translate(-offset.x, -offset.y) { drawLayer(source) }
+                        }
+                    }
                 }
                 translate(-pad, -pad) { drawLayer(effectLayer) }
             }
+            if (dim > 0f) drawRect(Color.Black.copy(alpha = dim))
             drawRect(tint)
             drawContent()
         }
+}
+
+/**
+ * Quanto è ingrandito il vetro rispetto alla pagina (animazioni di comparsa): larghezza vera sullo schermo
+ * diviso larghezza propria. Così la pagina sotto resta ferma e della sua misura mentre il vetro cresce.
+ */
+internal fun glassScale(leftOnScreen: Float, rightOnScreen: Float, width: Float): Float {
+    if (width <= 0f) return 1f
+    val s = (rightOnScreen - leftOnScreen) / width
+    return if (s.isFinite() && s > 0.05f) s else 1f
 }
 
 /**
