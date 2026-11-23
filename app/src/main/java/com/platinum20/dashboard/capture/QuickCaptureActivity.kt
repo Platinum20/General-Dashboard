@@ -61,6 +61,10 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.launch
 import com.platinum20.dashboard.notes.NotesStore
+import com.platinum20.dashboard.notes.NoteInbox
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.padding
+import androidx.lifecycle.lifecycleScope
 import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.ui.screens.QuickPreview
 import com.platinum20.dashboard.ui.screens.dueLabel
@@ -80,6 +84,7 @@ class QuickCaptureActivity : ComponentActivity() {
         NotesStore.init(this)
 
         val shared = sharedText(intent)
+        val image = sharedImage(intent)
         val mode = when {
             intent.action == ACTION_NEW_NOTE -> CaptureMode.NOTE
             // Una mail di spedizione condivisa: c'è un codice di tracciamento.
@@ -92,8 +97,53 @@ class QuickCaptureActivity : ComponentActivity() {
         setContent {
             val theme by AppSettings.theme.collectAsState()
             GeneralDashboardTheme(theme = theme) {
-                CaptureDialog(initial = shared.orEmpty(), initialMode = mode, onClose = ::finish)
+                // Da Condividi (1.606, idea 23): prima dove va, una nota nuova o in fondo a una delle ultime.
+                var choosing by rememberSaveable { mutableStateOf(shared != null || image != null) }
+                if (choosing) {
+                    ShareChoice(
+                        text = shared,
+                        image = image,
+                        onNew = {
+                            if (image == null) choosing = false
+                            else keepImage(image) { path -> NotesStore.addPhotoNote(shared.orEmpty(), path); "Nuova nota con la foto" }
+                        },
+                        onAdd = { note ->
+                            if (image != null) {
+                                keepImage(image) { path ->
+                                    NotesStore.editNotePhotos(note.id) { it + path }
+                                    shared?.let { NoteInbox.appendTo(note.id, listOf(it)) }
+                                    "Foto in \"${note.title}\""
+                                }
+                            } else {
+                                NoteInbox.appendTo(note.id, shared.orEmpty().lines())
+                                Toast.makeText(this, "In \"${note.title}\"", Toast.LENGTH_SHORT).show()
+                                finish()
+                            }
+                        },
+                        onClose = ::finish,
+                    )
+                } else {
+                    CaptureDialog(initial = shared.orEmpty(), initialMode = mode, onClose = ::finish)
+                }
             }
+        }
+    }
+
+    /** Una foto condivisa da un'altra app (la galleria, la fotocamera, una chat). */
+    private fun sharedImage(intent: Intent?): android.net.Uri? {
+        if (intent?.action != Intent.ACTION_SEND || intent.type?.startsWith("image/") != true) return null
+        @Suppress("DEPRECATION")
+        return if (Build.VERSION.SDK_INT >= 33) intent.getParcelableExtra(Intent.EXTRA_STREAM, android.net.Uri::class.java)
+        else intent.getParcelableExtra(Intent.EXTRA_STREAM)
+    }
+
+    /** Copia la foto dentro Canvas (quella dell'altra app può sparire), poi [then] la mette nella nota e dice dove. */
+    private fun keepImage(uri: android.net.Uri, then: (String) -> String) {
+        lifecycleScope.launch {
+            val path = PhotoAttach.keep(this@QuickCaptureActivity, uri)
+            val message = if (path == null) "La foto non si legge" else then(path)
+            Toast.makeText(this@QuickCaptureActivity, message, Toast.LENGTH_SHORT).show()
+            finish()
         }
     }
 
@@ -284,6 +334,77 @@ private val eventHour = DateTimeFormatter.ofPattern("H:mm")
 internal fun eventLine(e: QuickEventDraft): String {
     val day = e.start.format(eventDay).replaceFirstChar { it.uppercase() }
     return if (e.allDay) "$day · tutto il giorno" else "$day ${e.start.format(eventHour)}–${e.end.format(eventHour)}"
+}
+
+/**
+ * "Salva in Canvas" da un'altra app (1.606, idea 23): una nota nuova, o in fondo a una delle note toccate per ultime.
+ * Non si esce mai da quello che si stava facendo: è una finestrella sopra l'altra app.
+ */
+@Composable
+internal fun ShareChoice(
+    text: String?,
+    image: android.net.Uri?,
+    onNew: () -> Unit,
+    onAdd: (com.platinum20.dashboard.notes.Note) -> Unit,
+    onClose: () -> Unit,
+) {
+    val data by NotesStore.data.collectAsState()
+    val recent = remember(data) { NoteInbox.recent(data.notes, 3, SavedLinks::livesElsewhere) }
+    CanvasDialog(
+        onDismissRequest = onClose,
+        title = { Text("Salva in Canvas") },
+        text = {
+            Column {
+                ShareRow(
+                    if (image != null) "Nuova nota" else "Nuovo in Canvas",
+                    if (image != null) "con la foto, scrivi dopo" else "nota, promemoria o pacco: lo capisce Canvas",
+                    onNew,
+                )
+                recent.forEach { n ->
+                    ShareRow("Aggiungi a \"${n.title}\"", "modificata " + com.platinum20.dashboard.ui.screens.relativeTime(java.time.Instant.ofEpochMilli(n.updatedAt))) { onAdd(n) }
+                }
+                text?.takeIf { image == null }?.let {
+                    Spacer(Modifier.height(8.dp))
+                    Text(it.take(120), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { DismissButton(onClick = onClose) { Text("Annulla") } },
+    )
+}
+
+/** Una scelta della finestrella: titolo e una riga sotto, come le righe dei fumetti. */
+@Composable
+private fun ShareRow(title: String, detail: String, onClick: () -> Unit) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp),
+    ) {
+        Text(title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        Text(detail, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+    }
+}
+
+/** Riquadro "Nota Canvas" nelle impostazioni rapide (1.606, idea 25): si apre subito una nota nuova, anche a telefono bloccato. */
+class QuickNoteTile : TileService() {
+    override fun onClick() {
+        super.onClick()
+        val open = {
+            val intent = QuickCaptureActivity.intent(this, note = true)
+            if (Build.VERSION.SDK_INT >= 34) {
+                startActivityAndCollapse(
+                    PendingIntent.getActivity(this, 1, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                startActivityAndCollapse(intent)
+            }
+        }
+        if (isLocked) unlockAndRun { open() } else open()
+    }
 }
 
 /** Riquadro "Promemoria al volo" nelle impostazioni rapide (la tendina in alto). */

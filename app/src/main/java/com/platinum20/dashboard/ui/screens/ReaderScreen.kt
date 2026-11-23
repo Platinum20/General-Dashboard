@@ -30,6 +30,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkAdd
+import com.platinum20.dashboard.capture.CaptureFeedback
 import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -249,7 +250,34 @@ fun ReaderScreen(
                         } while (event.changes.any { it.pressed })
                     }
                 }) {
-                    ArticleBody(s.article, onOpenLink)
+                    // Tenendo premuta una frase (1.606, idea 6): "Salva negli Appunti" nel menu del testo, senza uscire.
+                    val route = remember(url, sourceName, title) { com.platinum20.dashboard.Routes.reader(url, sourceName, title) }
+                    fun keep(phrase: String?, into: Long?) {
+                        val lines = com.platinum20.dashboard.notes.NoteInbox.quoteLines(phrase.orEmpty(), title, route)
+                        if (lines.isEmpty()) return
+                        val name = if (into != null && com.platinum20.dashboard.notes.NoteInbox.appendTo(into, lines)) {
+                            NotesStore.note(into)?.title.orEmpty()
+                        } else {
+                            com.platinum20.dashboard.notes.NoteInbox.appendToTitled(com.platinum20.dashboard.notes.NoteInbox.NEWS_NOTE, lines)
+                            com.platinum20.dashboard.notes.NoteInbox.NEWS_NOTE
+                        }
+                        CaptureFeedback.tell(context, "Frase in \"$name\"", Icons.Outlined.BookmarkAdd)
+                    }
+                    WithTextExtras(
+                        listOf(
+                            TextToolbarExtra("Salva negli Appunti", needsSelection = true) { phrase -> keep(phrase, null) },
+                            TextToolbarExtra("Aggiungi a una nota", needsSelection = true) { phrase ->
+                                val recent = com.platinum20.dashboard.notes.NoteInbox.recent(NotesStore.data.value.notes, 5, SavedLinks::livesElsewhere)
+                                if (recent.isEmpty()) keep(phrase, null) else ActionBubble.show(
+                                    *recent.map { n ->
+                                        BubbleAction(Icons.Outlined.BookmarkAdd, n.title, "in fondo alla nota, con il link") { keep(phrase, n.id) }
+                                    }.toTypedArray(),
+                                )
+                            },
+                        ),
+                    ) {
+                        androidx.compose.foundation.text.selection.SelectionContainer { ArticleBody(s.article, onOpenLink) }
+                    }
                 }
                 ArticleEnd(url, onOpenArticle, onOpenNext)
             }

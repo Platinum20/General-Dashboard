@@ -12,6 +12,7 @@ import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.ThumbUpOffAlt
 import androidx.compose.material.icons.rounded.ThumbUp
 import androidx.compose.material.icons.rounded.PlaylistAdd
+import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.media.CanvasPlayer
@@ -108,6 +109,21 @@ internal fun BoxScope.SaveToNotesLayer() {
     BottomBubble(visible = offered != null, swipe = swipe, onDismiss = { SavedLinks.dismiss() }) {
         val link = last ?: return@BottomBubble
         val media = (link as? SavedLink.Media)?.item?.takeIf { it.kind != ResumeKind.VIDEO }
+        // "Annota" (1.606, idea 5): se è quello che suona, una nota col minuto già messo; il video continua.
+        val playing = (link as? SavedLink.Media)?.item?.let { offeredItem ->
+            com.platinum20.dashboard.media.Playback.currentAsItem()?.takeIf { it.kind == offeredItem.kind && it.key == offeredItem.key }
+        }?.takeIf { com.platinum20.dashboard.notes.NoteSeek.canAnnotate(it) }
+        val annotateNav = LocalInAppNav.current
+        if (playing != null && annotateNav != null) {
+            val at = playing.positionMs
+            BubbleRow(icon = Icons.Rounded.EditNote, title = "Annota a ${com.platinum20.dashboard.notes.NoteSeek.clock(at)}", detail = "Una nota col minuto: toccandolo riparte da lì") {
+                haptic(Haptic.CONFIRM)
+                SavedLinks.dismiss()
+                com.platinum20.dashboard.notes.NoteSeek.init(context)
+                com.platinum20.dashboard.notes.NoteSeek.annotate(playing, at)?.let { annotateNav.openRoute(com.platinum20.dashboard.Routes.noteEdit(it)) }
+            }
+            RowDivider()
+        }
         // Video, canzoni, radio ed episodi si possono anche mettere in coda, dopo quello che suona.
         // Una playlist tenuta premuta (1.512, Antonio): le stesse azioni del tasto "…" della sua pagina.
         media?.let { com.platinum20.dashboard.media.spotify.SpotifyPlaylists.playlistId(it.key) }?.let { id ->

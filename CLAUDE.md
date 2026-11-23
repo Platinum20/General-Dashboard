@@ -49,6 +49,9 @@ Reminders: `TaskReminderWorker`, `HabitReminderWorker`, `notes/ReminderText.kt`.
 **Notes editor**: `NoteEditor.kt` + `RichNote.kt` (`RichNoteField`, `RichToolbar`), pure `notes/NoteLines.kt`
 (text/bullet/number/check/heading per line, indent levels, renumber), `notes/NoteFormat.kt` (marks never shown,
 `afterEdit` keeps them intact), `notes/NoteHistory.kt` (undo/redo), `NoteTable` (| a | b | rows), `NoteAudio` (audio: links), `NoteVersions` (older texts), `NotePdf`; `NoteDrawing.kt`, `NoteTableUi.kt` (`NoteTableBlock`: cells edited inline), `notes/NotePhotos.kt`.
+Notes from elsewhere: `notes/NoteInbox.kt` (append to a note / "Dalle news"), `notes/NoteSeek.kt` (`[▶ 6:52](seek:…)` player
+timestamps, "Annota" in SaveToNotesLayer), `notes/NoteSpoken.kt` (Ascolta script, song lines → Spotify), `mail/MailFacts.kt`,
+`ExtraTextToolbar.kt` `WithTextExtras` (extra items in the long-press text menu: reader, editor "Detta qui"). Share/tiles: `QuickCaptureActivity`.
 `richText`: one ParagraphStyle (TextIndent = hanging indent) per line, the `\n` between them drawn as ZWSP (a `\n` inside
 a paragraph = blank line). Page scroll while typing = `keepLineDelta` in NoteEditor (`keepInView`), not bringIntoView.
 

@@ -12,6 +12,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import com.platinum20.dashboard.capture.CaptureFeedback
+import com.platinum20.dashboard.notes.NotesStore
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -123,6 +126,8 @@ fun FromMailCard(onOpenMail: (String) -> Unit) {
     val needsConsent by GmailAuth.needsConsent.collectAsStateWithLifecycle()
     var askPassword by remember { mutableStateOf(false) }
     val haptic = rememberHaptic()
+    val inApp = LocalInAppNav.current
+    NotesStore.init(context)
     val scope = rememberCoroutineScope()
     val connect = rememberGmailConnect(onConnected = { scope.launch { runCatching { MailStore.sync(context) } } })
     val mail = if (gmail) mails else emptyList()
@@ -159,8 +164,35 @@ fun FromMailCard(onOpenMail: (String) -> Unit) {
             )
             mail.take(MAX_HOME_MAIL).forEachIndexed { index, m ->
                 if (index > 0 || consent) RowDivider()
-                MailRow(m, onClick = { haptic(Haptic.TICK); onOpenMail(m.id) })
+                MailRow(m, onClick = { haptic(Haptic.TICK); onOpenMail(m.id) }, onLongClick = {
+                    haptic(Haptic.LONG_PRESS)
+                    ActionBubble.show(*mailNoteActions(context, m, inApp?.let { nav -> { id: Long -> nav.openRoute(com.platinum20.dashboard.Routes.noteEdit(id)) } }).toTypedArray())
+                })
             }
+        }
+    }
+}
+
+/**
+ * "Salva in nota" (1.606, idea 12): della mail solo le cose utili (codice, orario, indirizzo), in una nota nuova
+ * o in fondo a una delle ultime note. Le stesse azioni tenendo premuta la riga e da "Altro" nella pagina.
+ */
+internal fun mailNoteActions(context: android.content.Context, m: MailMessage, openNote: ((Long) -> Unit)?): List<BubbleAction> {
+    val lines = com.platinum20.dashboard.mail.MailFacts.noteLines(m)
+    val preview = lines.dropLast(1).joinToString(", ").ifBlank { "le cose utili della mail" }
+    fun done(id: Long?, name: String) {
+        if (id == null) return
+        if (openNote == null) CaptureFeedback.tell(context, "In \"$name\"", Icons.Outlined.Mail)
+        else CaptureFeedback.tell(context, "In \"$name\"", Icons.Outlined.Mail, "Apri") { openNote(id) }
+    }
+    val new = BubbleAction(Icons.Outlined.Mail, "Salva in nota", preview) {
+        val title = com.platinum20.dashboard.mail.MailFacts.noteTitle(m)
+        done(NotesStore.saveNote(null, com.platinum20.dashboard.notes.NoteInbox.appended(title, lines)), title)
+    }
+    val recent = com.platinum20.dashboard.notes.NoteInbox.recent(NotesStore.data.value.notes, 2, com.platinum20.dashboard.capture.SavedLinks::livesElsewhere)
+    return listOf(new) + recent.map { n ->
+        BubbleAction(Icons.Outlined.Mail, "Aggiungi a \"${n.title}\"", "le stesse righe in fondo alla nota") {
+            if (com.platinum20.dashboard.notes.NoteInbox.appendTo(n.id, lines)) done(n.id, n.title)
         }
     }
 }
@@ -184,9 +216,10 @@ private fun SenderDot(from: String) {
 }
 
 @Composable
-private fun MailRow(m: MailMessage, onClick: () -> Unit) {
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+private fun MailRow(m: MailMessage, onClick: () -> Unit, onLongClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 10.dp),
+        Modifier.fillMaxWidth().combinedClickable(onLongClick = onLongClick, onClick = onClick).padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         SenderDot(m.from)
@@ -399,6 +432,7 @@ internal fun GmailAccountRow(tile: AccountTile) {
 fun MailScreen(id: String, onBack: () -> Unit) {
     val context = LocalContext.current
     MailStore.init(context)
+    NotesStore.init(context)
     val mail = remember(id) { MailStore.find(id) }
     val when_ = mail?.let { java.time.Instant.ofEpochMilli(it.at).atZone(java.time.ZoneId.systemDefault()) }
     DetailPage(
@@ -412,7 +446,7 @@ fun MailScreen(id: String, onBack: () -> Unit) {
                 onBack()
             }
         },
-        more = listOfNotNull(
+        more = mail?.let { m -> mailNoteActions(context, m, LocalInAppNav.current?.let { nav -> { id: Long -> nav.openRoute(com.platinum20.dashboard.Routes.noteEdit(id)) } }) }.orEmpty() + listOfNotNull(
             mail?.let { m ->
                 BubbleAction(Icons.Outlined.ContentCopy, "Copia il testo", "tutto il testo della mail") {
                     Clip.copy(context, "Mail", m.body.ifEmpty { m.snippet }, "Testo copiato")
