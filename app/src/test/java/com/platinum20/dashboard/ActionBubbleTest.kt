@@ -46,14 +46,13 @@ class BubbleLayoutTest {
     @Test
     fun barGoesInFixedOrderAndRowsByGroup() {
         val s = com.platinum20.dashboard.ui.screens.Slot
-        val g = com.platinum20.dashboard.ui.screens.BubbleGroup
         val layout = com.platinum20.dashboard.ui.screens.bubbleLayout(
             listOf(
                 s.delete {},
-                com.platinum20.dashboard.ui.screens.act(g.METTI, Icons.Outlined.Share, "Metti", "") {},
+                com.platinum20.dashboard.ui.screens.act(com.platinum20.dashboard.ui.screens.BubbleGroup.METTI, Icons.Outlined.Share, "Metti", "") {},
                 s.share {},
                 com.platinum20.dashboard.ui.screens.choice("Coda", chip("Subito dopo"), chip("In fondo")),
-                com.platinum20.dashboard.ui.screens.act(g.SEGNA, Icons.Outlined.Share, "Segna", "") {},
+                com.platinum20.dashboard.ui.screens.act(com.platinum20.dashboard.ui.screens.BubbleGroup.SEGNA, Icons.Outlined.Share, "Segna", "") {},
                 s.open {},
             ),
         )
