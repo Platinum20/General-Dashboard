@@ -203,6 +203,16 @@
                 android:resource="@xml/widget_capture_info" />
         </receiver>
 
+        <!-- Sveglia veloce 5 / 10 / 15 min della notifica del turno. -->
+        <receiver
+            android:name=".trips.QuickAlarmReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
         <receiver
             android:name=".media.radio.RadioAlarmReceiver"
             android:exported="false">
