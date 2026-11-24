@@ -545,9 +545,8 @@ class NoteEditorDeviceCheck {
         // Dalla barra Aa.
         focusBody()
         tap("Formati, colori, link, titolo, citazione, riquadro")
-        tap("Trasforma in")
-        shot("fumetto_barra")
-        tapText("Citazione")
+        shot("fila_aa")
+        tap("Citazione")
         assertEquals(NoteLines.Kind.QUOTE, kinds()[0])
         tap("Riquadro con emoji")
         shot("riquadro")

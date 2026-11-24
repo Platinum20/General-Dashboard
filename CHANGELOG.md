@@ -4,7 +4,8 @@
 **Colore e Trasforma in non sono più coperti**
 - Aprendo Colore o Trasforma in dalla barra Aa, le file dei formati spariscono finché il fumetto è aperto: prima gli stavano sopra
 - Tolto il tasto Link da Aa: un indirizzo incollato diventa già un'anteprima, e per collegare note e pagine c'è «@»
-- Titolo (T) passa nella fila di sopra, con grassetto e corsivo: cambia il testo, non il tipo di riga
+- Aa ora è una fila sola: titolo, grassetto, corsivo, barrato, evidenzia, colore, citazione e riquadro
+- Tolto "Trasforma in" da Aa: il tipo di riga si cambia già dalla barra, da Aa e tenendo premuto il segno della voce
 
 ## 1.618.0
 **Editor delle note più fluido**

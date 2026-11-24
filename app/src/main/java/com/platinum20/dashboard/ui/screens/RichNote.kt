@@ -1810,14 +1810,17 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                     }
                     if (showFormats && mention == null) {
                         val active = NoteFormat.active(v.text, v.selection.min, v.selection.max)
-                        // Come è scritto il testo (il titolo qui, Antonio 2026-11-24: cambia il testo, non il blocco).
+                        // Una fila sola (Antonio 2026-11-24): titolo, grassetto, corsivo, barrato, evidenzia, colore, citazione,
+                        // riquadro. "Trasforma in" non c'è più: il tipo di riga si cambia già da qui, dalla barra e dal fumetto della riga.
+                        val fs = (with(density) { barWidth.toDp() } - 10.dp - 42.dp) / 8
+                        val fside = fs.coerceIn(32.dp, 42.dp)
                         FloatPanel {
-                            BarIcon(Icons.Outlined.Title, "Titolo", on = line.kind == NoteLines.Kind.HEADING) { kind(NoteLines.Kind.HEADING) }
-                            BarIcon(Icons.Outlined.FormatBold, "Grassetto", on = NoteFormat.Kind.BOLD in active) { mark(NoteFormat.BOLD) }
-                            BarIcon(Icons.Outlined.FormatItalic, "Corsivo", on = NoteFormat.Kind.ITALIC in active) { mark(NoteFormat.ITALIC) }
-                            BarIcon(Icons.Outlined.StrikethroughS, "Barrato", on = NoteFormat.Kind.STRIKE in active) { mark(NoteFormat.STRIKE) }
-                            BarIcon(Icons.Outlined.BorderColor, "Evidenzia", on = NoteFormat.Kind.HIGHLIGHT in active) { mark(NoteFormat.HIGHLIGHT) }
-                            BarIcon(Icons.Outlined.Palette, "Colore del testo o dello sfondo", on = NoteFormat.Kind.COLOR in active) {
+                            BarIcon(Icons.Outlined.Title, "Titolo", on = line.kind == NoteLines.Kind.HEADING, side = fside) { kind(NoteLines.Kind.HEADING) }
+                            BarIcon(Icons.Outlined.FormatBold, "Grassetto", on = NoteFormat.Kind.BOLD in active, side = fside) { mark(NoteFormat.BOLD) }
+                            BarIcon(Icons.Outlined.FormatItalic, "Corsivo", on = NoteFormat.Kind.ITALIC in active, side = fside) { mark(NoteFormat.ITALIC) }
+                            BarIcon(Icons.Outlined.StrikethroughS, "Barrato", on = NoteFormat.Kind.STRIKE in active, side = fside) { mark(NoteFormat.STRIKE) }
+                            BarIcon(Icons.Outlined.BorderColor, "Evidenzia", on = NoteFormat.Kind.HIGHLIGHT in active, side = fside) { mark(NoteFormat.HIGHLIGHT) }
+                            BarIcon(Icons.Outlined.Palette, "Colore del testo o dello sfondo", on = NoteFormat.Kind.COLOR in active, side = fside) {
                                 haptic(Haptic.TICK)
                                 val was = target.value().let { NoteFormat.colorHere(it.text, it.selection.min, it.selection.max) }
                                 ActionBubble.show(BubbleHead("Colore"), *colorActions(was) { code ->
@@ -1826,20 +1829,8 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                                     target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
                                 }.toTypedArray())
                             }
-                        }
-                        // Che tipo di riga è.
-                        FloatPanel {
-                            BarIcon(Icons.Outlined.FormatQuote, "Citazione", on = line.kind == NoteLines.Kind.QUOTE) { kind(NoteLines.Kind.QUOTE) }
-                            BarIcon(Icons.Outlined.Lightbulb, "Riquadro con emoji", on = line.kind == NoteLines.Kind.CALLOUT) { kind(NoteLines.Kind.CALLOUT) }
-                            BarIcon(Icons.Outlined.Transform, "Trasforma in") {
-                                haptic(Haptic.TICK)
-                                val now = target.value()
-                                ActionBubble.show(BubbleHead("Trasforma in"), transformAction(NoteLines.lineAt(now.text, now.selection.min).kind) { k ->
-                                    val n = target.value()
-                                    val e = NoteLines.renumber(NoteLines.transform(n.text, n.selection.min, n.selection.max, k))
-                                    target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
-                                })
-                            }
+                            BarIcon(Icons.Outlined.FormatQuote, "Citazione", on = line.kind == NoteLines.Kind.QUOTE, side = fside) { kind(NoteLines.Kind.QUOTE) }
+                            BarIcon(Icons.Outlined.Lightbulb, "Riquadro con emoji", on = line.kind == NoteLines.Kind.CALLOUT, side = fside) { kind(NoteLines.Kind.CALLOUT) }
                         }
                     }
                     // Una data scritta nella riga (1.588) o il cursore su un link: una chip a destra, sopra la barra.
