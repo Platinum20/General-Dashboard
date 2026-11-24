@@ -1,0 +1,33 @@
+
+com.platinum20.dashboard.BubbleShotsCheck:..........
+
+Time: 172.974
+
+OK (10 tests)
+
+
+
+---- log
+--------- beginning of main
+11-24 01:00:27.501  3399  3794 I BubbleCheck: foto 21-quante-volte
+11-24 01:00:49.194  3399  3794 I BubbleCheck: foto 15-colore
+11-24 01:01:01.560  3399  3794 I BubbleCheck: foto 25-scheda
+11-24 01:01:11.661  3399  3794 I BubbleCheck: foto 01-coda
+11-24 01:01:16.767  3399  3794 I BubbleCheck: foto 02-raccolte
+11-24 01:01:22.162  3399  3794 I BubbleCheck: foto 04-brano-riordino
+11-24 01:01:28.223  3399  3794 I BubbleCheck: foto 18-account
+11-24 01:01:33.117  3399  3794 I BubbleCheck: foto 22-quando
+11-24 01:01:38.020  3399  3794 I BubbleCheck: foto 27-mail-nota
+11-24 01:01:46.567  3399  3794 I BubbleCheck: foto 14-tabella
+11-24 01:01:57.722  3399  3794 I BubbleCheck: foto 19-si-ripete
+11-24 01:02:03.253  3399  3794 I BubbleCheck: foto 20-avviso
+11-24 01:02:11.965  3399  3794 I BubbleCheck: foto 13-riquadro
+11-24 01:02:21.541  3399  3794 I BubbleCheck: foto 11-riga
+11-24 01:02:30.792  3399  3794 I BubbleCheck: foto 12-trasforma
+11-24 01:02:42.640  3399  3794 I BubbleCheck: foto 08-slash
+11-24 01:02:47.466  3399  3794 I BubbleCheck: foto 09-slash-ta
+11-24 01:02:57.605  3399  3794 I BubbleCheck: foto 07-nota-altro
+11-24 01:02:57.611  3399  3794 I BubbleCheck: NON RIUSCITA 17-in-un-posto: AssertionError Failed to inject touch input.
+11-24 01:02:57.611  3399  3794 I BubbleCheck: Can't retrieve node at index '0' of 'Text + EditableText contains 'In un posto' (ignoreCase: false)'
+11-24 01:02:57.611  3399  3794 I BubbleCheck: There are no existing nodes for that selector.
+11-24 01:03:02.334  3399  3794 I BubbleCheck: foto 10-emoji

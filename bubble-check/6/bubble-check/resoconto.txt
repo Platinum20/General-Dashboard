@@ -1,0 +1,23 @@
+foto 21-quante-volte
+foto 15-colore
+foto 25-scheda
+foto 01-coda
+foto 02-raccolte
+foto 04-brano-riordino
+foto 18-account
+foto 22-quando
+foto 27-mail-nota
+foto 14-tabella
+foto 19-si-ripete
+foto 20-avviso
+foto 13-riquadro
+foto 11-riga
+foto 12-trasforma
+foto 08-slash
+foto 09-slash-ta
+foto 07-nota-altro
+NON RIUSCITA 17-in-un-posto: AssertionError Failed to inject touch input.
+Can't retrieve node at index '0' of 'Text + EditableText contains 'In un posto' (ignoreCase: false)'
+There are no existing nodes for that selector.
+
+foto 10-emoji
