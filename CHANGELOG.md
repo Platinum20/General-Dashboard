@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.620.0
+**Colori: due in più, niente tasto per togliere**
+- Nel fumetto Colore ci sono sette colori per riga, in ordine: rosso, arancio, giallo, verde, blu, viola, rosa
+- Tolto il tasto per togliere il colore: si ritocca il colore acceso e torna normale
+
 ## 1.619.0
 **Editor: meno doppioni, Aa in una fila**
 - Aprendo Colore o Trasforma in dalla barra Aa, le file dei formati spariscono finché il fumetto è aperto: prima gli stavano sopra

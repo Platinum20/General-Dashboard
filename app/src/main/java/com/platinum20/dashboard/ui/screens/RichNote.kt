@@ -51,7 +51,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.ViewColumn
 import androidx.compose.material.icons.outlined.SwapHoriz
-import androidx.compose.material.icons.outlined.FormatColorReset
 import androidx.compose.material.icons.outlined.FormatColorFill
 import androidx.compose.material.icons.outlined.FormatColorText
 import androidx.compose.material.icons.outlined.Transform
@@ -2097,8 +2096,10 @@ internal fun lineHead(line: NoteLines.Line, text: String): BubbleHead = BubbleHe
     NoteLines.plainLine(text.substring(line.start, line.end)).take(40),
 )
 
-/** I colori del testo (1.590): lettera del segno, nome. Uno per riga: rosso, arancio, verde, blu, viola. */
-internal val NOTE_COLORS = listOf('r' to "Rosso", 'a' to "Arancio", 'v' to "Verde", 'b' to "Blu", 'p' to "Viola")
+/** I colori del testo: lettera del segno, nome, in ordine cromatico (rosso → rosa, sette per riga). */
+internal val NOTE_COLORS = listOf(
+    'r' to "Rosso", 'a' to "Arancio", 'g' to "Giallo", 'v' to "Verde", 'b' to "Blu", 'p' to "Viola", 'f' to "Rosa",
+)
 
 /** Il colore vero di una lettera: minuscola = testo, maiuscola = sfondo (più chiaro). */
 internal fun noteColor(code: Char): androidx.compose.ui.graphics.Color {
@@ -2106,25 +2107,29 @@ internal fun noteColor(code: Char): androidx.compose.ui.graphics.Color {
         'r' -> androidx.compose.ui.graphics.Color(0xFFE5534B)
         'a' -> androidx.compose.ui.graphics.Color(0xFFF0883E)
         'v' -> androidx.compose.ui.graphics.Color(0xFF3FB950)
+        'g' -> androidx.compose.ui.graphics.Color(0xFFD9A520)
         'b' -> androidx.compose.ui.graphics.Color(0xFF4C8DF6)
+        'f' -> androidx.compose.ui.graphics.Color(0xFFE45A9B)
         else -> androidx.compose.ui.graphics.Color(0xFFA371F7)
     }
     return if (code.isUpperCase()) c.copy(alpha = 0.28f) else c
 }
 
-/** Il fumetto dei colori: testo o sfondo, e Togli. */
+/**
+ * Il fumetto dei colori: testo o sfondo. Niente tasto per togliere (Antonio 2026-11-24): il colore acceso si
+ * ritocca e si spegne, nessun colore scelto = nessun colore.
+ */
 internal fun colorActions(now: Char? = null, apply: (Char?) -> Unit): List<BubbleAction> = listOf(
     // Pallini piccoli su una riga, come le emoji (Antonio 2026-11-24).
-    dots(
-        "Testo",
-        *NOTE_COLORS.map { (c, n) -> BubbleChip(n, selected = now == c, color = noteColor(c)) { apply(c) } }.toTypedArray(),
-        BubbleChip("Normale", icon = Icons.Outlined.FormatColorReset) { apply(null) },
-    ),
-    dots(
-        "Sfondo",
-        *NOTE_COLORS.map { (c, n) -> BubbleChip(n, selected = now == c.uppercaseChar(), color = noteColor(c.uppercaseChar())) { apply(c.uppercaseChar()) } }.toTypedArray(),
-    ),
+    dots("Testo", *NOTE_COLORS.map { (c, n) -> colorDot(c, n, now, apply) }.toTypedArray()),
+    dots("Sfondo", *NOTE_COLORS.map { (c, n) -> colorDot(c.uppercaseChar(), n, now, apply) }.toTypedArray()),
 )
+
+private fun colorDot(code: Char, name: String, now: Char?, apply: (Char?) -> Unit) =
+    BubbleChip(name, selected = now == code, color = noteColor(code)) { apply(colorPick(now, code)) }
+
+/** Pura: toccare il colore che c'è già lo toglie, un altro lo mette. */
+internal fun colorPick(now: Char?, tapped: Char): Char? = if (now == tapped) null else tapped
 
 /** Con la tastiera già aperta il campo mette il cursore anche più di un secondo dopo il tocco (aspetta il doppio tocco). */
 internal const val TAP_WINDOW_MS = 2_500L
