@@ -1,0 +1,31 @@
+
+com.platinum20.dashboard.BubbleShotsCheck:..........
+
+Time: 165.57
+
+OK (10 tests)
+
+
+
+---- log
+--------- beginning of main
+11-24 01:33:40.870  4075  4557 I BubbleCheck: foto 21-quante-volte
+11-24 01:34:00.030  4075  4557 I BubbleCheck: foto 15-colore
+11-24 01:34:12.353  4075  4557 I BubbleCheck: foto 25-scheda
+11-24 01:34:22.107  4075  4557 I BubbleCheck: foto 01-coda
+11-24 01:34:26.891  4075  4557 I BubbleCheck: foto 02-raccolte
+11-24 01:34:31.657  4075  4557 I BubbleCheck: foto 04-brano-riordino
+11-24 01:34:36.094  4075  4557 I BubbleCheck: foto 18-account
+11-24 01:34:40.562  4075  4557 I BubbleCheck: foto 22-quando
+11-24 01:34:45.053  4075  4557 I BubbleCheck: foto 27-mail-nota
+11-24 01:34:54.362  4075  4557 I BubbleCheck: foto 14-tabella
+11-24 01:35:04.044  4075  4557 I BubbleCheck: foto 19-si-ripete
+11-24 01:35:09.424  4075  4557 I BubbleCheck: foto 20-avviso
+11-24 01:35:17.744  4075  4557 I BubbleCheck: foto 13-riquadro
+11-24 01:35:26.350  4075  4557 I BubbleCheck: foto 11-riga
+11-24 01:35:34.470  4075  4557 I BubbleCheck: NON RIUSCITA 12-trasforma: AssertionError Failed to inject touch input.
+11-24 01:35:34.470  4075  4557 I BubbleCheck: Reason: Expected exactly '1' node but could not find any node that satisfies: (ContentDescription = 'Formati, colori, link, titolo, citazione, riquadro' (ignoreCase: fals
+11-24 01:35:51.332  4075  4557 I BubbleCheck: foto 08-slash
+11-24 01:35:55.881  4075  4557 I BubbleCheck: foto 09-slash-ta
+11-24 01:36:05.693  4075  4557 I BubbleCheck: foto 07-nota-altro
+11-24 01:36:10.576  4075  4557 I BubbleCheck: foto 10-emoji
