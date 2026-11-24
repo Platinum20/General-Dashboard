@@ -247,10 +247,6 @@ class BubbleShotsCheck {
         step("07-nota-altro") {
             tap("Altro")
             shot("07-nota-altro")
-        }
-        step("17-in-un-posto") {
-            tapText("In un posto")
-            shot("17-in-un-posto")
             show { ActionBubble.dismiss() }
         }
         step("10-emoji") {

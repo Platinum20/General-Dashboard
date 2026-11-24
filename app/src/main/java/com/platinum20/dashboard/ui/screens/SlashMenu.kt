@@ -197,7 +197,7 @@ internal fun SlashMenu(target: RichBar.Target, query: String) {
     val imeBottom = WindowInsets.ime.getBottom(density)
     val room = with(density) { 64.dp.roundToPx() }
     val gap = with(density) { 6.dp.roundToPx() }
-    val width = (LocalConfiguration.current.screenWidthDp - 40).coerceAtMost(340).dp
+    val width = (LocalConfiguration.current.screenWidthDp - 32).coerceAtMost(380).dp
     // Sotto la riga quando lì c'è posto per almeno quattro voci, se no sopra (1.604). Prima era alto al massimo metà dello
     // spazio sopra la tastiera e, con la riga in cima alla nota, finiva sopra il titolo con tre voci sole: la riga e lo
     // spazio vero sotto di lei decidono l'altezza.

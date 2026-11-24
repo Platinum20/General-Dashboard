@@ -48,3 +48,10 @@ class BubbleWordsTest {
         assertNull(NoteFormat.colorHere(text, 17, 20))
     }
 }
+
+class ChipsPerRowTest {
+    @Test fun nomiLunghiSuDueRighe() {
+        assertEquals(2, com.platinum20.dashboard.ui.screens.chipsPerRow(listOf("All'inizio", "10 min prima", "1 ora prima", "Il giorno prima")))
+        assertEquals(4, com.platinum20.dashboard.ui.screens.chipsPerRow(listOf("Giorno", "Settimana", "Mese", "Anno")))
+    }
+}

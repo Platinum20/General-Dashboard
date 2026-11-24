@@ -70,9 +70,9 @@ internal class NoteExtras(val context: Context) {
             *listOfNotNull(
                 line?.let { l -> LineReminder.tonight(now)?.let { at -> BubbleChip("Stasera 19", icon = Icons.Outlined.Bedtime) { noteId()?.let { remind(it, title, l, at) } } } },
                 line?.let { l -> LineReminder.tomorrowMorning(now).let { at -> BubbleChip("Domani 9", icon = Icons.Outlined.WbSunny) { noteId()?.let { remind(it, title, l, at) } } } },
-                line?.let { l -> BubbleChip("Scegli giorno", icon = Icons.Outlined.CalendarMonth) { noteId()?.let { pickLine = Triple(it, title, l) } } },
+                line?.let { l -> BubbleChip("Scegli", icon = Icons.Outlined.CalendarMonth) { noteId()?.let { pickLine = Triple(it, title, l) } } },
                 // Niente fumetto dal fumetto: il chip apre subito "Dove te lo ricordo?" (Qui adesso, Cerca, Togli).
-                BubbleChip(place?.name ?: "In un posto", selected = place != null, icon = Icons.Outlined.Place) { noteId()?.let { id -> askLocation?.invoke { searchFor = id } } },
+                BubbleChip(place?.name ?: "Posto", selected = place != null, icon = Icons.Outlined.Place) { noteId()?.let { id -> askLocation?.invoke { searchFor = id } } },
             ).toTypedArray(),
         )
     }
