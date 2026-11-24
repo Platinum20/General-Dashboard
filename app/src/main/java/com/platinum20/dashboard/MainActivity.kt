@@ -412,11 +412,27 @@ object Routes {
     /** L'accesso a Creators Pro per i turni di lavoro (una volta, poi la lettura è nascosta). */
     const val SHIFTS = "settings/shifts"
     /** La scheda della barra da accendere: una pagina aperta dalla Home tiene accesa la Home. */
-    fun barTab(route: String?): String? = when (route) {
-        // Il calendario (rotta "notes") si apre dalla Home: lì resta accesa la sua scheda.
-        NOTES -> HOME
+    fun barTab(route: String?): String? = when {
+        route == null -> null
+        // Il calendario e le pagine aperte dalla Home (Da fare, Meteo, #etichette…) tengono accesa la Home.
+        route.startsWith("home") || route.startsWith("notes") -> HOME
+        route.startsWith("media") -> MEDIA
+        route.startsWith("news") -> NEWS
         else -> route
     }
+
+    /**
+     * La regola della barra e del + (1.624, Antonio): ci sono dove si sfoglia un elenco, mancano dentro una cosa
+     * sola (pagine con i loro tasti in fondo, player, lettore), nelle impostazioni e in Cerca.
+     */
+    fun hasBar(route: String?): Boolean = route in BAR_PAGES
+
+    private val BAR_PAGES = setOf(
+        HOME, NEWS, MEDIA, NOTES,
+        LATER_ARCHIVE, JOTTINGS_ARCHIVE, WEATHER, SIM, TAG, PERSON,
+        RADIO, PODCAST, SPOTIFY_ITEM, SPOTIFY_FEED, YOUTUBE_CHANNEL, YOUTUBE_PLAYLIST, YOUTUBE_FEED,
+        MEDIA_MIX, MEDIA_NEWS, SAVED_MEDIA, MUSIC_ALL, MUSIC_DISCOVER, LIKED_TRACKS,
+    )
     const val SEARCH = "home/search"
     const val SEARCH_PATTERN = "home/search?f={f}"
     fun search(filter: SearchFilter?) = if (filter == null) SEARCH else "$SEARCH?f=${filter.name}"
@@ -1138,8 +1154,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     }
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
-    // Anche il calendario ha la barra e il + (Antonio): ci si arriva da Oggi, ma si usa come una sezione.
-    val showBottomBar = topDestinations.any { it.route == currentRoute } || currentRoute == Routes.NOTES
+    // Barra e + dove si sfoglia un elenco, non dentro una cosa sola: vedi Routes.hasBar.
+    val showBottomBar = Routes.hasBar(currentRoute)
     val composing = CaptureComposer.isOpen
     val imeOpen = WindowInsets.isImeVisible
     // Uscendo dalle sezioni della barra (es. da una notifica) quello che si scriveva si chiude.
@@ -1295,7 +1311,13 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     dueToday = dueToday,
                     onSelect = { dest ->
                         // Toccare la scheda già aperta riporta la lista in cima.
-                        if (currentRoute == dest.route) TabReselect.events.tryEmit(dest.route) else navController.switchTab(dest.route)
+                        when {
+                            currentRoute == dest.route -> TabReselect.events.tryEmit(dest.route)
+                            // Da una pagina della sezione (Radio in Media): la scheda accesa riporta alla sezione, in cima.
+                            Routes.barTab(currentRoute) == dest.route && navController.popBackStack(dest.route, inclusive = false) ->
+                                TabReselect.events.tryEmit(dest.route)
+                            else -> navController.switchTab(dest.route)
+                        }
                     },
                     onOpenSettings = { navController.navigate(Routes.SETTINGS) { launchSingleTop = true } },
                     onPlus = { plusOverride?.invoke() ?: CaptureComposer.open() },
@@ -1321,7 +1343,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         // Nelle sezioni della barra, trascinare giù dalla cima apre Cerca ovunque; dentro Musica,
         // Video e Radio e podcast parte già ristretta a quella fonte (al posto delle loro ricerche).
         val pageFilter = SearchFilter.forRoute(currentRoute)
-        val pullSearch = rememberPullToSearch(enabled = showBottomBar || pageFilter != null) {
+        val pullSearch = rememberPullToSearch(enabled = topDestinations.any { it.route == currentRoute } || currentRoute == Routes.NOTES || pageFilter != null) {
             navController.navigate(Routes.search(pageFilter)) { launchSingleTop = true }
         }
         // Trascinare qualunque pagina chiude la tastiera (KeyboardDismiss.kt): sta fuori, vede ogni scorrimento.
@@ -1329,7 +1351,10 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         Box(Modifier.fillMaxSize().then(hideKeyboard.modifier()).nestedScroll(pullSearch.connection)) {
         // Gli elementi condivisi fra le pagine (riga → scheda, card Calendario → pagina): vedi SharedItems.kt.
         androidx.compose.animation.SharedTransitionLayout(Modifier.fillMaxSize()) {
-        CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalSharedScope provides this) {
+        CompositionLocalProvider(
+            com.platinum20.dashboard.ui.screens.LocalSharedScope provides this,
+            com.platinum20.dashboard.ui.screens.LocalBarSpace provides if (showBottomBar) padding.calculateBottomPadding() else 0.dp,
+        ) {
         NavHost(
             modifier = Modifier.glassSource(hazeState, backdrop),
             navController = navController,

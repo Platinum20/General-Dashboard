@@ -1,6 +1,7 @@
 package com.platinum20.dashboard
 
 import com.platinum20.dashboard.notes.NoteLines
+import com.platinum20.dashboard.ui.screens.appuntiSeed
 import com.platinum20.dashboard.ui.screens.appuntiStart
 import com.platinum20.dashboard.ui.screens.sweepEnd
 import org.junit.Assert.assertEquals
@@ -56,5 +57,11 @@ class NoteFluideTest {
         // Scritto: è una nota come le altre, il cursore in fondo.
         assertEquals("lastra\nPortare la tessera" to 25, appuntiStart("lastra\nPortare la tessera", "Portare la tessera"))
         assertEquals("" to 0, appuntiStart("", ""))
+    }
+
+    @Test fun turniETreniPartonoVuoti() {
+        assertEquals("", appuntiSeed("Guadagnato 80 €\nVenduto 1.200 €", shift = true, train = false))
+        assertEquals("", appuntiSeed("Carrozza 8", shift = false, train = true))
+        assertEquals("Portare la tessera", appuntiSeed("Portare la tessera", shift = false, train = false))
     }
 }

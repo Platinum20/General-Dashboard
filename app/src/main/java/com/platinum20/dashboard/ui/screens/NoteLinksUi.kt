@@ -118,7 +118,7 @@ fun TagScreen(name: String, onBack: () -> Unit) {
         modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
         topBar = { TopLevelBar(title = "#$name", subtitle = if (count == 1) "1 cosa con questa etichetta" else "$count cose con questa etichetta", scrollBehavior = bar, onBack = onBack) },
     ) { inner ->
-        LazyColumn(Modifier.fillMaxSize().padding(inner), contentPadding = PaddingValues(bottom = 160.dp)) {
+        LazyColumn(Modifier.fillMaxSize().padding(inner), contentPadding = PaddingValues(bottom = listBottom(160.dp))) {
             if (tasks.isNotEmpty()) item("t") {
                 CardSection("Da fare e date", modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
                     tasks.forEach { t ->
@@ -176,7 +176,7 @@ fun PersonScreen(name: String, onBack: () -> Unit) {
             )
         },
     ) { inner ->
-        LazyColumn(Modifier.fillMaxSize().padding(inner), contentPadding = PaddingValues(bottom = 160.dp)) {
+        LazyColumn(Modifier.fillMaxSize().padding(inner), contentPadding = PaddingValues(bottom = listBottom(160.dp))) {
             fun shiftRows(title: String, list: List<com.platinum20.dashboard.shifts.Shift>) = item(title) {
                 CardSection(title, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
                     list.forEach { s ->
