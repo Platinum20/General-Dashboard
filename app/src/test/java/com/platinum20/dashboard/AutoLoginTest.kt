@@ -76,6 +76,11 @@ class AutoLoginTest {
         assertFalse(auto.codeSeen())
         auto.begin()
         assertEquals(0L, auto.codeAskedAt)
+        // Un campo "codice" qualsiasi senza aver inviato il modulo non fa cercare nella posta (batteria).
+        assertFalse(auto.codeSeen(allowed = false))
+        assertFalse(auto.submitted)
+        auto.mayFill()
+        assertTrue(auto.submitted)
     }
 
     /** La mail vera di WindTre (Antonio, 2026-11-24). */

@@ -381,7 +381,9 @@ private fun WindTreLogin(onClose: () -> Unit) {
         }
     }
     DisposableEffect(Unit) {
+        WindTreLink.visibleLogin = true
         onDispose {
+            WindTreLink.visibleLogin = false
             webView.stopLoading()
             webView.destroy()
         }

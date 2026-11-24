@@ -30,7 +30,7 @@ object WindTreLink {
     /** Il tempo lasciato all'area clienti per caricare i contatori (è un'app web pesante). */
     private const val READ_MS = 25_000L
     /** Se nel frattempo ha dovuto rifare l'accesso: altro tempo per entrare e caricare. */
-    private const val RELOGIN_MS = 90_000L
+    private const val RELOGIN_MS = 60_000L
 
     /** Intercetta fetch e XMLHttpRequest della pagina e passa a Canvas le risposte JSON di WindTre. */
     private val script = """
@@ -88,7 +88,7 @@ object WindTreLink {
 
         @JavascriptInterface
         fun codeSeen() {
-            if (!WindTreAuto.codeSeen()) return
+            if (!WindTreAuto.codeSeen(allowed = visibleLogin || WindTreAuto.submitted)) return
             val app = appContext ?: return
             val since = WindTreAuto.codeAskedAt
             mailScope.launch { WindTreCode.await(app, since)?.let { WindTreAuto.code = it } }
@@ -99,6 +99,8 @@ object WindTreLink {
     }
 
     @Volatile private var appContext: Context? = null
+    /** C'è la schermata d'accesso aperta (lì il codice lo cerca sempre). */
+    @Volatile var visibleLogin = false
     private val mailScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /** Prepara una WebView (quella dell'accesso o quella nascosta) a passare i dati a Canvas. */
@@ -152,7 +154,7 @@ object WindTreLink {
      * fatta, aspetta che carichi i contatori e la chiude. False se la sessione è scaduta.
      */
     suspend fun refresh(context: Context): Boolean {
-        if (!SimStore.linked.value || SimStore.refreshing.value) return false
+        if (!SimStore.linked.value || SimStore.refreshing.value || visibleLogin) return false
         SimStore.setRefreshing(true)
         val before = SimStore.status.value?.at ?: 0
         val asked = System.currentTimeMillis()
@@ -168,7 +170,8 @@ object WindTreLink {
                 view.loadUrl(HOME)
                 val read = withTimeoutOrNull(READ_MS) { waitData(before) }
                 // Ha trovato il modulo d'accesso e l'ha compilato: si aspetta che entri e carichi.
-                if (read == null && (WindTreAuto.loginSeenAt >= asked && WindTreAuto.hasSaved(context) || WindTreAuto.codeAskedAt >= asked)) {
+                // Solo se ha davvero inviato il modulo: altrimenti si chiude subito (batteria).
+                if (read == null && WindTreAuto.submitted) {
                     withTimeoutOrNull(RELOGIN_MS) { waitData(before) }
                 }
                 readText(view)

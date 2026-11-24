@@ -26,8 +26,11 @@ object SimStore {
     private const val MAX_CAPTURES = 40
     /** Più spesso non serve: i contatori di WindTre stessi si aggiornano con qualche ora di ritardo. */
     const val STALE_MS = 60 * 60 * 1000L
-    /** In sottofondo si tocca più spesso: serve a non far chiudere la sessione per inattività. */
-    const val KEEP_MS = 25 * 60 * 1000L
+    /**
+     * Con l'app chiusa si rilegge ogni 3 ore, non più ogni mezz'ora per tenere viva la sessione: ora se
+     * scade Canvas rientra da sola, e una pagina nascosta ogni mezz'ora pesava sulla batteria (Antonio, 2026-11-24).
+     */
+    const val KEEP_MS = 3 * STALE_MS - 5 * 60 * 1000L
 
     private var appContext: Context? = null
     private val _status = MutableStateFlow<SimStatus?>(null)

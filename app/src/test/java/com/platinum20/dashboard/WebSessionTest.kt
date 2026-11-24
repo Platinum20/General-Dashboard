@@ -28,10 +28,10 @@ class WebSessionTest {
         assertTrue(js.contains("CanvasSim.storage(location.origin"))
     }
 
-    /** Il giro in sottofondo passa ogni 15 minuti: WindTre va toccato almeno ogni mezz'ora, non ogni ora. */
+    /** Con l'app chiusa la SIM si rilegge ogni 3 ore circa, non ogni mezz'ora (batteria): se la sessione scade, si rientra da soli. */
     @Test
-    fun windTreIsTouchedOftenInBackground() {
-        assertTrue(SimStore.KEEP_MS < 30 * 60 * 1000L)
-        assertTrue(SimStore.KEEP_MS < SimStore.STALE_MS)
+    fun windTreIsReadRarelyInBackground() {
+        assertTrue(SimStore.KEEP_MS >= 2 * SimStore.STALE_MS)
+        assertTrue(SimStore.KEEP_MS < 3 * SimStore.STALE_MS)
     }
 }

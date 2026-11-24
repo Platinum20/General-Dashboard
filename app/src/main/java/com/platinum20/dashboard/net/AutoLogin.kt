@@ -65,9 +65,16 @@ open class AutoLogin(private val prefsName: String) {
     @Volatile var codeAskedAt = 0L
         private set
 
-    /** La pagina chiede il codice: true solo la prima volta, per far partire una sola ricerca nella posta. */
-    fun codeSeen(): Boolean {
-        if (codeAskedAt != 0L) return false
+    /** Il modulo d'accesso è stato inviato in questa rilettura (solo allora un codice per mail ha senso). */
+    val submitted: Boolean get() = tries > 0
+
+    /**
+     * La pagina chiede il codice: true solo la prima volta, per far partire una sola ricerca nella posta.
+     * [allowed] = Canvas ha appena inviato il modulo o sei tu nell'accesso: un campo "codice" qualsiasi
+     * dell'area clienti non fa partire niente (batteria).
+     */
+    fun codeSeen(allowed: Boolean = true): Boolean {
+        if (!allowed || codeAskedAt != 0L) return false
         codeAskedAt = System.currentTimeMillis()
         return true
     }

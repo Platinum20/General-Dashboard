@@ -38,7 +38,7 @@ internal fun ContiCard(onOpenSim: () -> Unit) {
     val haptic = rememberHaptic()
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     // Si aggiorna da sola quando la Home è aperta e il dato ha più di un'ora.
-    AutoRefresh(everyMs = SimStore.STALE_MS) { if (linked && SimStore.isStale()) WindTreLink.refresh(context) }
+    AutoRefresh(everyMs = SimStore.STALE_MS) { if (linked && !SimStore.expired.value && SimStore.isStale()) WindTreLink.refresh(context) }
     val s = status
     // Lo stato vero (1.402): vecchio dopo tre ore, la riga lo dice e i numeri si sbiadiscono.
     val expired by SimStore.expired.collectAsStateWithLifecycle()
