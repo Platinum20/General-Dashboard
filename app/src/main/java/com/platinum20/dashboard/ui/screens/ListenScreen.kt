@@ -32,7 +32,7 @@ fun ListenScreen(onBack: () -> Unit) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         // Il blocco in cima va a tutta larghezza; le righe portano il loro margine, come nelle pagine di Spotify.
-        contentPadding = PaddingValues(bottom = 96.dp),
+        contentPadding = PaddingValues(bottom = listBottom(96.dp)),
     ) {
         radioSections(popular, favorites, recent, radio, genre, onGenre = { genre = it }, onBack = onBack)
     }

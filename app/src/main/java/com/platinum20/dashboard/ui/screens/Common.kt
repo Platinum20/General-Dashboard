@@ -995,6 +995,19 @@ fun CanvasTabChip(
 }
 
 /**
+ * Quanto occupa in fondo la barra delle sezioni sulla pagina aperta, 0 dove non c'è. La regola (1.622): la
+ * barra c'è dove si sfoglia un elenco, non dentro una cosa sola (vedi `Routes.hasBar`).
+ */
+val LocalBarSpace = androidx.compose.runtime.compositionLocalOf { 0.dp }
+
+/** Il fondo di un elenco: almeno [min]; dove c'è la barra, abbastanza da far uscire l'ultima riga sopra barra e mini player. */
+@Composable
+fun listBottom(min: Dp): Dp {
+    val bar = LocalBarSpace.current
+    return if (bar == 0.dp) min else maxOf(min, bar + miniPlayerRoom() + 24.dp)
+}
+
+/**
  * Il + della barra in basso apre la cattura veloce. Una sezione può sostituirlo con la sua azione
  * (in Note: la scheda aperta decide cosa aggiungere) finché resta a schermo.
  */

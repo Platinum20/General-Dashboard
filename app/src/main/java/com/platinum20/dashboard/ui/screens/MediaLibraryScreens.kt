@@ -367,7 +367,7 @@ fun MusicDiscoverScreen(onBack: () -> Unit, onOpen: (SpItem) -> Unit) {
         val empty = fresh.isEmpty() && rows.isEmpty() && similarArtists.isEmpty() && similarTracks.isEmpty()
         androidx.compose.foundation.lazy.LazyColumn(
             Modifier.fillMaxSize().padding(inner),
-            contentPadding = PaddingValues(top = 8.dp, bottom = 96.dp),
+            contentPadding = PaddingValues(top = 8.dp, bottom = listBottom(96.dp)),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             if (empty && (releases.loading || discover.loading)) item(key = "loading") { PlaceholderList(Modifier.padding(horizontal = 16.dp), label = "Cerco musica nuova") }

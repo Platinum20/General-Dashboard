@@ -409,7 +409,7 @@ private fun FollowedPodcasts(onOpen: (Podcast) -> Unit) {
     val followed = remember(followedHere, spotifyShows) { PodcastStore.merge(followedHere, spotifyShows) }
     val search by PodcastStore.search.collectAsState()
     var idea by rememberSaveable { mutableStateOf<String?>(null) }
-    LazyColumn(contentPadding = PaddingValues(top = 8.dp, bottom = 96.dp)) {
+    LazyColumn(contentPadding = PaddingValues(top = 8.dp, bottom = listBottom(96.dp))) {
         if (followed.isEmpty()) {
             item(key = "start") {
                 Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

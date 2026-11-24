@@ -509,7 +509,7 @@ fun LaterArchiveScreen(onBack: () -> Unit) {
         modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
         topBar = { TopLevelBar(title = LooseCardKind.TODO.title, subtitle = laterPageLine(activeCount, jottings.size, archived.size), scrollBehavior = bar, onBack = onBack) },
     ) { inner ->
-        androidx.compose.foundation.lazy.LazyColumn(Modifier.fillMaxSize().padding(inner), state = list, contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 160.dp)) {
+        androidx.compose.foundation.lazy.LazyColumn(Modifier.fillMaxSize().padding(inner), state = list, contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = listBottom(160.dp))) {
             groups.forEach { g ->
                 item(key = "g-${g.label}") { SectionHeader(g.label, modifier = Modifier.padding(start = 12.dp, end = 16.dp, top = 8.dp)) }
                 g.items.forEach { item ->
