@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.616.0
+**Quattro note di esempio**
+- Con questo aggiornamento trovi quattro note già scritte: Spesa, Idee regali, Weekend a Napoli e Lavagna della riunione, più due cose da fare
+- Usano un po' tutto l'editor: spunte, elenchi rientrati, tabella, riquadro, citazione, colonne, bacheca, colori, link tra note, #tag, foto e copertina
+- Arrivano una volta sola: se le cancelli non tornano
+
 ## 1.615.0
 **Fumetti più corti e tutti uguali**
 - In ogni fumetto prima le righe, poi le chip, in fondo i tasti grandi; in una fila le chip hanno tutte l'icona o nessuna
