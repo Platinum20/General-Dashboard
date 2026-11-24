@@ -225,7 +225,7 @@ fun EventDetailScreen(
         head = current?.let { ev -> BubbleHead(if (shift != null) "Turno" else "Evento", ev.title + if (ev.allDay) "" else " · " + clock(ev.begin)) },
         editDetail = "titolo, orario, luogo, avviso",
         deleteConfirm = if (current?.recurring == true) "Tocca ancora: tutte le volte, anche dal telefono" else "Tocca ancora: sparisce anche dal telefono",
-        more = listOfNotNull(current?.let { ev -> Slot.share { shareText(context, eventShareText(ev.title, ev.begin)) } }),
+        more = listOfNotNull(current?.let { ev -> Slot.shareText(context, eventShareText(ev.title, ev.begin)) }),
         onEdit = if (writable) ({ withWrite { current?.let { onEdit(it.id) } } }) else null,
         onDelete = if (writable) ({
             current?.let { ev ->

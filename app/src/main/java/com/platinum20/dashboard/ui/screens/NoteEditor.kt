@@ -575,7 +575,10 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
 
     fun emojiAction(nid: Long, now: String?): BubbleAction = noteEmojiDots(nid, now)
 
-    /** Altro: copertina, cerca, quello che si fa con la nota (PDF, Duplica…), i titoli, archivia, la fila di emoji e i tasti. */
+    /**
+     * Altro (Antonio 2026-11-24, "troppe opzioni"): 3 righe (Cerca, Ascolta, Archivia), le cose da fare con la nota in
+     * una fila di chip, le emoji e i tasti. Copia il testo e il PDF stanno dentro Condividi, che trasforma il fumetto.
+     */
     fun more() {
         haptic(Haptic.LONG_PRESS)
         val nid = id?.takeIf { current != null }
@@ -584,28 +587,9 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
         ActionBubble.show(
             BubbleHead("Nota", listOfNotNull(current?.emoji, title.text.ifBlank { "Nuova nota" }).joinToString(" ")),
             *listOfNotNull(
-                nid?.let {
-                    act(BubbleGroup.CAMBIA, Icons.Outlined.Image, if (current?.cover == null) "Aggiungi una copertina" else "Cambia la copertina", "una foto in cima alla nota") { pickCover() }
-                },
                 if (body.text.isBlank()) null else act(BubbleGroup.VAI, Icons.Outlined.Search, "Cerca nella nota", "le parole trovate si colorano") {
                     findAt = 0
                     finding = ""
-                },
-                // Quello che si fa con la nota (2026-11-24, proposta 7): era nel +, che ora aggiunge e basta.
-                if (text.isBlank() && photos.isEmpty()) null else act(BubbleGroup.CREA, Icons.Outlined.PictureAsPdf, "Salva come PDF", "con le foto, nei Download") { exportPdf() },
-                if (text.isBlank()) null else act(BubbleGroup.CREA, Icons.Outlined.FileCopy, "Duplica", "una copia con le spunte tolte") {
-                    save()
-                    val copy = NoteText.join(NoteText.copyTitle(title.text), NoteLines.uncheckAll(body.text))
-                    NotesStore.saveNote(null, copy)?.let { made ->
-                        current?.emoji?.let { NotesStore.setNoteEmoji(made, it) }
-                        inApp?.openRoute(Routes.noteEdit(made))
-                    }
-                },
-                if (text.isBlank()) null else act(BubbleGroup.CREA, Icons.Outlined.ContentCopy, "Copia il testo", "senza formati, da incollare altrove") {
-                    Clip.copy(context, "Nota", NoteFormat.plain(text), "Testo copiato")
-                },
-                id?.takeIf { NoteVersions.of(it).isNotEmpty() }?.let {
-                    act(BubbleGroup.VAI, Icons.Outlined.History, "Versioni precedenti", "i testi di prima, da rimettere") { versions() }
                 },
                 if (body.text.isBlank()) null else act(BubbleGroup.VAI, Icons.Outlined.Headphones, "Ascolta", "te la legge la voce delle news") {
                     save()
@@ -614,13 +598,26 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                         context, script, title = title.text.ifBlank { "Nota" }, labels = script.map(com.platinum20.dashboard.news.RecapReader::chapterLabel),
                     )
                 },
-                nid?.takeIf { text.isNotBlank() }?.let { n ->
-                    act(BubbleGroup.METTI, Icons.Outlined.Widgets, "Mostra nel widget", "nel widget Nota della schermata Home") {
+                // Quello che si fa con la nota: nomi che si spiegano da soli, quindi chip invece di righe.
+                listOfNotNull(
+                    nid?.let { BubbleChip("Copertina") { pickCover() } },
+                    id?.takeIf { NoteVersions.of(it).isNotEmpty() }?.let { BubbleChip("Versioni") { versions() } },
+                    if (text.isBlank()) null else BubbleChip("Duplica") {
                         save()
-                        com.platinum20.dashboard.widget.NoteWidget.choose(context, n)
-                        CaptureFeedback.tell(context, "Nel widget Nota", Icons.Outlined.Widgets)
-                    }
-                },
+                        val copy = NoteText.join(NoteText.copyTitle(title.text), NoteLines.uncheckAll(body.text))
+                        NotesStore.saveNote(null, copy)?.let { made ->
+                            current?.emoji?.let { NotesStore.setNoteEmoji(made, it) }
+                            inApp?.openRoute(Routes.noteEdit(made))
+                        }
+                    },
+                    nid?.takeIf { text.isNotBlank() }?.let { n ->
+                        BubbleChip("Widget") {
+                            save()
+                            com.platinum20.dashboard.widget.NoteWidget.choose(context, n)
+                            CaptureFeedback.tell(context, "Nel widget Nota", Icons.Outlined.Widgets)
+                        }
+                    },
+                ).takeIf { it.isNotEmpty() }?.let { choice("Con la nota", *it.toTypedArray()) },
                 songs.takeIf { it.isNotEmpty() }?.let { list ->
                     act(BubbleGroup.CREA, Icons.AutoMirrored.Outlined.QueueMusic, "Playlist su Spotify", "con i ${list.size} brani scritti nella nota") { songsToSpotify(list) }
                 },
@@ -644,7 +641,11 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                         NotesStore.togglePin(n)
                     }
                 },
-                if (text.isBlank() && photos.isEmpty()) null else Slot.share { NotePhotoFiles.share(context, NoteFormat.plain(text), photos) },
+                // Condividi diventa Copia il testo · Salva come PDF · Manda a… (Antonio 2026-11-24).
+                if (text.isBlank() && photos.isEmpty()) null else Slot.share(
+                    copy = if (text.isBlank()) null else { { Clip.copy(context, "Nota", NoteFormat.plain(text), "Testo copiato") } },
+                    pdf = { exportPdf() },
+                ) { NotePhotoFiles.share(context, NoteFormat.plain(text), photos) },
                 Slot.delete {
                     deleted = true
                     id?.let { n ->

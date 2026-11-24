@@ -233,7 +233,7 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
         more = listOfNotNull(
             tracking?.let { open -> act(BubbleGroup.VAI, Icons.Outlined.LocalShipping, "Traccia la spedizione", "dove si trova adesso, in Canvas", onClick = open) },
             task?.let { snoozeAction(it) },
-            shareLine?.let { text -> Slot.share { shareText(context, text) } },
+            shareLine?.let { text -> Slot.shareText(context, text) },
         ),
     ) {
         if (detail == null) {

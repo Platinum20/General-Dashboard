@@ -32,6 +32,8 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkAdd
 import com.platinum20.dashboard.capture.CaptureFeedback
+import kotlinx.coroutines.launch
+import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -161,6 +163,7 @@ fun ReaderScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val pdfScope = androidx.compose.runtime.rememberCoroutineScope()
     val url = viewModel.url
     val loaded = (state as? ReaderUiState.Loaded)?.article
     val title = loaded?.title?.takeIf { it.isNotBlank() } ?: fallbackTitle
@@ -209,7 +212,13 @@ fun ReaderScreen(
         },
         more = listOf(
             Slot.save(saved) { if (saved) SavedLinks.remove(context, link) else SavedLinks.save(context, link) },
-            Slot.share {
+            // Condividi: Copia il link · Salva come PDF (il testo dell'articolo) · Manda a… (Antonio 2026-11-24).
+            Slot.share(
+                copy = { Clip.copy(context, "Link", url, "Link copiato") },
+                copyTitle = "Copia il link",
+                copyDetail = "da incollare altrove",
+                pdf = loaded?.let { article -> { articlePdf(context, pdfScope, title, article.spokenParagraphs().joinToString("\n\n")) } },
+            ) {
                 val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, url).putExtra(Intent.EXTRA_SUBJECT, title)
                 runCatching { context.startActivity(Intent.createChooser(send, null)) }
             },
@@ -511,3 +520,13 @@ private fun List<TextRun>.toAnnotated(linkColor: Color, onOpenLink: (String) -> 
             }
         }
     }
+
+/** L'articolo come PDF nei Download, come "Salva come PDF" delle note. */
+private fun articlePdf(context: android.content.Context, scope: kotlinx.coroutines.CoroutineScope, title: String, body: String) {
+    scope.launch {
+        val file = runCatching { com.platinum20.dashboard.notes.NotePdf.make(context, title, body, emptyList()) }.getOrNull()
+        if (file == null) { com.platinum20.dashboard.capture.CaptureFeedback.tell(context, "Il PDF non si è fatto"); return@launch }
+        val saved = com.platinum20.dashboard.notes.NotePdf.saveToDownloads(context, file)
+        com.platinum20.dashboard.capture.CaptureFeedback.tell(context, if (saved) "PDF nei Download" else "Il PDF non si è salvato", androidx.compose.material.icons.Icons.Outlined.PictureAsPdf)
+    }
+}
