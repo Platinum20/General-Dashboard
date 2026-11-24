@@ -949,7 +949,7 @@ private const val MAX_PICK = 20
 /** La pausa dopo cui si salva quello che si sta scrivendo (2026-11-24). */
 internal const val SAVE_PAUSE_MS = 500L
 
-/** Il tasto tondo delle schede, che sa anche il tieni premuto (qui: "Aggiungi" tenuto = foto subito). */
+/** Il tasto tondo delle schede, che sa anche il tieni premuto (qui: "Aggiungi" tenuto = lo stesso fumetto). */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun HoldRoundButton(icon: ImageVector, label: String, tint: Color = MaterialTheme.colorScheme.onSurface, onClick: () -> Unit, onLongClick: (() -> Unit)? = null) {

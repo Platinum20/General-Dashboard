@@ -463,9 +463,10 @@ class NoteEditorDeviceCheck {
     fun blocksFromBarPlus() {
         open("Blocchi\n", "blocchi")
         for (entry in listOf("Colonne", "Bacheca", "Tabella")) {
-            if (!imeOpen()) focusBody()
+            // Dopo un blocco il fuoco può stare in una cella: la tastiera non serve, basta un "Aggiungi".
             field().performTextInputSelection(TextRange(body().length))
-            tap("Aggiungi")
+            compose.onAllNodesWithContentDescription("Aggiungi", useUnmergedTree = true)[0].performClick()
+            compose.waitForIdle()
             shot("piu_" + entry)
             tapText(entry)
             compose.waitForIdle()
