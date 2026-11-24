@@ -1764,7 +1764,8 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
     val showFormats = selecting || formats
     // Quello che galleggia sopra la barra (2026-11-24, proposte 2 e 3): la barra resta sempre uguale, sopra compaiono
     // i formati (Aa o testo scelto), i risultati di "@" e il tasto della data o del link della riga.
-    val floating = mention != null || showFormats || dated != null || linkHere != null
+    // Con un fumetto aperto (Colore, Trasforma in…) la fila sparisce: il Popup sta sopra a tutto e lo copriva.
+    val floating = ActionBubble.actions == null && (mention != null || showFormats || dated != null || linkHere != null)
     var barWidth by remember { mutableStateOf(0) }
     val density = LocalDensity.current
     Box(modifier.onGloballyPositioned { barWidth = it.size.width }) {
