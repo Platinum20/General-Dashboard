@@ -349,12 +349,6 @@ internal fun RichNoteField(
     /** [typed] = l'ha cambiato la tastiera; falso = un tasto della barra, che sa già cosa fa. */
     fun change(v: TextFieldValue, typed: Boolean = true) {
         val old = current
-        // Invio con il menu "/" aperto sceglie la prima voce (1.589), non va a capo.
-        val enter = typed && v.text.length == old.text.length + 1 && old.selection.collapsed &&
-            v.text == old.text.substring(0, old.selection.end) + "\n" + old.text.substring(old.selection.end)
-        if (enter && slashQuery(old.text, old.selection.end) != null) {
-            RichBar.slashFirst?.let { it(); return }
-        }
         var next = v
         // Un link "@" si cancella tutto insieme (1.589): basta togliere una lettera.
         // Tabella, linea e vocale sono pezzi unici (1.589): la tastiera non li rompe.
@@ -1115,18 +1109,7 @@ internal fun RichNoteField(
                     }
                 }
             }
-            // Il menu "/" come su Notion (1.589): sotto la riga del cursore.
-            val slashTarget = RichBar.target
-            val slashQ = if (focused && !readOnly && value.selection.collapsed) slashQuery(text, value.selection.end) else null
-            if (slashQ != null && slashTarget != null && slashTarget.owner == owner) {
-                val rect = l.getCursorRect(shown.toShown(value.selection.end).coerceIn(0, drawn))
-                Box(
-                    Modifier
-                        .offset { IntOffset(0, rect.top.toInt()) }
-                        .fillMaxWidth()
-                        .height(with(density) { (rect.bottom - rect.top).toDp() }),
-                ) { SlashMenu(slashTarget, slashQ) }
-            }
+            // Il menu "/" non si apre più (Antonio 2026-11-24): era un doppione del + della barra, che aggiunge le stesse cose.
             // Il vocale (1.589): una barra larga quanto la nota, alta una riga. Play/pausa, avanzamento (si tocca per andare
             // a un punto), durata. Tieni premuto = le scelte.
             shown.lines.filter { it.kind == NoteLines.Kind.AUDIO && !hiddenLine(it) && shown.toShown(it.start) < drawn }.forEach { line ->
@@ -1708,8 +1691,7 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val inApp = LocalInAppNav.current
     val cursor = v.selection.end.coerceIn(0, v.text.length)
-    val slash = if (selecting) null else slashQuery(v.text, cursor)
-    val mention = if (selecting || slash != null) null else mentionQuery(v.text, cursor)
+    val mention = if (selecting) null else mentionQuery(v.text, cursor)
     val linkHere = if (selecting) null else NoteFormat.linkAt(v.text, cursor)
     fun openLink(url: String, label: String) {
         haptic(Haptic.TICK)
