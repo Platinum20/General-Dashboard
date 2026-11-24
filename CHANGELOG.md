@@ -3,6 +3,7 @@
 ## 1.619.0
 **Colore e Trasforma in non sono più coperti**
 - Aprendo Colore o Trasforma in dalla barra Aa, le file dei formati spariscono finché il fumetto è aperto: prima gli stavano sopra
+- Tolto il tasto Link da Aa: un indirizzo incollato diventa già un'anteprima, e per collegare note e pagine c'è «@»
 
 ## 1.618.0
 **Editor delle note più fluido**

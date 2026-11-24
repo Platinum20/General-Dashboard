@@ -1707,7 +1707,6 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
     }
     val context = LocalContext.current
     val inApp = LocalInAppNav.current
-    val clipboard = LocalClipboardManager.current
     val cursor = v.selection.end.coerceIn(0, v.text.length)
     val slash = if (selecting) null else slashQuery(v.text, cursor)
     val mention = if (selecting || slash != null) null else mentionQuery(v.text, cursor)
@@ -1732,18 +1731,6 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
         val t = e.text.let { if (it.getOrNull(e.start - 1) == ' ') it.removeRange(e.start - 1, e.start) else it }
         target.set(TextFieldValue(t, TextRange((e.start - 1).coerceIn(0, t.length))))
         CaptureFeedback.tell(context, "Nel Calendario: " + dueLabel(due), Icons.Outlined.Event)
-    }
-    fun link() {
-        haptic(Haptic.TICK)
-        val now = target.value()
-        val there = NoteFormat.linkAt(now.text, now.selection.min)
-        val copied = clipboard.getText()?.text?.trim()?.takeIf { it.startsWith("http://") || it.startsWith("https://") }
-        if (there == null && copied == null) {
-            CaptureFeedback.tell(context, "Copia prima il link, poi tocca di nuovo")
-            return
-        }
-        val e = NoteFormat.link(now.text, now.selection.min, now.selection.max, copied)
-        target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
     }
     val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
@@ -1838,7 +1825,6 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                                     target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
                                 }.toTypedArray())
                             }
-                            BarIcon(Icons.Outlined.Link, "Link (copia prima l'indirizzo)", on = NoteFormat.Kind.LINK in active) { link() }
                         }
                         // Che tipo di riga è.
                         FloatPanel {
