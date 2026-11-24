@@ -47,7 +47,7 @@ Documenti, Dalla posta. Logic in `today/` (`Briefing`, `Upcoming`, `Invites`, `G
 event pages in `CalendarScreen.kt`. `calendar/` = CalendarContract, `Trips` (train mails → one trip event).
 Reminders: `TaskReminderWorker`, `HabitReminderWorker`, `notes/ReminderText.kt`.
 Attached notes: `Note.about` key (`notes/AttachedNotes.kt`: "ev:<id>[@day]", "habit:<id>") = "Appunti" block on
-event/shift/train/habit pages (`AttachedNotesBlock`), `📝` line in timeline rows, live + morning notifications;
+event/shift/train/habit pages (`AttachedNotesBlock`; the event's calendar description is its `seed`; same look for task notes via `AppuntiCard`), `📝` line in timeline rows, live + morning notifications;
 `NoteNotify.kt` (leftovers after an event, notification buttons), `NotePlaces.kt` (note → place proximity alert),
 `LineReminder` + `NoteExtrasUi.kt` (editor "Altro": Ricordamelo on the cursor line, place).
 
@@ -58,7 +58,7 @@ Notes from elsewhere: `notes/NoteInbox.kt` (append to a note / "Dalle news"), `n
 timestamps, "Annota" in SaveToNotesLayer), `notes/NoteSpoken.kt` (Ascolta script, song lines → Spotify), `mail/MailFacts.kt`,
 `ExtraTextToolbar.kt` `WithTextExtras` (extra items in the long-press text menu: reader). Share/tiles: `QuickCaptureActivity`.
 `notes/ExampleNotes.kt` = example notes seeded once (MainActivity). `notes/NotePhotoText.kt` = OCR text of note photos (own file, scanned from MainActivity) for search; `NotesSearch` gives the matching line.
-Keyboard bar `RichToolbar` = 8 fixed keys (+ · undo · redo | bullets · numbers · check | Aa · hide keyboard); Aa/selection = ONE row (B I S highlight color title | quote callout), "@" hits and date/link chips float ABOVE it in a Popup (`FloatPanel`). `RichBar.Target.add` = the "+" bubble (no "/" menu: `slashEntries` only feeds the + bubbles). Line drag (`lineDrag`, pure `lineDragStep`): up/down moves, sideways indents; `lineHandle` ⋮⋮ on the cursor text line. NoteEditor saves after `SAVE_PAUSE_MS` (typing) and on ON_STOP/exit.
+Keyboard bar `RichToolbar` = 8 fixed keys (+ · undo · redo | bullets · numbers · check | Aa · hide keyboard); Aa/selection = ONE row (B I S highlight color title | quote callout), "@" hits and date/link chips float ABOVE it in a Popup (`FloatPanel`). `KeyboardBarSwap` = bottom buttons ↔ bar crossfade. Tick/line-glide animations live in RichNoteField (`sweepEnd`, pure `NoteLines.moved`). `RichBar.Target.add` = the "+" bubble (no "/" menu: `slashEntries` only feeds the + bubbles). Line drag (`lineDrag`, pure `lineDragStep`): up/down moves, sideways indents; `lineHandle` ⋮⋮ on the cursor text line. NoteEditor saves after `SAVE_PAUSE_MS` (typing) and on ON_STOP/exit.
 `richText`: one ParagraphStyle (TextIndent = hanging indent) per line, the `\n` between them drawn as ZWSP (a `\n` inside
 a paragraph = blank line). Page scroll while typing = `keepLineDelta` in NoteEditor (`keepInView`), not bringIntoView.
 
