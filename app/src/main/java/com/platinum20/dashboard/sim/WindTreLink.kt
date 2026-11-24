@@ -10,8 +10,12 @@ import android.webkit.WebViewClient
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import com.platinum20.dashboard.media.browserUserAgent
+import com.platinum20.dashboard.net.AutoLogin
 import com.platinum20.dashboard.net.WebSession
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -25,6 +29,8 @@ object WindTreLink {
     const val HOME = "https://ac.windtre.it/"
     /** Il tempo lasciato all'area clienti per caricare i contatori (è un'app web pesante). */
     private const val READ_MS = 25_000L
+    /** Se nel frattempo ha dovuto rifare l'accesso: altro tempo per entrare e caricare. */
+    private const val RELOGIN_MS = 90_000L
 
     /** Intercetta fetch e XMLHttpRequest della pagina e passa a Canvas le risposte JSON di WindTre. */
     private val script = """
@@ -70,11 +76,34 @@ object WindTreLink {
 
         @JavascriptInterface
         fun storage(origin: String, json: String) = WindTreSession.offer(origin, json)
+
+        @JavascriptInterface
+        fun typed(user: String, pass: String) = WindTreAuto.typed(user, pass)
+
+        @JavascriptInterface
+        fun loginSeen() = WindTreAuto.seen()
+
+        @JavascriptInterface
+        fun mayFill(): Boolean = WindTreAuto.mayFill()
+
+        @JavascriptInterface
+        fun codeSeen() {
+            if (!WindTreAuto.codeSeen()) return
+            val app = appContext ?: return
+            val since = WindTreAuto.codeAskedAt
+            mailScope.launch { WindTreCode.await(app, since)?.let { WindTreAuto.code = it } }
+        }
+
+        @JavascriptInterface
+        fun code(): String = WindTreAuto.code.orEmpty()
     }
+
+    @Volatile private var appContext: Context? = null
+    private val mailScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /** Prepara una WebView (quella dell'accesso o quella nascosta) a passare i dati a Canvas. */
     @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface", "RequiresFeature")
-    fun prepare(view: WebView, context: Context, onPage: (String) -> Unit = {}) {
+    fun prepare(view: WebView, context: Context, login: Boolean = false, onPage: (String) -> Unit = {}) {
         view.settings.javaScriptEnabled = true
         view.settings.domStorageEnabled = true
         view.settings.userAgentString = browserUserAgent(WebSettings.getDefaultUserAgent(context))
@@ -84,10 +113,17 @@ object WindTreLink {
         val keep = if (SimStore.linked.value) WindTreSession.storageScript(context) else null
         CookieManager.getInstance().setAcceptThirdPartyCookies(view, true)
         view.addJavascriptInterface(Bridge, "CanvasSim")
+        // Accesso visibile: si tiene da parte quello che scrivi. Rilettura nascosta: si rientra da soli se serve.
+        appContext = context.applicationContext
+        val auto = (if (login) AutoLogin.captureScript("CanvasSim")
+            else WindTreAuto.saved(context).let { AutoLogin.fillScript("CanvasSim", it?.first.orEmpty(), it?.second.orEmpty()) }) +
+            // Il codice di conferma per mail: lo scrive Canvas, anche nell'accesso visibile.
+            "\n" + AutoLogin.codeScript("CanvasSim")
         val early = WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)
         if (early) {
             keep?.let { WebViewCompat.addDocumentStartJavaScript(view, it, setOf("https://*.windtre.it")) }
             WebViewCompat.addDocumentStartJavaScript(view, script, setOf("https://*.windtre.it"))
+            WebViewCompat.addDocumentStartJavaScript(view, auto, setOf("https://*.windtre.it"))
         }
         view.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView, request: android.webkit.WebResourceRequest): android.webkit.WebResourceResponse? {
@@ -102,7 +138,7 @@ object WindTreLink {
             }
 
             override fun onPageFinished(view: WebView, url: String) {
-                if (!early) view.evaluateJavascript(script, null)
+                if (!early) { view.evaluateJavascript(script, null); view.evaluateJavascript(auto, null) }
                 onPage(url)
             }
         }
@@ -119,18 +155,21 @@ object WindTreLink {
         if (!SimStore.linked.value || SimStore.refreshing.value) return false
         SimStore.setRefreshing(true)
         val before = SimStore.status.value?.at ?: 0
+        val asked = System.currentTimeMillis()
+        var lastUrl: String? = null
+        WindTreAuto.begin()
         try {
             withContext(Dispatchers.Main) {
                 val view = WebView(context.applicationContext)
-                prepare(view, context)
+                prepare(view, context) { lastUrl = it }
                 // Nessuno la guarda: niente immagini da scaricare (meno rete e batteria a ogni giro).
                 view.settings.blockNetworkImage = true
                 SimStore.beginSession()
                 view.loadUrl(HOME)
-                withTimeoutOrNull(READ_MS) {
-                    while ((SimStore.status.value?.at ?: 0) == before) delay(500)
-                    // Arrivato il primo dato, ancora un attimo per gli altri contatori e il testo.
-                    delay(4_000)
+                val read = withTimeoutOrNull(READ_MS) { waitData(before) }
+                // Ha trovato il modulo d'accesso e l'ha compilato: si aspetta che entri e carichi.
+                if (read == null && (WindTreAuto.loginSeenAt >= asked && WindTreAuto.hasSaved(context) || WindTreAuto.codeAskedAt >= asked)) {
+                    withTimeoutOrNull(RELOGIN_MS) { waitData(before) }
                 }
                 readText(view)
                 delay(800)
@@ -140,8 +179,20 @@ object WindTreLink {
         } finally {
             SimStore.setRefreshing(false)
         }
-        return (SimStore.status.value?.at ?: 0) > before
+        val got = (SimStore.status.value?.at ?: 0) > before
+        if (!got && sessionGone(WindTreAuto.loginSeenAt >= asked || WindTreAuto.codeAskedAt >= asked, lastUrl)) SimStore.setExpired(true)
+        return got
     }
+
+    private suspend fun waitData(before: Long) {
+        while ((SimStore.status.value?.at ?: 0) == before) delay(500)
+        // Arrivato il primo dato, ancora un attimo per gli altri contatori e il testo.
+        delay(4_000)
+    }
+
+    /** Fuori dall'area clienti: il modulo d'accesso si è visto, o la pagina è finita su un indirizzo d'accesso. */
+    internal fun sessionGone(loginSeen: Boolean, lastUrl: String?) =
+        loginSeen || (lastUrl != null && Regex("(?i)login|/accedi|signin|/auth").containsMatchIn(lastUrl))
 
     /** Toglie la sessione WindTre dal telefono. */
     fun forget(context: Context) {
@@ -154,6 +205,7 @@ object WindTreLink {
         }
         cookies.flush()
         WindTreSession.clear(context)
+        WindTreAuto.clear(context)
         SimStore.unlink()
     }
 }

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.628.0
+**WindTre e Creators Pro restano collegati**
+- Quando il sito ti butta fuori, Canvas rientra da sola in sottofondo con email (o numero) e password, salvate cifrate solo sul telefono
+- Il codice di verifica che WindTre manda per mail lo legge Canvas dalla posta e lo scrive da sola (serve Gmail collegato in Account)
+- Per salvarle basta rientrare una volta: tocca "Rientra" e accedi con email e password (su Creators Pro non con Google, che non si può compilare da soli)
+- Se non riesce a rientrare da sola lo dice con "Rientra", che apre subito la pagina d'accesso: prima "Aggiorna" riprovava a vuoto e restava sempre "da sistemare"
+- I dati della SIM solo un po' vecchi non sono più "da sistemare"
+
 ## 1.627.0
 **Novità una volta sola**
 - Toccando la notifica "Canvas aggiornata" si apre l'app con il fumetto delle novità, senza aprire anche la pagina Aggiornamenti.

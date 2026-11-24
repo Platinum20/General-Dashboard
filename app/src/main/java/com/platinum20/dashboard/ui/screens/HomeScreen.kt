@@ -211,6 +211,7 @@ fun HomeScreen(
     remember { com.platinum20.dashboard.sim.SimStore.init(context) }
     val sim by com.platinum20.dashboard.sim.SimStore.status.collectAsStateWithLifecycle()
     val simLinked by com.platinum20.dashboard.sim.SimStore.linked.collectAsStateWithLifecycle()
+    val simExpired by com.platinum20.dashboard.sim.SimStore.expired.collectAsStateWithLifecycle()
     val simRenewal = sim?.renewal?.takeIf { simLinked }
     // Il calendario unico (1.314): oggi in cima con le note senza data, poi i prossimi giorni.
     val calendar = remember(minute, agenda.today, weekAhead, notes, simRenewal) {
@@ -409,6 +410,7 @@ fun HomeScreen(
                 autoFillEnabled = autoFillEnabled,
                 autoFillDismissed = autoFillDismissed,
                 shiftsExpired = shiftsExpired,
+                simExpired = simLinked && simExpired,
             )
             if (invites.isNotEmpty()) item(key = "invites") {
                 InvitesRow(

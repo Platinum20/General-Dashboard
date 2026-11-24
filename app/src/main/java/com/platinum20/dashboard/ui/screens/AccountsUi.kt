@@ -61,6 +61,7 @@ internal fun rememberAccountTiles(): List<AccountTile> {
     val spotifyOfficial by SpotifyAuth.connected.collectAsState()
     val simLinked by SimStore.linked.collectAsState()
     val simStatus by SimStore.status.collectAsState()
+    val simExpired by SimStore.expired.collectAsState()
     val shiftsLinked by ShiftStore.linked.collectAsState()
     val shiftsExpired by ShiftStore.expired.collectAsState()
     val gmailImap by GmailImap.linked.collectAsState()
@@ -73,7 +74,9 @@ internal fun rememberAccountTiles(): List<AccountTile> {
         gmail = gmailImap || gmailApi,
         gmailBroken = (gmailImap && gmailRejected) || (!gmailImap && gmailApi && gmailConsent),
         sim = simLinked,
-        simStale = simStatus != null && SimStore.isStale(within = 3 * SimStore.STALE_MS),
+        // Rientra da sola quando la sessione scade: "da sistemare" solo se è fuori davvero, o fermo da un giorno.
+        simStale = simStatus != null && SimStore.isStale(within = 24 * SimStore.STALE_MS),
+        simExpired = simExpired,
         shifts = shiftsLinked,
         shiftsExpired = shiftsExpired,
     )

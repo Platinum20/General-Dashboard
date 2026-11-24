@@ -15,6 +15,7 @@ import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.SimCard
 import androidx.compose.material.icons.outlined.Snooze
 import androidx.compose.material.icons.outlined.Work
 import androidx.compose.material3.Icon
@@ -61,6 +62,9 @@ fun InvitesRow(
                     when (invite) {
                         Invite.SHIFTS -> act(BubbleGroup.CAMBIA, Icons.Outlined.Work, "Rientra nei turni", "l'accesso a Creators Pro è scaduto") {
                             inApp?.openRoute?.invoke(Routes.SHIFTS)
+                        }
+                        Invite.SIM -> act(BubbleGroup.CAMBIA, Icons.Outlined.SimCard, "Rientra in WindTre", "non sono riuscito a rientrare da solo") {
+                            inApp?.openRoute?.invoke(Routes.SIM)
                         }
                         Invite.AGENDA -> act(BubbleGroup.CAMBIA, Icons.Outlined.CalendarMonth, "Consenti l'agenda", "gli impegni del telefono qui", onClick = onAllowCalendar)
                         Invite.AUTOFILL -> act(BubbleGroup.CAMBIA, Icons.Outlined.AutoAwesome, "Attiva Compila da solo", "pacchi e scadenze dalle notifiche", onClick = onOpenAutoFill)

@@ -41,7 +41,8 @@ internal fun ContiCard(onOpenSim: () -> Unit) {
     AutoRefresh(everyMs = SimStore.STALE_MS) { if (linked && SimStore.isStale()) WindTreLink.refresh(context) }
     val s = status
     // Lo stato vero (1.402): vecchio dopo tre ore, la riga lo dice e i numeri si sbiadiscono.
-    val link = LinkStatus.of(linked, expired = false, readAt = s?.at ?: 0, now = System.currentTimeMillis(), staleAfter = 3 * SimStore.STALE_MS)
+    val expired by SimStore.expired.collectAsStateWithLifecycle()
+    val link = LinkStatus.of(linked, expired = expired, readAt = s?.at ?: 0, now = System.currentTimeMillis(), staleAfter = 3 * SimStore.STALE_MS)
     CardSection(
         title = "SIM",
         modifier = Modifier.sharedItem(SharedKeys.SIM, rounded = true),
@@ -57,7 +58,9 @@ internal fun ContiCard(onOpenSim: () -> Unit) {
                 act(BubbleGroup.CAMBIA, Icons.Outlined.Refresh, "Aggiorna adesso", "rilegge giga, minuti e credito") {
                     scope.launch {
                         val ok = WindTreLink.refresh(context)
-                        if (!ok) CaptureFeedback.tell(context, "WindTre non ha risposto: rifai l'accesso da Impostazioni", Icons.Outlined.SimCard)
+                        // Fuori davvero: la pagina SIM apre subito l'accesso.
+                        if (!ok && SimStore.expired.value) onOpenSim()
+                        else if (!ok) CaptureFeedback.tell(context, "WindTre non ha risposto, riprovo più tardi", Icons.Outlined.SimCard)
                     }
                 },
             )

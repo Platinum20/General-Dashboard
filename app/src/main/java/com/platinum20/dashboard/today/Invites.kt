@@ -5,6 +5,7 @@ enum class Invite(val label: String) {
     AGENDA("agenda"),
     AUTOFILL("compila da solo"),
     SHIFTS("turni scaduti"),
+    SIM("SIM scaduta"),
 }
 
 /**
@@ -18,9 +19,11 @@ object Invites {
         autoFillEnabled: Boolean,
         autoFillDismissed: Boolean,
         shiftsExpired: Boolean = false,
+        simExpired: Boolean = false,
     ): List<Invite> = buildList {
         // Prima gli accessi scaduti: senza, i dati smettono di arrivare.
         if (shiftsExpired) add(Invite.SHIFTS)
+        if (simExpired) add(Invite.SIM)
         if (agendaVisible && !calendarGranted) add(Invite.AGENDA)
         if (!autoFillEnabled && !autoFillDismissed) add(Invite.AUTOFILL)
     }

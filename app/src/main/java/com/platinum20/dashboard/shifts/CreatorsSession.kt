@@ -11,3 +11,6 @@ object CreatorsSession : WebSession(
     "shifts_session",
     listOf("https://app.creatorspro.com", "https://api.creatorspro.com", "https://creatorspro.com", "https://www.creatorspro.com"),
 )
+
+/** Email e password di Creators Pro, cifrate: la rilettura nascosta rientra da sola ([AutoLogin]). Con Google no. */
+object CreatorsAuto : com.platinum20.dashboard.net.AutoLogin("shifts_login")

@@ -10,3 +10,6 @@ object WindTreSession : WebSession(
     "sim",
     listOf("https://ac.windtre.it", "https://www.windtre.it", "https://apigw.windtre.it", "https://login.windtre.it"),
 )
+
+/** Utente e password WindTre, cifrati: la rilettura nascosta rientra da sola quando la sessione scade ([AutoLogin]). */
+object WindTreAuto : com.platinum20.dashboard.net.AutoLogin("sim_login")
