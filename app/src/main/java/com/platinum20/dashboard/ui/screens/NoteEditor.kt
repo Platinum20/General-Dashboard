@@ -90,6 +90,8 @@ import com.platinum20.dashboard.notes.NotePdf
 import com.platinum20.dashboard.notes.NoteAudio
 import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Archive
+import androidx.compose.material.icons.outlined.Unarchive
 import androidx.compose.material.icons.outlined.GraphicEq
 import androidx.compose.material.icons.outlined.Draw
 import androidx.compose.material.icons.outlined.DocumentScanner
@@ -463,177 +465,117 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
         )
     }
 
-    // ---- Da elenco di brani a Spotify (1.606, idea 18) ----
-    fun songsToSpotify(songs: List<String>): BubbleAction {
+    // ---- Da elenco di brani a Spotify (1.606, idea 18): una playlist coi brani trovati ----
+    fun songsToSpotify(songs: List<String>) {
         val name = com.platinum20.dashboard.media.spotify.SpotifyPlaylists.cleanName(title.text.ifBlank { "Dalla nota" })
-        fun withTracks(then: (List<com.platinum20.dashboard.media.spotify.SpItem>) -> Unit) {
-            CaptureFeedback.tell(context, "Cerco ${songs.size} brani su Spotify…", Icons.AutoMirrored.Outlined.QueueMusic)
-            scope.launch {
-                val found = com.platinum20.dashboard.media.spotify.SpotifyStore.findTracks(songs)
-                val tracks = found.data.orEmpty()
-                when {
-                    found.error != null && tracks.isEmpty() -> CaptureFeedback.tell(context, found.error)
-                    tracks.isEmpty() -> CaptureFeedback.tell(context, "Nessun brano trovato su Spotify")
-                    else -> then(tracks)
-                }
+        CaptureFeedback.tell(context, "Cerco ${songs.size} brani su Spotify…", Icons.AutoMirrored.Outlined.QueueMusic)
+        scope.launch {
+            val found = com.platinum20.dashboard.media.spotify.SpotifyStore.findTracks(songs)
+            val tracks = found.data.orEmpty()
+            when {
+                found.error != null && tracks.isEmpty() -> CaptureFeedback.tell(context, found.error)
+                tracks.isEmpty() -> CaptureFeedback.tell(context, "Nessun brano trovato su Spotify")
+                else -> com.platinum20.dashboard.media.spotify.SpotifyStore.createPlaylistWith(name, tracks).fold(
+                    onSuccess = { made ->
+                        haptic(Haptic.CONFIRM)
+                        CaptureFeedback.tell(context, "Playlist \"${made.title}\": ${tracks.size} su ${songs.size} brani", Icons.AutoMirrored.Outlined.QueueMusic, "Apri") {
+                            inApp?.openRoute(Routes.spotifyItem(made))
+                        }
+                    },
+                    onFailure = { CaptureFeedback.tell(context, it.message ?: "Spotify non risponde, riprova") },
+                )
             }
         }
-        return choice(
-            "Brani su Spotify · ${songs.size}",
-            BubbleChip("Crea playlist", icon = Icons.AutoMirrored.Outlined.PlaylistAdd) {
-                withTracks { tracks ->
-                    scope.launch {
-                        com.platinum20.dashboard.media.spotify.SpotifyStore.createPlaylistWith(name, tracks).fold(
-                            onSuccess = { made ->
-                                haptic(Haptic.CONFIRM)
-                                CaptureFeedback.tell(context, "Playlist \"${made.title}\": ${tracks.size} su ${songs.size} brani", Icons.AutoMirrored.Outlined.QueueMusic, "Apri") {
-                                    inApp?.openRoute(Routes.spotifyItem(made))
-                                }
-                            },
-                            onFailure = { CaptureFeedback.tell(context, it.message ?: "Spotify non risponde, riprova") },
-                        )
-                    }
-                }
-            },
-            BubbleChip("In coda", icon = Icons.AutoMirrored.Outlined.QueueMusic) {
-                withTracks { tracks ->
-                    tracks.forEach { t ->
-                        CanvasPlayer.add(ResumeItem(ResumeKind.SPOTIFY, t.uri, t.title, t.subtitle, t.image, durationMs = t.durationMs, at = System.currentTimeMillis()))
-                    }
-                    haptic(Haptic.CONFIRM)
-                    CaptureFeedback.tell(context, "In coda: ${tracks.size} brani", Icons.AutoMirrored.Outlined.QueueMusic)
-                }
-            },
-        )
     }
 
+    /**
+     * Il + dell'editor (Antonio 2026-11-24, /mnt/project-files/fumetti/piu/): tutto quello che si aggiunge (i blocchi del
+     * menu «/», foto, voce e disegno) e in fondo "Dalla nota", le cose tolte da Altro. Niente da scorrere.
+     */
     fun add() {
         haptic(Haptic.LONG_PRESS)
+        val target = RichBar.Target(Unit, { body }, { v -> body = v; save() })
+        val entries = slashEntries(target) { pid, name -> openNoteLink(inApp, "${NoteFormat.NOTE_LINK}$pid", name) }
+        fun entry(entryId: String, label: String): BubbleChip? = entries.firstOrNull { it.id == entryId }?.let { x ->
+            BubbleChip(label, icon = x.icon) {
+                x.run(body)
+                if (entryId == "collega") scope.launch { kotlinx.coroutines.delay(150); runCatching { bodyFocus.requestFocus() } }
+            }
+        }
+        val nid = id?.takeIf { current != null }
+        val songs = com.platinum20.dashboard.notes.NoteSpoken.songs(body.text)
         ActionBubble.show(
             BubbleHead("Aggiungi", "nella nota"),
-            choice(
-                "Foto",
-                BubbleChip("Nel testo", icon = Icons.Outlined.Image) { pickInline() },
-                BubbleChip("In cima", icon = Icons.Outlined.AddPhotoAlternate) { pickPhotos() },
-                BubbleChip("Scatta", icon = Icons.Outlined.PhotoCamera) { camera.launch(ReceiptReader.photoUri(context)) },
-            ),
-            choice(
-                "Voce e disegno",
-                BubbleChip("Detta", icon = Icons.Outlined.Mic) { dictate() },
-                BubbleChip("Vocale", icon = Icons.Outlined.GraphicEq) { record() },
-                BubbleChip("Disegno", icon = Icons.Outlined.Draw) { draw() },
-            ),
+            *listOfNotNull(
+                choice("Blocchi", *listOfNotNull(entry("tabella", "Tabella"), entry("linea", "Linea"), entry("colonne", "Colonne"), entry("bacheca", "Bacheca")).toTypedArray()),
+                choice("Collega", *listOfNotNull(entry("sottonota", "Sotto-nota"), entry("collega", "Un'altra nota")).toTypedArray()),
+                choice(
+                    "Foto",
+                    BubbleChip("Nel testo", icon = Icons.Outlined.Image) { pickInline() },
+                    BubbleChip("In cima", icon = Icons.Outlined.AddPhotoAlternate) { pickPhotos() },
+                    BubbleChip("Scatta", icon = Icons.Outlined.PhotoCamera) { camera.launch(ReceiptReader.photoUri(context)) },
+                ),
+                choice(
+                    "Voce e disegno",
+                    BubbleChip("Detta", icon = Icons.Outlined.Mic) { dictate() },
+                    BubbleChip("Vocale", icon = Icons.Outlined.GraphicEq) { record() },
+                    BubbleChip("Disegno", icon = Icons.Outlined.Draw) { draw() },
+                ),
+                listOfNotNull(
+                    if (text.isBlank() && photos.isEmpty()) null else BubbleChip("PDF", icon = Icons.Outlined.PictureAsPdf) { exportPdf() },
+                    if (text.isBlank()) null else BubbleChip("Copia testo", icon = Icons.Outlined.ContentCopy) { Clip.copy(context, "Nota", NoteFormat.plain(text), "Testo copiato") },
+                    if (text.isBlank()) null else BubbleChip("Duplica", icon = Icons.Outlined.FileCopy) {
+                        save()
+                        val copy = NoteText.join(NoteText.copyTitle(title.text), NoteLines.uncheckAll(body.text))
+                        NotesStore.saveNote(null, copy)?.let { made ->
+                            current?.emoji?.let { NotesStore.setNoteEmoji(made, it) }
+                            inApp?.openRoute(Routes.noteEdit(made))
+                        }
+                    },
+                    id?.takeIf { NoteVersions.of(it).isNotEmpty() }?.let { BubbleChip("Versioni", icon = Icons.Outlined.History) { versions() } },
+                    if (body.text.isBlank()) null else BubbleChip("Ascolta", icon = Icons.Outlined.Headphones) {
+                        save()
+                        val script = com.platinum20.dashboard.notes.NoteSpoken.script(title.text, body.text)
+                        com.platinum20.dashboard.news.RecapSpeaker.play(
+                            context, script, title = title.text.ifBlank { "Nota" }, labels = script.map(com.platinum20.dashboard.news.RecapReader::chapterLabel),
+                        )
+                    },
+                    nid?.takeIf { text.isNotBlank() }?.let { n ->
+                        BubbleChip("Nel widget", icon = Icons.Outlined.Widgets) {
+                            save()
+                            com.platinum20.dashboard.widget.NoteWidget.choose(context, n)
+                            CaptureFeedback.tell(context, "Nel widget Nota", Icons.Outlined.Widgets)
+                        }
+                    },
+                    if (songs.isEmpty()) null else BubbleChip("Su Spotify", icon = Icons.AutoMirrored.Outlined.QueueMusic) { songsToSpotify(songs) },
+                ).takeIf { it.isNotEmpty() }?.let { choice("Dalla nota", *it.toTypedArray()) },
+            ).filter { it.chips.isNotEmpty() || it.slot != null }.toTypedArray(),
         )
     }
 
-    /** "Emoji" (PDF Fila-unica): righe da quattro, quella di adesso blu, Nessuna in fondo se ce n'è una. */
-    fun emojiAction(nid: Long, now: String?, few: Boolean = false): BubbleAction {
-        val all = if (few) (listOfNotNull(now) + NOTE_EMOJIS).distinct().take(if (now != null) 7 else 8) else NOTE_EMOJIS
-        return choice(
-            "Emoji",
-            *all.map { e -> BubbleChip(e, selected = e == now, emoji = e) { NotesStore.setNoteEmoji(nid, if (e == now) null else e) } }.toTypedArray(),
-            *listOfNotNull(if (now != null) BubbleChip("Nessuna") { NotesStore.setNoteEmoji(nid, null) } else null).toTypedArray(),
-        )
-    }
+    fun emojiAction(nid: Long, now: String?): BubbleAction = noteEmojiDots(nid, now)
 
+    /** Altro (Antonio 2026-11-24): copertina, cerca, archivia, la fila di emoji e i tasti. Il resto sta nel + e nella voce. */
     fun more() {
         haptic(Haptic.LONG_PRESS)
         val nid = id?.takeIf { current != null }
-        val hasDone = NoteLines.hasDone(body.text)
         ActionBubble.show(
             BubbleHead("Nota", listOfNotNull(current?.emoji, title.text.ifBlank { "Nuova nota" }).joinToString(" ")),
             *listOfNotNull(
-                // Scelte (righe di chip, una per categoria): emoji, Ricordamelo, lista, esporta.
-                nid?.let { emojiAction(it, current?.emoji, few = true) },
-                extras.remindChoice({ save(); id }, title.text, body.text, body.selection.end, id),
-                if (!NoteLines.hasList(body.text)) null else choice(
-                    "Lista",
-                    *listOfNotNull(
-                        if (!hasDone) null else BubbleChip("Fatte giù", icon = Icons.Outlined.VerticalAlignBottom) {
-                            body = TextFieldValue(NoteLines.doneToBottom(body.text))
-                            save()
-                        },
-                        BubbleChip("A-Z", icon = Icons.Outlined.SortByAlpha) {
-                            val before = body.text
-                            body = TextFieldValue(NoteLines.sortAlpha(before))
-                            save()
-                            CaptureFeedback.tell(context, "Lista in ordine", Icons.Outlined.SortByAlpha, "Annulla") {
-                                body = TextFieldValue(before)
-                                save()
-                            }
-                        },
-                        if (!hasDone) null else BubbleChip("Togli fatte", icon = Icons.Outlined.RemoveDone) {
-                            val before = body.text
-                            body = TextFieldValue(NoteLines.removeDone(before))
-                            save()
-                            CaptureFeedback.tell(context, "Fatte tolte", Icons.Outlined.Delete, "Annulla") {
-                                body = TextFieldValue(before)
-                                save()
-                            }
-                        },
-                    ).toTypedArray(),
-                ),
-                if (text.isBlank() && photos.isEmpty()) null else choice(
-                    "Esporta",
-                    *listOfNotNull(
-                        if (text.isBlank()) null else BubbleChip("Copia il testo", icon = Icons.Outlined.ContentCopy) {
-                            Clip.copy(context, "Nota", NoteFormat.plain(text), "Testo copiato")
-                        },
-                        BubbleChip("PDF", icon = Icons.Outlined.PictureAsPdf) { exportPdf() },
-                    ).toTypedArray(),
-                ),
-                // Righe: Segna › Cambia › Vai a › Crea › Metti in.
-                // "Ricomincia" (2026-11-23, idea 15): la valigia, la spesa del sabato, di nuovo pronte.
-                if (!hasDone) null else act(
-                    BubbleGroup.SEGNA, Icons.Outlined.Replay, "Ricomincia",
-                    NoteLists.doneCount(text).let { if (it == 1) "toglie la spunta, il testo resta" else "toglie le $it spunte, il testo resta" },
-                ) {
-                    val before = body.text
-                    body = TextFieldValue(NoteLines.uncheckAll(before))
-                    save()
-                    CaptureFeedback.tell(context, "Lista da rifare", Icons.Outlined.Replay, "Annulla") {
-                        body = TextFieldValue(before)
-                        save()
-                    }
-                },
                 nid?.let {
                     act(BubbleGroup.CAMBIA, Icons.Outlined.Image, if (current?.cover == null) "Aggiungi una copertina" else "Cambia la copertina", "una foto in cima alla nota") { pickCover() }
                 },
-                id?.takeIf { NoteVersions.of(it).isNotEmpty() }?.let { act(BubbleGroup.CAMBIA, Icons.Outlined.History, "Versioni precedenti", "rimetti com'era prima") { versions() } },
                 if (body.text.isBlank()) null else act(BubbleGroup.VAI, Icons.Outlined.Search, "Cerca nella nota", "le parole trovate si colorano") {
                     findAt = 0
                     finding = ""
                 },
-                // "Usa come modello" (1.586): una nota nuova uguale, con le spunte da rifare (la valigia, la spesa fissa).
-                if (text.isBlank()) null else act(BubbleGroup.CREA, Icons.Outlined.FileCopy, "Duplica", "una copia con tutto da rifare") {
-                    save()
-                    val copy = NoteText.join(NoteText.copyTitle(title.text), NoteLines.uncheckAll(body.text))
-                    val made = NotesStore.saveNote(null, copy) ?: return@act
-                    current?.emoji?.let { NotesStore.setNoteEmoji(made, it) }
-                    inApp?.openRoute(Routes.noteEdit(made))
+                nid?.let { n ->
+                    if (current?.archivedAt == null) act(BubbleGroup.METTI, Icons.Outlined.Archive, "Archivia", "esce dalla card, resta nell'archivio") {
+                        NotesStore.toggleNoteArchive(n)
+                        CaptureFeedback.tell(context, "Archiviata", Icons.Outlined.Archive, "Annulla") { NotesStore.toggleNoteArchive(n) }
+                    } else act(BubbleGroup.METTI, Icons.Outlined.Unarchive, "Rimetti negli appunti", "torna nella card della Home") { NotesStore.toggleNoteArchive(n) }
                 },
-                // "Ascolta" (1.606, idea 29): la nota letta con la voce delle News, nel player come un podcast.
-                if (body.text.isBlank()) null else act(BubbleGroup.METTI, Icons.Outlined.Headphones, "Ascolta", "con la voce delle News") {
-                    save()
-                    val script = com.platinum20.dashboard.notes.NoteSpoken.script(title.text, body.text)
-                    val name = title.text.ifBlank { "Nota" }
-                    com.platinum20.dashboard.news.RecapSpeaker.play(
-                        context, script, title = name, labels = script.map(com.platinum20.dashboard.news.RecapReader::chapterLabel),
-                    )
-                },
-                // Un elenco di brani "Artista – Titolo" (1.606, idea 18): Canvas li cerca su Spotify.
-                com.platinum20.dashboard.notes.NoteSpoken.songs(body.text).takeIf { it.isNotEmpty() }?.let { songsToSpotify(it) },
-                // Il widget Nota (2026-11-23, idea 8): questa nota sulla schermata del telefono.
-                nid?.takeIf { text.isNotBlank() }?.let { n ->
-                    act(
-                        BubbleGroup.METTI, Icons.Outlined.Widgets, "Mostra nel widget",
-                        if (com.platinum20.dashboard.widget.NoteWidget.placed(context)) "il widget Nota mostra questa" else "sulla schermata del telefono",
-                    ) {
-                        save()
-                        com.platinum20.dashboard.widget.NoteWidget.choose(context, n)
-                        CaptureFeedback.tell(context, "Nel widget Nota", Icons.Outlined.Widgets)
-                    }
-                },
+                nid?.let { emojiAction(it, current?.emoji) },
                 // Barra: Fissa · Condividi · Elimina.
                 nid?.let { n ->
                     Slot.pin(pinned) {
@@ -872,6 +814,8 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                     tappedBelow = tappedBelow,
                     sendToTodo = true,
                     noteId = id,
+                    // Ricordamelo sulla voce tenuta premuta (2026-11-24, era in Altro).
+                    lineMore = { t, at -> listOf(extras.remindChoice({ save(); id }, title.text, t, at, id)) },
                     onAllDone = { allDone() },
                     find = finding,
                     findAt = findAt.coerceAtMost((found.size - 1).coerceAtLeast(0)),
@@ -938,7 +882,17 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
 }
 
 /** Le emoji da scegliere per una nota. */
-private val NOTE_EMOJIS = listOf("📝", "🛒", "🧳", "🍝", "💊", "🏠", "💼", "🎁", "📚", "💡", "❤️", "⭐")
+private val NOTE_EMOJIS = listOf("📝", "🛒", "🧳", "🍝", "💊", "🏠", "💼", "💡")
+
+/** "Emoji" (Antonio 2026-11-24): una fila di bolle piccole che non scorre; ritoccare quella di adesso la toglie. Uguale ovunque. */
+internal fun noteEmojiDots(nid: Long, now: String?): BubbleAction = dots(
+    "Emoji",
+    *noteEmojiRow(now).map { e -> BubbleChip(e, selected = e == now, emoji = e) { NotesStore.setNoteEmoji(nid, if (e == now) null else e) } }.toTypedArray(),
+)
+
+/** Pura: le otto emoji della fila; quella di adesso c'è sempre (al posto dell'ultima se non è fra le solite). */
+internal fun noteEmojiRow(now: String?): List<String> =
+    if (now == null || now in NOTE_EMOJIS) NOTE_EMOJIS else NOTE_EMOJIS.dropLast(1) + now
 
 /** Quante foto si scelgono al massimo in una volta dalla galleria. */
 private const val MAX_PICK = 20

@@ -26,7 +26,9 @@ object WhenText {
     /** L'avviso di un promemoria o di una data. */
     fun alert(task: TaskItem): String = when (task.alert) {
         Alert.NONE -> "Nessun avviso"
-        Alert.ON_TIME -> if (task.allDay) "Avviso il giorno stesso alle 9" else "Avviso all'ora"
+        Alert.ON_TIME -> if (task.allDay) "Avviso il giorno stesso alle 9" else "Avviso all'inizio"
+        Alert.MIN_10 -> if (task.allDay) "Avviso il giorno stesso alle 9" else "Avviso 10 minuti prima"
+        Alert.HOUR_1 -> if (task.allDay) "Avviso il giorno stesso alle 9" else "Avviso 1 ora prima"
         Alert.DAY_BEFORE -> if (task.allDay) "Avviso il giorno prima alle 9" else "Avviso il giorno prima"
     }
 
@@ -38,7 +40,7 @@ object WhenText {
     }
 
     private fun before(min: Int): String = when {
-        min == 0 -> "all'ora"
+        min == 0 -> "all'inizio"
         min % (24 * 60) == 0 -> (min / (24 * 60)).let { if (it == 1) "il giorno prima" else "$it giorni prima" }
         min % 60 == 0 -> (min / 60).let { if (it == 1) "1 ora prima" else "$it ore prima" }
         else -> "$min minuti prima"

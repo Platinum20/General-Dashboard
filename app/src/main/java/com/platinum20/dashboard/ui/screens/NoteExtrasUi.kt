@@ -27,6 +27,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.MaterialTheme
 import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.notes.LineReminder
 import com.platinum20.dashboard.notes.NotePlace
@@ -70,7 +71,8 @@ internal class NoteExtras(val context: Context) {
                 line?.let { l -> LineReminder.tonight(now)?.let { at -> BubbleChip("Stasera 19", icon = Icons.Outlined.Bedtime) { noteId()?.let { remind(it, title, l, at) } } } },
                 line?.let { l -> LineReminder.tomorrowMorning(now).let { at -> BubbleChip("Domani 9", icon = Icons.Outlined.WbSunny) { noteId()?.let { remind(it, title, l, at) } } } },
                 line?.let { l -> BubbleChip("Scegli giorno", icon = Icons.Outlined.CalendarMonth) { noteId()?.let { pickLine = Triple(it, title, l) } } },
-                BubbleChip(place?.name ?: "In un posto", selected = place != null, icon = Icons.Outlined.Place) { placeBubble(noteId, current) },
+                // Niente fumetto dal fumetto: il chip apre subito "Dove te lo ricordo?" (Qui adesso, Cerca, Togli).
+                BubbleChip(place?.name ?: "In un posto", selected = place != null, icon = Icons.Outlined.Place) { noteId()?.let { id -> askLocation?.invoke { searchFor = id } } },
             ).toTypedArray(),
         )
     }
@@ -106,7 +108,7 @@ internal class NoteExtras(val context: Context) {
         )
     }
 
-    private fun here(noteId: Long) {
+    internal fun here(noteId: Long) {
         scope?.launch {
             val loc = LocationProvider.current(context)
             if (loc == null) {
@@ -193,14 +195,25 @@ internal fun rememberNoteExtras(): NoteExtras {
             onDismissRequest = { extras.searchFor = null },
             title = { Text("Dove te lo ricordo?") },
             text = {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    placeholder = { Text("Coop via Roma, Milano") },
-                    singleLine = true,
-                    colors = canvasFieldColors(),
-                    modifier = Modifier.fillMaxWidth().autoFocus(),
-                )
+                val place = NotePlaces.of(id)
+                androidx.compose.foundation.layout.Column {
+                    OutlinedTextField(
+                        value = query,
+                        onValueChange = { query = it },
+                        placeholder = { Text("Coop via Roma, Milano") },
+                        singleLine = true,
+                        colors = canvasFieldColors(),
+                        modifier = Modifier.fillMaxWidth().autoFocus(),
+                    )
+                    androidx.compose.foundation.layout.Row {
+                        TextButton(onClick = { extras.searchFor = null; extras.here(id) }) { Text("Qui adesso") }
+                        if (place != null) TextButton(onClick = {
+                            extras.searchFor = null
+                            NotePlaces.remove(context, place.noteId)
+                            CaptureFeedback.tell(context, "Posto tolto", Icons.Outlined.Place, "Annulla") { NotePlaces.set(context, place) }
+                        }) { Text("Togli ${place.name}", color = MaterialTheme.colorScheme.error, maxLines = 1) }
+                    }
+                }
             },
             confirmButton = {
                 TextButton(enabled = query.isNotBlank(), onClick = {

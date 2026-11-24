@@ -119,7 +119,7 @@ internal fun captureActions(context: Context, file: String, text: () -> String):
     choice(
         "Dati letti",
         BubbleChip("Condividi", icon = Icons.Outlined.Share) { shareTextFile(context, "$file.txt", text()) },
-        BubbleChip("Salva in Download", icon = Icons.Outlined.SaveAlt) {
+        BubbleChip("Salva", icon = Icons.Outlined.SaveAlt) {
         val where = saveTextToDownloads(context, stampedName(file), text())
         CaptureFeedback.show(
             CaptureNotice(

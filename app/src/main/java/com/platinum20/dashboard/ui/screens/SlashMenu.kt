@@ -151,7 +151,7 @@ internal fun slashEntries(target: RichBar.Target, openPage: (Long, String) -> Un
             target.set(TextFieldValue(t, TextRange(now.selection.end.coerceAtMost(t.length))))
             RichBar.openTable = line
         },
-        SlashEntry("colonne", layout, Icons.Outlined.ViewColumn, "Due colonne", "‖") { now ->
+        SlashEntry("colonne", layout, Icons.Outlined.ViewColumn, "Due colonne", "‖", chip = "Colonne") { now ->
             val e = NoteLines.insertBlock(now.text, now.selection.end, NoteLines.COLUMNS_NEW)
             target.set(TextFieldValue(e.text, TextRange(e.start)))
             RichBar.openTable = NoteLines.insertedBlockIndex(e)
@@ -252,9 +252,15 @@ internal fun SlashMenu(target: RichBar.Target, query: String) {
             // Un pannello di righe di chip, una per categoria: niente lista da scorrere (scorre solo se lo spazio è poco).
             Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).padding(horizontal = 8.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (found == null) {
-                    val rec = recent.mapNotNull { id -> entries.firstOrNull { it.id == id } }
-                    if (rec.isNotEmpty()) SlashChips("Usati di recente", rec, null) { pick(it) }
-                    entries.groupBy { it.group }.forEach { (group, list) -> SlashChips(group, list, null) { pick(it) } }
+                    // "/" da solo (Antonio 2026-11-24): una riga coi blocchi; il resto sta nel + dell'editor o si cerca scrivendo.
+                    val blocks = listOf("tabella", "linea", "colonne", "bacheca").mapNotNull { id -> entries.firstOrNull { it.id == id } }
+                    SlashChips("", blocks, null) { pick(it) }
+                    Text(
+                        "Scrivi per cercare: foto, detta, riquadro…",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = colors.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 6.dp),
+                    )
                 } else if (found.isEmpty()) {
                     Text(
                         "Niente con \"/$query\"",
@@ -298,9 +304,10 @@ private fun SlashChips(title: String, list: List<SlashEntry>, first: SlashEntry?
         }
         chipRows(list).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                // Tutte con l'icona: la fila è uguale (Antonio 2026-11-24).
                 row.forEach { e ->
                     val chip = BubbleChip(if (full) e.label else e.chip, selected = e == first, icon = e.icon) { onPick(e) }
-                    BubbleChipCell(chip, named = true, modifier = Modifier.weight(1f)) { onPick(e) }
+                    BubbleChipCell(chip, named = true, modifier = Modifier.weight(1f), icons = true) { onPick(e) }
                 }
             }
         }

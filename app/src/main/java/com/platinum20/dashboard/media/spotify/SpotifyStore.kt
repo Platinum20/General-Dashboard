@@ -499,6 +499,9 @@ object SpotifyStore {
         }
     }
 
+    /** I brani di un album o di una playlist, per metterli in coda dal fumetto senza aprirli (2026-11-24). */
+    suspend fun tracksOf(parent: SpItem): Loadable<List<SpItem>> = call { token -> SpotifyApi.children(token, parent).filter { it.kind == SpKind.TRACK } }
+
     fun loadChildren(parent: SpItem, force: Boolean = false) {
         val state = _children.value[parent.id]
         if (!force && state != null && (state.loading || state.data != null)) return

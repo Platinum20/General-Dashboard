@@ -323,7 +323,7 @@ private fun lineEdit(kind: ItemKind, id: Long, data: NotesData, line: LineKind):
                             choice(
                                 "Ogni",
                                 *com.platinum20.dashboard.notes.Repeat.entries.map { r ->
-                                    BubbleChip(r.label.replaceFirstChar { it.uppercase() }, selected = t.repeat == r) { NotesStore.setTaskRepeat(id, r) }
+                                    BubbleChip(repeatChip(r), selected = t.repeat == r) { NotesStore.setTaskRepeat(id, r) }
                                 }.toTypedArray(),
                             ),
                             // "Non si ripete" è Togli, il tasto rosso, come per la data.
@@ -334,8 +334,9 @@ private fun lineEdit(kind: ItemKind, id: Long, data: NotesData, line: LineKind):
                 LineKind.ALERT -> LineEdit.Tap(onClick = {
                     ActionBubble.show(
                         BubbleHead("Avviso", t.text),
-                        choice("Avviso", *com.platinum20.dashboard.notes.Alert.entries.filter { it != com.platinum20.dashboard.notes.Alert.NONE }.map { a ->
-                            BubbleChip(WhenText.alert(t.copy(alert = a)), selected = t.alert == a) { NotesStore.setTaskAlert(id, a) }
+                        // Parole corte e chiare (Antonio 2026-11-24: "all'ora" era ambiguo). Tutto il giorno: alle 9 o il giorno prima.
+                        choice("Avviso", *alertChoices(t.allDay).map { a ->
+                            BubbleChip(alertChip(a, t.allDay), selected = t.alert == a) { NotesStore.setTaskAlert(id, a) }
                         }.toTypedArray()),
                         // Nessun avviso = Togli, come "non si ripete".
                         BubbleAction(Icons.Outlined.NotificationsOff, "Nessuno", danger = true, slot = BubbleSlot.AWAY) { NotesStore.setTaskAlert(id, com.platinum20.dashboard.notes.Alert.NONE) },
@@ -361,10 +362,11 @@ private fun lineEdit(kind: ItemKind, id: Long, data: NotesData, line: LineKind):
                 LineKind.REPEAT -> LineEdit.Tap(onClick = {
                     ActionBubble.show(
                         BubbleHead("Quante volte", h.title),
-                        choice(
+                        // Una fila di bolle piccole, 1…7: 7 = ogni giorno (Antonio 2026-11-24).
+                        dots(
                             "Giorni a settimana",
                             *(1..6).map { n -> BubbleChip("$n", selected = h.perWeek == n) { NotesStore.saveHabit(id, h.title, n, h.remindAt) } }.toTypedArray(),
-                            BubbleChip("Ogni giorno", selected = h.perWeek == 0) { NotesStore.saveHabit(id, h.title, 0, h.remindAt) },
+                            BubbleChip("7", selected = h.perWeek == 0) { NotesStore.saveHabit(id, h.title, 0, h.remindAt) },
                         ),
                     )
                 })
@@ -384,3 +386,15 @@ fun rememberOpenItem(): (ItemKind, Long) -> Unit {
     val inApp = LocalInAppNav.current
     return remember(inApp) { { kind, id -> inApp?.openRoute?.invoke(Routes.noteItem(kind, id)) } }
 }
+
+/** Pura: i chip di "Si ripete" sotto il titolo "Ogni": Giorno, Settimana, Mese, Anno. */
+internal fun repeatChip(r: com.platinum20.dashboard.notes.Repeat): String =
+    r.label.removePrefix("ogni ").replaceFirstChar { it.uppercase() }
+
+/** Pura: gli avvisi che si possono scegliere; per tutto il giorno solo alle 9 o il giorno prima. */
+internal fun alertChoices(allDay: Boolean): List<com.platinum20.dashboard.notes.Alert> =
+    com.platinum20.dashboard.notes.Alert.entries.filter { it != com.platinum20.dashboard.notes.Alert.NONE && (!allDay || it.minutesBefore == 0L) }
+
+/** Pura: il nome corto di un avviso nel fumetto ("All'inizio", "Il giorno prima"…). */
+internal fun alertChip(a: com.platinum20.dashboard.notes.Alert, allDay: Boolean): String =
+    if (allDay && a == com.platinum20.dashboard.notes.Alert.ON_TIME) "Alle 9" else a.label

@@ -113,7 +113,7 @@ class UnifiedDatesTest {
         assertEquals("Si ripete", WhenText.repeatOfRule("FREQ=WEEKLY;INTERVAL=2"))
         assertNull(WhenText.repeatOfRule(""))
         assertEquals("Nessun avviso", WhenText.alert(emptyList()))
-        assertEquals("Avviso all'ora", WhenText.alert(listOf(0)))
+        assertEquals("Avviso all'inizio", WhenText.alert(listOf(0)))
         assertEquals(WhenText.alert(TaskItem(1, "x", dueAt = 1)), WhenText.alert(listOf(0)))
         assertEquals("Avviso 10 minuti prima e 1 ora prima", WhenText.alert(listOf(60, 10)))
         assertEquals("Avviso il giorno prima", WhenText.alert(listOf(1440)))

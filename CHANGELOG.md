@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.615.0
+**Fumetti più corti e tutti uguali**
+- In ogni fumetto prima le righe, poi le chip, in fondo i tasti grandi; in una fila le chip hanno tutte l'icona o nessuna
+- Emoji, colori e "quante volte" sono una fila di bolle piccole che non scorre: ritocchi quella scelta per toglierla
+- Il + dell'editor aggiunge tutto: tabella, linea, colonne, bacheca, sotto-nota, foto, voce, disegno, più PDF, Duplica, Versioni, Ascolta e widget
+- Altro della nota tiene solo copertina, Cerca, Archivia ed emoji, e entra nello schermo; lo stesso fumetto vale in Appunti e nel Calendario
+- «/» da solo mostra una riga coi blocchi; scrivendo cerchi tutto il resto
+- Lista e Ricordamelo stanno nel fumetto della voce (tieni premuta una spunta)
+- Brano: Vai all'artista, Aggiungi a una playlist, Radio del brano, poi la coda sopra Riproduci e Salva
+- Album e playlist: Riproduci è un tasto, "Apri playlist" una riga, e si mettono in coda interi
+- "Salva" al posto di "Salva in Download"; tolto il Retro da Altro del documento
+- Si ripete: Giorno, Settimana, Mese, Anno. Avviso: All'inizio, 10 min prima, 1 ora prima, Il giorno prima
+- "In un posto" non si apre più vuoto
+
 ## 1.614.0
 **Tutti i fumetti parlano la stessa lingua**
 - Tenendo premuto qualsiasi cosa, il fumetto è sempre uguale: in cima che cos'è, poi le scelte, poi le righe, in fondo i tasti sempre allo stesso posto (Apri a sinistra, Elimina rosso a destra)
