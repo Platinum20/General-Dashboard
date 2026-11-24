@@ -1866,7 +1866,7 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
         // La barra (2026-11-24, proposte 1 e 2): otto tasti fissi, sempre negli stessi punti, niente da scorrere.
         // + · Annulla · Ripeti | Punti · Numeri · Spunta | Aa · chiudi la tastiera.
         androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
-            val side = ((maxWidth - 10.dp - 7 * 4.dp) / 8).coerceIn(34.dp, 42.dp)
+            val side = ((maxWidth - 38.dp) / 8).coerceIn(34.dp, 42.dp)
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
