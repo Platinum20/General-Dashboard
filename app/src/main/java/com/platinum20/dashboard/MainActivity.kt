@@ -422,7 +422,7 @@ object Routes {
     }
 
     /**
-     * La regola della barra e del + (1.622, Antonio): ci sono dove si sfoglia un elenco, mancano dentro una cosa
+     * La regola della barra e del + (1.624, Antonio): ci sono dove si sfoglia un elenco, mancano dentro una cosa
      * sola (pagine con i loro tasti in fondo, player, lettore), nelle impostazioni e in Cerca.
      */
     fun hasBar(route: String?): Boolean = route in BAR_PAGES

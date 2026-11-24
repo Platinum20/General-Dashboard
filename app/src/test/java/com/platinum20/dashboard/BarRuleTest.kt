@@ -5,7 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** La regola della barra e del + (1.622): elenchi sì, dentro una cosa sola no. */
+/** La regola della barra e del + (1.624): elenchi sì, dentro una cosa sola no. */
 class BarRuleTest {
     @Test
     fun elenchiHannoLaBarra() {

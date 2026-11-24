@@ -995,7 +995,7 @@ fun CanvasTabChip(
 }
 
 /**
- * Quanto occupa in fondo la barra delle sezioni sulla pagina aperta, 0 dove non c'è. La regola (1.622): la
+ * Quanto occupa in fondo la barra delle sezioni sulla pagina aperta, 0 dove non c'è. La regola (1.624): la
  * barra c'è dove si sfoglia un elenco, non dentro una cosa sola (vedi `Routes.hasBar`).
  */
 val LocalBarSpace = androidx.compose.runtime.compositionLocalOf { 0.dp }

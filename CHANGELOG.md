@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.622.0
+## 1.624.0
 **Barra e + con una regola sola**
 - Dove sfogli un elenco la barra e il + ci sono, dentro una cosa sola no
 - Ora li trovi anche in Da fare, Appunti, Meteo, SIM, #etichette, @persone e nelle pagine di Media (Radio, Podcast, playlist, artisti, canali, Mix, Novità, Salvati, Cronologia)
