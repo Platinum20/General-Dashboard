@@ -103,7 +103,9 @@ internal fun docActions(context: android.content.Context, scope: kotlinx.corouti
     ) + extra + listOfNotNull(
         open?.let { Slot.open(it) },
         doc.number?.takeIf { it.isNotBlank() }?.let { number ->
-            Slot.copy { Clip.copy(context, "Numero del documento", number, "Numero copiato") }
+            Slot.share(copy = { Clip.copy(context, "Numero del documento", number, "Numero copiato") }, copyTitle = "Copia il numero", copyDetail = "da incollare altrove") {
+                runCatching { shareText(context, number) }
+            }
         },
         // Con il documento vanno via anche le foto, senza Annulla: si tocca due volte.
         Slot.delete(confirm = "Tocca ancora: sparisce con le sue foto") { DocumentsStore.delete(doc.id) },

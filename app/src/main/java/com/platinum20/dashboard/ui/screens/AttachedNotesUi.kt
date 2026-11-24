@@ -147,7 +147,7 @@ internal fun AppuntiCard(
                 BubbleHead(label, headName),
                 *listOfNotNull(
                     onOpen?.let { open -> Slot.open { open() } },
-                    Slot.copy { Clip.copy(context, label, field.text, "Appunti copiati") },
+                    Slot.shareText(context, com.platinum20.dashboard.notes.NoteFormat.plain(field.text)),
                     onClear?.let { clear -> Slot.clear(confirm = "Tocca ancora: gli appunti si cancellano") { clear(); field = TextFieldValue(""); writing = false } },
                 ).toTypedArray(),
             )

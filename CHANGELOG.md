@@ -4,6 +4,7 @@
 **Condividi più ordinato, Altro della nota più corto**
 - Condividi, in ogni fumetto, non apre più subito il menu di Android: lo stesso fumetto diventa Copia, Salva come PDF e «Manda a…». Indietro lo riporta com'era
 - Il PDF c'è solo dove ha senso: note e articoli. Per eventi, cose da fare, pacchi, notizie e video restano Copia e Manda a…
+- Anche i fumetti che avevano solo Copia (numero di un documento, codici e link nella nota, appunti, mail) ora hanno Condividi, con Copia e Manda a…
 - L'Altro della nota passa da 9 righe a 3 (Cerca, Ascolta, Archivia) più una fila «Con la nota»: Copertina, Versioni, Duplica, Widget. I tasti in basso si leggono interi
 
 ## 1.621.0

@@ -1141,7 +1141,7 @@ internal fun RichNoteField(
                                             val title = (card?.title ?: NoteLines.host(url)).replace('[', '(').replace(']', ')')
                                             replaceLine(line.index, "[$title]($url)")
                                         },
-                                        Slot.copy { fieldClipboard.setText(androidx.compose.ui.text.AnnotatedString(url)) },
+                                        Slot.shareText(context, url, link = true),
                                         Slot.remove { undoable("Anteprima tolta") { replaceLine(line.index, null) } },
                                     )
                                 }),
@@ -1404,7 +1404,7 @@ internal fun smartActions(
         act(BubbleGroup.VAI, Icons.Outlined.Tag, "Tutto con #${sm.value}", "note, cose da fare e date con questa etichetta") { inApp?.openRoute?.invoke(Routes.tag(sm.value)) },
     )
     com.platinum20.dashboard.notes.NoteSmart.Kind.CODE -> listOf(
-        Slot.copy { copySmart(context, clip, sm.value) },
+        Slot.share(copy = { copySmart(context, clip, sm.value) }, copyTitle = "Copia il codice", copyDetail = "da incollare altrove") { shareText(context, sm.value) },
     )
     com.platinum20.dashboard.notes.NoteSmart.Kind.PARCEL -> {
         val known = NotesStore.data.value.parcels.firstOrNull { it.code.equals(sm.value, ignoreCase = true) }
@@ -1416,7 +1416,7 @@ internal fun smartActions(
                 val id = NotesStore.addParcel(title, sm.value, null)
                 inApp?.openRoute?.invoke(Routes.noteItem(ItemKind.PARCEL, id))
             },
-            Slot.copy { copySmart(context, clip, sm.value) },
+            Slot.share(copy = { copySmart(context, clip, sm.value) }, copyTitle = "Copia il codice", copyDetail = "da incollare altrove") { shareText(context, sm.value) },
         )
     }
 }
