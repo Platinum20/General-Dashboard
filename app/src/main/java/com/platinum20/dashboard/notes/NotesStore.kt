@@ -645,6 +645,11 @@ object NotesStore {
         return noteId
     }
 
+    /** Le note e le cose da fare di esempio ([ExampleNotes]), davanti a quelle che ci sono già. */
+    fun addExamples(notes: List<Note>, tasks: List<TaskItem>) = update { d ->
+        d.copy(notes = notes + d.notes, tasks = tasks + d.tasks)
+    }
+
     /** Una foto in cui Canvas non ha trovato niente da fare: diventa una nota con la foto. */
     fun addPhotoNote(text: String, photo: String): Note {
         val now = System.currentTimeMillis()

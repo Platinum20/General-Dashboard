@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.616.0
+## 1.617.0
 **Da fare e Appunti in una card sola**
 - In Home una card "Da fare": prima le cose da fare, poi le abitudini, poi le liste delle note e, sotto una riga sottile, gli appunti
 - Una nota con le spunte compare una volta sola, come lista
@@ -8,6 +8,12 @@
 - La seconda riga dice il tipo: "lista", "Nota", "Foto"
 - In Home al massimo 5 cose da fare, le altre con "altre N ›"
 - Toccando il titolo si apre una pagina sola con tutto, e sopra le cose fatte e archiviate
+
+## 1.616.0
+**Quattro note di esempio**
+- Con questo aggiornamento trovi quattro note già scritte: Spesa, Idee regali, Weekend a Napoli e Lavagna della riunione, più due cose da fare
+- Usano un po' tutto l'editor: spunte, elenchi rientrati, tabella, riquadro, citazione, colonne, bacheca, colori, link tra note, #tag, foto e copertina
+- Arrivano una volta sola: se le cancelli non tornano
 
 ## 1.615.0
 **Fumetti più corti e tutti uguali**

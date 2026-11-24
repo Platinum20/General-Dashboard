@@ -308,6 +308,8 @@ class MainActivity : ComponentActivity() {
         }
         AppSettings.init(this)
         com.platinum20.dashboard.trips.TrainLive.init(this)
+        // Le note di esempio (2026-11-24): una volta sola, per vedere Home e editor pieni.
+        com.platinum20.dashboard.notes.ExampleNotes.seedOnce(this)
         // Gli avvisi dei posti delle note: il sistema li perde, si rimettono a ogni avvio (idea 11).
         runCatching { com.platinum20.dashboard.notes.NotePlaces.registerAll(this) }
         WebFetcher.init(this)
