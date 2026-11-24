@@ -472,7 +472,8 @@ internal fun BubbleChipCell(c: BubbleChip, named: Boolean, modifier: Modifier, i
         contentAlignment = Alignment.Center,
     ) {
         val density = androidx.compose.ui.platform.LocalDensity.current
-        val room = maxWidth - 16.dp
+        // Margine: la misura del testo e il disegno vero non coincidono al dp (nel menu «/» "Colonne" veniva tagliato).
+        val room = maxWidth - 28.dp
         val showText = named && (c.color == null || on)
         val showIcon = c.emoji != null || (c.icon != null && (icons || !showText))
         // Con l'icona il nome resta: se non ci sta, scritta più piccola invece di togliere l'icona.
