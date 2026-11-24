@@ -340,43 +340,6 @@ fun EventDetailScreen(
                         Sep()
                         DetailRow(Icons.Outlined.Place, current.location)
                     }
-                    // Con i dati del biglietto già sopra, le note del treno non dicono altro.
-                    if (notes.isNotBlank() && ticketAll.isEmpty()) {
-                        Sep()
-                        if (current.id > 0 && shift == null && com.platinum20.dashboard.notes.NoteLines.parse(notes).any { it.isList }) {
-                            // Punti e voci da spuntare (1.555): si spuntano qui e la spunta va nelle note dell'evento.
-                            var shownNotes by remember(notes) { mutableStateOf(androidx.compose.ui.text.input.TextFieldValue(notes)) }
-                            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.Top) {
-                                Icon(Icons.AutoMirrored.Outlined.Notes, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 1.dp).size(20.dp))
-                                Spacer(Modifier.width(14.dp))
-                                RichNoteField(
-                                    value = shownNotes,
-                                    readOnly = true,
-                                    firstAir = false,
-                                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
-                                    placeholder = "",
-                                    onValueChange = { v ->
-                                        val before = shownNotes.text
-                                        shownNotes = v
-                                        if (v.text != before) {
-                                            val description = when {
-                                                current.description == before -> v.text
-                                                current.description.contains(before) -> current.description.replace(before, v.text)
-                                                else -> null
-                                            }
-                                            if (description != null) scope.launch {
-                                                val saved = CalendarRepository.save(context, com.platinum20.dashboard.calendar.EventDraft.from(current, zone).copy(description = description), zone)
-                                                if (saved == null) tell("Il calendario non ha accettato la spunta.") else reload++
-                                            }
-                                        }
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                )
-                            }
-                        } else {
-                            DetailRow(Icons.AutoMirrored.Outlined.Notes, notes, maxLines = Int.MAX_VALUE)
-                        }
-                    }
                     if (current.calendarName.isNotBlank()) {
                         Sep()
                         DetailRow(Icons.Outlined.CalendarMonth, current.calendarName)
@@ -399,6 +362,9 @@ fun EventDetailScreen(
                     .format(java.time.format.DateTimeFormatter.ofPattern("EEE d MMM", java.util.Locale.ITALIAN)),
                 begin = from,
                 end = to,
+                // Il testo dell'evento nel calendario finisce qui, negli Appunti (Antonio, 2026-11-24). Con i dati del
+                // biglietto già sopra, le note del treno non dicono altro.
+                seed = if (ticketAll.isEmpty()) notes else "",
             )
         }
     }
@@ -469,7 +435,7 @@ fun EventEditScreen(
 
     Scaffold(
         modifier = Modifier.imePadding(),
-        bottomBar = { if (richBarShown()) RichToolbar(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) },
+        bottomBar = { KeyboardBarSwap(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), richBarShown()) {} },
         topBar = {
             TopAppBar(
                 title = { Text(if (eventId == null) "Nuovo evento" else "Modifica evento") },

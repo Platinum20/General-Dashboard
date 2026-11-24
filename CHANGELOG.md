@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.621.0
+**Note più fluide, appunti più belli**
+- Spuntando una voce il quadratino si riempie, la ✓ si disegna e il barrato scorre sulla riga; togliendo la spunta, al contrario. Anche nella card Da fare
+- Le righe spostate (trascinando, Su/Giù, «Fatte giù») scivolano al loro posto con una banda leggera; una voce nuova fa crescere il suo segno
+- La barra sopra la tastiera e i tasti in basso si danno il cambio sfumando: il + resta quasi nello stesso punto
+- Le file sopra la barra (Aa, «@», la data, il link) salgono piano; la chip della data e la maniglia ⋮⋮ aspettano che ti fermi mezzo secondo, così non lampeggiano a ogni lettera
+- «Salvata ora» in alto entra dal basso invece di cambiare di colpo
+- Toccando una nota in Da fare il titolo vola nella nota, e tornando rientra nella riga
+- Eventi, turni e treni: gli Appunti sono una nota come le altre, e il testo che l'evento ha nel calendario sta in fondo; tu scrivi sopra. Non c'è più la riga «Note» nei dettagli
+- Le cose da fare hanno anche loro la card Appunti in fondo, al posto della riga «Note»
+- Gli appunti hanno la faccia di una nota: niente icona, testo grande, spunte vere e le foto in fila piccola
+- «APPUNTI ›» apre la nota intera; tenendo premuta la card: Apri, Copia, Svuota
+- Senza appunti resta una riga sola, «Scrivi un appunto»: toccandola si apre la card con la tastiera
+
 ## 1.620.0
 **Colori: due in più, niente tasto per togliere**
 - Nel fumetto Colore ci sono sette colori per riga, in ordine: rosso, arancio, giallo, verde, blu, viola, rosa

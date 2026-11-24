@@ -70,6 +70,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.composed
+import androidx.compose.animation.togetherWith
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.clipRect
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.runtime.DisposableEffect
@@ -249,6 +255,36 @@ private val TALL_SIZE = 42.sp
 private val MENTION_ICON_SPACE = 17.sp
 private val MENTION_END_SPACE = 5.sp
 
+/** Una riga che scivola (proposta 2): la riga dove sta ora, l'alto e l'altezza di dove stava, in px del campo. */
+private class Glide(val to: Int, val fromTop: Float, val height: Float)
+
+/** Gli ultimi due disegni del testo, ognuno col suo testo: lo spostamento di una riga parte da quello di prima. */
+private class LaidOut {
+    var curText: String? = null
+    var curLayout: TextLayoutResult? = null
+    var prevText: String? = null
+    var prevLayout: TextLayoutResult? = null
+    fun push(text: String, l: TextLayoutResult) {
+        if (text != curText) { prevText = curText; prevLayout = curLayout }
+        curText = text
+        curLayout = l
+    }
+}
+
+/**
+ * Fin dove è barrata una voce da spuntare (2026-11-24, proposta 1): tutta se fatta, niente se no. La voce appena toccata
+ * si barra man mano (da sinistra) quando diventa fatta, e si sbarra da destra quando la spunta si toglie. Null = niente.
+ */
+internal fun sweepEnd(line: NoteLines.Line, sweep: Triple<Int, Boolean, Float>?): Int? {
+    val len = line.end - line.contentStart
+    val s = sweep?.takeIf { it.first == line.start && it.second == line.done }
+    return when {
+        s == null -> if (line.done) line.end else null
+        s.second -> line.contentStart + (len * s.third.coerceIn(0f, 1f)).toInt()
+        else -> line.contentStart + (len * (1f - s.third.coerceIn(0f, 1f))).toInt()
+    }
+}
+
 /** Il testo come lo disegna l'editor: segni nascosti, righe chiuse, aria fra le righe, posti dei link "@". */
 internal fun editorShown(text: String, folds: List<IntRange>) =
     NoteLines.Shown(
@@ -345,6 +381,19 @@ internal fun RichNoteField(
         emit(TextFieldValue(s.text, TextRange(s.start.coerceIn(0, s.text.length), s.end.coerceIn(0, s.text.length))))
     }
 
+    // La spunta che si disegna (2026-11-24, proposta 1): la voce toccata (dove comincia), se diventa fatta, e il barrato
+    // che scorre da sinistra a destra (al contrario quando si toglie).
+    var tickAt by remember { mutableStateOf<Pair<Int, Boolean>?>(null) }
+    val tickRun = remember { androidx.compose.animation.core.Animatable(1f) }
+    // La voce nuova (Invio su una voce, o una riga che diventa voce): il suo segno cresce invece di comparire.
+    var grownAt by remember { mutableStateOf<Int?>(null) }
+    // Mentre scrivi la maniglia ⋮⋮ sta ferma, nascosta: torna quando ti fermi mezzo secondo (proposta 4).
+    var still by remember { mutableStateOf(true) }
+    LaunchedEffect(value.text) {
+        still = false
+        kotlinx.coroutines.delay(CALM_MS)
+        still = true
+    }
     /** [typed] = l'ha cambiato la tastiera; falso = un tasto della barra, che sa già cosa fa. */
     fun change(v: TextFieldValue, typed: Boolean = true) {
         val old = current
@@ -387,6 +436,11 @@ internal fun RichNoteField(
                 folded = folded - NoteLines.plainLine(safe.text.substring(h.start, h.end))
             }
         }
+        if (safe.text != old.text && safe.selection.collapsed) {
+            val was = NoteLines.lineAt(old.text, old.selection.end.coerceIn(0, old.text.length))
+            val now = NoteLines.lineAt(safe.text, safe.selection.end.coerceIn(0, safe.text.length))
+            if (now.isList && (!was.isList || safe.text.count { it == '\n' } > old.text.count { it == '\n' })) grownAt = now.start
+        }
         emit(safe)
     }
 
@@ -427,9 +481,10 @@ internal fun RichNoteField(
             }
         }
     }
-    val transformation = remember(faded, value.text, found, findAt, accent, folds, tallAt, blockSp, smartStyles, firstAir) {
+    val sweep = tickAt?.let { Triple(it.first, it.second, tickRun.value) }
+    val transformation = remember(faded, value.text, found, findAt, accent, folds, tallAt, blockSp, smartStyles, firstAir, sweep) {
         VisualTransformation { input ->
-            richText(input.text, faded, smartStyles + found.mapIndexed { i, r -> r to if (i == findAt) foundNow else foundStyle }, accent, marker = marker, folds = folds, tall = tallAt, sizes = blockSp, firstAir = firstAir)
+            richText(input.text, faded, smartStyles + found.mapIndexed { i, r -> r to if (i == findAt) foundNow else foundStyle }, accent, marker = marker, folds = folds, tall = tallAt, sizes = blockSp, firstAir = firstAir, sweep = sweep)
         }
     }
     fun hiddenLine(line: NoteLines.Line) = folds.any { line.start in it }
@@ -523,6 +578,32 @@ internal fun RichNoteField(
     var dragPull by remember { mutableFloatStateOf(0f) }
     var dragPullX by remember { mutableFloatStateOf(0f) }
     var dragEndedAt by remember { mutableLongStateOf(0L) }
+    val motionScope = androidx.compose.runtime.rememberCoroutineScope()
+    // Le righe che scivolano (proposta 2): dove stavano (in px nel campo) e dove stanno ora, con una banda che le segue.
+    val glideRun = remember { androidx.compose.animation.core.Animatable(1f) }
+    var glides by remember { mutableStateOf<List<Glide>>(emptyList()) }
+    val laidOut = remember { LaidOut() }
+    LaunchedEffect(value.text) {
+        // Il disegno di prima: se quello nuovo è già arrivato è il penultimo, se no l'ultimo.
+        val fresh = laidOut.curText == value.text
+        val before = if (fresh) laidOut.prevText else laidOut.curText
+        val oldLayout = if (fresh) laidOut.prevLayout else laidOut.curLayout
+        if (before == null || oldLayout == null || dragging != null) return@LaunchedEffect
+        val moves = NoteLines.moved(before, value.text)
+        if (moves.isEmpty()) return@LaunchedEffect
+        val oldShown = editorShown(before, NoteLines.foldRanges(before, folded) + NoteLines.boardRanges(before))
+        val oldLines = NoteLines.parse(before)
+        val drawnOld = oldLayout.layoutInput.text.length
+        glides = moves.mapNotNull { (from, to) ->
+            val line = oldLines.getOrNull(from) ?: return@mapNotNull null
+            val at = oldShown.toShown(line.contentStart).coerceAtMost(drawnOld)
+            val row = oldLayout.getLineForOffset(at)
+            Glide(to, oldLayout.getLineTop(row), oldLayout.getLineBottom(row) - oldLayout.getLineTop(row))
+        }
+        glideRun.snapTo(0f)
+        glideRun.animateTo(1f, Motion.settle())
+        glides = emptyList()
+    }
 
     boardDialog?.let { (board, item, start) ->
         BoardTextDialog(
@@ -565,6 +646,24 @@ internal fun RichNoteField(
                         .clip(RoundedCornerShape(12.dp))
                         .background(colors.card),
                 )
+            }
+            // Le righe spostate scivolano (proposta 2): una banda leggera parte da dove stava la riga e si posa dove sta ora.
+            if (glides.isNotEmpty()) {
+                val p = glideRun.value
+                glides.forEach { g ->
+                    val line = shown.lines.getOrNull(g.to) ?: return@forEach
+                    val row = l.getLineForOffset(shown.toShown(line.contentStart).coerceAtMost(drawn))
+                    val y = g.fromTop + (l.getLineTop(row) - g.fromTop) * p
+                    Box(
+                        Modifier
+                            .offset { IntOffset(0, y.toInt()) }
+                            .fillMaxWidth()
+                            .height(with(density) { g.height.toDp() })
+                            .graphicsLayer { alpha = (1f - p).coerceIn(0f, 1f) }
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(colors.primary.copy(alpha = 0.16f)),
+                    )
+                }
             }
             // Le bolle dei link "@" (1.589), sotto il testo: una per riga se il link va a capo.
             val labelEmojis = NoteFormat.mentionEmojis(text).associate { it.first.first - 1 to it.second }
@@ -626,7 +725,7 @@ internal fun RichNoteField(
             cursorBrush = SolidColor(colors.primary),
             visualTransformation = transformation,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-            onTextLayout = { layout = it },
+            onTextLayout = { layout = it; laidOut.push(current.text, it) },
             decorationBox = { field ->
                 Box {
                     if (value.text.isEmpty()) Text(placeholder, style = textStyle, color = colors.onSurfaceVariant.copy(alpha = 0.6f))
@@ -752,6 +851,12 @@ internal fun RichNoteField(
                                 if (System.currentTimeMillis() - dragEndedAt < 400) return@combinedClickable
                                 if (line.kind == NoteLines.Kind.CHECK) {
                                     haptic(if (line.done) Haptic.TOGGLE_OFF else Haptic.TOGGLE_ON)
+                                    tickAt = line.start to !line.done
+                                    motionScope.launch {
+                                        tickRun.snapTo(0f)
+                                        tickRun.animateTo(1f, Motion.settle())
+                                        tickAt = null
+                                    }
                                     val now = current
                                     val text = NoteLines.toggle(now.text, line.index)
                                     val delta = text.length - now.text.length
@@ -768,13 +873,14 @@ internal fun RichNoteField(
                 ) {
                     // Il segno nel suo posto largo quanto il cerchio, sul bordo sinistro del rientro.
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.width(MARK_SLOT).fillMaxHeight()) {
-                        LineMark(line, lifted = dragging == line.index)
+                        LineMark(line, lifted = dragging == line.index, ticking = tickAt?.first == line.start, grow = grownAt == line.start)
                     }
                 }
             } }
             // La maniglia ⋮⋮ della riga dove sta il cursore (2026-11-24, proposta 5): le righe di testo e i titoli non hanno
             // un segno da tenere premuto. Tocco = il fumetto della riga, trascina = la sposti. Solo su quella riga.
             if (lineHandle && focused && !readOnly && value.selection.collapsed) {
+                val handleAlpha by androidx.compose.animation.core.animateFloatAsState(if (still || dragging != null) 1f else 0f, Motion.settle(), label = "maniglia")
                 val cur = shown.lines.firstOrNull { value.selection.end in it.start..it.end }
                 if (cur != null && (cur.kind == NoteLines.Kind.TEXT || cur.kind == NoteLines.Kind.HEADING) && !hiddenLine(cur) &&
                     cur.end > cur.contentStart && shown.toShown(cur.start) < drawn
@@ -802,7 +908,7 @@ internal fun RichNoteField(
                         Icon(
                             Icons.Outlined.DragIndicator, contentDescription = null,
                             tint = if (dragging == cur.index) colors.primary else colors.onSurfaceVariant.copy(alpha = 0.55f),
-                            modifier = Modifier.size(18.dp),
+                            modifier = Modifier.size(18.dp).graphicsLayer { alpha = handleAlpha },
                         )
                     }
                 }
@@ -1456,7 +1562,29 @@ private val CALLOUT_EMOJIS = listOf("💡", "⚠️", "📌", "❗", "✅", "�
 
 /** Il quadrato vuoto, il quadrato pieno con la spunta (come su Notion, 1.590), o il pallino del punto. */
 @Composable
-private fun LineMark(line: NoteLines.Line, lifted: Boolean = false) {
+private fun LineMark(line: NoteLines.Line, lifted: Boolean = false, ticking: Boolean = false, grow: Boolean = false) {
+    val colors = MaterialTheme.colorScheme
+    // La spunta si disegna (proposta 1): il quadrato si riempie con una molla e il segno si scopre da sinistra. Solo per
+    // la voce toccata: le altre (aprendo la nota, righe che cambiano posto) sono subito come sono.
+    val fill = remember { androidx.compose.animation.core.Animatable(if (line.done) 1f else 0f) }
+    LaunchedEffect(line.done, ticking) {
+        val goal = if (line.done) 1f else 0f
+        if (ticking) fill.animateTo(goal, Motion.lively()) else fill.snapTo(goal)
+    }
+    // La voce nuova (proposta 2): il segno cresce da piccolo.
+    val size = remember { androidx.compose.animation.core.Animatable(1f) }
+    LaunchedEffect(grow, line.start) {
+        if (!grow) return@LaunchedEffect
+        size.snapTo(0.2f)
+        size.animateTo(1f, Motion.lively())
+    }
+    Box(Modifier.graphicsLayer { scaleX = size.value; scaleY = size.value }, contentAlignment = Alignment.Center) {
+        LineMarkShape(line, lifted, fill.value)
+    }
+}
+
+@Composable
+private fun LineMarkShape(line: NoteLines.Line, lifted: Boolean, fill: Float) {
     val colors = MaterialTheme.colorScheme
     // Mentre la si trascina, la voce ha il segno blu: si vede quale si sta spostando.
     val ink = if (lifted) colors.primary else colors.onSurface
@@ -1472,8 +1600,25 @@ private fun LineMark(line: NoteLines.Line, lifted: Boolean = false) {
         // requiredSize: tondi sempre, anche se il posto è più stretto.
         line.kind == NoteLines.Kind.BULLET -> Box(Modifier.requiredSize(if (lifted) 9.dp else 6.dp).clip(CircleShape).background(ink))
         // Quadrati come su Notion (1.590), non più cerchi.
-        line.done -> Box(contentAlignment = Alignment.Center, modifier = Modifier.requiredSize(18.dp).clip(RoundedCornerShape(4.dp)).background(colors.primary)) {
-            Icon(Icons.Outlined.Check, contentDescription = null, tint = colors.onPrimary, modifier = Modifier.size(13.dp))
+        line.kind == NoteLines.Kind.CHECK && (line.done || fill > 0.01f) -> Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.requiredSize(18.dp)
+                .border(1.6.dp, if (lifted) colors.primary else colors.onSurfaceVariant.copy(alpha = 1f - fill.coerceIn(0f, 1f)), RoundedCornerShape(4.dp)),
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.requiredSize(18.dp)
+                    .graphicsLayer { val k = 0.55f + 0.45f * fill; scaleX = k; scaleY = k; alpha = fill.coerceIn(0f, 1f) }
+                    .clip(RoundedCornerShape(4.dp)).background(colors.primary),
+            ) {
+                // Il segno si scopre da sinistra a destra, come se si disegnasse.
+                Icon(
+                    Icons.Outlined.Check, contentDescription = null, tint = colors.onPrimary,
+                    modifier = Modifier.size(13.dp).drawWithContent {
+                        clipRect(right = size.width * fill.coerceIn(0f, 1f)) { this@drawWithContent.drawContent() }
+                    },
+                )
+            }
         }
         // In corso (1.590, dalla bacheca): il quadrato blu con un quadratino dentro.
         line.doing -> Box(contentAlignment = Alignment.Center, modifier = Modifier.requiredSize(18.dp).border(1.6.dp, colors.primary, RoundedCornerShape(4.dp))) {
@@ -1501,6 +1646,8 @@ internal fun richText(
     sizes: Map<String, Float> = emptyMap(),
     /** Senza aria sopra la prima riga: la prima riga semplice resta alta come il testo. */
     firstAir: Boolean = true,
+    /** La spunta appena toccata (2026-11-24): dove comincia la voce, se diventa fatta, quanto è avanti il barrato (0…1). */
+    sweep: Triple<Int, Boolean, Float>? = null,
 ): TransformedText {
     val styled = buildAnnotatedString {
         append(text)
@@ -1524,8 +1671,9 @@ internal fun richText(
             }
             if (style != null) addStyle(style, s.start, s.end)
         }
-        NoteLines.parse(text).filter { it.kind == NoteLines.Kind.CHECK && it.done && it.end > it.contentStart }.forEach {
-            addStyle(SpanStyle(textDecoration = TextDecoration.LineThrough, color = faded), it.contentStart, it.end)
+        NoteLines.parse(text).filter { it.kind == NoteLines.Kind.CHECK && it.end > it.contentStart }.forEach {
+            val upTo = sweepEnd(it, sweep) ?: return@forEach
+            if (upTo > it.contentStart) addStyle(SpanStyle(textDecoration = TextDecoration.LineThrough, color = faded), it.contentStart, upTo)
         }
         // La citazione: testo in corsivo e un po' più chiaro, accanto alla barra.
         NoteLines.parse(text).filter { it.kind == NoteLines.Kind.QUOTE && it.end > it.contentStart }.forEach {
@@ -1658,6 +1806,26 @@ private fun listActions(context: android.content.Context, line: NoteLines.Line, 
  * Annulla · Ripeti | Punti · Numeri · Spunta · rientro → ← | Aa. Con del testo scelto, o dopo Aa: grassetto, corsivo,
  * barrato, titolo | X per tornare. Accesa = blu; spenta (grigia) = adesso non si può.
  */
+/**
+ * I tasti in basso e la barra delle righe si danno il cambio (2026-11-24, proposta 3): sfumano uno nell'altro e la barra
+ * sale di un filo, mentre il bordo (con imePadding fuori) segue la tastiera. Il + sta quasi nello stesso punto nei due.
+ */
+@Composable
+internal fun KeyboardBarSwap(modifier: Modifier, writing: Boolean, buttons: @Composable () -> Unit) {
+    androidx.compose.animation.AnimatedContent(
+        targetState = writing,
+        modifier = modifier,
+        contentAlignment = Alignment.BottomStart,
+        label = "barra",
+        transitionSpec = {
+            (androidx.compose.animation.fadeIn(Motion.settle()) +
+                androidx.compose.animation.slideInVertically(Motion.settle()) { it / 3 }) togetherWith
+                androidx.compose.animation.fadeOut(Motion.settle()) using
+                androidx.compose.animation.SizeTransform(clip = false)
+        },
+    ) { bar -> if (bar) RichToolbar(Modifier.fillMaxWidth()) else buttons() }
+}
+
 @Composable
 internal fun RichToolbar(modifier: Modifier = Modifier) {
     val target = RichBar.target ?: return
@@ -1702,6 +1870,14 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
         if (line.isBlock || NoteFormat.linkAt(lineText, 0) != null || lineText.contains("](")) null
         else NoteLines.plainLine(lineText).takeIf { it.length >= 4 }?.let { p -> QuickParse.parse(p).due?.let { p to it } }
     }
+    // La chip della data aspetta che ti fermi mezzo secondo (2026-11-24, proposta 4): scrivendo "venerdì" non lampeggia
+    // a ogni lettera (ven… vene…).
+    var calmLine by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(lineText) {
+        kotlinx.coroutines.delay(CALM_MS)
+        calmLine = lineText
+    }
+    val datedShown = dated.takeIf { calmLine == lineText }
     fun toCalendar() {
         val (plain, due) = dated ?: return
         haptic(Haptic.CONFIRM)
@@ -1733,7 +1909,7 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
     // Quello che galleggia sopra la barra (2026-11-24, proposte 2 e 3): la barra resta sempre uguale, sopra compaiono
     // i formati (Aa o testo scelto), i risultati di "@" e il tasto della data o del link della riga.
     // Con un fumetto aperto (Colore, Trasforma in…) la fila sparisce: il Popup sta sopra a tutto e lo copriva.
-    val floating = ActionBubble.actions == null && (mention != null || showFormats || dated != null || linkHere != null)
+    val floating = ActionBubble.actions == null && (mention != null || showFormats || datedShown != null || linkHere != null)
     var barWidth by remember { mutableStateOf(0) }
     val density = LocalDensity.current
     Box(modifier.onGloballyPositioned { barWidth = it.size.width }) {
@@ -1821,7 +1997,7 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                     if (mention == null && (dated != null || linkHere != null)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.End)) {
                             linkHere?.let { (url, label) -> FloatChip(Icons.AutoMirrored.Outlined.OpenInNew, "Apri il link") { openLink(url, label) } }
-                            dated?.let { (_, due) -> FloatChip(Icons.Outlined.Event, dueLabel(due) + " → Calendario") { toCalendar() } }
+                            datedShown?.let { (_, due) -> FloatChip(Icons.Outlined.Event, dueLabel(due) + " → Calendario") { toCalendar() } }
                         }
                     }
                 }
@@ -1863,6 +2039,27 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
     // Aa acceso resta finché lo spegni; togliere una selezione chiude la fila se Aa era spento.
 }
 
+/** Quanto aspettano la chip della data e la maniglia ⋮⋮ dopo l'ultima lettera (2026-11-24, proposta 4). */
+private const val CALM_MS = 500L
+
+/**
+ * Quello che compare sopra la barra sale dalla barra (2026-11-24, proposta 4): parte un filo più in basso e trasparente
+ * e si posa con la molla viva, invece di comparire in un fotogramma.
+ */
+private fun Modifier.popIn(): Modifier = composed {
+    val p = remember { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(Unit) { p.animateTo(1f, Motion.lively()) }
+    val rise = with(LocalDensity.current) { 10.dp.toPx() }
+    graphicsLayer {
+        alpha = p.value.coerceIn(0f, 1f)
+        translationY = rise * (1f - p.value)
+        val k = 0.96f + 0.04f * p.value
+        scaleX = k
+        scaleY = k
+        transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f)
+    }
+}
+
 /** Una fila di tasti in vetro sopra la barra: come il menu "/". */
 @Composable
 private fun FloatPanel(content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit) {
@@ -1871,6 +2068,7 @@ private fun FloatPanel(content: @Composable androidx.compose.foundation.layout.R
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
+            .popIn()
             .shadow(10.dp, shape)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.97f))
@@ -1888,6 +2086,7 @@ private fun FloatChip(icon: ImageVector, label: String, onClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
+            .popIn()
             .heightIn(min = 40.dp)
             .bouncyPress(0.92f)
             .shadow(8.dp, shape)

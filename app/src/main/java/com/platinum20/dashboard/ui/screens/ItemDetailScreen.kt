@@ -254,7 +254,9 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
                 onLongClick = edit?.onClear?.let { clear -> { ActionBubble.show(BubbleHead("Data", whenLine.text), Slot.remove(onClick = clear)) } },
             )
         }
-        val rest = if (whenLine != null) detail.lines.filter { it.kind != LineKind.WHEN && it.kind != LineKind.STATUS } else detail.lines
+        // Le note di una cosa da fare stanno negli Appunti in fondo, come su eventi e abitudini (2026-11-24, proposta 6).
+        val rest = (if (whenLine != null) detail.lines.filter { it.kind != LineKind.WHEN && it.kind != LineKind.STATUS } else detail.lines)
+            .filter { it.kind != LineKind.NOTES }
         if (rest.isNotEmpty()) CanvasCard(Modifier.fillMaxWidth()) {
             rest.forEachIndexed { i, line ->
                 if (i > 0) RowDivider()
@@ -272,6 +274,9 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
         // Gli appunti fissi dell'abitudine (idea 24, 2026-11-23): la scheda della palestra sotto mano quando la spunti.
         // Sempre l'ultima card della pagina, anche dopo "Citato in" (Antonio, 2026-11-23).
         if (kind == ItemKind.HABIT) AttachedNotesBlock(com.platinum20.dashboard.notes.AttachedNotes.habit(id), detail.title)
+        if (kind == ItemKind.TASK) data.tasks.firstOrNull { it.id == id }?.let { t ->
+            AppuntiCard("task-$id-notes", t.notes, "Appunti", detail.title, onCommit = { NotesStore.setTaskNotes(id, it) })
+        }
     }
 
     when (val p = picker) {

@@ -7,6 +7,8 @@ package com.platinum20.dashboard.notes
  * pallini. Funzioni pure: si provano senza telefono.
  */
 object NoteLines {
+    private val NUMBER_KEY = Regex("""^(\s*)\d+\. """)
+
     enum class Kind { TEXT, BULLET, CHECK, HEADING, NUMBER, QUOTE, CALLOUT, DIVIDER, TABLE, AUDIO, COLUMNS, PAGE, BOOKMARK, BOARD, IMAGE }
 
     /** Una riga: [start]..[end] ([end] = dove sta il "\n" o la fine), il segno davanti lungo [prefix]. */
@@ -338,6 +340,29 @@ object NoteLines {
     /** "Togli le fatte": le voci spuntate spariscono. */
     fun removeDone(text: String): String =
         text.split('\n').filter { line -> kindOf(line).let { (k, done, _) -> !(k == Kind.CHECK && done) } }.joinToString("\n")
+
+    /**
+     * Le righe che hanno solo cambiato posto (2026-11-24, proposta 2): (dove stava, dove sta) di ognuna, se fra i due testi
+     * le righe sono le stesse in un altro ordine. I numeri delle liste non contano (si rifanno dopo uno spostamento).
+     * Vuota se il testo è cambiato davvero: allora non c'è niente da far scivolare.
+     */
+    fun moved(old: String, new: String, max: Int = 8): List<Pair<Int, Int>> {
+        if (old == new) return emptyList()
+        fun key(line: String) = NUMBER_KEY.replace(line, "\$1#. ")
+        val a = old.split('\n').map(::key)
+        val b = new.split('\n').map(::key)
+        if (a.size != b.size || a.sorted() != b.sorted()) return emptyList()
+        val free = b.indices.groupBy { b[it] }.mapValues { it.value.toMutableList() }
+        val out = mutableListOf<Pair<Int, Int>>()
+        a.forEachIndexed { i, k ->
+            val slots = free.getValue(k)
+            // La stessa riga ripetuta: tiene il posto più vicino a dove stava.
+            val j = slots.minBy { kotlin.math.abs(it - i) }
+            slots.remove(j)
+            if (j != i) out += i to j
+        }
+        return if (out.size > max) out.sortedBy { kotlin.math.abs(it.first - it.second) }.takeLast(max) else out
+    }
 
     /** "Fatte in fondo": in ogni lista (righe da spuntare una dopo l'altra) le spuntate scendono, l'ordine resta. */
     fun doneToBottom(text: String): String {
