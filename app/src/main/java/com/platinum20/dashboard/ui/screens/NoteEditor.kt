@@ -172,7 +172,7 @@ import kotlin.math.roundToInt
  * Editor di una nota lunga (1.529, Antonio scelta B di /mnt/project-files/editor-note/): fatto come le altre schede.
  * In alto Indietro e una riga sola (quando o "Salvata ora", voci fatte, foto); il titolo; le foto in fila sotto il titolo (tocca = grande,
  * tieni premuto = fumetto, tieni premuto e trascina = ordine); il testo. In basso "Aggiungi" a sinistra (foto, scatta,
- * detta; tenuto premuto = foto subito) e "Altro" a destra. Punti, spunte, titoletti e grassetto stanno solo nella barra
+ * detta; tenuto premuto = lo stesso fumetto) e "Altro" a destra. Punti, spunte, titoletti e grassetto stanno solo nella barra
  * sopra la tastiera (1.577). Si salva da sola.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -740,7 +740,7 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                         } else if (dictation.listening) {
                             HoldRoundButton(Icons.Outlined.Stop, "Ferma", tint = MaterialTheme.colorScheme.primary, onClick = { dictate() })
                         } else {
-                            HoldRoundButton(Icons.Outlined.Add, "Aggiungi", onClick = { add() }, onLongClick = { haptic(Haptic.LONG_PRESS); pickPhotos() })
+                            HoldRoundButton(Icons.Outlined.Add, "Aggiungi", onClick = { add() }, onLongClick = { add() })
                         }
                         Text(
                             if (dictation.listening || recordingSince != null) "Ferma" else "Aggiungi",
@@ -844,8 +844,7 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                     )
                 }
                 Spacer(Modifier.size(12.dp))
-                // Tenendo premuto un punto del testo (1.606, idea 14): "Detta qui" nel menu, il testo entra lì mentre parli.
-                WithTextExtras(listOf(TextToolbarExtra("Detta qui") { dictate() })) {
+                // "Detta qui" nel menu del testo tolto (Antonio 2026-11-24): "Detta" del + scrive già dove sta il cursore.
                 RichNoteField(
                     value = body,
                     onValueChange = { v ->
@@ -886,7 +885,6 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                         .padding(horizontal = 24.dp)
                         .testTag("noteBody"),
                 )
-                }
                 // Tocco sotto l'ultima riga (1.586): il cursore va in fondo e, se l'ultima riga è una voce, ne apre una nuova.
                 // Con la tastiera aperta lo spazio è più basso: se no la pagina scorre e titolo e foto escono (1.559).
                 Box(
@@ -951,7 +949,7 @@ private const val MAX_PICK = 20
 /** La pausa dopo cui si salva quello che si sta scrivendo (2026-11-24). */
 internal const val SAVE_PAUSE_MS = 500L
 
-/** Il tasto tondo delle schede, che sa anche il tieni premuto (qui: "Aggiungi" tenuto = foto subito). */
+/** Il tasto tondo delle schede, che sa anche il tieni premuto (qui: "Aggiungi" tenuto = lo stesso fumetto). */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun HoldRoundButton(icon: ImageVector, label: String, tint: Color = MaterialTheme.colorScheme.onSurface, onClick: () -> Unit, onLongClick: (() -> Unit)? = null) {

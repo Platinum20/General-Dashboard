@@ -445,56 +445,45 @@ class NoteEditorDeviceCheck {
         assertFalse("la tastiera è ancora aperta", imeOpen())
     }
 
-    // ---------------------------------------------------------------- "/" e Aa
+    // ---------------------------------------------------------------- + della barra e Aa
 
+    /** 2026-11-24: il menu "/" non c'è più (doppione del +): la "/" resta un carattere come gli altri. */
     @Test
-    fun slashMenuFiltersAndEnterPicks() {
+    fun slashIsJustText() {
         open("Menu\n", "slash")
         focusBody()
         type("/")
-        shot("menu_aperto")
-        compose.onAllNodesWithText("Tabella", useUnmergedTree = true).onFirst().assertExists()
-        type("tit")
-        shot("filtrato")
-        key(Key.Enter)
-        type("Capitolo")
-        shot("titolo_scelto")
-        assertEquals("## Capitolo", body().lines().first())
+        shot("slash")
+        assertEquals(0, compose.onAllNodesWithText("Tabella", useUnmergedTree = true).fetchSemanticsNodes().size)
+        assertTrue(body(), body().contains("/"))
     }
 
+    /** I blocchi dal + della barra sopra la tastiera (2026-11-24): lo stesso fumetto del + in basso. */
     @Test
-    fun slashBlocks() {
+    fun blocksFromBarPlus() {
         open("Blocchi\n", "blocchi")
-        focusBody()
-        for (entry in listOf("Linea", "Colonne", "Bacheca", "Tabella")) {
+        for (entry in listOf("Colonne", "Bacheca", "Tabella")) {
+            // Dopo un blocco il fuoco può stare in una cella: la tastiera non serve, basta un "Aggiungi".
             field().performTextInputSelection(TextRange(body().length))
-            if (!body().endsWith("\n") && body().isNotEmpty()) key(Key.Enter)
-            type("/")
+            compose.onAllNodesWithContentDescription("Aggiungi", useUnmergedTree = true)[0].performClick()
+            compose.waitForIdle()
+            shot("piu_" + entry)
             tapText(entry)
             compose.waitForIdle()
-            shot(entry.replace(' ', '_'))
-            if (entry == "Tabella" || entry == "Colonne") {
-                type("Cella")
-                compose.waitForIdle()
-                shot(entry.replace(' ', '_') + "_scritta")
-            }
-            if (!imeOpen()) focusBody()
+            shot(entry)
         }
         val k = kinds()
         Log.i(TAG, "blocchi: $k")
-        assertTrue(k.toString(), NoteLines.Kind.DIVIDER in k)
         assertTrue(k.toString(), NoteLines.Kind.COLUMNS in k)
         assertTrue(k.toString(), NoteLines.Kind.BOARD in k)
         assertTrue(k.toString(), NoteLines.Kind.TABLE in k)
-        assertTrue(body(), body().contains("| Cella"))
-        assertTrue(body(), body().contains("‖ Cella") || body().contains("Cella ‖"))
     }
 
     @Test
-    fun subNoteFromSlash() {
+    fun subNoteFromPlus() {
         open("Casa\n", "sottonota")
         focusBody()
-        type("/sotto")
+        tap("Aggiungi")
         tapText("Sotto-nota")
         compose.waitForIdle()
         shot("sottonota")
@@ -545,9 +534,8 @@ class NoteEditorDeviceCheck {
         // Dalla barra Aa.
         focusBody()
         tap("Formati, colori, link, titolo, citazione, riquadro")
-        tap("Trasforma in")
-        shot("fumetto_barra")
-        tapText("Citazione")
+        shot("fila_aa")
+        tap("Citazione")
         assertEquals(NoteLines.Kind.QUOTE, kinds()[0])
         tap("Riquadro con emoji")
         shot("riquadro")

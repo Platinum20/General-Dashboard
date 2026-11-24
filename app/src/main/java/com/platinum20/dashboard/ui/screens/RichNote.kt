@@ -349,12 +349,6 @@ internal fun RichNoteField(
     /** [typed] = l'ha cambiato la tastiera; falso = un tasto della barra, che sa già cosa fa. */
     fun change(v: TextFieldValue, typed: Boolean = true) {
         val old = current
-        // Invio con il menu "/" aperto sceglie la prima voce (1.589), non va a capo.
-        val enter = typed && v.text.length == old.text.length + 1 && old.selection.collapsed &&
-            v.text == old.text.substring(0, old.selection.end) + "\n" + old.text.substring(old.selection.end)
-        if (enter && slashQuery(old.text, old.selection.end) != null) {
-            RichBar.slashFirst?.let { it(); return }
-        }
         var next = v
         // Un link "@" si cancella tutto insieme (1.589): basta togliere una lettera.
         // Tabella, linea e vocale sono pezzi unici (1.589): la tastiera non li rompe.
@@ -1115,18 +1109,7 @@ internal fun RichNoteField(
                     }
                 }
             }
-            // Il menu "/" come su Notion (1.589): sotto la riga del cursore.
-            val slashTarget = RichBar.target
-            val slashQ = if (focused && !readOnly && value.selection.collapsed) slashQuery(text, value.selection.end) else null
-            if (slashQ != null && slashTarget != null && slashTarget.owner == owner) {
-                val rect = l.getCursorRect(shown.toShown(value.selection.end).coerceIn(0, drawn))
-                Box(
-                    Modifier
-                        .offset { IntOffset(0, rect.top.toInt()) }
-                        .fillMaxWidth()
-                        .height(with(density) { (rect.bottom - rect.top).toDp() }),
-                ) { SlashMenu(slashTarget, slashQ) }
-            }
+            // Il menu "/" non si apre più (Antonio 2026-11-24): era un doppione del + della barra, che aggiunge le stesse cose.
             // Il vocale (1.589): una barra larga quanto la nota, alta una riga. Play/pausa, avanzamento (si tocca per andare
             // a un punto), durata. Tieni premuto = le scelte.
             shown.lines.filter { it.kind == NoteLines.Kind.AUDIO && !hiddenLine(it) && shown.toShown(it.start) < drawn }.forEach { line ->
@@ -1707,10 +1690,8 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
     }
     val context = LocalContext.current
     val inApp = LocalInAppNav.current
-    val clipboard = LocalClipboardManager.current
     val cursor = v.selection.end.coerceIn(0, v.text.length)
-    val slash = if (selecting) null else slashQuery(v.text, cursor)
-    val mention = if (selecting || slash != null) null else mentionQuery(v.text, cursor)
+    val mention = if (selecting) null else mentionQuery(v.text, cursor)
     val linkHere = if (selecting) null else NoteFormat.linkAt(v.text, cursor)
     fun openLink(url: String, label: String) {
         haptic(Haptic.TICK)
@@ -1733,18 +1714,6 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
         target.set(TextFieldValue(t, TextRange((e.start - 1).coerceIn(0, t.length))))
         CaptureFeedback.tell(context, "Nel Calendario: " + dueLabel(due), Icons.Outlined.Event)
     }
-    fun link() {
-        haptic(Haptic.TICK)
-        val now = target.value()
-        val there = NoteFormat.linkAt(now.text, now.selection.min)
-        val copied = clipboard.getText()?.text?.trim()?.takeIf { it.startsWith("http://") || it.startsWith("https://") }
-        if (there == null && copied == null) {
-            CaptureFeedback.tell(context, "Copia prima il link, poi tocca di nuovo")
-            return
-        }
-        val e = NoteFormat.link(now.text, now.selection.min, now.selection.max, copied)
-        target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
-    }
     val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
     // Il + della barra: il fumetto Aggiungi di chi usa il campo; senza, i blocchi del menu "/" (note di eventi e date).
@@ -1764,7 +1733,8 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
     val showFormats = selecting || formats
     // Quello che galleggia sopra la barra (2026-11-24, proposte 2 e 3): la barra resta sempre uguale, sopra compaiono
     // i formati (Aa o testo scelto), i risultati di "@" e il tasto della data o del link della riga.
-    val floating = mention != null || showFormats || dated != null || linkHere != null
+    // Con un fumetto aperto (Colore, Trasforma in…) la fila sparisce: il Popup sta sopra a tutto e lo copriva.
+    val floating = ActionBubble.actions == null && (mention != null || showFormats || dated != null || linkHere != null)
     var barWidth by remember { mutableStateOf(0) }
     val density = LocalDensity.current
     Box(modifier.onGloballyPositioned { barWidth = it.size.width }) {
@@ -1822,13 +1792,18 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                     }
                     if (showFormats && mention == null) {
                         val active = NoteFormat.active(v.text, v.selection.min, v.selection.max)
-                        // Come è scritto il testo.
+                        // Una fila sola (Antonio 2026-11-24): titolo, grassetto, corsivo, barrato, evidenzia, colore, citazione,
+                        // riquadro. "Trasforma in" non c'è più: il tipo di riga si cambia già da qui, dalla barra e dal fumetto della riga.
+                        // Una bolla sola (Antonio 2026-11-24): a sinistra grassetto, corsivo, barrato, evidenzia, colore e titolo; dopo il
+                        // divisore, a destra, citazione e riquadro.
+                        val fs = (with(density) { barWidth.toDp() } - 10.dp - 48.dp - 11.dp) / 8
+                        val fside = fs.coerceIn(32.dp, 42.dp)
                         FloatPanel {
-                            BarIcon(Icons.Outlined.FormatBold, "Grassetto", on = NoteFormat.Kind.BOLD in active) { mark(NoteFormat.BOLD) }
-                            BarIcon(Icons.Outlined.FormatItalic, "Corsivo", on = NoteFormat.Kind.ITALIC in active) { mark(NoteFormat.ITALIC) }
-                            BarIcon(Icons.Outlined.StrikethroughS, "Barrato", on = NoteFormat.Kind.STRIKE in active) { mark(NoteFormat.STRIKE) }
-                            BarIcon(Icons.Outlined.BorderColor, "Evidenzia", on = NoteFormat.Kind.HIGHLIGHT in active) { mark(NoteFormat.HIGHLIGHT) }
-                            BarIcon(Icons.Outlined.Palette, "Colore del testo o dello sfondo", on = NoteFormat.Kind.COLOR in active) {
+                            BarIcon(Icons.Outlined.FormatBold, "Grassetto", on = NoteFormat.Kind.BOLD in active, side = fside) { mark(NoteFormat.BOLD) }
+                            BarIcon(Icons.Outlined.FormatItalic, "Corsivo", on = NoteFormat.Kind.ITALIC in active, side = fside) { mark(NoteFormat.ITALIC) }
+                            BarIcon(Icons.Outlined.StrikethroughS, "Barrato", on = NoteFormat.Kind.STRIKE in active, side = fside) { mark(NoteFormat.STRIKE) }
+                            BarIcon(Icons.Outlined.BorderColor, "Evidenzia", on = NoteFormat.Kind.HIGHLIGHT in active, side = fside) { mark(NoteFormat.HIGHLIGHT) }
+                            BarIcon(Icons.Outlined.Palette, "Colore del testo o dello sfondo", on = NoteFormat.Kind.COLOR in active, side = fside) {
                                 haptic(Haptic.TICK)
                                 val was = target.value().let { NoteFormat.colorHere(it.text, it.selection.min, it.selection.max) }
                                 ActionBubble.show(BubbleHead("Colore"), *colorActions(was) { code ->
@@ -1837,22 +1812,10 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                                     target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
                                 }.toTypedArray())
                             }
-                            BarIcon(Icons.Outlined.Link, "Link (copia prima l'indirizzo)", on = NoteFormat.Kind.LINK in active) { link() }
-                        }
-                        // Che tipo di riga è.
-                        FloatPanel {
-                            BarIcon(Icons.Outlined.Title, "Titolo", on = line.kind == NoteLines.Kind.HEADING) { kind(NoteLines.Kind.HEADING) }
-                            BarIcon(Icons.Outlined.FormatQuote, "Citazione", on = line.kind == NoteLines.Kind.QUOTE) { kind(NoteLines.Kind.QUOTE) }
-                            BarIcon(Icons.Outlined.Lightbulb, "Riquadro con emoji", on = line.kind == NoteLines.Kind.CALLOUT) { kind(NoteLines.Kind.CALLOUT) }
-                            BarIcon(Icons.Outlined.Transform, "Trasforma in") {
-                                haptic(Haptic.TICK)
-                                val now = target.value()
-                                ActionBubble.show(BubbleHead("Trasforma in"), transformAction(NoteLines.lineAt(now.text, now.selection.min).kind) { k ->
-                                    val n = target.value()
-                                    val e = NoteLines.renumber(NoteLines.transform(n.text, n.selection.min, n.selection.max, k))
-                                    target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
-                                })
-                            }
+                            BarIcon(Icons.Outlined.Title, "Titolo", on = line.kind == NoteLines.Kind.HEADING, side = fside) { kind(NoteLines.Kind.HEADING) }
+                            BarSeparator()
+                            BarIcon(Icons.Outlined.FormatQuote, "Citazione", on = line.kind == NoteLines.Kind.QUOTE, side = fside) { kind(NoteLines.Kind.QUOTE) }
+                            BarIcon(Icons.Outlined.Lightbulb, "Riquadro con emoji", on = line.kind == NoteLines.Kind.CALLOUT, side = fside) { kind(NoteLines.Kind.CALLOUT) }
                         }
                     }
                     // Una data scritta nella riga (1.588) o il cursore su un link: una chip a destra, sopra la barra.

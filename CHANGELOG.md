@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.619.0
+**Editor: meno doppioni, Aa in una fila**
+- Aprendo Colore o Trasforma in dalla barra Aa, le file dei formati spariscono finché il fumetto è aperto: prima gli stavano sopra
+- Tolto il tasto Link da Aa: un indirizzo incollato diventa già un'anteprima, e per collegare note e pagine c'è «@»
+- Aa ora è una fila sola: titolo, grassetto, corsivo, barrato, evidenzia, colore, citazione e riquadro
+- Tolto "Trasforma in" da Aa: il tipo di riga si cambia già dalla barra, da Aa e tenendo premuto il segno della voce
+- Tolto il menu «/»: le stesse cose si aggiungono dal + della barra
+- Tolto "Detta qui" dal menu del testo: "Detta" del + scrive già dove sta il cursore
+- Tenendo premuto il + in basso si apre lo stesso fumetto, non più la galleria
+
 ## 1.618.0
 **Editor delle note più fluido**
 - Il + c'è anche nella barra sopra la tastiera: apre lo stesso fumetto del + in basso
