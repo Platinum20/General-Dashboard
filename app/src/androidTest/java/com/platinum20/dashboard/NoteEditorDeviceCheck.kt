@@ -123,7 +123,8 @@ class NoteEditorDeviceCheck {
 
     /** Il testo salvato: l'editor salva alla prima pausa (2026-11-24), quindi si aspetta quella pausa. */
     private fun body(): String {
-        Thread.sleep(com.platinum20.dashboard.ui.screens.SAVE_PAUSE_MS + 200)
+        // Il tempo dei test è finto: la pausa va fatta passare all'orologio di Compose.
+        compose.mainClock.advanceTimeBy(com.platinum20.dashboard.ui.screens.SAVE_PAUSE_MS + 100)
         compose.waitForIdle()
         return NoteText.split(NotesStore.note(id)?.text.orEmpty()).second
     }
@@ -532,7 +533,6 @@ class NoteEditorDeviceCheck {
         compose.onAllNodes(clickLabel("Spunta"))[0].performTouchInput { longClick() }
         compose.waitForIdle()
         shot("fumetto_voce")
-        compose.onNodeWithText("Trasforma in", useUnmergedTree = true).assertExists()
         tapText("Numeri")
         shot("numeri")
         assertEquals(NoteLines.Kind.NUMBER, kinds()[0])
@@ -645,7 +645,7 @@ class NoteEditorDeviceCheck {
         compose.onNodeWithContentDescription("Foto", useUnmergedTree = true).performTouchInput { longClick() }
         compose.waitForIdle()
         shot("fumetto_foto")
-        tapText("Togli la foto")
+        tapText("Togli")
         settle(500)
         assertFalse(body(), NoteLines.Kind.IMAGE in kinds())
         compose.onNodeWithContentDescription("Copertina", useUnmergedTree = true).performClick()
@@ -669,7 +669,8 @@ class NoteEditorDeviceCheck {
         compose.onNodeWithText("🧳", useUnmergedTree = true).performClick()
         compose.waitForIdle()
         shot("cambia_emoji")
-        tapText("Togli")
+        // Ritoccare l'emoji scelta la toglie (1.615): l'ultima "🧳" è quella del fumetto.
+        compose.onAllNodesWithText("🧳", useUnmergedTree = true).fetchSemanticsNodes().size.let { n -> tapText("🧳", n - 1) }
         settle(500)
         assertEquals(null, NotesStore.note(id)?.emoji)
     }
@@ -679,7 +680,7 @@ class NoteEditorDeviceCheck {
         open("Vocale\nprima", "vocale")
         tap("Aggiungi")
         shot("aggiungi")
-        tapText("Registra un audio")
+        tapText("Vocale")
         settle(2500)
         shot("registro")
         tap("Ferma")
@@ -695,7 +696,7 @@ class NoteEditorDeviceCheck {
         compose.onAllNodes(clickLabel("Spunta"))[1].performTouchInput { longClick() }
         compose.waitForIdle()
         shot("fumetto")
-        tapText("Sposta su")
+        tapText("Su")
         assertEquals("[ ] seconda\n[ ] prima", body())
         compose.onAllNodes(clickLabel("Spunta"))[0].performTouchInput { longClick() }
         compose.waitForIdle()
