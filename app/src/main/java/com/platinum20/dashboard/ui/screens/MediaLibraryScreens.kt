@@ -306,9 +306,8 @@ fun MediaNewsScreen(onBack: () -> Unit, onPlayVideo: (String) -> Unit) {
     ) { inner ->
         val count = tips.size
         Column(Modifier.fillMaxSize().padding(inner)) {
-            val playingKey = rememberPlayingKey()
             FeedList(Loadable(data = tips, loading = home.loading && count == 0, error = home.error.takeIf { count == 0 }), empty = "Niente da scoprire per ora", spacing = 0.dp, edge = 0.dp) {
-                // Una card sola come le altre pagine (1.563, strada A): un video in grande ogni sei, gli altri in righe.
+                // Tutti i video in grande, uguali al primo (1.630, Antonio): niente più righe piccole in mezzo.
                 if (tips.isNotEmpty()) mediaGroup(
                     key = "tips",
                     title = "",
@@ -319,13 +318,10 @@ fun MediaNewsScreen(onBack: () -> Unit, onPlayVideo: (String) -> Unit) {
                         LaunchedEffect(count) { YouTubeStore.loadMoreHome(context) }
                         androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) { LoadingPulse() }
                     }) else null,
-                ) { i, v ->
-                    if (i % DISCOVER_BIG_EVERY == 0) androidx.compose.foundation.layout.Box(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                ) { _, v ->
+                    androidx.compose.foundation.layout.Box(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
                         VideoCard(v, onClick = { onPlayVideo(v.watchUrl) })
-                    } else MediaRow(
-                        title = v.title, line = v.channel, image = v.thumbnail, wide = true, mark = videoMark(v), now = v.id == playingKey,
-                        click = Modifier.tapOrSave({ com.platinum20.dashboard.capture.SavedLinks.youtube(v) }) { onPlayVideo(v.watchUrl) },
-                    )
+                    }
                 }
             }
         }
@@ -643,7 +639,6 @@ private fun EpisodeLine(episode: com.platinum20.dashboard.media.podcast.Episode)
 }
 
 /** In Scopri dei video uno ogni tanti è in grande (1.563), così la card non è un muro di righe. */
-private const val DISCOVER_BIG_EVERY = 6
 
 /**
  * La cronologia della musica (1.569, Antonio: "vorrei solo gli ascoltati di recente, cioè una cronologia

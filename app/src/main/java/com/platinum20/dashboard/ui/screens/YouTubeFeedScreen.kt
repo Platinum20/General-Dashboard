@@ -287,7 +287,6 @@ fun YouTubeChannelScreen(
     val pick = pickFeed(videos.data.orEmpty(), hideShorts = true, hideLive = hideLive, hideMembers = hideMembers)
     val name = info?.name?.ifBlank { null } ?: channel.title
     val avatar = info?.avatar?.ifBlank { null } ?: channel.thumbnail
-    val playingKey = rememberPlayingKey()
     // Giro 2 (1.566): il canale come una persona, foto grande al centro, nome, iscritti e un solo tasto; poi i
     // video sullo sfondo (il più nuovo in grande), Shorts e Playlist in file che scorrono di lato.
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -323,7 +322,7 @@ fun YouTubeChannelScreen(
             }
             if (videos.data == null && videos.loading) item(key = "v-loading") { PlaceholderList(Modifier.padding(horizontal = 16.dp), rows = 3, label = "Carico i video") }
             videos.error?.takeIf { videos.data == null }?.let { e -> item(key = "v-error") { ChannelNote(e) } }
-            // VIDEO: il più nuovo in grande, poi righe; "Altri" li apre tutti e arrivando in fondo carica i successivi.
+            // VIDEO: tutti in grande, uguali (1.630, Antonio); "Altri" li apre tutti e arrivando in fondo carica i successivi.
             val shownVideos = if (allVideos) pick.videos else pick.videos.take(CHANNEL_CARD_ROWS)
             if (shownVideos.isNotEmpty()) mediaGroup(
                 key = "videos",
@@ -335,13 +334,8 @@ fun YouTubeChannelScreen(
                     LaunchedEffect(pick.videos.size) { YouTubeStore.loadMoreChannel(channel) }
                     Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) { LoadingPulse() }
                 }) else null,
-            ) { i, v ->
-                if (i == 0) Box(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) { VideoCard(v, onClick = { onPlay(v.watchUrl) }) }
-                else MediaRow(
-                    title = v.title, line = channelVideoLine(v), image = v.thumbnail, wide = true, mark = videoMark(v),
-                    now = v.id == playingKey,
-                    click = Modifier.tapOrSave({ SavedLinks.youtube(v) }) { onPlay(v.watchUrl) },
-                )
+            ) { _, v ->
+                Box(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) { VideoCard(v, onClick = { onPlay(v.watchUrl) }) }
             }
             // SHORTS: una fila di copertine verticali.
             val shorts = tabsState[channel.id + "/" + shortsTab]?.data?.videos.orEmpty()
@@ -367,13 +361,10 @@ fun YouTubeChannelScreen(
                     }
                 }
             }
-            // LIVE e PLAYLIST: righe Canvas, le prime e poi "Altri".
+            // LIVE in grande come i video, PLAYLIST in fila.
             val lives = tabsState[channel.id + "/" + liveTab]?.data?.videos.orEmpty()
             if (lives.isNotEmpty()) mediaGroup(key = "lives", title = "Live", items = lives.take(CHANNEL_CARD_ROWS), itemKey = { it.id }) { _, v ->
-                MediaRow(
-                    title = v.title, line = channelVideoLine(v), image = v.thumbnail, wide = true, mark = videoMark(v),
-                    click = Modifier.tapOrSave({ SavedLinks.youtube(v) }) { onPlay(v.watchUrl) },
-                )
+                Box(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) { VideoCard(v, onClick = { onPlay(v.watchUrl) }) }
             }
             val lists = tabsState[channel.id + "/" + listsTab]?.data?.playlists.orEmpty()
             if (lists.isNotEmpty()) mediaShelf("lists", "Playlist") {

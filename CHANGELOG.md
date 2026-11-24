@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.630.0
+**Video di YouTube tutti in grande**
+- In Scopri (la Home di YouTube) ogni video è grande come il primo, con l'anteprima larga e il titolo sotto: niente più righe piccole in mezzo
+- Anche nella pagina di un canale gli ultimi video e le live sono tutti in grande, uguali
+
 ## 1.629.0
 **Meno batteria per SIM e turni**
 - Con l'app chiusa la SIM si rilegge ogni 3 ore, non più ogni mezz'ora, e non c'è più la sveglia che svegliava il telefono di notte
