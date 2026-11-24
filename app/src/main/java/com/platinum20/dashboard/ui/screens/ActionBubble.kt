@@ -164,8 +164,9 @@ internal object Slot {
 
 /** Pura: le righe di Condividi, sempre in quest'ordine. */
 internal fun shareRows(copy: (() -> Unit)?, copyTitle: String, copyDetail: String, pdf: (() -> Unit)?, send: () -> Unit): List<BubbleAction> = listOfNotNull(
+    // Il PDF in cima (Antonio): c'è solo in note e articoli, così Copia e Manda a… restano sempre negli stessi punti.
+    pdf?.let { act(BubbleGroup.SEGNA, Icons.Outlined.PictureAsPdf, "Salva come PDF", "nei Download, da mandare o stampare", onClick = it) },
     copy?.let { act(BubbleGroup.VAI, Icons.Outlined.ContentCopy, copyTitle, copyDetail, onClick = it) },
-    pdf?.let { act(BubbleGroup.CREA, Icons.Outlined.PictureAsPdf, "Salva come PDF", "nei Download, da mandare o stampare", onClick = it) },
     act(BubbleGroup.METTI, Icons.Outlined.Share, "Manda a…", "WhatsApp, Gmail e le altre app", onClick = send),
 )
 

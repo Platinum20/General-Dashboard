@@ -17,7 +17,7 @@ import org.junit.Test
 class ShareMorphTest {
     @Test
     fun rowsInFixedOrderAndPdfOnlyWhenGiven() {
-        assertEquals(listOf("Copia il testo", "Salva come PDF", "Manda a…"), shareRows({}, "Copia il testo", "", {}, {}).map { it.title })
+        assertEquals(listOf("Salva come PDF", "Copia il testo", "Manda a…"), shareRows({}, "Copia il testo", "", {}, {}).map { it.title })
         assertEquals(listOf("Copia il link", "Manda a…"), shareRows({}, "Copia il link", "", null, {}).map { it.title })
     }
 
