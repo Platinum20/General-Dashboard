@@ -25,6 +25,7 @@ import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -164,7 +165,10 @@ class NoteEditorDeviceCheck {
     }
 
     private fun tapText(text: String, index: Int = 0, substring: Boolean = false) {
-        val n = compose.onAllNodesWithText(text, substring = substring, useUnmergedTree = true)[index]
+        // Le chip con solo l'icona (selettori, colori) hanno il nome nella descrizione.
+        val byText = compose.onAllNodesWithText(text, substring = substring, useUnmergedTree = true)
+        val n = if (byText.fetchSemanticsNodes().size > index) byText[index]
+        else compose.onAllNodesWithContentDescription(text, substring = substring, useUnmergedTree = true)[index]
         runCatching { n.performScrollTo() }
         n.performClick()
         compose.waitForIdle()
@@ -393,20 +397,20 @@ class NoteEditorDeviceCheck {
     fun dragMarkSidewaysIndents() {
         open("Rientro\n[ ] uno\n[ ] due", "trascina_di_lato")
         val marks = compose.onAllNodes(longClickLabel("Scelte della riga"))
-        marks[1].performTouchInput {
-            down(center)
-            advanceEventTime(900)
-            repeat(10) { moveBy(Offset(18f, 0f)); advanceEventTime(16) }
-            up()
+        marks[1].let { mark ->
+            // Tieni premuto davvero (il tempo del tieni premuto è quello vero), poi di lato.
+            mark.performTouchInput { down(center) }
+            Thread.sleep(900)
+            mark.performTouchInput { repeat(10) { moveBy(Offset(18f, 0f)); advanceEventTime(16) }; up() }
         }
         settle(500)
         shot("rientrata")
         assertEquals(body(), 1, NoteLines.parse(body())[1].level)
-        compose.onAllNodes(longClickLabel("Scelte della riga"))[1].performTouchInput {
-            down(center)
-            advanceEventTime(900)
-            repeat(10) { moveBy(Offset(-18f, 0f)); advanceEventTime(16) }
-            up()
+        compose.onAllNodes(longClickLabel("Scelte della riga"))[1].let { mark ->
+            // Tieni premuto davvero (il tempo del tieni premuto è quello vero), poi di lato.
+            mark.performTouchInput { down(center) }
+            Thread.sleep(900)
+            mark.performTouchInput { repeat(10) { moveBy(Offset(-18f, 0f)); advanceEventTime(16) }; up() }
         }
         settle(500)
         assertEquals(body(), 0, NoteLines.parse(body())[1].level)
@@ -460,14 +464,14 @@ class NoteEditorDeviceCheck {
     fun slashBlocks() {
         open("Blocchi\n", "blocchi")
         focusBody()
-        for (entry in listOf("Linea", "Due colonne", "Bacheca", "Tabella")) {
+        for (entry in listOf("Linea", "Colonne", "Bacheca", "Tabella")) {
             field().performTextInputSelection(TextRange(body().length))
             if (!body().endsWith("\n") && body().isNotEmpty()) key(Key.Enter)
             type("/")
             tapText(entry)
             compose.waitForIdle()
             shot(entry.replace(' ', '_'))
-            if (entry == "Tabella" || entry == "Due colonne") {
+            if (entry == "Tabella" || entry == "Colonne") {
                 type("Cella")
                 compose.waitForIdle()
                 shot(entry.replace(' ', '_') + "_scritta")
@@ -651,7 +655,7 @@ class NoteEditorDeviceCheck {
         compose.onNodeWithContentDescription("Copertina", useUnmergedTree = true).performClick()
         compose.waitForIdle()
         shot("fumetto_copertina")
-        tapText("Togli la copertina")
+        tapText("Togli")
         settle(500)
         assertEquals(null, NotesStore.note(id)?.cover)
     }
@@ -763,7 +767,7 @@ class NoteEditorDeviceCheck {
         assertTrue("la riga toccata ($first) è sotto la barra (${barTop()})", first <= barTop() - 10)
         // Tastiera aperta: tocco più in basso, appena sopra la barra.
         val top2 = field().fetchSemanticsNode().boundsInWindow.top
-        field().performTouchInput { click(Offset(centerX, barTop() - 60f - top2)) }
+        field().performTouchInput { click(Offset(centerX, barTop() - 260f - top2)) }
         settle(1500)
         shot("secondo_tocco")
         val second = cursorBottom()
