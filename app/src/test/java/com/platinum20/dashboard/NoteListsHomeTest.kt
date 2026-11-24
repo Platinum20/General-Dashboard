@@ -27,7 +27,7 @@ class NoteListsHomeTest {
         val row = NoteLists.of(spesa)!!
         assertEquals(3, row.open)
         assertEquals(5, row.total)
-        assertEquals("3 da fare su 5 · dalla nota", NoteLists.line(row))
+        assertEquals("3 da fare su 5 · lista", NoteLists.line(row))
         assertEquals(listOf(1, 2, 3, 5, 6), row.entries.map { it.index })
         assertNull(NoteLists.of(idee))
     }

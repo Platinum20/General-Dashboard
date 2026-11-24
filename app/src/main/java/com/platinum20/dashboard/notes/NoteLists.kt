@@ -35,9 +35,12 @@ object NoteLists {
         .mapNotNull { n -> of(n)?.takeIf { it.open > 0 || n.id in keep } }
         .toList()
 
-    /** La riga sotto il titolo: "3 da fare su 5 · dalla nota", "Tutto fatto · 5 di 5". */
+    /** La riga sotto il titolo: "3 da fare su 5 · lista" (dice il tipo, 1.616), "Tutto fatto · 5 di 5". */
     fun line(row: Row): String =
-        if (row.open == 0) "Tutto fatto · ${row.total} di ${row.total}" else "${row.open} da fare su ${row.total} · dalla nota"
+        if (row.open == 0) "Tutto fatto · ${row.total} di ${row.total}" else "${row.open} da fare su ${row.total} · lista"
+
+    /** Quanto è piena la barretta sotto la lista: le voci fatte sul totale. */
+    fun progress(row: Row): Float = if (row.total == 0) 0f else (row.total - row.open).toFloat() / row.total
 
     /** "Ricomincia" (idea 15): tutte le spunte via, il testo resta uguale. */
     fun restart(text: String): String {

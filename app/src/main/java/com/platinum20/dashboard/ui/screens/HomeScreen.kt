@@ -270,8 +270,7 @@ fun HomeScreen(
             HomeCard.DOCS -> docs.isNotEmpty()
             // Vuota non c'è: compare quando hai qualcosa per dopo.
             // Compare anche vuota se c'è l'archivio: si apre da qui.
-            HomeCard.LATER -> todos.isNotEmpty() || doneCount > 0 || notes.habits.isNotEmpty()
-            HomeCard.JOTTINGS -> jottings.isNotEmpty() || archivedCount > 0
+            HomeCard.LATER -> todos.isNotEmpty() || doneCount > 0 || notes.habits.isNotEmpty() || jottings.isNotEmpty() || archivedCount > 0
             // La card News resta sempre: senza nuove mostra le ultime già viste (Antonio, 2026-11-21).
             else -> true
         }
@@ -343,13 +342,9 @@ fun HomeScreen(
                     openResumeItem(context, item) { route -> inApp?.openRoute?.invoke(route) }
                 })
             }
-            HomeCard.LATER -> LaterCard(LooseCardKind.TODO, todos, habits = notes.habits, notes = notes.notes, onOpen = {
+            HomeCard.LATER -> LaterCard(todos, jottings, habits = notes.habits, notes = notes.notes, onOpen = {
                 haptic(Haptic.TICK)
                 inApp?.openRoute?.invoke(Routes.LATER_ARCHIVE)
-            })
-            HomeCard.JOTTINGS -> LaterCard(LooseCardKind.JOTTINGS, jottings, onOpen = {
-                haptic(Haptic.TICK)
-                inApp?.openRoute?.invoke(Routes.JOTTINGS_ARCHIVE)
             })
             HomeCard.SIM -> ContiCard(onOpenSim = { inApp?.openRoute?.invoke(Routes.SIM) })
             HomeCard.DOCS -> DocumentsCard(onOpen = { id ->

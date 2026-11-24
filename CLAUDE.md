@@ -34,9 +34,10 @@ layers (queue, video settings, What's new) drawn OUTSIDE the NavHost. Calendario
 
 **Home** (`HomeScreen.kt`, `HomeCards.kt`, order in `HomeCard` / `CustomizeScreen.kt`): `InvitesRow` (orange line on
 top, only when something needs doing), Adesso/weather (`WeatherBits.kt`, page `WeatherScreen.kt`, pure phrases `weather/WeatherText.kt`), Riprendi, `CalendarCard` (today + tomorrow,
-count to month end), `LaterCard` (LaterUi.kt) = "Da fare" (to-dos, habits on top: `HabitTodoRow`, `habitTodoLine`
-/`habitFlame` in BriefActions.kt; "Manca oggi" grey, orange from `HABIT_LATE_HOUR`) and "Appunti" (notes, photos,
-saved media; archive via long press); full pages `LaterArchiveScreen(kind)`. News card, SIM (`ContiCard`),
+count to month end), `LaterCard` (LaterUi.kt) = ONE "Da fare" card, in order: to-dos (max `HOME_TODO_MAX`),
+habits (`HabitTodoRow`, repeat badge; `habitTodoLine`/`habitFlame` in BriefActions.kt; orange from `HABIT_LATE_HOUR`),
+note checklists (`NoteListRow`), thin line, then notes/photos/saved media (`withoutLists`: a note shows once); one
+full page `LaterArchiveScreen` (also `Routes.JOTTINGS_ARCHIVE`). News card, SIM (`ContiCard`),
 Documenti, Dalla posta. Logic in `today/` (`Briefing`, `Upcoming`, `Invites`, `Greeting`, `HomeResume`).
 
 **Calendario** (one calendar for everything): page `NotesScreen.kt`, pure `NotesTimeline.kt` (`dueDays`,
