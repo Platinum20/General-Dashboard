@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.625.0
+**Appunti di turni e treni vuoti**
+- Gli Appunti di un turno partono vuoti: guadagnato, venduto e ore stanno già nelle card sopra, non si ripetono sotto
+- Lo stesso per i treni: partenza, arrivo e biglietto stanno già sopra
+
 ## 1.624.0
 **Barra e + con una regola sola**
 - Dove sfogli un elenco la barra e il + ci sono, dentro una cosa sola no

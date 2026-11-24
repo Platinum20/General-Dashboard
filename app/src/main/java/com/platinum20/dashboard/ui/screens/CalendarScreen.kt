@@ -362,9 +362,9 @@ fun EventDetailScreen(
                     .format(java.time.format.DateTimeFormatter.ofPattern("EEE d MMM", java.util.Locale.ITALIAN)),
                 begin = from,
                 end = to,
-                // Il testo dell'evento nel calendario finisce qui, negli Appunti (Antonio, 2026-11-24). Con i dati del
-                // biglietto già sopra, le note del treno non dicono altro.
-                seed = if (ticketAll.isEmpty()) notes else "",
+                // Il testo dell'evento nel calendario finisce qui, negli Appunti (Antonio, 2026-11-24). Non per turni e treni:
+                // guadagnato, venduto, ore, partenza, arrivo e biglietto stanno già sopra, i loro appunti partono vuoti.
+                seed = appuntiSeed(notes, shift = shift != null, train = train),
             )
         }
     }
