@@ -1812,12 +1812,11 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                         val active = NoteFormat.active(v.text, v.selection.min, v.selection.max)
                         // Una fila sola (Antonio 2026-11-24): titolo, grassetto, corsivo, barrato, evidenzia, colore, citazione,
                         // riquadro. "Trasforma in" non c'è più: il tipo di riga si cambia già da qui, dalla barra e dal fumetto della riga.
-                        // Una bolla sola con i divisori (Antonio 2026-11-24): titolo | stili del testo | citazione e riquadro.
-                        val fs = (with(density) { barWidth.toDp() } - 10.dp - 54.dp - 22.dp) / 8
+                        // Una bolla sola (Antonio 2026-11-24): a sinistra grassetto, corsivo, barrato, evidenzia, colore e titolo; dopo il
+                        // divisore, a destra, citazione e riquadro.
+                        val fs = (with(density) { barWidth.toDp() } - 10.dp - 48.dp - 11.dp) / 8
                         val fside = fs.coerceIn(32.dp, 42.dp)
                         FloatPanel {
-                            BarIcon(Icons.Outlined.Title, "Titolo", on = line.kind == NoteLines.Kind.HEADING, side = fside) { kind(NoteLines.Kind.HEADING) }
-                            BarSeparator()
                             BarIcon(Icons.Outlined.FormatBold, "Grassetto", on = NoteFormat.Kind.BOLD in active, side = fside) { mark(NoteFormat.BOLD) }
                             BarIcon(Icons.Outlined.FormatItalic, "Corsivo", on = NoteFormat.Kind.ITALIC in active, side = fside) { mark(NoteFormat.ITALIC) }
                             BarIcon(Icons.Outlined.StrikethroughS, "Barrato", on = NoteFormat.Kind.STRIKE in active, side = fside) { mark(NoteFormat.STRIKE) }
@@ -1831,6 +1830,7 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                                     target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
                                 }.toTypedArray())
                             }
+                            BarIcon(Icons.Outlined.Title, "Titolo", on = line.kind == NoteLines.Kind.HEADING, side = fside) { kind(NoteLines.Kind.HEADING) }
                             BarSeparator()
                             BarIcon(Icons.Outlined.FormatQuote, "Citazione", on = line.kind == NoteLines.Kind.QUOTE, side = fside) { kind(NoteLines.Kind.QUOTE) }
                             BarIcon(Icons.Outlined.Lightbulb, "Riquadro con emoji", on = line.kind == NoteLines.Kind.CALLOUT, side = fside) { kind(NoteLines.Kind.CALLOUT) }
