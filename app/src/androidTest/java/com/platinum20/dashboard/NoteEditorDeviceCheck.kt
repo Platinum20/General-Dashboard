@@ -400,7 +400,8 @@ class NoteEditorDeviceCheck {
         marks[1].let { mark ->
             // Tieni premuto davvero (il tempo del tieni premuto è quello vero), poi di lato.
             mark.performTouchInput { down(center) }
-            Thread.sleep(900)
+            compose.mainClock.advanceTimeBy(900)
+            Thread.sleep(300)
             mark.performTouchInput { repeat(10) { moveBy(Offset(18f, 0f)); advanceEventTime(16) }; up() }
         }
         settle(500)
@@ -409,7 +410,8 @@ class NoteEditorDeviceCheck {
         compose.onAllNodes(longClickLabel("Scelte della riga"))[1].let { mark ->
             // Tieni premuto davvero (il tempo del tieni premuto è quello vero), poi di lato.
             mark.performTouchInput { down(center) }
-            Thread.sleep(900)
+            compose.mainClock.advanceTimeBy(900)
+            Thread.sleep(300)
             mark.performTouchInput { repeat(10) { moveBy(Offset(-18f, 0f)); advanceEventTime(16) }; up() }
         }
         settle(500)
