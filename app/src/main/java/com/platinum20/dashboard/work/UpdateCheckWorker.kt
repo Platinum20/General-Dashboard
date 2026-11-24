@@ -171,15 +171,17 @@ class UpdateCheckWorker(context: Context, params: WorkerParameters) : CoroutineW
                 title = "Canvas aggiornata alla ${BuildConfig.VERSION_NAME}",
                 text = "Tocca per vedere le novità.",
                 lines = emptyList(),
+                // Le novità le mostra il fumetto all'apertura: la pagina Aggiornamenti sotto le ripeteva (Antonio, 2026-11-24).
+                target = OpenRequest.HOME,
             )
         }
 
         @SuppressLint("MissingPermission")
-        private fun post(context: Context, title: String, text: String, lines: List<String>) {
+        private fun post(context: Context, title: String, text: String, lines: List<String>, target: String = OpenRequest.UPDATES) {
             ensureChannel(context)
             val intent = Intent(context, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            OpenRequest(OpenRequest.UPDATES).writeTo(intent)
+            OpenRequest(target).writeTo(intent)
             val notification = NotificationCompat.Builder(context, CHANNEL)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setColor(context.getColor(R.color.notification_accent))

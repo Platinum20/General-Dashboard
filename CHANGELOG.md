@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.627.0
+**Novità una volta sola**
+- Toccando la notifica "Canvas aggiornata" si apre l'app con il fumetto delle novità, senza aprire anche la pagina Aggiornamenti.
+
 ## 1.626.0
 **Condividi più ordinato, Altro della nota più corto**
 - Condividi, in ogni fumetto, non apre più subito il menu di Android: lo stesso fumetto diventa Salva come PDF, Copia e «Manda a…». Indietro lo riporta com'era
