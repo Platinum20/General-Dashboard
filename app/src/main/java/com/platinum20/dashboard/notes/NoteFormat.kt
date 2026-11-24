@@ -34,10 +34,10 @@ object NoteFormat {
 
     /**
      * I colori (1.590): `{r:testo}` colora il testo, la lettera maiuscola `{R:testo}` lo sfondo. r rosso, a arancio,
-     * v verde, b blu, p viola. Il colore si legge dal carattere due prima del testo ([colorAt]).
+     * g giallo, v verde, b blu, p viola, f rosa. Il colore si legge dal carattere due prima del testo ([colorAt]).
      */
-    const val COLORS = "ravbp"
-    private val colorRx = Regex("""\{([ravbpRAVBP]):(?=\S)([^\{\}\n]+?)\}""")
+    const val COLORS = "ragvbpf"
+    private val colorRx = Regex("""\{([ragvbpfRAGVBPF]):(?=\S)([^\{\}\n]+?)\}""")
 
     /** Un link col suo testo (1.584): `[testo](https://…)` o `[Titolo](nota:12)` per un'altra nota. */
     private val linkRx = Regex("""\[([^\]\n]+)]\(([^)\s]+)\)""")
