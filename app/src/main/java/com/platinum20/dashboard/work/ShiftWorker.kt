@@ -24,32 +24,21 @@ class ShiftWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
             cancel(applicationContext)
             return Result.success()
         }
-        // Anche se sembra scaduto si riprova, una volta l'ora: se il sito riprende la sessione torna da solo.
-        if (ShiftStore.expired.value && !retryDue(applicationContext)) return Result.success()
-        // Ogni lettura apre tutta la pagina del sito in una WebView nascosta: una all'ora basta
-        // (prima ogni 15 minuti, ed era la voce più pesante sulla batteria).
-        if (!ShiftStore.expired.value && !due(ShiftStore.readAt.value, System.currentTimeMillis())) return Result.success()
+        // Scaduto vuol dire che anche il rientro da solo non è andato: niente tentativi a vuoto, serve "Rientra".
+        if (ShiftStore.expired.value) return Result.success()
+        // Ogni lettura apre tutta la pagina del sito in una WebView nascosta: ogni 2 ore basta (batteria).
+        if (!due(ShiftStore.readAt.value, System.currentTimeMillis())) return Result.success()
         runCatching { CreatorsLink.refresh(applicationContext) }
         return Result.success()
     }
 
     companion object {
         private const val PERIODIC = "shifts_refresh"
-        private const val RETRY_MS = 60 * 60 * 1000L
-        /** Quanto vale una lettura dei turni prima di rifarla. */
-        const val READ_EVERY_MS = 55 * 60 * 1000L
+        /** Quanto vale una lettura dei turni prima di rifarla (il controllo passa ogni 15 minuti). */
+        const val READ_EVERY_MS = 2 * 60 * 60 * 1000L - 10 * 60 * 1000L
 
         /** Se è ora di rileggere (pura, provata nei test). */
         internal fun due(readAt: Long, now: Long) = now - readAt >= READ_EVERY_MS
-
-        /** Se è passata un'ora dall'ultimo tentativo con l'accesso scaduto (e lo segna). */
-        private fun retryDue(context: Context): Boolean {
-            val prefs = context.getSharedPreferences("shifts_retry", Context.MODE_PRIVATE)
-            val now = System.currentTimeMillis()
-            if (now - prefs.getLong("at", 0) < RETRY_MS) return false
-            prefs.edit().putLong("at", now).apply()
-            return true
-        }
 
         fun schedule(context: Context) {
             val request = PeriodicWorkRequestBuilder<ShiftWorker>(15, TimeUnit.MINUTES)

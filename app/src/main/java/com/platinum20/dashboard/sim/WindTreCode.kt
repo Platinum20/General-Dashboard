@@ -13,8 +13,8 @@ import kotlinx.coroutines.withContext
  */
 object WindTreCode {
     private const val QUERY = "from:accesso-clienti@windtre.it newer_than:1d"
-    /** Il codice vale 5 minuti: se in 2 non è arrivato, non arriva più per questa volta. */
-    private const val WAIT_MS = 120_000L
+    /** Di solito arriva in pochi secondi: oltre un minuto non si aspetta (batteria). */
+    private const val WAIT_MS = 60_000L
 
     /** Il codice dall'oggetto (o dal testo) della mail; null se non c'è. */
     fun fromText(text: String): String? =
@@ -24,18 +24,20 @@ object WindTreCode {
     /** Aspetta la mail arrivata dopo [since] e ne prende il codice; null senza Gmail o se non arriva. */
     suspend fun await(context: Context, since: Long): String? = withContext(Dispatchers.IO) {
         val end = System.currentTimeMillis() + WAIT_MS
-        while (System.currentTimeMillis() < end) {
-            val found = runCatching {
-                val session = GmailImap.session(context) ?: return@withContext null
-                session.use { s ->
-                    s.search(QUERY).sortedDescending().take(3).firstNotNullOfOrNull { uid ->
+        // Una sola connessione per tutta l'attesa, non una nuova a ogni controllo.
+        val session = runCatching { GmailImap.session(context) }.getOrNull() ?: return@withContext null
+        session.use { s ->
+            delay(5_000)
+            while (System.currentTimeMillis() < end) {
+                val found = runCatching {
+                    s.search(QUERY).sortedDescending().take(2).firstNotNullOfOrNull { uid ->
                         // Un minuto di margine: l'orologio della mail e quello del telefono non coincidono al secondo.
                         s.message(uid)?.takeIf { it.at >= since - 60_000 }?.let { fromText(it.subject) ?: fromText(it.body) }
                     }
-                }
-            }.getOrNull()
-            if (found != null) return@withContext found
-            delay(6_000)
+                }.getOrElse { return@withContext null }
+                if (found != null) return@withContext found
+                delay(10_000)
+            }
         }
         null
     }

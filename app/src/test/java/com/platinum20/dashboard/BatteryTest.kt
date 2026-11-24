@@ -10,18 +10,18 @@ class BatteryTest {
     private val minute = 60_000L
 
     @Test
-    fun shiftsAreReadAtMostHourly() {
+    fun shiftsAreReadEveryTwoHours() {
         val now = 10_000 * minute
         assertFalse(ShiftWorker.due(readAt = now - 15 * minute, now = now))
-        assertFalse(ShiftWorker.due(readAt = now - 30 * minute, now = now))
-        assertTrue(ShiftWorker.due(readAt = now - 60 * minute, now = now))
+        assertFalse(ShiftWorker.due(readAt = now - 60 * minute, now = now))
+        assertTrue(ShiftWorker.due(readAt = now - 120 * minute, now = now))
         assertTrue(ShiftWorker.due(readAt = 0, now = now))
     }
 
-    /** Le letture restano sotto l'ora, sennò con il giro ogni 15 minuti diventerebbero ogni ora e un quarto. */
+    /** Sotto le 2 ore, sennò con il controllo ogni 15 minuti diventerebbero 2 ore e un quarto. */
     @Test
-    fun shiftReadStaysUnderAnHour() {
-        assertTrue(ShiftWorker.READ_EVERY_MS < 60 * minute)
-        assertTrue(ShiftWorker.READ_EVERY_MS > 30 * minute)
+    fun shiftReadStaysUnderTwoHours() {
+        assertTrue(ShiftWorker.READ_EVERY_MS < 120 * minute)
+        assertTrue(ShiftWorker.READ_EVERY_MS > 90 * minute)
     }
 }

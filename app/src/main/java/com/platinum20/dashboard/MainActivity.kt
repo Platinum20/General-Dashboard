@@ -352,7 +352,6 @@ class MainActivity : ComponentActivity() {
                 com.platinum20.dashboard.shifts.ShiftStore.init(app)
                 if (com.platinum20.dashboard.shifts.ShiftStore.linked.value) com.platinum20.dashboard.work.ShiftWorker.schedule(app)
             }
-            withContext(Dispatchers.Main) { runCatching { com.platinum20.dashboard.work.KeepAliveWorker.askBattery(this@MainActivity) } }
         }
         // Le notizie salvate tornano in memoria subito, così News e Oggi non partono vuote.
         lifecycleScope.launch { NewsStore.restore() }

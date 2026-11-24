@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.629.0
+**Meno batteria per SIM e turni**
+- Con l'app chiusa la SIM si rilegge ogni 3 ore, non più ogni mezz'ora, e non c'è più la sveglia che svegliava il telefono di notte
+- I turni si rileggono ogni 2 ore invece che ogni ora
+- Se l'accesso è scaduto Canvas non riprova più a vuoto in sottofondo: aspetta che tocchi "Rientra"
+- La posta si controlla per il codice WindTre solo subito dopo un accesso vero, con una connessione sola e al massimo per un minuto
+
 ## 1.628.0
 **WindTre e Creators Pro restano collegati**
 - Quando il sito ti butta fuori, Canvas rientra da sola in sottofondo con email (o numero) e password, salvate cifrate solo sul telefono
