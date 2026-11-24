@@ -59,7 +59,6 @@ internal fun rememberRowActions(onOpenEvent: ((CalendarEvent) -> Unit)? = null):
     fun offerUndo(removed: List<TaskItem>, message: String) {
         if (removed.isNotEmpty()) offerUndo(message) { NotesStore.restoreTasks(removed) }
     }
-    fun share(text: String) = shareText(context, text)
     fun taskBubble(t: TaskItem) {
         val dated = t.dueAt != null
         ActionBubble.show(
@@ -74,7 +73,7 @@ internal fun rememberRowActions(onOpenEvent: ((CalendarEvent) -> Unit)? = null):
                 snoozeAction(t),
                 Slot.open { openItem(ItemKind.TASK, t.id) },
                 if (!t.tickable) null else Slot.pin(t.pinned) { haptic(if (t.pinned) Haptic.TOGGLE_OFF else Haptic.TOGGLE_ON); NotesStore.toggleTaskPin(t.id) },
-                Slot.share { share(t.text) },
+                Slot.shareText(context, t.text),
                 Slot.delete {
                     NotesStore.deleteTask(t.id)
                     offerUndo(listOf(t), "Promemoria eliminato")
@@ -112,7 +111,7 @@ internal fun rememberRowActions(onOpenEvent: ((CalendarEvent) -> Unit)? = null):
                     }
                 },
                 Slot.open { openEvent(e) },
-                Slot.share { share(eventShareText(e)) },
+                Slot.shareText(context, eventShareText(e)),
                 // Non si può annullare: si tocca due volte, nello stesso punto.
                 if (!editable) null else Slot.delete(confirm = "Tocca ancora: sparisce anche dal telefono") {
                     withWritable {
@@ -129,7 +128,7 @@ internal fun rememberRowActions(onOpenEvent: ((CalendarEvent) -> Unit)? = null):
         when {
             row.task != null -> taskBubble(row.task)
             row.event != null -> eventBubble(row.event)
-            row.parcel != null -> parcelBubble(row.parcel, openItem = { openItem(ItemKind.PARCEL, row.parcel.id) }, openWeb = { u, t -> inApp?.openWeb?.invoke(u, t) }, share = { share(it) }) { msg, restore -> offerUndo(msg, restore) }
+            row.parcel != null -> parcelBubble(row.parcel, openItem = { openItem(ItemKind.PARCEL, row.parcel.id) }, openWeb = { u, t -> inApp?.openWeb?.invoke(u, t) }, shareFrom = context) { msg, restore -> offerUndo(msg, restore) }
         }
     }
     fun noteActions(n: Note) = showNoteBubble(context, n, openRoute = { r -> inApp?.openRoute?.invoke(r) })
@@ -186,7 +185,8 @@ internal fun parcelBubble(
     p: com.platinum20.dashboard.notes.Parcel,
     openItem: (() -> Unit)?,
     openWeb: (String, String) -> Unit,
-    share: ((String) -> Unit)? = null,
+    /** Con un context il fumetto ha Condividi (Copia · Manda a…). */
+    shareFrom: android.content.Context? = null,
     offerUndo: (String, () -> Unit) -> Unit,
 ) {
     ActionBubble.show(
@@ -201,7 +201,7 @@ internal fun parcelBubble(
             },
             openItem?.let { Slot.open(it) },
             Slot.pin(p.pinned) { NotesStore.toggleParcelPin(p.id) },
-            share?.let { s -> Slot.share { s(p.title) } },
+            shareFrom?.let { Slot.shareText(it, p.title) },
             Slot.delete {
                 NotesStore.deleteParcel(p.id)
                 offerUndo("Pacco eliminato") { NotesStore.restoreParcel(p) }
@@ -230,7 +230,7 @@ internal fun showNoteBubble(context: android.content.Context, n: Note, openRoute
             noteEmojiDots(n.id, n.emoji),
             if (open) Slot.open { openRoute(Routes.noteEdit(n.id)) } else null,
             Slot.pin(n.pinned) { NotesStore.togglePin(n.id) },
-            Slot.share { shareText(context, n.text) },
+            Slot.shareText(context, com.platinum20.dashboard.notes.NoteFormat.plain(n.text)),
             Slot.delete {
                 NotesStore.deleteNote(n.id)
                 undo("Nota eliminata", Icons.Outlined.Delete) { NotesStore.restoreNote(n) }

@@ -122,7 +122,7 @@ fun ParcelCard(parcel: Parcel, onClick: () -> Unit) {
                         parcel,
                         openItem = onClick,
                         openWeb = { u, t -> inApp?.openWeb(u, t) },
-                        share = { shareText(context, it) },
+                        shareFrom = context,
                     ) { msg, restore -> com.platinum20.dashboard.capture.CaptureFeedback.tell(context, msg, androidx.compose.material.icons.Icons.Outlined.LocalShipping, "Annulla") { restore() } }
                 },
             ),

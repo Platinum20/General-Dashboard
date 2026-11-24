@@ -80,7 +80,7 @@ internal fun showArticleBubble(context: Context, link: SavedLink.Article, openRo
         *(extra + listOfNotNull(
             (read ?: openRoute?.let { o -> { SavedLinks.open(context, link, o) } })?.let { Slot.read(it) },
             saveSlot(context, link),
-            Slot.share { shareText(context, link.url) },
+            Slot.shareText(context, link.url, link = true),
         )).toTypedArray(),
     )
 }
@@ -161,7 +161,7 @@ internal fun showMediaBubble(
         )
         add(saveSlot(context, link))
         if (item.kind == ResumeKind.YOUTUBE || item.kind == ResumeKind.VIDEO) {
-            add(Slot.share { runCatching { shareText(context, SavedLinks.shareText(link)) } })
+            add(Slot.shareText(context, SavedLinks.shareText(link), link = true))
         }
         if (remove != null) add(remove)
         else if (playlistId != null) playlistAway(context, playlistId, item)?.let(::add)

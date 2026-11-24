@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Article
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.outlined.ClearAll
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.NotificationsActive
+import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.NotificationsOff
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.RemoveCircleOutline
@@ -98,6 +100,8 @@ internal data class BubbleAction(
     val selector: Boolean = false,
     /** Fila di bolle piccole tutte uguali su una riga sola (emoji, colori, numeri): niente nomi, niente da scorrere. */
     val dots: Boolean = false,
+    /** Il tocco non chiude il fumetto: lo trasforma (Condividi, Indietro). */
+    val stay: Boolean = false,
     val onClick: () -> Unit = {},
 )
 
@@ -117,7 +121,34 @@ internal object Slot {
         BubbleAction(if (following) Icons.Outlined.CheckCircle else Icons.Outlined.AddCircleOutline, if (following) "Seguito" else "Segui", slot = BubbleSlot.KEEP, onClick = onClick)
     fun subscribe(subscribed: Boolean, onClick: () -> Unit) =
         BubbleAction(if (subscribed) Icons.Outlined.NotificationsOff else Icons.Outlined.NotificationsActive, if (subscribed) "Iscritto" else "Iscriviti", slot = BubbleSlot.KEEP, onClick = onClick)
-    fun share(onClick: () -> Unit) = BubbleAction(Icons.Outlined.Share, "Condividi", slot = BubbleSlot.SEND, onClick = onClick)
+    /**
+     * Condividi (Antonio 2026-11-24): non apre subito il foglio di Android, trasforma lo stesso fumetto in
+     * Copia · PDF (solo dove ha senso) · Manda a…, con Indietro. Senza [copy] né [pdf] manda e basta (le foto).
+     */
+    fun share(
+        copy: (() -> Unit)? = null,
+        copyTitle: String = "Copia il testo",
+        copyDetail: String = "senza formati, da incollare altrove",
+        pdf: (() -> Unit)? = null,
+        send: () -> Unit,
+    ): BubbleAction {
+        val rows = shareRows(copy, copyTitle, copyDetail, pdf, send)
+        if (rows.size == 1) return BubbleAction(Icons.Outlined.Share, "Condividi", slot = BubbleSlot.SEND, onClick = send)
+        return BubbleAction(Icons.Outlined.Share, "Condividi", slot = BubbleSlot.SEND, stay = true) {
+            ActionBubble.morph(BubbleHead("Condividi", ActionBubble.head?.name.orEmpty()), rows + back())
+        }
+    }
+
+    /** Condividi per un testo (o un link): Copia e Manda a…. */
+    fun shareText(context: android.content.Context, text: String, link: Boolean = false, pdf: (() -> Unit)? = null) = share(
+        copy = { Clip.copy(context, if (link) "Link" else "Testo", text, if (link) "Link copiato" else "Testo copiato") },
+        copyTitle = if (link) "Copia il link" else "Copia il testo",
+        copyDetail = if (link) "da incollare altrove" else "senza formati, da incollare altrove",
+        pdf = pdf,
+    ) { runCatching { com.platinum20.dashboard.ui.screens.shareText(context, text) } }
+
+    /** Torna al fumetto di prima (dopo Condividi). */
+    fun back() = BubbleAction(Icons.AutoMirrored.Outlined.ArrowBack, "Indietro", slot = BubbleSlot.MAIN, stay = true) { ActionBubble.back() }
     fun copy(onClick: () -> Unit) = BubbleAction(Icons.Outlined.ContentCopy, "Copia", slot = BubbleSlot.SEND, onClick = onClick)
     /** [confirm] solo per ciò che non si può annullare: allora si tocca due volte ("Ancora"). */
     fun delete(confirm: String? = null, onClick: () -> Unit) =
@@ -130,6 +161,13 @@ internal object Slot {
     fun clear(confirm: String? = null, onClick: () -> Unit) =
         BubbleAction(Icons.Outlined.ClearAll, "Svuota", danger = true, slot = BubbleSlot.AWAY, confirm = confirm, onClick = onClick)
 }
+
+/** Pura: le righe di Condividi, sempre in quest'ordine. */
+internal fun shareRows(copy: (() -> Unit)?, copyTitle: String, copyDetail: String, pdf: (() -> Unit)?, send: () -> Unit): List<BubbleAction> = listOfNotNull(
+    copy?.let { act(BubbleGroup.VAI, Icons.Outlined.ContentCopy, copyTitle, copyDetail, onClick = it) },
+    pdf?.let { act(BubbleGroup.CREA, Icons.Outlined.PictureAsPdf, "Salva come PDF", "nei Download, da mandare o stampare", onClick = it) },
+    act(BubbleGroup.METTI, Icons.Outlined.Share, "Manda a…", "WhatsApp, Gmail e le altre app", onClick = send),
+)
 
 /** Una riga nel suo gruppo, in breve. */
 internal fun act(group: BubbleGroup, icon: ImageVector, title: String, detail: String, onLongClick: (() -> Unit)? = null, onClick: () -> Unit) =
@@ -211,12 +249,35 @@ internal object ActionBubble {
 
     fun show(vararg choices: BubbleAction) = show(null, *choices)
 
+    /** Il fumetto di prima, quando questo è una sua trasformazione (Condividi): Indietro lo rimette. */
+    private var previous: Pair<BubbleHead?, List<BubbleAction>>? = null
+    var canGoBack by mutableStateOf(false)
+        private set
+
     fun show(head: BubbleHead?, vararg choices: BubbleAction) {
+        previous = null
+        canGoBack = false
         this.head = head
         actions = choices.toList()
     }
 
+    /** Lo stesso fumetto cambia contenuto (non se ne apre un secondo). */
+    fun morph(head: BubbleHead?, choices: List<BubbleAction>) {
+        val before = actions ?: return show(head, *choices.toTypedArray())
+        previous = this.head to before
+        canGoBack = true
+        this.head = head
+        actions = choices
+    }
+
+    fun back() {
+        val (h, a) = previous ?: return dismiss()
+        show(h, *a.toTypedArray())
+    }
+
     fun dismiss() {
+        previous = null
+        canGoBack = false
         actions = null
         source = null
     }
@@ -240,6 +301,8 @@ internal fun BoxScope.ActionBubbleLayer() {
         swipe.reset()
     }
     BottomBubble(visible = actions != null, swipe = swipe, onDismiss = ActionBubble::dismiss) {
+        // Indietro del telefono, dopo Condividi: torna al fumetto di prima invece di chiudere.
+        if (ActionBubble.canGoBack) androidx.activity.compose.BackHandler { ActionBubble.back() }
         val layout = remember(last) { bubbleLayout(last) }
         var armed by remember(last) { mutableStateOf<BubbleAction?>(null) }
         LaunchedEffect(armed) { if (armed != null) { kotlinx.coroutines.delay(4_000); armed = null } }
@@ -251,7 +314,7 @@ internal fun BoxScope.ActionBubbleLayer() {
                 return
             }
             haptic(Haptic.CONFIRM)
-            ActionBubble.dismiss()
+            if (!a.stay) ActionBubble.dismiss()
             a.onClick()
         }
         lastHead?.let { BubbleHeadLine(it) }

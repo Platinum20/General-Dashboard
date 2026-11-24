@@ -100,7 +100,7 @@ internal fun storyActions(context: Context, story: NewsStory, onMarkRead: () -> 
         act(BubbleGroup.METTI, Icons.Outlined.Headphones, "Ascolta", "con la voce di lettura") { listenArticle(context, lead) },
         Slot.save(false) { SavedLinks.save(context, lead.savedLink()) },
         // Come nell'"Altro" dell'articolo, senza aprirlo (2026-11-13).
-        Slot.share { runCatching { shareText(context, lead.link) } },
+        Slot.shareText(context, lead.link, link = true),
     )
 }
 
