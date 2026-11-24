@@ -1,8 +1,9 @@
 # Changelog
 
 ## 1.622.0
-**Appunti dei turni vuoti**
+**Appunti di turni e treni vuoti**
 - Gli Appunti di un turno partono vuoti: guadagnato, venduto e ore stanno già nelle card sopra, non si ripetono sotto
+- Lo stesso per i treni: partenza, arrivo e biglietto stanno già sopra
 
 ## 1.621.0
 **Note più fluide, appunti più belli**

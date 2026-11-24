@@ -74,8 +74,8 @@ internal fun AttachedNotesBlock(key: String, title: String, begin: Long = 0L, en
     )
 }
 
-/** Il testo del calendario che va in fondo agli appunti: niente per turni e treni col biglietto (già scritto sopra). */
-internal fun appuntiSeed(description: String, shift: Boolean, ticket: Boolean): String = if (shift || ticket) "" else description
+/** Il testo del calendario che va in fondo agli appunti: niente per turni e treni (è già scritto sopra, Antonio 2026-11-24). */
+internal fun appuntiSeed(description: String, shift: Boolean, train: Boolean): String = if (shift || train) "" else description
 
 /**
  * Il testo con cui si aprono gli appunti e dove sta il cursore: quello scritto, se c'è; se no una riga vuota in cima per

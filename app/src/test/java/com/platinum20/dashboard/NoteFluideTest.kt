@@ -59,9 +59,9 @@ class NoteFluideTest {
         assertEquals("" to 0, appuntiStart("", ""))
     }
 
-    @Test fun iTurniPartonoVuoti() {
-        assertEquals("", appuntiSeed("Guadagnato 80 €\nVenduto 1.200 €", shift = true, ticket = false))
-        assertEquals("", appuntiSeed("Carrozza 8", shift = false, ticket = true))
-        assertEquals("Portare la tessera", appuntiSeed("Portare la tessera", shift = false, ticket = false))
+    @Test fun turniETreniPartonoVuoti() {
+        assertEquals("", appuntiSeed("Guadagnato 80 €\nVenduto 1.200 €", shift = true, train = false))
+        assertEquals("", appuntiSeed("Carrozza 8", shift = false, train = true))
+        assertEquals("Portare la tessera", appuntiSeed("Portare la tessera", shift = false, train = false))
     }
 }
