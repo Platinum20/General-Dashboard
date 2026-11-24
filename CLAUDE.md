@@ -56,7 +56,7 @@ event/shift/train/habit pages (`AttachedNotesBlock`), `📝` line in timeline ro
 Notes from elsewhere: `notes/NoteInbox.kt` (append to a note / "Dalle news"), `notes/NoteSeek.kt` (`[▶ 6:52](seek:…)` player
 timestamps, "Annota" in SaveToNotesLayer), `notes/NoteSpoken.kt` (Ascolta script, song lines → Spotify), `mail/MailFacts.kt`,
 `ExtraTextToolbar.kt` `WithTextExtras` (extra items in the long-press text menu: reader, editor "Detta qui"). Share/tiles: `QuickCaptureActivity`.
-`notes/NotePhotoText.kt` = OCR text of note photos (own file, scanned from MainActivity) for search; `NotesSearch` gives the matching line.
+`notes/ExampleNotes.kt` = example notes seeded once (MainActivity). `notes/NotePhotoText.kt` = OCR text of note photos (own file, scanned from MainActivity) for search; `NotesSearch` gives the matching line.
 `richText`: one ParagraphStyle (TextIndent = hanging indent) per line, the `\n` between them drawn as ZWSP (a `\n` inside
 a paragraph = blank line). Page scroll while typing = `keepLineDelta` in NoteEditor (`keepInView`), not bringIntoView.
 
