@@ -125,4 +125,22 @@ object ShiftLive {
         "Venduto: non ancora segnato" + if (readAt > 0) " · letto alle ${at(readAt, zone)}" else ""
 
     private fun at(ms: Long, zone: ZoneId) = Instant.ofEpochMilli(ms).atZone(zone).format(hour)
+
+    /** Cosa fare col riepilogo di fine turno a ogni giro. */
+    enum class Summary { SKIP, POST, UPDATE_SILENT }
+
+    /** Il riepilogo nuovo esce solo nelle 2 ore dopo la fine: più tardi (di notte) non compare più. */
+    const val SUMMARY_FRESH_MS = 2 * 60 * 60_000L
+
+    /**
+     * Il riepilogo di fine turno (Antonio, 2026-11-25: alle 00:49 gli è ricomparso quello delle 17:00). Prima ogni
+     * cambio di numeri lo ripubblicava e suonava, anche ore dopo e anche se l'avevi tolto. Ora: la prima volta solo
+     * vicino alla fine; dopo si aggiorna in silenzio e solo se è ancora lì; tolto col dito non torna.
+     */
+    fun summary(postedBefore: Boolean, stillShown: Boolean, sameNumbers: Boolean, now: Long, end: Long): Summary = when {
+        !postedBefore -> if (now < end + SUMMARY_FRESH_MS) Summary.POST else Summary.SKIP
+        !stillShown || sameNumbers -> Summary.SKIP
+        else -> Summary.UPDATE_SILENT
+    }
+
 }

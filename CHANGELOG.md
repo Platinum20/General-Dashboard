@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.630.0
+**Il riepilogo del turno non ricompare di notte**
+- La notifica di fine turno esce solo nelle 2 ore dopo la fine: ore dopo non compare più
+- Se l'hai tolta col dito non torna, anche quando cambiano i numeri del venduto
+- Se è ancora nella tendina si aggiorna in silenzio, senza suonare
+
 ## 1.629.0
 **Meno batteria per SIM e turni**
 - Con l'app chiusa la SIM si rilegge ogni 3 ore, non più ogni mezz'ora, e non c'è più la sveglia che svegliava il telefono di notte

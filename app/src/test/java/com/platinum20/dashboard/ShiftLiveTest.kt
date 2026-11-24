@@ -119,3 +119,22 @@ class ShiftLiveTest {
         assertEquals(false, ShiftLive.shouldRead(now, payReadAt = at(19, 40), tried = 0L))
     }
 }
+
+/** Il riepilogo di fine turno non ricompare ore dopo (Antonio, 2026-11-25, notifica delle 17:00 arrivata alle 00:49). */
+class ShiftSummaryTest {
+    private val h = 3_600_000L
+    private val end = 100 * h
+
+    @Test
+    fun firstTimeOnlyNearTheEnd() {
+        org.junit.Assert.assertEquals(ShiftLive.Summary.POST, ShiftLive.summary(false, false, false, end + h, end))
+        org.junit.Assert.assertEquals(ShiftLive.Summary.SKIP, ShiftLive.summary(false, false, false, end + 8 * h, end))
+    }
+
+    @Test
+    fun dismissedNeverComesBackAndUpdatesAreSilent() {
+        org.junit.Assert.assertEquals(ShiftLive.Summary.SKIP, ShiftLive.summary(true, false, false, end + 8 * h, end))
+        org.junit.Assert.assertEquals(ShiftLive.Summary.SKIP, ShiftLive.summary(true, true, true, end + h, end))
+        org.junit.Assert.assertEquals(ShiftLive.Summary.UPDATE_SILENT, ShiftLive.summary(true, true, false, end + 8 * h, end))
+    }
+}
