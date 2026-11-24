@@ -743,8 +743,6 @@ internal fun RichNoteField(
                     modifier = Modifier
                         .offset { IntOffset(left.toInt(), top.toInt()) }
                         .size(width, height)
-                        // Tieni premuto e trascina: su e giù sposta la voce, di lato la rientra (2026-11-24, proposta 4).
-                        .lineDrag({ lineNow }, rowPx, afterLongPress = true)
                         .combinedClickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
@@ -769,7 +767,11 @@ internal fun RichNoteField(
                                     if (!line.done && NoteLines.allDone(text)) onAllDone?.invoke()
                                 }
                             },
-                        ),
+                        )
+                        // Tieni premuto e trascina: su e giù sposta la voce, di lato la rientra (2026-11-24, proposta 4).
+                        // Dopo il clic, così il trascinamento riceve il dito per primo: prima il tieni premuto del clic lo
+                        // prendeva e la voce non si muoveva.
+                        .lineDrag({ lineNow }, rowPx, afterLongPress = true),
                 ) {
                     // Il segno nel suo posto largo quanto il cerchio, sul bordo sinistro del rientro.
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.width(MARK_SLOT).fillMaxHeight()) {
