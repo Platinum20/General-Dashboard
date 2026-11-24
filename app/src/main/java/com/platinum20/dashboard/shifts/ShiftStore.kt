@@ -195,7 +195,7 @@ object ShiftStore {
         if (!_linked.value) setLinked(true)
         if (_expired.value) setExpired(false)
         // Lettura buona: si tiene la sessione così com'è adesso, per le WebView che verranno.
-        appContext?.let { runCatching { CreatorsSession.save(it) } }
+        appContext?.let { runCatching { CreatorsSession.save(it) }; runCatching { CreatorsAuto.confirm(it) } }
         // Il widget Calendario mostra anche i turni.
         appContext?.let { runCatching { com.platinum20.dashboard.widget.Widgets.refresh(it, com.platinum20.dashboard.widget.TasksWidget::class.java) } }
     }

@@ -230,7 +230,8 @@ fun SimScreen(onBack: () -> Unit, bottomPadding: PaddingValues = PaddingValues()
     val status by SimStore.status.collectAsStateWithLifecycle()
     val history by SimStore.history.collectAsStateWithLifecycle()
     val refreshing by SimStore.refreshing.collectAsStateWithLifecycle()
-    var login by rememberSaveable { mutableStateOf(!SimStore.linked.value) }
+    // Accesso scaduto e non rientrato da solo: si apre direttamente la pagina d'accesso.
+    var login by rememberSaveable { mutableStateOf(!SimStore.linked.value || SimStore.expired.value) }
     val scope = rememberCoroutineScope()
 
     if (login) {
@@ -250,7 +251,8 @@ fun SimScreen(onBack: () -> Unit, bottomPadding: PaddingValues = PaddingValues()
             onRefresh = {
                 if (!refreshing) scope.launch {
                     val ok = WindTreLink.refresh(context)
-                    if (!ok) CaptureFeedback.tell(context, "WindTre non ha risposto: rifai l'accesso da Impostazioni", Icons.Outlined.SimCard)
+                    if (!ok && SimStore.expired.value) login = true
+                    else if (!ok) CaptureFeedback.tell(context, "WindTre non ha risposto, riprovo più tardi", Icons.Outlined.SimCard)
                 }
             },
             modifier = Modifier.fillMaxSize().padding(top = inner.calculateTopPadding()),
@@ -372,8 +374,9 @@ private fun WindTreLogin(onClose: () -> Unit) {
     var canGoBack by remember { mutableStateOf(false) }
     val webView = remember {
         WebView(context).also { view ->
-            WindTreLink.prepare(view, context) { canGoBack = view.canGoBack() }
+            WindTreLink.prepare(view, context, login = true) { canGoBack = view.canGoBack() }
             SimStore.beginSession()
+            com.platinum20.dashboard.sim.WindTreAuto.begin()
             view.loadUrl(WindTreLink.HOME)
         }
     }

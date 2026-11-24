@@ -81,7 +81,7 @@ Screens: `MediaScreen` (hero/queue, rows Musica `PerTeRow` + Video), `MediaPageK
 `FloatingPlayer.kt` + `MiniTuck.kt`/`MiniDock.kt` (box in 4 corners, edge tab, drag down to close; bars that stay
 put mark `Modifier.miniPlayerFloor()`). Any WebView goes through `MediaWebViews.inFrame`.
 
-**Accounts / data from websites**: `net/WebSession.kt` (sealed cookies) + `work/KeepAliveWorker`. `sim/` WindTre
+**Accounts / data from websites**: `net/WebSession.kt` (sealed cookies) + `work/KeepAliveWorker`. `net/AutoLogin.kt` = saved login (Vault) refilled by the hidden refresh (`WindTreAuto`, `CreatorsAuto`); WindTre mail code via IMAP `sim/WindTreCode.kt`; `SimStore.expired` → "Rientra". `sim/` WindTre
 (SIM card + `SimScreen`), `shifts/` Creators Pro shifts + pay (`ShiftParse`, `ShiftPay`, `CreatorsLink`), `mail/`
 Gmail read-only (IMAP app password preferred), `tickets/` QR from ticket mails, `trips/` live train/shift
 notification (`TrainLive` ViaggiaTreno, `LiveTrip`, `ShiftLive`, RemoteViews in `work/TripLiveWorker`), `docs/`

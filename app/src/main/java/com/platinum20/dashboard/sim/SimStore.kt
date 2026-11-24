@@ -20,6 +20,7 @@ object SimStore {
     private const val KEY_LINKED = "linked"
     private const val KEY_FORMAT = "format"
     private const val KEY_HISTORY = "history"
+    private const val KEY_EXPIRED = "expired"
     private const val FORMAT = 2
     private const val CAPTURES = "windtre-captures.json"
     private const val MAX_CAPTURES = 40
@@ -33,6 +34,9 @@ object SimStore {
     val status: StateFlow<SimStatus?> = _status.asStateFlow()
     private val _linked = MutableStateFlow(false)
     val linked: StateFlow<Boolean> = _linked.asStateFlow()
+    /** Il sito ci ha buttati fuori e non si è riusciti a rientrare da soli: serve "Rientra". */
+    private val _expired = MutableStateFlow(false)
+    val expired: StateFlow<Boolean> = _expired.asStateFlow()
     private val _refreshing = MutableStateFlow(false)
     val refreshing: StateFlow<Boolean> = _refreshing.asStateFlow()
     /** Una lettura dei giga al giorno per qualche settimana: serve a dire se bastano fino al rinnovo. */
@@ -52,6 +56,7 @@ object SimStore {
         appContext = app
         val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         _linked.value = prefs.getBoolean(KEY_LINKED, false)
+        _expired.value = prefs.getBoolean(KEY_EXPIRED, false)
         // Fino alla 1.288 si leggevano anche i testi di configurazione di WindTre: quei numeri erano sbagliati.
         if (prefs.getInt(KEY_FORMAT, 1) < FORMAT) {
             prefs.edit().remove(KEY_STATUS).putInt(KEY_FORMAT, FORMAT).apply()
@@ -111,6 +116,7 @@ object SimStore {
         val merged = found.orElse(_status.value).copy(at = System.currentTimeMillis())
         _status.value = merged
         if (!_linked.value) setLinked(true)
+        if (_expired.value) setExpired(false)
         val app = appContext ?: return
         val edit = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_STATUS, merged.toJson().toString())
         merged.data?.takeIf { !it.unlimited }?.let {
@@ -120,6 +126,8 @@ object SimStore {
         edit.apply()
         // Lettura riuscita = sessione buona: se ne tiene la copia per la prossima WebView.
         WindTreSession.save(app)
+        // E utente e password scritti nell'accesso: erano giusti.
+        WindTreAuto.confirm(app)
         saveCaptures()
         runCatching { com.platinum20.dashboard.widget.Widgets.refresh(app, com.platinum20.dashboard.widget.SimWidget::class.java) }
     }
@@ -138,6 +146,11 @@ object SimStore {
         }
     }
 
+    fun setExpired(value: Boolean) {
+        _expired.value = value
+        appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()?.putBoolean(KEY_EXPIRED, value)?.apply()
+    }
+
     fun setRefreshing(value: Boolean) {
         _refreshing.value = value
     }
@@ -145,6 +158,7 @@ object SimStore {
     /** Scollega: via stato e risposte salvate (i cookie di WindTre li toglie [WindTreLink.forget]). */
     fun unlink() {
         setLinked(false)
+        _expired.value = false
         _status.value = null
         _history.value = emptyList()
         session = null

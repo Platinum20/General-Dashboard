@@ -12,6 +12,7 @@ import android.webkit.WebViewClient
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import com.platinum20.dashboard.media.browserUserAgent
+import com.platinum20.dashboard.net.AutoLogin
 import com.platinum20.dashboard.net.WebSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -169,6 +170,15 @@ object CreatorsLink {
 
         @JavascriptInterface
         fun storage(origin: String, json: String) = CreatorsSession.offer(origin, json)
+
+        @JavascriptInterface
+        fun typed(user: String, pass: String) = CreatorsAuto.typed(user, pass)
+
+        @JavascriptInterface
+        fun loginSeen() = CreatorsAuto.seen()
+
+        @JavascriptInterface
+        fun mayFill(): Boolean = CreatorsAuto.mayFill()
     }
 
     /**
@@ -222,11 +232,15 @@ object CreatorsLink {
         val keep = if (ShiftStore.linked.value) CreatorsSession.storageScript(context) else null
         CookieManager.getInstance().setAcceptThirdPartyCookies(view, true)
         view.addJavascriptInterface(Bridge, "CanvasShift")
+        // Accesso visibile (quello con le finestre): si tiene da parte email e password. Nascosta: rientra da sola.
+        val auto = if (popups != null) AutoLogin.captureScript("CanvasShift")
+            else CreatorsAuto.saved(context).let { AutoLogin.fillScript("CanvasShift", it?.first.orEmpty(), it?.second.orEmpty()) }
         val early = WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)
         val sites = setOf("https://*.creatorspro.com", "https://creatorspro.com")
         if (early) {
             keep?.let { WebViewCompat.addDocumentStartJavaScript(view, it, sites) }
             WebViewCompat.addDocumentStartJavaScript(view, script, sites)
+            WebViewCompat.addDocumentStartJavaScript(view, auto, sites)
         }
         view.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView, request: android.webkit.WebResourceRequest): android.webkit.WebResourceResponse? {
@@ -239,7 +253,7 @@ object CreatorsLink {
             }
 
             override fun onPageFinished(view: WebView, url: String) {
-                if (!early) view.evaluateJavascript(script, null)
+                if (!early) { view.evaluateJavascript(script, null); view.evaluateJavascript(auto, null) }
                 ShiftStore.visited(url)
                 onPage(url)
             }
@@ -296,6 +310,9 @@ object CreatorsLink {
         val before = ShiftStore.readAt.value
         val payBefore = ShiftStore.payReadAt.value
         val asked = System.currentTimeMillis()
+        // Con email e password salvate, la pagina d'accesso non è la fine: la si compila e si aspetta.
+        val canRelogin = CreatorsAuto.hasSaved(context)
+        CreatorsAuto.begin()
         var outcome = "interrotta"
         try {
             withContext(Dispatchers.Main) {
@@ -306,7 +323,7 @@ object CreatorsLink {
                 view.settings.blockNetworkImage = true
                 view.loadUrl(ShiftStore.timelineUrl ?: HOME)
                 withTimeoutOrNull(READ_MS) {
-                    while (ShiftStore.readAt.value == before && !isLoginPage(lastUrl)) delay(400)
+                    while (ShiftStore.readAt.value == before && (canRelogin || !isLoginPage(lastUrl))) delay(400)
                     // La pagina ha letto la sua creator: ora tutte le altre e la busta paga, con la stessa sessione.
                     if (ShiftStore.readAt.value != before) {
                         delay(1_500)
@@ -318,9 +335,10 @@ object CreatorsLink {
                 }
                 val got = ShiftStore.readAt.value != before
                 val paid = ShiftStore.payReadAt.value != payBefore
-                outcome = if (got) "letto" + if (paid) " con la busta paga" else " (busta paga no)"
+                val relogged = canRelogin && CreatorsAuto.loginSeenAt >= asked
+                outcome = (if (relogged) "rientrato da solo, " else "") + if (got) "letto" + if (paid) " con la busta paga" else " (busta paga no)"
                     else if (isLoginPage(lastUrl ?: view.url)) "pagina d'accesso" else "niente in ${READ_MS / 1000} s"
-                if (isExpired(got, isLoginPage(lastUrl ?: view.url), ShiftStore.refusedAt >= asked)) ShiftStore.setExpired(true)
+                if (isExpired(got, isLoginPage(lastUrl ?: view.url) || CreatorsAuto.loginSeenAt >= asked, ShiftStore.refusedAt >= asked)) ShiftStore.setExpired(true)
                 if (got) CreatorsSession.save(context)
                 CookieManager.getInstance().flush()
                 view.stopLoading()
@@ -350,6 +368,7 @@ object CreatorsLink {
             android.webkit.WebStorage.getInstance().deleteOrigin("https://app.creatorspro.com")
         }
         CreatorsSession.clear(context)
+        CreatorsAuto.clear(context)
         ShiftStore.unlink()
     }
 }

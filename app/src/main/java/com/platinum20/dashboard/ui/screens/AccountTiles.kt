@@ -23,8 +23,10 @@ object AccountTiles {
         simStale: Boolean,
         shifts: Boolean,
         shiftsExpired: Boolean,
+        simExpired: Boolean = false,
     ): List<AccountTile> = listOf(
         when {
+            sim && simExpired -> AccountTile("WindTre", AccountState.ATTENTION, "Rientra", AccountKind.WINDTRE)
             sim && simStale -> AccountTile("WindTre", AccountState.ATTENTION, "Aggiorna", AccountKind.WINDTRE)
             sim -> AccountTile("WindTre", AccountState.OK, "Collegato", AccountKind.WINDTRE)
             else -> AccountTile("WindTre", AccountState.OFF, "Collega", AccountKind.WINDTRE)
