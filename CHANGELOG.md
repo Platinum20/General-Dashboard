@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.622.0
+**Appunti dei turni vuoti**
+- Gli Appunti di un turno partono vuoti: guadagnato, venduto e ore stanno già nelle card sopra, non si ripetono sotto
+
 ## 1.621.0
 **Note più fluide, appunti più belli**
 - Spuntando una voce il quadratino si riempie, la ✓ si disegna e il barrato scorre sulla riga; togliendo la spunta, al contrario. Anche nella card Da fare
