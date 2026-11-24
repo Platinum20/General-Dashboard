@@ -72,7 +72,6 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.composed
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.using
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.drawscope.clipRect
@@ -382,6 +381,10 @@ internal fun RichNoteField(
         emit(TextFieldValue(s.text, TextRange(s.start.coerceIn(0, s.text.length), s.end.coerceIn(0, s.text.length))))
     }
 
+    // La spunta che si disegna (2026-11-24, proposta 1): la voce toccata (dove comincia), se diventa fatta, e il barrato
+    // che scorre da sinistra a destra (al contrario quando si toglie).
+    var tickAt by remember { mutableStateOf<Pair<Int, Boolean>?>(null) }
+    val tickRun = remember { androidx.compose.animation.core.Animatable(1f) }
     // La voce nuova (Invio su una voce, o una riga che diventa voce): il suo segno cresce invece di comparire.
     var grownAt by remember { mutableStateOf<Int?>(null) }
     // Mentre scrivi la maniglia ⋮⋮ sta ferma, nascosta: torna quando ti fermi mezzo secondo (proposta 4).
@@ -576,10 +579,6 @@ internal fun RichNoteField(
     var dragPullX by remember { mutableFloatStateOf(0f) }
     var dragEndedAt by remember { mutableLongStateOf(0L) }
     val motionScope = androidx.compose.runtime.rememberCoroutineScope()
-    // La spunta che si disegna (2026-11-24, proposta 1): la voce toccata (dove comincia), se diventa fatta, e il barrato
-    // che scorre da sinistra a destra (al contrario quando si toglie).
-    var tickAt by remember { mutableStateOf<Pair<Int, Boolean>?>(null) }
-    val tickRun = remember { androidx.compose.animation.core.Animatable(1f) }
     // Le righe che scivolano (proposta 2): dove stavano (in px nel campo) e dove stanno ora, con una banda che le segue.
     val glideRun = remember { androidx.compose.animation.core.Animatable(1f) }
     var glides by remember { mutableStateOf<List<Glide>>(emptyList()) }
