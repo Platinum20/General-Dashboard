@@ -293,7 +293,7 @@ fun YouTubeChannelScreen(
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         LazyColumn(
             Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 120.dp),
+            contentPadding = PaddingValues(bottom = listBottom(120.dp)),
         ) {
             item(key = "head") {
                 MediaHero(
@@ -522,7 +522,7 @@ fun <T> FeedList(
         }
         else -> LazyColumn(
             state = listState,
-            contentPadding = PaddingValues(start = edge, end = edge, top = top, bottom = 96.dp),
+            contentPadding = PaddingValues(start = edge, end = edge, top = top, bottom = listBottom(96.dp)),
             verticalArrangement = Arrangement.spacedBy(spacing),
         ) {
             if (header != null) item(key = "media-hero") { header() }

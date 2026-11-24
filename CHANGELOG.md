@@ -1,9 +1,16 @@
 # Changelog
 
-## 1.622.0
+## 1.625.0
 **Appunti di turni e treni vuoti**
 - Gli Appunti di un turno partono vuoti: guadagnato, venduto e ore stanno già nelle card sopra, non si ripetono sotto
 - Lo stesso per i treni: partenza, arrivo e biglietto stanno già sopra
+
+## 1.624.0
+**Barra e + con una regola sola**
+- Dove sfogli un elenco la barra e il + ci sono, dentro una cosa sola no
+- Ora li trovi anche in Da fare, Appunti, Meteo, SIM, #etichette, @persone e nelle pagine di Media (Radio, Podcast, playlist, artisti, canali, Mix, Novità, Salvati, Cronologia)
+- Note, eventi, promemoria, mail, documenti, articoli, player e Impostazioni restano senza: hanno già i loro tasti in fondo
+- Resta accesa la scheda da cui arrivi; toccandola torni alla sezione, in cima
 
 ## 1.621.0
 **Note più fluide, appunti più belli**
