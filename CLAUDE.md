@@ -58,6 +58,7 @@ Notes from elsewhere: `notes/NoteInbox.kt` (append to a note / "Dalle news"), `n
 timestamps, "Annota" in SaveToNotesLayer), `notes/NoteSpoken.kt` (Ascolta script, song lines → Spotify), `mail/MailFacts.kt`,
 `ExtraTextToolbar.kt` `WithTextExtras` (extra items in the long-press text menu: reader, editor "Detta qui"). Share/tiles: `QuickCaptureActivity`.
 `notes/ExampleNotes.kt` = example notes seeded once (MainActivity). `notes/NotePhotoText.kt` = OCR text of note photos (own file, scanned from MainActivity) for search; `NotesSearch` gives the matching line.
+Keyboard bar `RichToolbar` = 8 fixed keys (+ · undo · redo | bullets · numbers · check | Aa · hide keyboard); Aa/selection rows, "@" hits and date/link chips float ABOVE it in a Popup (`FloatPanel`). `RichBar.Target.add` = the "+" bubble. Line drag (`lineDrag`, pure `lineDragStep`): up/down moves, sideways indents; `lineHandle` ⋮⋮ on the cursor text line. NoteEditor saves after `SAVE_PAUSE_MS` (typing) and on ON_STOP/exit.
 `richText`: one ParagraphStyle (TextIndent = hanging indent) per line, the `\n` between them drawn as ZWSP (a `\n` inside
 a paragraph = blank line). Page scroll while typing = `keepLineDelta` in NoteEditor (`keepInView`), not bringIntoView.
 

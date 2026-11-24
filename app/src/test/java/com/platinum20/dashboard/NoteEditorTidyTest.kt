@@ -105,11 +105,12 @@ class NoteEditorTidyTest {
     }
 
     @Test
-    fun tappedLineGoesToTheTop() {
-        // Toccata a metà: sale fin sotto la testata (100 + metà margine).
-        assertEquals(400f - 112f, keepLineDelta(400f, 424f, LineFollow.TAPPED, visTop = 100f, visBottom = 500f, margin = 24f), 0.01f)
-        // Toccata sotto la tastiera: sale lo stesso in cima.
-        assertEquals(700f - 112f, keepLineDelta(700f, 724f, LineFollow.TAPPED, visTop = 100f, visBottom = 500f, margin = 24f), 0.01f)
+    fun tappedLineStaysWhereItIs() {
+        // Toccata a metà (2026-11-24, proposta 9): la pagina non salta, la riga resta sotto il dito.
+        assertEquals(0f, keepLineDelta(400f, 424f, LineFollow.TAPPED, visTop = 100f, visBottom = 500f, margin = 24f), 0.01f)
+        // Toccata dove la tastiera la coprirebbe: sale a un terzo della parte visibile (100 + 400 * 0,3), non in cima.
+        assertEquals(700f - 220f, keepLineDelta(700f, 724f, LineFollow.TAPPED, visTop = 100f, visBottom = 500f, margin = 24f), 0.01f)
+        assertEquals(470f - 220f, keepLineDelta(470f, 494f, LineFollow.TAPPED, visTop = 100f, visBottom = 500f, margin = 24f), 0.01f)
         // Il tocco mette in cima; la tastiera che si apre lo lascia; scrivere o una selezione no.
         assertTrue(followMode(typing = false, moved = true, collapsed = true, sinceTapMs = 50, wasAtTop = false))
         // Con la tastiera aperta il cursore arriva anche un secondo e mezzo dopo il tocco.

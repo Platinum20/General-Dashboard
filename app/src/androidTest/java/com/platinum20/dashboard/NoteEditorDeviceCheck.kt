@@ -121,7 +121,12 @@ class NoteEditorDeviceCheck {
         compose.waitForIdle()
     }
 
-    private fun body(): String = NoteText.split(NotesStore.note(id)?.text.orEmpty()).second
+    /** Il testo salvato: l'editor salva alla prima pausa (2026-11-24), quindi si aspetta quella pausa. */
+    private fun body(): String {
+        Thread.sleep(com.platinum20.dashboard.ui.screens.SAVE_PAUSE_MS + 200)
+        compose.waitForIdle()
+        return NoteText.split(NotesStore.note(id)?.text.orEmpty()).second
+    }
     private fun kinds() = NoteLines.parse(body()).map { it.kind }
 
     /** Il campo del testo (il primo campo dentro "noteBody": tabelle e colonne vengono dopo). */
@@ -163,6 +168,8 @@ class NoteEditorDeviceCheck {
         n.performClick()
         compose.waitForIdle()
     }
+
+    private fun longClickLabel(label: String) = SemanticsMatcher("tieni premuto \"$label\"") { it.config.getOrNull(SemanticsActions.OnLongClick)?.label == label }
 
     private fun clickLabel(label: String) = SemanticsMatcher("clic \"$label\"") { it.config.getOrNull(SemanticsActions.OnClick)?.label == label }
 
@@ -315,13 +322,22 @@ class NoteEditorDeviceCheck {
         shell("input keyevent 123")
         settle(500)
         note("spunte: prima di Sotto-voce -> ${body()}")
-        tap("Sotto-voce")
+        // Il rientro sta nel fumetto della voce (2026-11-24): tieni premuto il segno dell'ultima.
+        compose.onAllNodes(longClickLabel("Scelte della riga")).fetchSemanticsNodes().size.let { n ->
+            compose.onAllNodes(longClickLabel("Scelte della riga"))[n - 1].performTouchInput { longClick() }
+        }
+        compose.waitForIdle()
+        tapText("Sotto-voce")
         settle(500)
         shot("spuntata_rientrata")
         val last = NoteLines.parse(body()).last()
         assertEquals(1, last.level)
         assertTrue(body(), last.done)
-        tap("Su di un livello")
+        compose.onAllNodes(longClickLabel("Scelte della riga")).fetchSemanticsNodes().size.let { n ->
+            compose.onAllNodes(longClickLabel("Scelte della riga"))[n - 1].performTouchInput { longClick() }
+        }
+        compose.waitForIdle()
+        tapText("In fuori")
         assertEquals(0, NoteLines.parse(body()).last().level)
     }
 
@@ -353,15 +369,15 @@ class NoteEditorDeviceCheck {
         key(Key.Enter)
         type("scarpe")
         note("barra: scritto -> ${body()}")
-        tap("Sotto-voce")
-        note("barra: subito dopo Sotto-voce -> ${body()}")
+        tap("Elenco numerato")
+        note("barra: subito dopo Numeri -> ${body()}")
         settle(1200)
-        shot("sotto_voce")
-        note("barra: dopo 1,2 s -> ${body()}")
+        shot("numeri")
         type("x")
         note("barra: e poi x -> ${body()}")
         val last = NoteLines.parse(body()).last()
-        assertEquals(body(), 1, last.level)
+        assertEquals(body(), NoteLines.Kind.NUMBER, last.kind)
+        assertTrue(body(), body().endsWith("scarpex"))
         key(Key.Enter)
         type("pane")
         tap("Elenco puntato")
@@ -369,6 +385,57 @@ class NoteEditorDeviceCheck {
         shot("punti")
         note("barra: Punti dopo pane -> ${body()}")
         assertEquals(body(), NoteLines.Kind.BULLET, NoteLines.parse(body()).last().kind)
+    }
+
+    /** 2026-11-24 (proposta 4): il segno trascinato di lato rientra la voce, e torna indietro. */
+    @Test
+    fun dragMarkSidewaysIndents() {
+        open("Rientro\n[ ] uno\n[ ] due", "trascina_di_lato")
+        val marks = compose.onAllNodes(longClickLabel("Scelte della riga"))
+        marks[1].performTouchInput {
+            down(center)
+            advanceEventTime(900)
+            repeat(10) { moveBy(Offset(18f, 0f)); advanceEventTime(16) }
+            up()
+        }
+        settle(500)
+        shot("rientrata")
+        assertEquals(body(), 1, NoteLines.parse(body())[1].level)
+        compose.onAllNodes(longClickLabel("Scelte della riga"))[1].performTouchInput {
+            down(center)
+            advanceEventTime(900)
+            repeat(10) { moveBy(Offset(-18f, 0f)); advanceEventTime(16) }
+            up()
+        }
+        settle(500)
+        assertEquals(body(), 0, NoteLines.parse(body())[1].level)
+    }
+
+    /** 2026-11-24 (proposta 5): la riga di testo dove sta il cursore ha la maniglia; un tocco apre il suo fumetto. */
+    @Test
+    fun lineHandleOpensTheLineBubble() {
+        open("Maniglia\nuna riga di testo", "maniglia")
+        focusBody()
+        field().performTextInputSelection(TextRange(body().length))
+        settle(400)
+        shot("maniglia")
+        compose.onNode(clickLabel("Scelte della riga")).performClick()
+        compose.waitForIdle()
+        shot("fumetto_riga")
+        compose.onNodeWithText("Manda in Da fare", useUnmergedTree = true).assertExists()
+    }
+
+    /** 2026-11-24 (proposte 1 e 2): il + è nella barra, e l'ultimo tasto chiude la tastiera. */
+    @Test
+    fun barPlusAndHideKeyboard() {
+        open("Barra fissa\nciao", "barra_fissa")
+        focusBody()
+        shot("barra")
+        compose.onNodeWithContentDescription("Aggiungi", useUnmergedTree = true).assertExists()
+        tap("Chiudi la tastiera")
+        settle(800)
+        shot("tastiera_chiusa")
+        assertFalse("la tastiera è ancora aperta", imeOpen())
     }
 
     // ---------------------------------------------------------------- "/" e Aa
@@ -451,8 +518,11 @@ class NoteEditorDeviceCheck {
         compose.waitForIdle()
         tap("Formati, colori, link, titolo, citazione, riquadro")
         shot("aa_aperto")
-        tap("Torna a punti e spunte")
+        // La barra resta uguale sotto la fila dei formati (2026-11-24): Aa di nuovo la chiude.
         compose.onNodeWithContentDescription("Elenco puntato", useUnmergedTree = true).assertExists()
+        compose.onNodeWithContentDescription("Grassetto", useUnmergedTree = true).assertExists()
+        tap("Formati, colori, link, titolo, citazione, riquadro")
+        compose.onNodeWithContentDescription("Grassetto", useUnmergedTree = true).assertDoesNotExist()
     }
 
     @Test
@@ -671,13 +741,15 @@ class NoteEditorDeviceCheck {
             val b = barTop()
             Log.i(TAG, "tocco $n: cursore fondo=$c barra cima=$b")
             assertTrue("dopo il tocco ${n + 1} la riga del cursore ($c) resta sotto la barra ($b)", c <= b - 10)
-            assertTrue("dopo il tocco ${n + 1} la riga ($c) non è salita in cima (${screenHeight()})", c < screenHeight() * 0.3f)
         }
     }
 
-    /** Antonio (1.606): la riga toccata sale in cima al telefono, con la tastiera chiusa e già aperta, e la tastiera resta. */
+    /**
+     * 2026-11-24 (proposta 9): la riga toccata resta dov'è se si vede; se la tastiera che si apre la coprirebbe, sale sopra
+     * la barra. Mai in cima "per forza". La tastiera resta aperta.
+     */
     @Test
-    fun tappedLineGoesToTop() {
+    fun tappedLineStaysInView() {
         open("Lunga\n" + (1..40).joinToString("\n") { "riga numero $it" }, "tocco_in_cima")
         // Tastiera chiusa: tocco a metà schermo.
         val nodeTop = field().fetchSemanticsNode().boundsInWindow.top
@@ -687,7 +759,7 @@ class NoteEditorDeviceCheck {
         shot("primo_tocco")
         val first = cursorBottom()
         note("primo tocco: cursore fondo=$first schermo=${screenHeight()}")
-        assertTrue("la riga toccata ($first) non è in cima", first < screenHeight() * 0.3f)
+        assertTrue("la riga toccata ($first) è sotto la barra (${barTop()})", first <= barTop() - 10)
         // Tastiera aperta: tocco più in basso, appena sopra la barra.
         val top2 = field().fetchSemanticsNode().boundsInWindow.top
         field().performTouchInput { click(Offset(centerX, barTop() - 60f - top2)) }
@@ -696,7 +768,9 @@ class NoteEditorDeviceCheck {
         val second = cursorBottom()
         note("secondo tocco: cursore fondo=$second")
         assertTrue("la tastiera si è chiusa", imeOpen())
-        assertTrue("la seconda riga toccata ($second) non è in cima", second < screenHeight() * 0.3f)
+        assertTrue("la seconda riga toccata ($second) è sotto la barra (${barTop()})", second <= barTop() - 10)
+        // Si vedeva già: la pagina non salta in cima.
+        assertTrue("la seconda riga toccata ($second) è saltata in cima", second > screenHeight() * 0.35f)
     }
 
     private fun screenHeight(): Float {

@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.618.0
+**Editor delle note più fluido**
+- Il + c'è anche nella barra sopra la tastiera: apre lo stesso fumetto del + in basso
+- La barra ha otto tasti fissi che non scorrono e non cambiano: +, Annulla, Ripeti, Punti, Numeri, Spunta, Aa e un tasto per chiudere la tastiera
+- Una data o un link nella riga diventano una chip blu sopra la barra, a destra; anche "@" si apre lì sopra
+- Aa (o del testo scelto) apre sopra la barra due file: come è scritto il testo e che tipo di riga è. La barra sotto resta uguale
+- Il rientro si fa trascinando di lato il pallino o il quadratino della voce; c'è anche nel fumetto della voce
+- Sulla riga dove scrivi c'è una maniglia ⋮⋮: tocchi per le sue scelte, trascini per spostarla
+- Una sola "Foto": va dove sta il cursore, o in cima. Dal fumetto della foto la sposti nel testo o in cima
+- Il + ha tre file: Foto e voce, Blocchi, Collega. PDF, Duplica, Copia, Versioni, Ascolta, widget e Spotify sono in Altro
+- In Altro anche "Vai a un titolo"; tolta la fila dell'indice sopra il testo e il conteggio delle parole: in alto ora c'è "Salvata ora"
+- Toccare una riga non fa più saltare la pagina in cima: si muove solo se la tastiera coprirebbe la riga
+- Mentre scrivi la nota si salva alla prima pausa, non a ogni lettera: prima ogni lettera riscriveva tutte le note e ridisegnava i widget
+
 ## 1.617.0
 **Da fare e Appunti in una card sola**
 - In Home una card "Da fare": prima le cose da fare, poi le abitudini, poi le liste delle note e, sotto una riga sottile, gli appunti

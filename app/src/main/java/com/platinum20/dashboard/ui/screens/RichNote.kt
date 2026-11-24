@@ -9,12 +9,14 @@ import androidx.compose.material.icons.outlined.SortByAlpha
 import androidx.compose.material.icons.outlined.RemoveDone
 import com.platinum20.dashboard.notes.NoteLists
 import androidx.compose.material.icons.outlined.VerticalAlignTop
+import androidx.compose.material.icons.outlined.KeyboardHide
+import androidx.compose.material.icons.outlined.DragIndicator
+import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,7 +34,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -137,6 +138,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.platinum20.dashboard.capture.CaptureFeedback
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.icons.automirrored.outlined.FormatIndentDecrease
@@ -188,6 +190,10 @@ object RichBar {
         val redo: () -> Unit = {},
         /** Le voci in più del menu "/" che sa fare solo chi usa il campo (foto, detta…). */
         val extras: List<SlashItem> = emptyList(),
+        /** Il + della barra (2026-11-24, proposta 1): il fumetto Aggiungi di chi usa il campo. Null = i blocchi del menu "/". */
+        val add: (() -> Unit)? = null,
+        /** Una foto nel testo che va in cima alla nota (proposta 6): solo l'editor della nota lo sa fare. */
+        val photoToTop: ((String) -> Unit)? = null,
     )
 
     var target by mutableStateOf<Target?>(null)
@@ -213,6 +219,23 @@ private val INDENT = 30.sp
 
 /** Quanto è largo lo spazio sottile al posto del segno ([NoteLines.PLACE]) nel testo delle note. */
 private val THIN_SPACE = 3.sp
+
+/** La maniglia ⋮⋮ nel margine a sinistra del testo (2026-11-24). */
+private val HANDLE_WIDTH = 22.dp
+
+/** Dove va una riga trascinata: su, giù, dentro (sotto-voce), fuori (su di un livello). */
+internal enum class LineDrag { NONE, UP, DOWN, IN, OUT }
+
+/**
+ * Pura (2026-11-24, proposta 4): il dito spostato di [x] e [y] da quando la riga si è mossa l'ultima volta. Di lato conta
+ * solo se il gesto è chiaramente di lato (più di metà rientro e una volta e mezza più che in verticale).
+ */
+internal fun lineDragStep(x: Float, y: Float, rowPx: Float, indentPx: Float): LineDrag = when {
+    kotlin.math.abs(x) > indentPx * 0.8f && kotlin.math.abs(x) > kotlin.math.abs(y) * 1.5f -> if (x > 0) LineDrag.IN else LineDrag.OUT
+    y > rowPx * 0.7f -> LineDrag.DOWN
+    y < -rowPx * 0.7f -> LineDrag.UP
+    else -> LineDrag.NONE
+}
 
 /** Il posto del cerchio (19 dp) e del pallino, allineato al bordo del testo. */
 private val MARK_SLOT = 20.dp
@@ -277,6 +300,12 @@ internal fun RichNoteField(
     firstAir: Boolean = true,
     /** Le scelte in più del fumetto di una riga che sa fare solo l'editor della nota (Ricordamelo, 2026-11-24). */
     lineMore: ((text: String, cursor: Int) -> List<BubbleAction>)? = null,
+    /** Il + della barra sopra la tastiera (2026-11-24): lo stesso fumetto del + in basso. */
+    onAdd: (() -> Unit)? = null,
+    /** "Metti in cima" sul fumetto di una foto nel testo (2026-11-24). */
+    onPhotoToTop: ((String) -> Unit)? = null,
+    /** La maniglia ⋮⋮ a sinistra della riga del cursore (2026-11-24, proposta 5): serve il margine a sinistra del campo. */
+    lineHandle: Boolean = false,
 ) {
     val context = LocalContext.current
     val haptic = rememberHaptic()
@@ -378,6 +407,8 @@ internal fun RichNoteField(
             undo = { restore(history.undo(snap(current))) },
             redo = { restore(history.redo(snap(current))) },
             extras = slashExtras,
+            add = onAdd,
+            photoToTop = onPhotoToTop,
         )
         onDispose { if (RichBar.target?.owner == owner) RichBar.target = null }
     }
@@ -497,6 +528,7 @@ internal fun RichNoteField(
     var dragging by remember { mutableStateOf<Int?>(null) }
     var dragMoved by remember { mutableStateOf(false) }
     var dragPull by remember { mutableFloatStateOf(0f) }
+    var dragPullX by remember { mutableFloatStateOf(0f) }
     var dragEndedAt by remember { mutableLongStateOf(0L) }
 
     boardDialog?.let { (board, item, start) ->
@@ -621,6 +653,67 @@ internal fun RichNoteField(
                     onFocusChange(it.isFocused)
                 },
         )
+        /**
+         * Trascinare una riga (dal segno o dalla maniglia): su e giù la sposta, di lato la rientra o la riporta su di un
+         * livello (2026-11-24). Il fumetto aperto dal tieni premuto si chiude appena il dito si muove.
+         */
+        fun Modifier.lineDrag(lineOf: () -> NoteLines.Line, rowPx: Float, afterLongPress: Boolean): Modifier = pointerInput(readOnly, afterLongPress, rowPx) {
+            if (readOnly) return@pointerInput
+            val indentPx = INDENT.toPx()
+            val start: (androidx.compose.ui.geometry.Offset) -> Unit = {
+                dragging = lineOf().index
+                dragMoved = false
+                dragPull = 0f
+                dragPullX = 0f
+            }
+            val end: () -> Unit = {
+                dragEndedAt = System.currentTimeMillis()
+                dragging = null
+            }
+            val drag: (androidx.compose.ui.input.pointer.PointerInputChange, androidx.compose.ui.geometry.Offset) -> Unit = { pc, amount ->
+                pc.consume()
+                dragPull += amount.y
+                dragPullX += amount.x
+                val from = dragging
+                if (from != null) {
+                    if (!dragMoved && (kotlin.math.abs(dragPull) > rowPx * 0.3f || kotlin.math.abs(dragPullX) > indentPx * 0.4f)) ActionBubble.dismiss()
+                    val now = current
+                    val lines = NoteLines.parse(now.text)
+                    when (lineDragStep(dragPullX, dragPull, rowPx, indentPx)) {
+                        LineDrag.DOWN -> if (from < lines.size - 1) {
+                            dragPull -= rowPx
+                            haptic(Haptic.TICK)
+                            dragMoved = true
+                            dragging = from + 1
+                            change(TextFieldValue(NoteLines.move(now.text, from, up = false), now.selection), typed = false)
+                        }
+                        LineDrag.UP -> if (from > 0) {
+                            dragPull += rowPx
+                            haptic(Haptic.TICK)
+                            dragMoved = true
+                            dragging = from - 1
+                            change(TextFieldValue(NoteLines.move(now.text, from, up = true), now.selection), typed = false)
+                        }
+                        LineDrag.IN, LineDrag.OUT -> {
+                            val by = if (dragPullX > 0) 1 else -1
+                            dragPullX = 0f
+                            val at = lines.getOrNull(from)
+                            if (at != null && NoteLines.canIndent(now.text, at.start, by)) {
+                                haptic(Haptic.TICK)
+                                dragMoved = true
+                                val e = NoteLines.renumber(NoteLines.indent(now.text, at.start, at.start, by))
+                                val delta = e.text.length - now.text.length
+                                fun keep(o: Int) = if (o > at.start) (o + delta).coerceIn(at.start, e.text.length) else o
+                                change(TextFieldValue(e.text, TextRange(keep(now.selection.start), keep(now.selection.end))), typed = false)
+                            }
+                        }
+                        LineDrag.NONE -> {}
+                    }
+                }
+            }
+            if (afterLongPress) detectDragGesturesAfterLongPress(onDragStart = start, onDragEnd = end, onDragCancel = end, onDrag = drag)
+            else detectDragGestures(onDragStart = start, onDragEnd = end, onDragCancel = end, onDrag = drag)
+        }
         // I cerchi e i pallini, sopra il rientro di ogni voce: si toccano senza aprire la tastiera.
         val l = layout
         if (l != null) {
@@ -650,47 +743,8 @@ internal fun RichNoteField(
                     modifier = Modifier
                         .offset { IntOffset(left.toInt(), top.toInt()) }
                         .size(width, height)
-                        .pointerInput(readOnly) {
-                            if (readOnly) return@pointerInput
-                            detectDragGesturesAfterLongPress(
-                                // Il fumetto lo apre il tieni premuto del tocco qui sotto; trascinando si chiude e la voce si sposta.
-                                onDragStart = {
-                                    dragging = lineNow.index
-                                    dragMoved = false
-                                    dragPull = 0f
-                                },
-                                onDrag = { change, amount ->
-                                    change.consume()
-                                    val from = dragging
-                                    dragPull += amount.y
-                                    if (from != null) {
-                                    if (!dragMoved && kotlin.math.abs(dragPull) > rowPx * 0.3f) ActionBubble.dismiss()
-                                    val count = NoteLines.parse(current.text).size
-                                    if (dragPull > rowPx * 0.7f && from < count - 1) {
-                                        dragPull -= rowPx
-                                        haptic(Haptic.TICK)
-                                        dragMoved = true
-                                        dragging = from + 1
-                                        change(TextFieldValue(NoteLines.move(current.text, from, up = false), current.selection), typed = false)
-                                    } else if (dragPull < -rowPx * 0.7f && from > 0) {
-                                        dragPull += rowPx
-                                        haptic(Haptic.TICK)
-                                        dragMoved = true
-                                        dragging = from - 1
-                                        change(TextFieldValue(NoteLines.move(current.text, from, up = true), current.selection), typed = false)
-                                    }
-                                    }
-                                },
-                                onDragEnd = {
-                                    dragEndedAt = System.currentTimeMillis()
-                                    dragging = null
-                                },
-                                onDragCancel = {
-                                    dragEndedAt = System.currentTimeMillis()
-                                    dragging = null
-                                },
-                            )
-                        }
+                        // Tieni premuto e trascina: su e giù sposta la voce, di lato la rientra (2026-11-24, proposta 4).
+                        .lineDrag({ lineNow }, rowPx, afterLongPress = true)
                         .combinedClickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
@@ -723,6 +777,41 @@ internal fun RichNoteField(
                     }
                 }
             } }
+            // La maniglia ⋮⋮ della riga dove sta il cursore (2026-11-24, proposta 5): le righe di testo e i titoli non hanno
+            // un segno da tenere premuto. Tocco = il fumetto della riga, trascina = la sposti. Solo su quella riga.
+            if (lineHandle && focused && !readOnly && value.selection.collapsed) {
+                val cur = shown.lines.firstOrNull { value.selection.end in it.start..it.end }
+                if (cur != null && (cur.kind == NoteLines.Kind.TEXT || cur.kind == NoteLines.Kind.HEADING) && !hiddenLine(cur) &&
+                    cur.end > cur.contentStart && shown.toShown(cur.start) < drawn
+                ) androidx.compose.runtime.key("handle") {
+                    val row = l.getLineForOffset(shown.toShown(cur.contentStart).coerceAtMost(drawn))
+                    val top = l.getLineTop(row)
+                    val rowPx = (l.getLineBottom(row) - top).coerceAtLeast(1f)
+                    val curNow by rememberUpdatedState(cur)
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .offset { IntOffset(-HANDLE_WIDTH.roundToPx(), top.toInt()) }
+                            .size(HANDLE_WIDTH, with(density) { rowPx.toDp() })
+                            .lineDrag({ curNow }, rowPx, afterLongPress = false)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClickLabel = "Scelte della riga",
+                            ) {
+                                if (System.currentTimeMillis() - dragEndedAt < 400) return@clickable
+                                haptic(Haptic.LONG_PRESS)
+                                ActionBubble.show(lineHead(curNow, current.text), *(lineActions(context, curNow, current, emit, sendToTodo) + lineMore?.invoke(current.text, curNow.end).orEmpty()).toTypedArray())
+                            },
+                    ) {
+                        Icon(
+                            Icons.Outlined.DragIndicator, contentDescription = null,
+                            tint = if (dragging == cur.index) colors.primary else colors.onSurfaceVariant.copy(alpha = 0.55f),
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
+            }
             // Citazione, riquadro e linea (1.584): la barra, l'emoji, la linea. Tieni premuto per le scelte.
             shown.lines.filter { (it.kind == NoteLines.Kind.QUOTE || it.kind == NoteLines.Kind.CALLOUT || it.kind == NoteLines.Kind.DIVIDER) && !hiddenLine(it) && shown.toShown(it.start) < drawn }.forEach { line -> androidx.compose.runtime.key("m${line.index}") {
                 val at = shown.toShown(line.start)
@@ -1006,6 +1095,14 @@ internal fun RichNoteField(
                                 haptic(Haptic.LONG_PRESS)
                                 ActionBubble.show(
                                     BubbleHead("Foto"),
+                                    *listOfNotNull(
+                                        onPhotoToTop?.let { top ->
+                                            act(BubbleGroup.CAMBIA, Icons.Outlined.VerticalAlignTop, "Metti in cima", "va fra le foto sopra il testo") {
+                                                replaceLine(line.index, null)
+                                                top(path)
+                                            }
+                                        },
+                                    ).toTypedArray(),
                                     Slot.share { com.platinum20.dashboard.notes.NotePhotoFiles.share(context, "", listOf(path)) },
                                     Slot.remove { undoable("Foto tolta") { replaceLine(line.index, null) } },
                                 )
@@ -1520,6 +1617,15 @@ private fun lineActions(
             if (line.index > 0) BubbleChip("Su", icon = Icons.Outlined.ArrowUpward) { set(NoteLines.move(text, line.index, up = true)) } else null,
             if (line.index < count - 1) BubbleChip("Giù", icon = Icons.Outlined.ArrowDownward) { set(NoteLines.move(text, line.index, up = false)) } else null,
         ).takeIf { it.isNotEmpty() }?.let { choice("Sposta", *it.toTypedArray()) },
+        // Il rientro (2026-11-24): uscito dalla barra, sta qui e sul segno trascinato di lato.
+        listOfNotNull(
+            if (NoteLines.canIndent(text, line.start, -1)) BubbleChip("In fuori", icon = Icons.AutoMirrored.Outlined.FormatIndentDecrease) {
+                val e = NoteLines.indent(text, line.start, line.start, -1); emit(TextFieldValue(e.text, TextRange(e.start)))
+            } else null,
+            if (NoteLines.canIndent(text, line.start, 1)) BubbleChip("Sotto-voce", icon = Icons.AutoMirrored.Outlined.FormatIndentIncrease) {
+                val e = NoteLines.indent(text, line.start, line.start, 1); emit(TextFieldValue(e.text, TextRange(e.start)))
+            } else null,
+        ).takeIf { it.isNotEmpty() }?.let { choice("Rientro", *it.toTypedArray()) },
         if (sendToTodo && words.isNotEmpty()) act(BubbleGroup.METTI, Icons.Outlined.TaskAlt, "Manda in Da fare", "la trovi nella card della Home") {
             NotesStore.addTodo(words)?.let { task ->
                 set(NoteLines.remove(text, line.index))
@@ -1637,103 +1743,198 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
         val e = NoteFormat.link(now.text, now.selection.min, now.selection.max, copied)
         target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
     }
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier.horizontalScroll(rememberScrollState()),
-    ) {
-        when {
-            mention != null -> {
-                // "@" (1.584, tutta l'app dalla 1.588): note, promemoria e cose da fare, abitudini, pacchi, documenti,
-                // sezioni. Diventa un link che si apre con un tocco.
-                val data by NotesStore.data.collectAsStateWithLifecycle()
-                val docs by DocumentsStore.docs.collectAsStateWithLifecycle()
-                // Gli eventi del telefono (1.598): letti una volta quando si apre "@", se c'è il permesso del calendario.
-                var events by remember { mutableStateOf<List<com.platinum20.dashboard.calendar.CalendarEvent>>(emptyList()) }
-                LaunchedEffect(Unit) {
-                    if (com.platinum20.dashboard.calendar.CalendarRepository.hasPermission(context)) events = runCatching {
-                        com.platinum20.dashboard.calendar.CalendarRepository.eventsFrom(context, java.time.LocalDate.now().minusDays(30), 120).values.flatten()
-                    }.getOrDefault(emptyList())
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    // Il + della barra: il fumetto Aggiungi di chi usa il campo; senza, i blocchi del menu "/" (note di eventi e date).
+    fun add() {
+        haptic(Haptic.LONG_PRESS)
+        // Il fumetto sta in basso: la tastiera si chiude per lasciarlo vedere, il cursore resta dov'è.
+        keyboard?.hide()
+        target.add?.let { it(); return }
+        val entries = slashEntries(target) { pid, name -> openNoteLink(inApp, "${NoteFormat.NOTE_LINK}$pid", name) }
+        fun chip(id: String, label: String) = entries.firstOrNull { it.id == id }?.let { e -> BubbleChip(label, icon = e.icon) { e.run(target.value()) } }
+        ActionBubble.show(
+            BubbleHead("Aggiungi", "nel testo"),
+            choice("Blocchi", *listOfNotNull(chip("tabella", "Tabella"), chip("colonne", "Colonne"), chip("bacheca", "Bacheca")).toTypedArray()),
+            choice("Collega", *listOfNotNull(chip("sottonota", "Sotto-nota"), chip("collega", "Un'altra nota")).toTypedArray()),
+        )
+    }
+    val showFormats = selecting || formats
+    // Quello che galleggia sopra la barra (2026-11-24, proposte 2 e 3): la barra resta sempre uguale, sopra compaiono
+    // i formati (Aa o testo scelto), i risultati di "@" e il tasto della data o del link della riga.
+    val floating = mention != null || showFormats || dated != null || linkHere != null
+    var barWidth by remember { mutableStateOf(0) }
+    val density = LocalDensity.current
+    Box(modifier.onGloballyPositioned { barWidth = it.size.width }) {
+        if (floating && barWidth > 0) {
+            val gap = with(density) { 8.dp.roundToPx() }
+            val above = remember(gap) {
+                object : androidx.compose.ui.window.PopupPositionProvider {
+                    override fun calculatePosition(
+                        anchorBounds: androidx.compose.ui.unit.IntRect, windowSize: androidx.compose.ui.unit.IntSize,
+                        layoutDirection: androidx.compose.ui.unit.LayoutDirection, popupContentSize: androidx.compose.ui.unit.IntSize,
+                    ) = IntOffset(anchorBounds.left, (anchorBounds.top - gap - popupContentSize.height).coerceAtLeast(0))
                 }
-                val shifts by com.platinum20.dashboard.shifts.ShiftStore.shifts.collectAsStateWithLifecycle()
-                val playlists by com.platinum20.dashboard.media.spotify.SpotifyStore.playlists.collectAsStateWithLifecycle()
-                val lists = playlists.data.orEmpty()
-                val hits = remember(data, docs, events, mention.second, shifts, lists) {
-                    mentionTargets(data, docs, mention.second, events, shifts = shifts, playlists = lists)
-                }
-                if (hits.isEmpty()) BarLabel(Icons.Outlined.Close, if (mention.second.isEmpty()) "Scrivi un nome" else "Niente con \"${mention.second}\"") {}
-                hits.forEach { h ->
-                    BarLabel(h.icon, h.title.take(28)) {
-                        haptic(Haptic.TICK)
-                        val now = target.value()
-                        val m = mentionQuery(now.text, now.selection.end) ?: return@BarLabel
-                        val e = NoteFormat.mentionLink(now.text, m.first, now.selection.end, h.title, h.url)
-                        target.set(TextFieldValue(e.text, TextRange(e.start)))
+            }
+            androidx.compose.ui.window.Popup(popupPositionProvider = above, properties = androidx.compose.ui.window.PopupProperties(focusable = false)) {
+                Column(
+                    Modifier.width(with(density) { barWidth.toDp() }),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    if (mention != null) {
+                        // "@" (1.584, tutta l'app dalla 1.588): note, promemoria e cose da fare, abitudini, pacchi, documenti,
+                        // sezioni. Diventa un link che si apre con un tocco.
+                        val data by NotesStore.data.collectAsStateWithLifecycle()
+                        val docs by DocumentsStore.docs.collectAsStateWithLifecycle()
+                        // Gli eventi del telefono (1.598): letti una volta quando si apre "@", se c'è il permesso del calendario.
+                        var events by remember { mutableStateOf<List<com.platinum20.dashboard.calendar.CalendarEvent>>(emptyList()) }
+                        LaunchedEffect(Unit) {
+                            if (com.platinum20.dashboard.calendar.CalendarRepository.hasPermission(context)) events = runCatching {
+                                com.platinum20.dashboard.calendar.CalendarRepository.eventsFrom(context, java.time.LocalDate.now().minusDays(30), 120).values.flatten()
+                            }.getOrDefault(emptyList())
+                        }
+                        val shifts by com.platinum20.dashboard.shifts.ShiftStore.shifts.collectAsStateWithLifecycle()
+                        val playlists by com.platinum20.dashboard.media.spotify.SpotifyStore.playlists.collectAsStateWithLifecycle()
+                        val lists = playlists.data.orEmpty()
+                        val hits = remember(data, docs, events, mention.second, shifts, lists) {
+                            mentionTargets(data, docs, mention.second, events, shifts = shifts, playlists = lists)
+                        }
+                        FloatPanel {
+                            @OptIn(ExperimentalLayoutApi::class)
+                            androidx.compose.foundation.layout.FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                if (hits.isEmpty()) BarLabel(Icons.Outlined.Close, if (mention.second.isEmpty()) "Scrivi un nome" else "Niente con \"${mention.second}\"") {}
+                                hits.take(8).forEach { h ->
+                                    BarLabel(h.icon, h.title.take(28)) {
+                                        haptic(Haptic.TICK)
+                                        val now = target.value()
+                                        val m = mentionQuery(now.text, now.selection.end) ?: return@BarLabel
+                                        val e = NoteFormat.mentionLink(now.text, m.first, now.selection.end, h.title, h.url)
+                                        target.set(TextFieldValue(e.text, TextRange(e.start)))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (showFormats && mention == null) {
+                        val active = NoteFormat.active(v.text, v.selection.min, v.selection.max)
+                        // Come è scritto il testo.
+                        FloatPanel {
+                            BarIcon(Icons.Outlined.FormatBold, "Grassetto", on = NoteFormat.Kind.BOLD in active) { mark(NoteFormat.BOLD) }
+                            BarIcon(Icons.Outlined.FormatItalic, "Corsivo", on = NoteFormat.Kind.ITALIC in active) { mark(NoteFormat.ITALIC) }
+                            BarIcon(Icons.Outlined.StrikethroughS, "Barrato", on = NoteFormat.Kind.STRIKE in active) { mark(NoteFormat.STRIKE) }
+                            BarIcon(Icons.Outlined.BorderColor, "Evidenzia", on = NoteFormat.Kind.HIGHLIGHT in active) { mark(NoteFormat.HIGHLIGHT) }
+                            BarIcon(Icons.Outlined.Palette, "Colore del testo o dello sfondo", on = NoteFormat.Kind.COLOR in active) {
+                                haptic(Haptic.TICK)
+                                val was = target.value().let { NoteFormat.colorHere(it.text, it.selection.min, it.selection.max) }
+                                ActionBubble.show(BubbleHead("Colore"), *colorActions(was) { code ->
+                                    val now = target.value()
+                                    val e = NoteFormat.color(now.text, now.selection.min, now.selection.max, code)
+                                    target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
+                                }.toTypedArray())
+                            }
+                            BarIcon(Icons.Outlined.Link, "Link (copia prima l'indirizzo)", on = NoteFormat.Kind.LINK in active) { link() }
+                        }
+                        // Che tipo di riga è.
+                        FloatPanel {
+                            BarIcon(Icons.Outlined.Title, "Titolo", on = line.kind == NoteLines.Kind.HEADING) { kind(NoteLines.Kind.HEADING) }
+                            BarIcon(Icons.Outlined.FormatQuote, "Citazione", on = line.kind == NoteLines.Kind.QUOTE) { kind(NoteLines.Kind.QUOTE) }
+                            BarIcon(Icons.Outlined.Lightbulb, "Riquadro con emoji", on = line.kind == NoteLines.Kind.CALLOUT) { kind(NoteLines.Kind.CALLOUT) }
+                            BarIcon(Icons.Outlined.Transform, "Trasforma in") {
+                                haptic(Haptic.TICK)
+                                val now = target.value()
+                                ActionBubble.show(BubbleHead("Trasforma in"), transformAction(NoteLines.lineAt(now.text, now.selection.min).kind) { k ->
+                                    val n = target.value()
+                                    val e = NoteLines.renumber(NoteLines.transform(n.text, n.selection.min, n.selection.max, k))
+                                    target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
+                                })
+                            }
+                        }
+                    }
+                    // Una data scritta nella riga (1.588) o il cursore su un link: una chip a destra, sopra la barra.
+                    if (mention == null && (dated != null || linkHere != null)) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.End)) {
+                            linkHere?.let { (url, label) -> FloatChip(Icons.AutoMirrored.Outlined.OpenInNew, "Apri il link") { openLink(url, label) } }
+                            dated?.let { (_, due) -> FloatChip(Icons.Outlined.Event, dueLabel(due) + " → Calendario") { toCalendar() } }
+                        }
                     }
                 }
             }
-            selecting || formats -> {
-                val active = NoteFormat.active(v.text, v.selection.min, v.selection.max)
-                BarIcon(Icons.Outlined.FormatBold, "Grassetto", on = NoteFormat.Kind.BOLD in active) { mark(NoteFormat.BOLD) }
-                BarIcon(Icons.Outlined.FormatItalic, "Corsivo", on = NoteFormat.Kind.ITALIC in active) { mark(NoteFormat.ITALIC) }
-                BarIcon(Icons.Outlined.StrikethroughS, "Barrato", on = NoteFormat.Kind.STRIKE in active) { mark(NoteFormat.STRIKE) }
-                BarIcon(Icons.Outlined.BorderColor, "Evidenzia", on = NoteFormat.Kind.HIGHLIGHT in active) { mark(NoteFormat.HIGHLIGHT) }
-                BarIcon(Icons.Outlined.Link, "Link (copia prima l'indirizzo)", on = NoteFormat.Kind.LINK in active) { link() }
-                BarIcon(Icons.Outlined.Palette, "Colore del testo o dello sfondo", on = NoteFormat.Kind.COLOR in active) {
-                    haptic(Haptic.TICK)
-                    val was = target.value().let { NoteFormat.colorHere(it.text, it.selection.min, it.selection.max) }
-                    ActionBubble.show(BubbleHead("Colore"), *colorActions(was) { code ->
-                        val now = target.value()
-                        val e = NoteFormat.color(now.text, now.selection.min, now.selection.max, code)
-                        target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
-                    }.toTypedArray())
-                }
+        }
+        // La barra (2026-11-24, proposte 1 e 2): otto tasti fissi, sempre negli stessi punti, niente da scorrere.
+        // + · Annulla · Ripeti | Punti · Numeri · Spunta | Aa · chiudi la tastiera.
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val side = ((maxWidth - 10.dp - 7 * 4.dp) / 8).coerceIn(34.dp, 42.dp)
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                BarIcon(Icons.Outlined.Add, "Aggiungi", plus = true, side = side) { add() }
+                BarIcon(Icons.AutoMirrored.Outlined.Undo, "Annulla", enabled = target.canUndo(), side = side) { haptic(Haptic.TICK); target.undo() }
+                BarIcon(Icons.AutoMirrored.Outlined.Redo, "Ripeti", enabled = target.canRedo(), side = side) { haptic(Haptic.TICK); target.redo() }
                 BarSeparator()
-                BarIcon(Icons.Outlined.Transform, "Trasforma in") {
-                    haptic(Haptic.TICK)
-                    val now = target.value()
-                    ActionBubble.show(BubbleHead("Trasforma in"), transformAction(NoteLines.lineAt(now.text, now.selection.min).kind) { k ->
-                        val n = target.value()
-                        val e = NoteLines.renumber(NoteLines.transform(n.text, n.selection.min, n.selection.max, k))
-                        target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
-                    })
-                }
-                BarIcon(Icons.Outlined.Title, "Titolo", on = line.kind == NoteLines.Kind.HEADING) { kind(NoteLines.Kind.HEADING) }
-                BarIcon(Icons.Outlined.FormatQuote, "Citazione", on = line.kind == NoteLines.Kind.QUOTE) { kind(NoteLines.Kind.QUOTE) }
-                BarIcon(Icons.Outlined.Lightbulb, "Riquadro con emoji", on = line.kind == NoteLines.Kind.CALLOUT) { kind(NoteLines.Kind.CALLOUT) }
+                BarIcon(Icons.AutoMirrored.Outlined.FormatListBulleted, "Elenco puntato", on = line.kind == NoteLines.Kind.BULLET, side = side) { kind(NoteLines.Kind.BULLET) }
+                BarIcon(Icons.Outlined.FormatListNumbered, "Elenco numerato", on = line.kind == NoteLines.Kind.NUMBER, side = side) { kind(NoteLines.Kind.NUMBER) }
+                BarIcon(Icons.Outlined.CheckBoxOutlineBlank, "Voce da spuntare", on = line.kind == NoteLines.Kind.CHECK, side = side) { kind(NoteLines.Kind.CHECK) }
                 BarSeparator()
-                BarIcon(Icons.Outlined.Close, "Torna a punti e spunte") {
+                BarIcon(Icons.Outlined.TextFormat, "Formati, colori, link, titolo, citazione, riquadro", on = showFormats, side = side) {
+                    haptic(Haptic.TICK)
+                    if (showFormats) {
+                        formats = false
+                        if (selecting) target.set(v.copy(selection = TextRange(v.selection.max)))
+                    } else formats = true
+                }
+                BarIcon(Icons.Outlined.KeyboardHide, "Chiudi la tastiera", side = side) {
                     haptic(Haptic.TICK)
                     formats = false
-                    if (selecting) target.set(v.copy(selection = TextRange(v.selection.max)))
-                }
-            }
-            else -> {
-                // Una data nella riga: per primo il tasto che la mette nel Calendario (1.588).
-                dated?.let { (_, due) ->
-                    BarLabel(Icons.Outlined.Event, dueLabel(due)) { toCalendar() }
-                    BarSeparator()
-                }
-                // Il cursore su un link: per primo il tasto che lo apre.
-                linkHere?.let { (url, label) ->
-                    BarIcon(Icons.AutoMirrored.Outlined.OpenInNew, "Apri il link", on = true) { openLink(url, label) }
-                    BarSeparator()
-                }
-                BarIcon(Icons.AutoMirrored.Outlined.Undo, "Annulla", enabled = target.canUndo()) { haptic(Haptic.TICK); target.undo() }
-                BarIcon(Icons.AutoMirrored.Outlined.Redo, "Ripeti", enabled = target.canRedo()) { haptic(Haptic.TICK); target.redo() }
-                BarSeparator()
-                BarIcon(Icons.AutoMirrored.Outlined.FormatListBulleted, "Elenco puntato", on = line.kind == NoteLines.Kind.BULLET) { kind(NoteLines.Kind.BULLET) }
-                BarIcon(Icons.Outlined.FormatListNumbered, "Elenco numerato", on = line.kind == NoteLines.Kind.NUMBER) { kind(NoteLines.Kind.NUMBER) }
-                BarIcon(Icons.Outlined.CheckBoxOutlineBlank, "Voce da spuntare", on = line.kind == NoteLines.Kind.CHECK) { kind(NoteLines.Kind.CHECK) }
-                BarIcon(Icons.AutoMirrored.Outlined.FormatIndentIncrease, "Sotto-voce", enabled = NoteLines.canIndent(v.text, v.selection.min, 1)) { indent(1) }
-                BarIcon(Icons.AutoMirrored.Outlined.FormatIndentDecrease, "Su di un livello", enabled = NoteLines.canIndent(v.text, v.selection.min, -1)) { indent(-1) }
-                BarSeparator()
-                BarIcon(Icons.Outlined.TextFormat, "Formati, colori, link, titolo, citazione, riquadro") {
-                    haptic(Haptic.TICK)
-                    formats = true
+                    keyboard?.hide()
+                    focusManager.clearFocus()
                 }
             }
         }
+    }
+    // Aa acceso resta finché lo spegni; togliere una selezione chiude la fila se Aa era spento.
+}
+
+/** Una fila di tasti in vetro sopra la barra: come il menu "/". */
+@Composable
+private fun FloatPanel(content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit) {
+    val shape = RoundedCornerShape(26.dp)
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .shadow(10.dp, shape)
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.97f))
+            .border(cardBorder(), shape)
+            .padding(5.dp),
+        content = content,
+    )
+}
+
+/** La chip blu che galleggia sopra la barra: la data della riga nel Calendario, il link da aprire. */
+@Composable
+private fun FloatChip(icon: ImageVector, label: String, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val shape = RoundedCornerShape(21.dp)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .heightIn(min = 40.dp)
+            .bouncyPress(0.92f)
+            .shadow(8.dp, shape)
+            .clip(shape)
+            .background(colors.primary)
+            .clickable(onClickLabel = label, onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+    ) {
+        Icon(icon, contentDescription = null, tint = colors.onPrimary, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(7.dp))
+        Text(label, style = MaterialTheme.typography.labelLarge, color = colors.onPrimary, maxLines = 1)
     }
 }
 
@@ -1779,9 +1980,16 @@ private fun BarLabel(icon: ImageVector, label: String, onClick: () -> Unit) {
 
 /** Un tasto della barra: tondo, solo l'icona. Acceso = blu come tutte le azioni, spento = sbiadito e fermo. */
 @Composable
-private fun BarIcon(icon: ImageVector, description: String, on: Boolean = false, enabled: Boolean = true, onClick: () -> Unit) {
+private fun BarIcon(
+    icon: ImageVector, description: String, on: Boolean = false, enabled: Boolean = true,
+    /** Il + (2026-11-24): pieno come il tasto tondo "Aggiungi" delle pagine. */
+    plus: Boolean = false,
+    side: androidx.compose.ui.unit.Dp = 42.dp,
+    onClick: () -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
     val tint = when {
+        plus -> colors.surface
         on -> colors.onPrimary
         enabled -> colors.onSurface
         else -> colors.onSurfaceVariant.copy(alpha = 0.4f)
@@ -1789,10 +1997,10 @@ private fun BarIcon(icon: ImageVector, description: String, on: Boolean = false,
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .size(42.dp)
+            .size(side)
             .then(if (enabled) Modifier.bouncyPress(0.9f) else Modifier)
             .clip(CircleShape)
-            .background(if (on) colors.primary else colors.card)
+            .background(if (plus) colors.onSurface else if (on) colors.primary else colors.card)
             .border(cardBorder(), CircleShape)
             .clickable(enabled = enabled, onClickLabel = description, onClick = onClick),
     ) {
