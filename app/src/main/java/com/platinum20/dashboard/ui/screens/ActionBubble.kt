@@ -176,8 +176,12 @@ internal fun <T> chipRows(chips: List<T>, max: Int = 4): List<List<T>> {
     return List(n) { i -> val k = base + if (i < extra) 1 else 0; chips.subList(at, at + k).also { at += k } }
 }
 
-/** Pura: quattro chip per riga, ma due se un nome è lungo ("Il giorno prima"): meglio due righe che nomi tagliati. */
-internal fun chipsPerRow(labels: List<String>): Int = if (labels.size == 4 && labels.any { it.length > 11 }) 2 else 4
+/**
+ * Pura: quattro chip per riga, ma due se un nome è lungo ("Il giorno prima", o "Stasera 19" con l'icona accanto):
+ * meglio due righe che nomi tagliati.
+ */
+internal fun chipsPerRow(labels: List<String>, icons: Boolean = false): Int =
+    if (labels.size >= 4 && labels.any { it.length > (if (icons) 8 else 11) }) 2 else 4
 
 /** Un selettore con tutte icone (o colori, o emoji) sta su una riga sola: la scelta larga, le altre strette. */
 internal fun selectorFitsOneRow(chips: List<BubbleChip>): Boolean =
@@ -390,7 +394,7 @@ private fun BubbleChips(title: String, chips: List<BubbleChip>, selector: Boolea
         }
         if (dots) { BubbleDots(chips, onPick); return@Column }
         val wide = selector && selectorFitsOneRow(chips)
-        val rows = if (wide) listOf(chips) else chipRows(chips, chipsPerRow(chips.map { it.label }))
+        val rows = if (wide) listOf(chips) else chipRows(chips, chipsPerRow(chips.map { it.label }, icons = chips.all { it.icon != null }))
         rows.forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 // Icone in tutta la fila o in nessuna chip (Antonio 2026-11-24): mai una con e una senza.
