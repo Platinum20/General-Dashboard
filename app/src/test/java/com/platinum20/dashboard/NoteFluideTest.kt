@@ -1,7 +1,7 @@
 package com.platinum20.dashboard
 
 import com.platinum20.dashboard.notes.NoteLines
-import com.platinum20.dashboard.ui.screens.attachedText
+import com.platinum20.dashboard.ui.screens.appuntiStart
 import com.platinum20.dashboard.ui.screens.sweepEnd
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -50,9 +50,11 @@ class NoteFluideTest {
         assertEquals(fatta.end, sweepEnd(fatta, Triple(99, true, 0.1f)))
     }
 
-    @Test fun ilTestoDellEventoFinisceNegliAppunti() {
-        assertEquals("Portare la tessera", attachedText("", "  Portare la tessera \n"))
-        assertEquals("chiedere della lastra", attachedText("chiedere della lastra", "Portare la tessera"))
-        assertEquals("", attachedText("", ""))
+    @Test fun ilTestoDelCalendarioStaInFondo() {
+        // Niente scritto: una riga vuota in cima col cursore, il calendario sotto.
+        assertEquals("\nPortare la tessera" to 0, appuntiStart("", "  Portare la tessera \n"))
+        // Scritto: è una nota come le altre, il cursore in fondo.
+        assertEquals("lastra\nPortare la tessera" to 25, appuntiStart("lastra\nPortare la tessera", "Portare la tessera"))
+        assertEquals("" to 0, appuntiStart("", ""))
     }
 }

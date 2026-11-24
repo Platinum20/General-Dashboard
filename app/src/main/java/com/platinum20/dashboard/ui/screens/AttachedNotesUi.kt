@@ -43,8 +43,8 @@ import com.platinum20.dashboard.notes.NotesStore
  * fine evento le voci rimaste aperte arrivano in una notifica (idea 28).
  *
  * [seed] = il testo che l'evento ha già nel calendario del telefono (2026-11-24, Antonio: "se hanno i dettagli
- * dell'evento finisce nella sezione appunti"): finché non scrivi niente gli appunti sono quel testo; appena li cambi
- * diventano gli appunti di Canvas (il calendario non si tocca).
+ * dell'evento finisce nella sezione appunti", "mettilo sempre alla fine", "come le altre note"): gli appunti sono una
+ * nota come le altre, e il testo del calendario ci sta in fondo. Scrivi sopra; il calendario non si tocca.
  */
 @Composable
 internal fun AttachedNotesBlock(key: String, title: String, begin: Long = 0L, end: Long = 0L, label: String = "Appunti", seed: String = "") {
@@ -53,10 +53,11 @@ internal fun AttachedNotesBlock(key: String, title: String, begin: Long = 0L, en
     val data by NotesStore.data.collectAsStateWithLifecycle()
     val note = data.notes.firstOrNull { it.about == key }
     val body = AttachedNotes.body(note)
-    val text = attachedText(body, seed)
+    val text = appuntiStart(body, seed).first.trim()
     AppuntiCard(
         stateKey = "attached-$key",
-        value = text,
+        value = body,
+        tail = seed,
         label = label,
         headName = title,
         photos = note?.photos.orEmpty(),
@@ -73,8 +74,15 @@ internal fun AttachedNotesBlock(key: String, title: String, begin: Long = 0L, en
     )
 }
 
-/** Il testo degli appunti: quello scritto in Canvas, se no quello che l'evento ha nel calendario. */
-internal fun attachedText(body: String, seed: String): String = body.ifBlank { seed.trim() }
+/**
+ * Il testo con cui si aprono gli appunti e dove sta il cursore: quello scritto, se c'è; se no una riga vuota in cima per
+ * scrivere e sotto, in fondo, il testo del calendario ([tail]).
+ */
+internal fun appuntiStart(body: String, tail: String): Pair<String, Int> = when {
+    body.isNotBlank() -> body to body.length
+    tail.isNotBlank() -> "\n" + tail.trim() to 0
+    else -> "" to 0
+}
 
 /**
  * La card degli appunti, uguale su ogni pagina (2026-11-24, proposte 7-9): la faccia di una nota (niente icona, testo
@@ -89,6 +97,8 @@ internal fun AppuntiCard(
     label: String,
     headName: String,
     onCommit: (String) -> Unit,
+    /** Il testo che sta in fondo finché non si scrive (il calendario dell'evento). */
+    tail: String = "",
     photos: List<String> = emptyList(),
     onOpen: (() -> Unit)? = null,
     onClear: (() -> Unit)? = null,
@@ -97,7 +107,7 @@ internal fun AppuntiCard(
     val context = LocalContext.current
     var writing by rememberSaveable(stateKey) { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
-    if (value.isBlank() && !writing && photos.isEmpty()) {
+    if (value.isBlank() && tail.isBlank() && !writing && photos.isEmpty()) {
         CanvasCard(Modifier.fillMaxWidth().padding(top = 12.dp), onClick = { haptic(Haptic.TICK); writing = true }) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.EditNote, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
@@ -107,19 +117,24 @@ internal fun AppuntiCard(
         }
         return
     }
-    var field by rememberSaveable(stateKey, stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue(value)) }
+    val start = appuntiStart(value, tail)
+    // Quello che c'è senza aver scritto niente: finché il campo è uguale, non si salva niente.
+    val baseline = start.first.trim()
+    var field by rememberSaveable(stateKey, stateSaver = TextFieldValue.Saver) {
+        mutableStateOf(TextFieldValue(start.first, androidx.compose.ui.text.TextRange(start.second)))
+    }
     // Il testo cambiato da fuori (la nota intera, una spunta dalla notifica): la card lo mostra appena torni.
     // Solo mentre non ci scrivi: se no un salvataggio appena arrivato riporterebbe indietro le ultime lettere.
     var typing by remember { mutableStateOf(false) }
     var seen by remember(stateKey) { mutableStateOf(value) }
     if (value != seen && !typing) {
         seen = value
-        if (value.trim() != field.text.trim()) field = TextFieldValue(value)
+        if (value.isNotBlank() && value.trim() != field.text.trim()) field = TextFieldValue(value)
     }
     val commit by rememberUpdatedState(onCommit)
     LaunchedEffect(field.text) {
         kotlinx.coroutines.delay(600)
-        if (field.text.trim() != value.trim()) commit(field.text.trim())
+        if (field.text.trim() != baseline && field.text.trim() != value.trim()) commit(field.text.trim())
     }
     LaunchedEffect(writing) { if (writing) runCatching { focus.requestFocus() } }
     CardSection(

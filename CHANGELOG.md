@@ -8,7 +8,7 @@
 - Le file sopra la barra (Aa, «@», la data, il link) salgono piano; la chip della data e la maniglia ⋮⋮ aspettano che ti fermi mezzo secondo, così non lampeggiano a ogni lettera
 - «Salvata ora» in alto entra dal basso invece di cambiare di colpo
 - Toccando una nota in Da fare il titolo vola nella nota, e tornando rientra nella riga
-- Eventi, turni e treni: il testo che l'evento ha nel calendario finisce negli Appunti, non c'è più la riga «Note» nei dettagli
+- Eventi, turni e treni: gli Appunti sono una nota come le altre, e il testo che l'evento ha nel calendario sta in fondo; tu scrivi sopra. Non c'è più la riga «Note» nei dettagli
 - Le cose da fare hanno anche loro la card Appunti in fondo, al posto della riga «Note»
 - Gli appunti hanno la faccia di una nota: niente icona, testo grande, spunte vere e le foto in fila piccola
 - «APPUNTI ›» apre la nota intera; tenendo premuta la card: Apri, Copia, Svuota
