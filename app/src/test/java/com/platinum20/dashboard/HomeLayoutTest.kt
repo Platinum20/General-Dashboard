@@ -11,7 +11,7 @@ class HomeLayoutTest {
 
     @Test fun ordineNuovo() {
         assertEquals(
-            listOf("Adesso", "Media", "Calendario", "Da fare", "Appunti", "SIM", "Documenti", "Dalla posta", "News"),
+            listOf("Adesso", "Media", "Calendario", "Da fare", "SIM", "Documenti", "Dalla posta", "News"),
             HomeLayout.DEFAULT.order.map { it.label },
         )
     }
@@ -19,10 +19,12 @@ class HomeLayoutTest {
     @Test fun perDopoArrivaSottoIlCalendario() {
         // Chi aveva già un ordine salvato trova "Per dopo" subito dopo il Calendario (1.490).
         val layout = HomeLayout.read("DAY,WEATHER,RESUME,SIM,DOCS,MAIL,RECAP", "", HomeLayout.VERSION)
-        assertEquals(listOf(HomeCard.DAY, HomeCard.LATER, HomeCard.JOTTINGS, HomeCard.WEATHER), layout.order.take(4))
-        // 1.532: chi aveva già "Per dopo" (ora "Da fare") trova "Appunti" subito dopo.
-        val saved = HomeLayout.read("SIM,LATER,DAY", "", HomeLayout.VERSION).order
-        assertEquals(saved.indexOf(HomeCard.LATER) + 1, saved.indexOf(HomeCard.JOTTINGS))
+        assertEquals(listOf(HomeCard.DAY, HomeCard.LATER, HomeCard.WEATHER), layout.order.take(3))
+        // 1.616: "Appunti" è dentro "Da fare"; chi l'aveva salvata (anche nascosta) non perde il resto dell'ordine.
+        val saved = HomeLayout.read("SIM,LATER,JOTTINGS,DAY", "JOTTINGS", HomeLayout.VERSION)
+        assertEquals(listOf(HomeCard.SIM, HomeCard.LATER, HomeCard.DAY), saved.order.filter { it == HomeCard.SIM || it == HomeCard.LATER || it == HomeCard.DAY })
+        assertEquals(HomeCard.entries.size, saved.order.size)
+        assertEquals(emptySet<HomeCard>(), saved.hidden)
     }
 
     @Test fun daVersioneVecchiaOrdinePredefinito() {

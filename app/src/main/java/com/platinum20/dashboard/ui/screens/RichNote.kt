@@ -1291,7 +1291,7 @@ internal fun mentionTargets(
 private val MENTION_PAGES = listOf(
     "Meteo" to Routes.WEATHER, "SIM" to Routes.SIM, "Calendario" to Routes.NOTES, "News" to Routes.NEWS,
     "Media" to Routes.MEDIA, "Musica" to Routes.MUSIC_ALL, "Radio" to Routes.RADIO, "Podcast" to Routes.PODCAST,
-    "Da fare" to Routes.LATER_ARCHIVE, "Appunti" to Routes.JOTTINGS_ARCHIVE, "Cerca" to Routes.SEARCH,
+    "Da fare" to Routes.LATER_ARCHIVE, "Cerca" to Routes.SEARCH,
 )
 
 /** L'icona di ogni sezione collegabile con "@" (1.596). */

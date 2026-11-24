@@ -1611,7 +1611,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 com.platinum20.dashboard.ui.screens.LaterArchiveScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.JOTTINGS_ARCHIVE) {
-                com.platinum20.dashboard.ui.screens.LaterArchiveScreen(com.platinum20.dashboard.ui.screens.LooseCardKind.JOTTINGS, onBack = { navController.popBackStack() })
+                com.platinum20.dashboard.ui.screens.LaterArchiveScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.SIM) {
                 CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.semantics.contentDescription
@@ -33,6 +34,8 @@ import androidx.compose.material.icons.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Radio
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.outlined.FileCopy
 import androidx.compose.material.icons.outlined.Replay
 import androidx.compose.material.icons.outlined.Widgets
@@ -100,41 +103,75 @@ enum class LooseCardKind(
 
 
 /**
- * Una card senza data: tutte le righe, niente nascosto, il titolo dentro come le altre card e il numero a destra.
- * Ogni riga ha a sinistra la spunta (cose da fare) o l'immagine, il nome e al massimo una riga sotto.
+ * La card "Da fare" (1.616, Antonio 2026-11-24, mockup da-fare-appunti A3): una card sola con, dall'alto, le cose da
+ * fare (al massimo [HOME_TODO_MAX], poi "altre N ›"), le abitudini, le liste delle note e, dopo una riga sottile, gli
+ * appunti (note, foto, salvati). Nessuna intestazione in mezzo; una nota con le spunte compare una volta sola, come lista.
+ * Il numero a destra conta quello che ha ancora qualcosa da spuntare.
  */
 @Composable
 internal fun LaterCard(
-    kind: LooseCardKind,
     items: List<LooseItem>,
+    jottings: List<LooseItem>,
     onOpen: () -> Unit,
     habits: List<com.platinum20.dashboard.notes.Habit> = emptyList(),
-    /** Le note: quelle con delle spunte aperte diventano una riga di "Da fare" (2026-11-23, idea 4). */
+    /** Le note: quelle con delle spunte aperte diventano una riga di lista (2026-11-23, idea 4). */
     notes: List<com.platinum20.dashboard.notes.Note> = emptyList(),
 ) {
+    val kind = LooseCardKind.TODO
     val open = rememberDueOpen()
     val openItem = rememberOpenItem()
     val now = java.time.LocalDateTime.now()
     val today = now.toLocalDate()
     // Le liste già in vista restano anche finite: spuntando l'ultima voce la riga non sparisce sotto il dito.
     var keptLists by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(emptyList<Long>()) }
-    val lists = if (kind == LooseCardKind.TODO) remember(notes, keptLists) { NoteLists.rows(notes, keptLists.toSet()) } else emptyList()
+    val lists = remember(notes, keptLists) { NoteLists.rows(notes, keptLists.toSet()) }
     androidx.compose.runtime.LaunchedEffect(lists) {
         val ids = lists.map { it.noteId }
         if (!keptLists.containsAll(ids)) keptLists = (keptLists + ids).distinct()
     }
+    val notesBelow = remember(jottings, lists) { jottings.withoutLists(lists.map { it.noteId }.toSet()) }
     // Le abitudini di oggi ancora da fare contano come le altre cose da fare, e ogni lista aperta come una.
     val count = items.size + habits.count { !it.isDone(today) } + lists.count { it.open > 0 }
+    val shown = items.take(HOME_TODO_MAX)
+    val more = items.size - shown.size
     val haptic = rememberHaptic()
     val rowActions = rememberRowActions()
     val (savedOpen, savedLong) = rememberSavedTaps()
+    val rowFor: @Composable (LooseItem) -> Unit = { item ->
+        val onClick = {
+            haptic(Haptic.TICK)
+            item.saved?.let(savedOpen) ?: item.row?.let(open)
+            Unit
+        }
+        LooseRow(
+            item,
+            onClick = onClick,
+            // Tenendo premuto: il fumetto con le sue azioni, come nel Calendario (Antonio, 2026-11-12).
+            onLongClick = { item.saved?.let { haptic(Haptic.LONG_PRESS); savedLong(it) } ?: item.row?.let { haptic(Haptic.LONG_PRESS); rowActions(it) } ?: onClick() },
+            onTick = item.row?.task?.let { task -> { haptic(Haptic.TICK); NotesStore.toggleTask(task.id) } },
+        )
+    }
     // Toccando la card, fuori dalle righe, si apre la sua pagina intera: attive e vecchie insieme (1.539).
     CanvasCard(Modifier.fillMaxWidth().captureTarget(kind.mode), onClick = onOpen) {
         CardTitle(kind.title, opens = true, trailing = {
             if (count > 0) Text(looseCount(count), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 4.dp))
         })
         Column(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
-            // In cima le abitudini (1.535): tornano ogni giorno, spuntate si spengono fino a domani e non vanno in "Fatte".
+            if (items.isEmpty() && habits.isEmpty() && lists.isEmpty() && notesBelow.isEmpty()) {
+                Text(kind.empty, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            }
+            // 1. Le cose da fare.
+            shown.forEach { rowFor(it) }
+            if (more > 0) {
+                Text(
+                    "altre $more ›",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen).padding(start = 60.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
+                )
+            }
+            // 2. Le abitudini: tornano ogni giorno, spuntate si spengono fino a domani e non vanno in "Fatte".
+            if (shown.isNotEmpty() && habits.isNotEmpty()) Spacer(Modifier.size(6.dp))
             habits.forEach { h ->
                 HabitTodoRow(
                     h, now,
@@ -143,24 +180,13 @@ internal fun LaterCard(
                     onTick = { haptic(if (h.isDone(today)) Haptic.TICK else Haptic.CONFIRM); NotesStore.toggleHabit(h.id, today) },
                 )
             }
-            // Poi le liste delle note: una riga sola che si apre sotto, le spunte si mettono lì.
+            // 3. Le liste delle note: una riga sola che si apre sotto, le spunte si mettono lì.
+            if ((shown.isNotEmpty() || habits.isNotEmpty()) && lists.isNotEmpty()) Spacer(Modifier.size(6.dp))
             lists.forEach { row -> NoteListRow(row) }
-            if (items.isEmpty() && habits.isEmpty() && lists.isEmpty()) {
-                Text(kind.empty, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
-            }
-            items.forEach { item ->
-                val onClick = {
-                    haptic(Haptic.TICK)
-                    item.saved?.let(savedOpen) ?: item.row?.let(open)
-                    Unit
-                }
-                LooseRow(
-                    item,
-                    onClick = onClick,
-                    // Tenendo premuto: il fumetto con le sue azioni, come nel Calendario (Antonio, 2026-11-12).
-                    onLongClick = { item.saved?.let { haptic(Haptic.LONG_PRESS); savedLong(it) } ?: item.row?.let { haptic(Haptic.LONG_PRESS); rowActions(it) } ?: onClick() },
-                    onTick = item.row?.task?.let { task -> { haptic(Haptic.TICK); NotesStore.toggleTask(task.id) } },
-                )
+            // 4. Gli appunti, dopo una riga sottile e senza titolo.
+            if (notesBelow.isNotEmpty()) {
+                if (shown.isNotEmpty() || habits.isNotEmpty() || lists.isNotEmpty()) RowDivider(Modifier.padding(vertical = 6.dp))
+                notesBelow.forEach { rowFor(it) }
             }
         }
     }
@@ -185,12 +211,19 @@ private fun LooseRow(item: LooseItem, onClick: () -> Unit, onLongClick: () -> Un
                     description = if (item.done) "Da fare" else "Fatto",
                     onToggle = onTick,
                 )
-                item.image.isNotBlank() -> AsyncImage(
-                    model = item.image.let { if (it.startsWith("/")) java.io.File(it) else it },
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)).background(MaterialTheme.colorScheme.surfaceVariant),
-                )
+                item.image.isNotBlank() -> Box(contentAlignment = Alignment.Center) {
+                    AsyncImage(
+                        model = item.image.let { if (it.startsWith("/")) java.io.File(it) else it },
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)).background(MaterialTheme.colorScheme.surfaceVariant),
+                    )
+                    // Un video o un brano salvato ha il ▶ sulla copertina: si capisce che si guarda o si ascolta (1.616).
+                    if (item.kind == LooseKind.SAVED) Icon(
+                        Icons.Rounded.PlayArrow, contentDescription = null, tint = androidx.compose.ui.graphics.Color.White,
+                        modifier = Modifier.size(18.dp).background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f), CircleShape).padding(2.dp),
+                    )
+                }
                 else -> IconTile(looseIcon(item), TileAccent.NEUTRAL, size = 32.dp, iconSize = 18.dp)
             }
         }
@@ -249,6 +282,14 @@ private fun NoteListRow(row: NoteLists.Row) {
             Column(Modifier.weight(1f)) {
                 Text(row.title, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(NoteLists.line(row), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                // La barretta si riempie man mano che spunti (1.616): si vede a colpo d'occhio che è una lista.
+                val fill by androidx.compose.animation.core.animateFloatAsState(NoteLists.progress(row), Motion.settle(), label = "listFill")
+                Box(
+                    Modifier.padding(top = 4.dp).fillMaxWidth(0.8f).height(3.dp)
+                        .clip(RoundedCornerShape(2.dp)).background(MaterialTheme.colorScheme.outlineVariant),
+                ) {
+                    Box(Modifier.fillMaxWidth(fill.coerceAtLeast(0.03f)).height(3.dp).background(MaterialTheme.colorScheme.onSurfaceVariant))
+                }
             }
             Spacer(Modifier.width(8.dp))
             Icon(
@@ -328,6 +369,12 @@ private fun HabitTodoRow(
                 size = 21.dp,
                 description = if (done) "Togli da oggi" else "Fatta oggi",
                 onToggle = onTick,
+            )
+            // Le frecce in cerchio sull'angolo (Antonio, 2026-11-24): è un'abitudine, si ripete. La serie resta a destra.
+            Icon(
+                Icons.Rounded.Repeat, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.align(Alignment.BottomEnd).size(14.dp)
+                    .background(MaterialTheme.colorScheme.card, CircleShape).padding(1.dp),
             )
         }
         Spacer(Modifier.width(12.dp))
@@ -410,31 +457,32 @@ private fun rememberSavedTaps(): Pair<(SavedLinks.Later) -> Unit, (SavedLinks.La
 private fun looseIcon(item: LooseItem) = when (item.kind) {
     LooseKind.PARCEL -> Icons.Outlined.Inventory2
     LooseKind.SAVED -> Icons.Rounded.PlayArrow
-    else -> Icons.AutoMirrored.Outlined.StickyNote2
+    // Un foglio con l'angolo piegato: è una nota, non si spunta (1.616).
+    else -> Icons.Outlined.Description
 }
 
 /**
- * La pagina intera di Da fare o Appunti (1.539, Antonio, mockup archivi-card 1): come il Calendario, le cose vecchie
- * sopra (fatte per giorno, archiviati per mese, sbiadite), la linea ADESSO e sotto quelle attive. Si apre su ADESSO.
- * Toccando il cerchio pieno una fatta torna da fare; tenendo premuto ogni riga ha le sue azioni (Archivia/Rimetti, Elimina).
+ * La pagina intera di Da fare (1.539; dalla 1.616 con gli appunti, Antonio 2026-11-24): come il Calendario, le cose
+ * vecchie sopra (fatte e archiviate per giorno, sbiadite), la linea ADESSO e sotto quelle attive nello stesso ordine
+ * della card: cose da fare, abitudini, liste delle note, una riga sottile e gli appunti. Si apre su ADESSO.
  */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-fun LaterArchiveScreen(kind: LooseCardKind = LooseCardKind.TODO, onBack: () -> Unit) {
+fun LaterArchiveScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     NotesStore.init(context)
     val data by NotesStore.data.collectAsState()
-    val todo = kind == LooseCardKind.TODO
     val now = java.time.LocalDateTime.now()
     val today = now.toLocalDate()
-    val archived = remember(data, kind) { if (todo) archivedItems(data.tasks) else archivedNotes(data.notes) }
-    val groups = remember(archived, today) { archiveGroups(archived, byMonth = !todo, today = today) }
-    // Le attive come nella card della Home: stessa lista, stesso ordine.
-    val active = remember(data, kind, today) {
-        val loose = looseItems(dueDays(data.tasks, data.parcels, emptyList(), withToday = true, notes = data.notes), data.notes, today).pending()
-        if (todo) loose.todos() else loose.jottings()
+    val archived = remember(data) { (archivedItems(data.tasks) + archivedNotes(data.notes)) }
+    val groups = remember(archived, today) { archiveGroups(archived, byMonth = false, today = today) }
+    val loose = remember(data, today) {
+        looseItems(dueDays(data.tasks, data.parcels, emptyList(), withToday = true, notes = data.notes), data.notes, today).pending()
     }
-    val habits = if (todo) data.habits else emptyList()
+    val lists = remember(data) { NoteLists.rows(data.notes) }
+    val active = remember(loose) { loose.todos() }
+    val jottings = remember(loose, lists) { loose.jottings().withoutLists(lists.map { it.noteId }.toSet()) }
+    val habits = data.habits
     val open = rememberDueOpen()
     val openItem = rememberOpenItem()
     val rowActions = rememberRowActions()
@@ -444,10 +492,18 @@ fun LaterArchiveScreen(kind: LooseCardKind = LooseCardKind.TODO, onBack: () -> U
     val marker = groups.sumOf { it.items.size + 1 }
     val list = androidx.compose.foundation.lazy.rememberLazyListState(initialFirstVisibleItemIndex = if (groups.isEmpty()) 0 else marker)
     val bar = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
-    val activeCount = active.size + habits.count { !it.isDone(today) }
+    val activeCount = active.size + habits.count { !it.isDone(today) } + lists.count { it.open > 0 }
+    val rowFor: @Composable (LooseItem) -> Unit = { item ->
+        LooseRow(
+            item,
+            onClick = { haptic(Haptic.TICK); item.saved?.let(savedOpen) ?: item.row?.let(open) },
+            onLongClick = { haptic(Haptic.LONG_PRESS); item.saved?.let(savedLong) ?: item.row?.let(rowActions) },
+            onTick = item.row?.task?.let { task -> { haptic(Haptic.TICK); NotesStore.toggleTask(task.id) } },
+        )
+    }
     androidx.compose.material3.Scaffold(
         modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
-        topBar = { TopLevelBar(title = kind.title, subtitle = loosePageLine(todo, activeCount, archived.size), scrollBehavior = bar, onBack = onBack) },
+        topBar = { TopLevelBar(title = LooseCardKind.TODO.title, subtitle = laterPageLine(activeCount, jottings.size, archived.size), scrollBehavior = bar, onBack = onBack) },
     ) { inner ->
         androidx.compose.foundation.lazy.LazyColumn(Modifier.fillMaxSize().padding(inner), state = list, contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 160.dp)) {
             groups.forEach { g ->
@@ -466,6 +522,10 @@ fun LaterArchiveScreen(kind: LooseCardKind = LooseCardKind.TODO, onBack: () -> U
                 }
             }
             if (groups.isNotEmpty()) item(key = "adesso") { NewsVisitMarker("Adesso", Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) }
+            if (active.isEmpty() && habits.isEmpty() && lists.isEmpty() && jottings.isEmpty()) item(key = "empty") {
+                Text(LooseCardKind.TODO.empty, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(16.dp))
+            }
+            active.forEach { item -> item(key = item.key) { rowFor(item) } }
             habits.forEach { h ->
                 item(key = "habit-${h.id}") {
                     HabitTodoRow(
@@ -476,19 +536,11 @@ fun LaterArchiveScreen(kind: LooseCardKind = LooseCardKind.TODO, onBack: () -> U
                     )
                 }
             }
-            if (active.isEmpty() && habits.isEmpty()) item(key = "empty") {
-                Text(kind.empty, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(16.dp))
+            lists.forEach { row -> item(key = "list-${row.noteId}") { NoteListRow(row) } }
+            if (jottings.isNotEmpty() && (active.isNotEmpty() || habits.isNotEmpty() || lists.isNotEmpty())) {
+                item(key = "jottings-line") { RowDivider(Modifier.padding(vertical = 6.dp)) }
             }
-            active.forEach { item ->
-                item(key = item.key) {
-                    LooseRow(
-                        item,
-                        onClick = { haptic(Haptic.TICK); item.saved?.let(savedOpen) ?: item.row?.let(open) },
-                        onLongClick = { haptic(Haptic.LONG_PRESS); item.saved?.let(savedLong) ?: item.row?.let(rowActions) },
-                        onTick = item.row?.task?.let { task -> { haptic(Haptic.TICK); NotesStore.toggleTask(task.id) } },
-                    )
-                }
-            }
+            jottings.forEach { item -> item(key = item.key) { rowFor(item) } }
         }
     }
 }

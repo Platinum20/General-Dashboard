@@ -681,8 +681,27 @@ private fun noteItem(r: DueRow, n: com.platinum20.dashboard.notes.Note): LooseIt
     // Con delle voci da spuntare "2 di 4 fatte · Documenti, Ombrello" (1.555), se no la prima riga senza segni.
     val more = com.platinum20.dashboard.notes.NoteLines.cardLine(n.body)
     return LooseItem(r.key, if (photo) LooseKind.PHOTO else LooseKind.NOTE, n.title.ifBlank { if (photo) "Foto" else "Nota" },
-        if (photo) photoLine(n) else more, image = n.photo, row = r, pinned = n.pinned)
+        if (photo) photoLine(n) else noteLine(more), image = n.photo, row = r, pinned = n.pinned)
 }
+
+/** La seconda riga di un appunto dice il tipo (1.616, Antonio: "capisci meglio"): "Nota · Libro per mamma…". */
+internal fun noteLine(more: String?): String = if (more.isNullOrBlank()) "Nota" else "Nota · $more"
+
+/**
+ * La card Da fare unita agli Appunti (1.616, Antonio 2026-11-24, mockup da-fare-appunti A3): gli appunti senza le note
+ * già mostrate come lista più su, così una nota compare una volta sola.
+ */
+internal fun List<LooseItem>.withoutLists(listIds: Set<Long>): List<LooseItem> = filterNot { it.row?.note?.id in listIds }
+
+/** Quante cose da fare mostra la card in Home; le altre stanno nella pagina ("altre N ›"). */
+internal const val HOME_TODO_MAX = 5
+
+/** Il sottotitolo della pagina unita: "3 da fare · 2 appunti · 12 fatte". Lo zero non si dice. */
+internal fun laterPageLine(active: Int, jottings: Int, archived: Int): String = listOfNotNull(
+    active.takeIf { it > 0 }?.let { "$it da fare" },
+    jottings.takeIf { it > 0 }?.let { if (it == 1) "1 appunto" else "$it appunti" },
+    archived.takeIf { it > 0 }?.let { if (it == 1) "1 fatta o archiviata" else "$it fatte o archiviate" },
+).joinToString(" · ").ifEmpty { "Niente da fare" }
 
 private fun savedItem(l: com.platinum20.dashboard.capture.SavedLinks.Later): LooseItem = LooseItem(
     "saved-${l.note.id}", LooseKind.SAVED, l.item.title.ifBlank { LaterText.subtitle(l.item) }, LaterText.subtitle(l.item),

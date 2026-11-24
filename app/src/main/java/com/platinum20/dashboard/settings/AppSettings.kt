@@ -27,9 +27,9 @@ enum class HomeCard(val label: String, val description: String) {
     // Il nome resta DAY per le preferenze salvate: dalla 1.314 è il calendario unico, con le note dentro.
     DAY("Calendario", "Oggi e prossimi giorni"),
     // 1.490: le cose senza scadenza escono dal Calendario in una card loro (Antonio, 2026-11-12).
-    // Il nome resta LATER per le preferenze salvate: dalla 1.532 è "Da fare", le note sono in "Appunti" (Antonio, 2026-11-20).
-    LATER("Da fare", "Le cose da spuntare, senza data"),
-    JOTTINGS("Appunti", "Note e foto"),
+    // Il nome resta LATER per le preferenze salvate. Dalla 1.616 una card sola con gli appunti (Antonio, 2026-11-24):
+    // "Appunti" (JOTTINGS) non c'è più, chi l'aveva salvata la perde senza toccare il resto.
+    LATER("Da fare", "Cose da spuntare, liste e appunti"),
     SIM("SIM", "Giga, minuti e rinnovo"),
     DOCS("Documenti", "Carta d'identità, patente e scadenze"),
     // Il nome resta MAIL per le preferenze salvate. Dalla 1.191 solo le mail importanti: le cose trovate si salvano da sole.
