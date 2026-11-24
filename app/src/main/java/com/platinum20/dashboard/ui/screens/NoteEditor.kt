@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.animation.togetherWith
 import com.platinum20.dashboard.media.CanvasPlayer
 import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.ResumeKind
@@ -178,6 +179,8 @@ import kotlin.math.roundToInt
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
+    // Il titolo arriva volando dalla riga toccata (2026-11-24, proposta 5): la lista da cui si è aperta, letta una volta.
+    val sharedTitle = remember(noteId) { noteId?.let { SharedRows.note(SharedRows.origin, it) } }
     val context = LocalContext.current
     NotesStore.init(context)
     com.platinum20.dashboard.notes.NoteSeek.init(context)
@@ -710,14 +713,27 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                         }
                     }
                     // La riga sopra il titolo, come nelle altre schede; mentre detti dice quello che sta capendo.
-                    if (finding == null) Text(
-                        meta.uppercase(),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = if (dictation.listening) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(start = 20.dp, top = 4.dp, bottom = 10.dp),
-                    )
+                    // "Salvata ora" entra dal basso e quella di prima esce in alto (2026-11-24, proposta 4); mentre detti il
+                    // testo cambia sul posto, senza movimento a ogni parola.
+                    val metaKey = when { dictation.listening -> "detta"; recordingSince != null -> "registra"; arranging -> "ordine"; justSaved -> "salvata"; else -> "nota" }
+                    if (finding == null) androidx.compose.animation.AnimatedContent(
+                        targetState = metaKey to meta.uppercase(),
+                        contentKey = { it.first },
+                        transitionSpec = {
+                            (androidx.compose.animation.fadeIn(Motion.settle()) + androidx.compose.animation.slideInVertically(Motion.settle()) { it / 2 }) togetherWith
+                                (androidx.compose.animation.fadeOut(Motion.settle()) + androidx.compose.animation.slideOutVertically(Motion.settle()) { -it / 2 })
+                        },
+                        label = "meta",
+                    ) { (_, line) ->
+                        Text(
+                            line,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (dictation.listening) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(start = 20.dp, top = 4.dp, bottom = 10.dp),
+                        )
+                    }
                 }
             },
             bottomBar = {
@@ -729,12 +745,11 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                     // Il bordo alto della barra (sopra la tastiera): sotto lì il testo non si vede (1.594).
                     .onGloballyPositioned { barTop = it.boundsInRoot().top }
                     .padding(horizontal = 16.dp, vertical = 8.dp)
-                // Mentre si scrive, al posto dei due tasti: la barra delle righe (1.555).
-                if (richBarShown()) {
-                    RichToolbar(place)
-                } else {
+                // Mentre si scrive, al posto dei due tasti: la barra delle righe (1.555). Si scambiano sfumando, e il + resta
+                // quasi nello stesso punto: diventa il primo tasto della barra (2026-11-24, proposta 3).
+                KeyboardBarSwap(place, richBarShown()) {
                     // Come in DetailPage: tasto tondo a sinistra col suo nome, "Altro" a destra.
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = place) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                         if (recordingSince != null) {
                             HoldRoundButton(Icons.Outlined.Stop, "Ferma", tint = MaterialTheme.colorScheme.primary, onClick = { record() })
                         } else if (dictation.listening) {
@@ -827,6 +842,7 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                         },
                         modifier = Modifier
                             .weight(1f)
+                            .sharedItem(sharedTitle)
                             .testTag("noteTitle")
                             .autoFocus(enabled = noteId == null),
                     )

@@ -1571,11 +1571,14 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     navArgument("find") { type = NavType.StringType; defaultValue = "" },
                 ),
             ) { entry ->
+                // Il titolo della nota vola dalla sua riga (2026-11-24, proposta 5).
+                CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {
                 NoteEditorScreen(
                     noteId = entry.arguments?.getLong("id")?.takeIf { it >= 0 },
                     find = entry.arguments?.getString("find").orEmpty(),
                     onBack = { navController.popBackStack() },
                 )
+                }
             }
             composable(
                 Routes.NOTE_ITEM,

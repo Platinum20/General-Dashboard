@@ -50,6 +50,12 @@ object SharedRows {
 
     /** La chiave condivisa di una riga nella lista [scope]; null per le righe senza scheda (eventi, note). */
     fun key(scope: String, rowKey: String): String? = rowKey.takeIf { it.isSharedRow() }?.let { "$scope/$it" }
+
+    /**
+     * Il titolo di una nota fra la sua riga in Da fare e l'editor (2026-11-24, proposta 5). Le note hanno la loro chiave:
+     * nel Calendario restano senza volo (lì la riga sta in una lista che si allarga).
+     */
+    fun note(scope: String, id: Long): String = "$scope/note-$id"
 }
 
 /**

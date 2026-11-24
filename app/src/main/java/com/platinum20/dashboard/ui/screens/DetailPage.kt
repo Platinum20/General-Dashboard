@@ -106,18 +106,21 @@ internal fun DetailPage(
             }
         },
         bottomBar = {
-            if (richBarShown()) {
-                // Si scrive nel campo Note: la barra delle righe sopra la tastiera al posto dei tasti (1.555).
-                RichToolbar(Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(horizontal = 16.dp, vertical = 8.dp))
-            } else if (left != null || extra.isNotEmpty()) {
+            // Si scrive nel campo Note: la barra delle righe sopra la tastiera al posto dei tasti (1.555), che sfumano uno
+            // nell'altro (2026-11-24, proposta 3).
+            val writing = richBarShown()
+            if (writing || left != null || extra.isNotEmpty()) KeyboardBarSwap(
+                Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .imePadding()
+                    .miniPlayerFloor()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                writing,
+            ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .imePadding()
-                        .miniPlayerFloor()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     left?.let { action ->
                         RoundIconButton(action.icon, action.label, onClick = action.onClick)

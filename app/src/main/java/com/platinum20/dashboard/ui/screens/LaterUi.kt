@@ -145,6 +145,7 @@ internal fun LaterCard(
         }
         LooseRow(
             item,
+            scope = SharedRows.HOME,
             onClick = onClick,
             // Tenendo premuto: il fumetto con le sue azioni, come nel Calendario (Antonio, 2026-11-12).
             onLongClick = { item.saved?.let { haptic(Haptic.LONG_PRESS); savedLong(it) } ?: item.row?.let { haptic(Haptic.LONG_PRESS); rowActions(it) } ?: onClick() },
@@ -194,12 +195,14 @@ internal fun LaterCard(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun LooseRow(item: LooseItem, onClick: () -> Unit, onLongClick: () -> Unit, onTick: (() -> Unit)?) {
+private fun LooseRow(item: LooseItem, onClick: () -> Unit, onLongClick: () -> Unit, onTick: (() -> Unit)?, scope: String = SharedRows.PAGE) {
+    // Il titolo di una nota vola nell'editor (proposta 5): la lista da cui parte lo dice all'editor.
+    val noteKey = item.row?.note?.takeIf { item.kind == LooseKind.NOTE || item.kind == LooseKind.PHOTO }?.let { SharedRows.note(scope, it.id) }
     Row(
         Modifier
             .fillMaxWidth()
             .bouncyPress()
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .combinedClickable(onClick = { if (noteKey != null) SharedRows.origin = scope; onClick() }, onLongClick = onLongClick)
             .padding(horizontal = 16.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -235,6 +238,7 @@ private fun LooseRow(item: LooseItem, onClick: () -> Unit, onLongClick: () -> Un
                 color = if (item.done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.sharedItem(noteKey),
             )
             item.line?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)

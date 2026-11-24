@@ -1,5 +1,9 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -42,6 +46,9 @@ fun CanvasCheck(
     onToggle: (() -> Unit)? = null,
 ) {
     val corner = size * 0.24f
+    // Aprendo la pagina la spunta è già com'è; toccandola si disegna con la molla viva.
+    val drawn = remember { Animatable(if (done) 1f else 0f) }
+    LaunchedEffect(done) { drawn.animateTo(if (done) 1f else 0f, Motion.lively()) }
     Box(
         modifier
             .size(size)
@@ -51,25 +58,36 @@ fun CanvasCheck(
         contentAlignment = Alignment.Center,
     ) {
         Canvas(Modifier.size(size)) {
-            val r = CornerRadius(corner.toPx())
-            if (done) {
-                drawRoundRect(fill, cornerRadius = r)
+            val p = drawn.value.coerceIn(0f, 1f)
+            val s = 1.6.dp.toPx()
+            if (p < 1f) drawRoundRect(
+                border.copy(alpha = border.alpha * (1f - p)),
+                topLeft = Offset(s / 2, s / 2),
+                size = Size(this.size.width - s, this.size.height - s),
+                cornerRadius = CornerRadius(corner.toPx() - s / 2),
+                style = Stroke(s),
+            )
+            if (p > 0f) {
+                // Il quadrato si riempie dal centro, poi la ✓ si disegna dal primo tratto (2026-11-24, proposta 1).
                 val w = this.size.width
+                val k = 0.55f + 0.45f * drawn.value.coerceAtLeast(0f)
+                val side = w * k
+                drawRoundRect(
+                    fill.copy(alpha = fill.alpha * p),
+                    topLeft = Offset((w - side) / 2, (w - side) / 2),
+                    size = Size(side, side),
+                    cornerRadius = CornerRadius(corner.toPx() * k),
+                )
                 val path = Path().apply {
                     moveTo(w * 0.27f, w * 0.52f)
                     lineTo(w * 0.43f, w * 0.67f)
                     lineTo(w * 0.73f, w * 0.35f)
                 }
-                drawPath(path, check, style = Stroke(w * 0.11f, cap = StrokeCap.Round, join = StrokeJoin.Round))
-            } else {
-                val s = 1.6.dp.toPx()
-                drawRoundRect(
-                    border,
-                    topLeft = Offset(s / 2, s / 2),
-                    size = Size(this.size.width - s, this.size.height - s),
-                    cornerRadius = CornerRadius(corner.toPx() - s / 2),
-                    style = Stroke(s),
-                )
+                val part = if (p >= 1f) path else Path().also { out ->
+                    val m = PathMeasure().apply { setPath(path, false) }
+                    m.getSegment(0f, m.length * p, out, true)
+                }
+                drawPath(part, check, style = Stroke(w * 0.11f, cap = StrokeCap.Round, join = StrokeJoin.Round))
             }
         }
     }
