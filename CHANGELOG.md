@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.631.0
+**Salva nel player YouTube salva subito**
+- Toccando Salva sotto il video si salva per dopo con un tocco, con "Annulla": niente più bolla che chiedeva di nuovo se salvare
+- Il tasto diventa "Salvato"; toccalo di nuovo per toglierlo dai salvati
+
 ## 1.629.0
 **Meno batteria per SIM e turni**
 - Con l'app chiusa la SIM si rilegge ogni 3 ore, non più ogni mezz'ora, e non c'è più la sveglia che svegliava il telefono di notte
