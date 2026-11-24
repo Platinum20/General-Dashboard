@@ -139,7 +139,7 @@ separate functions so it can be unit-tested; new logic ships with a test. `TopLe
   `curl https://api.github.com/repos/Platinum20/General-Dashboard/actions/runs?branch=<b>&per_page=3`.
 - Visual check for risky changes: dispatch `screenshots.yml`; PNGs land on branch `screenshots` under
   `<branch>/<run>/`. In tours never use `performScrollToNode` (hangs), use `performScrollToIndex`.
-- Other dispatch-only workflows: `verifica.yml`, `ytcheck.yml`, `logincheck.yml`.
+- Other dispatch-only workflows: `verifica.yml`, `ytcheck.yml`, `logincheck.yml`, `bubblecheck.yml` (androidTest `BubbleShotsCheck`: real bubbles on an emulator, PNGs in `screenshots` under `bubble-check/<n>/`).
 - Glass on a real emulator: `glasscheck.yml` (`GlassListCheck` list pages, `GlassDeviceCheck` MainActivity; PNGs in `screenshots` under `glass-check/<run>/`). Compose test rule freezes animations: `mainClock.advanceTimeBy` before a shot.
 - Notes editor on a real emulator + real keyboard: `notecheck.yml` (androidTest `NoteEditorDeviceCheck`, type with `input text`,
   never `performTextInput`); log + screenshots on branch `screenshots` under `note-check/<run>/`. If every test times out on
