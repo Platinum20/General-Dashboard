@@ -702,7 +702,6 @@ internal fun laterPageLine(active: Int, jottings: Int, archived: Int): String = 
     jottings.takeIf { it > 0 }?.let { if (it == 1) "1 appunto" else "$it appunti" },
     archived.takeIf { it > 0 }?.let { if (it == 1) "1 fatta o archiviata" else "$it fatte o archiviate" },
 ).joinToString(" · ").ifEmpty { "Niente da fare" }
-}
 
 private fun savedItem(l: com.platinum20.dashboard.capture.SavedLinks.Later): LooseItem = LooseItem(
     "saved-${l.note.id}", LooseKind.SAVED, l.item.title.ifBlank { LaterText.subtitle(l.item) }, LaterText.subtitle(l.item),
