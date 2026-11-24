@@ -92,7 +92,7 @@ internal fun ArtistScreen(artist: SpItem, onBack: () -> Unit, onOpenItem: (SpIte
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         LazyColumn(
             Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 120.dp),
+            contentPadding = PaddingValues(bottom = listBottom(120.dp)),
         ) {
             item(key = "head") {
                 MediaHero(
@@ -182,7 +182,7 @@ private fun DiscographyScreen(page: SpArtistPage, loading: Boolean, onBack: () -
         )
         LazyColumn(
             Modifier.fillMaxSize().nestedScroll(scroll.nestedScrollConnection),
-            contentPadding = PaddingValues(bottom = 120.dp),
+            contentPadding = PaddingValues(bottom = listBottom(120.dp)),
         ) {
             if (groups.size > 1) item(key = "chips") {
                 LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

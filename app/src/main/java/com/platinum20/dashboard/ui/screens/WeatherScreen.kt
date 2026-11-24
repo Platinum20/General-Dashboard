@@ -179,7 +179,7 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
                 start = 16.dp,
                 end = 16.dp,
                 top = 8.dp,
-                bottom = inner.calculateBottomPadding() + 16.dp + miniPlayerRoom(),
+                bottom = listBottom(inner.calculateBottomPadding() + 16.dp + miniPlayerRoom()),
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {

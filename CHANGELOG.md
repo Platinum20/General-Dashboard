@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.624.0
+**Barra e + con una regola sola**
+- Dove sfogli un elenco la barra e il + ci sono, dentro una cosa sola no
+- Ora li trovi anche in Da fare, Appunti, Meteo, SIM, #etichette, @persone e nelle pagine di Media (Radio, Podcast, playlist, artisti, canali, Mix, Novità, Salvati, Cronologia)
+- Note, eventi, promemoria, mail, documenti, articoli, player e Impostazioni restano senza: hanno già i loro tasti in fondo
+- Resta accesa la scheda da cui arrivi; toccandola torni alla sezione, in cima
+
 ## 1.621.0
 **Note più fluide, appunti più belli**
 - Spuntando una voce il quadratino si riempie, la ✓ si disegna e il barrato scorre sulla riga; togliendo la spunta, al contrario. Anche nella card Da fare
