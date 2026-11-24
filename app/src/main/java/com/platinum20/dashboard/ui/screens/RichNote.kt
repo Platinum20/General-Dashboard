@@ -4,6 +4,10 @@ import androidx.compose.material.icons.outlined.CheckBox
 import androidx.compose.material.icons.outlined.East
 import androidx.compose.material.icons.outlined.West
 import androidx.compose.material.icons.outlined.VerticalAlignBottom
+import androidx.compose.material.icons.outlined.Replay
+import androidx.compose.material.icons.outlined.SortByAlpha
+import androidx.compose.material.icons.outlined.RemoveDone
+import com.platinum20.dashboard.notes.NoteLists
 import androidx.compose.material.icons.outlined.VerticalAlignTop
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -271,6 +275,8 @@ internal fun RichNoteField(
      * il testo sta più in basso dell'icona e la card sembra più alta delle altre righe.
      */
     firstAir: Boolean = true,
+    /** Le scelte in più del fumetto di una riga che sa fare solo l'editor della nota (Ricordamelo, 2026-11-24). */
+    lineMore: ((text: String, cursor: Int) -> List<BubbleAction>)? = null,
 ) {
     val context = LocalContext.current
     val haptic = rememberHaptic()
@@ -694,7 +700,7 @@ internal fun RichNoteField(
                             onLongClickLabel = if (readOnly) null else "Scelte della riga",
                             onLongClick = if (readOnly) null else ({
                                 haptic(Haptic.LONG_PRESS)
-                                ActionBubble.show(lineHead(lineNow, current.text), *lineActions(context, lineNow, current, emit, sendToTodo).toTypedArray())
+                                ActionBubble.show(lineHead(lineNow, current.text), *(lineActions(context, lineNow, current, emit, sendToTodo) + lineMore?.invoke(current.text, lineNow.end).orEmpty()).toTypedArray())
                             }),
                             onClick = {
                                 // Il tocco che chiude un tieni premuto non spunta.
@@ -1349,7 +1355,7 @@ private fun markActions(
             },
         )
         else -> listOfNotNull(
-            if (line.kind == NoteLines.Kind.CALLOUT) choice(
+            if (line.kind == NoteLines.Kind.CALLOUT) dots(
                 "Emoji",
                 *CALLOUT_EMOJIS.map { e ->
                     BubbleChip(e, selected = NoteLines.calloutEmoji(text.substring(line.start, line.end)) == e, emoji = e) { set(NoteLines.setCalloutEmoji(text, line.index, e), line.end) }
@@ -1523,10 +1529,37 @@ private fun lineActions(
                 }
             }
         } else null,
+        // Lista e Ricomincia (2026-11-24, da Altro della nota): lavorano sulle voci, quindi stanno qui.
+        listActions(context, line, value, emit),
+        if (line.isList && NoteLines.hasDone(text)) act(
+            BubbleGroup.SEGNA, Icons.Outlined.Replay, "Ricomincia la lista",
+            NoteLists.doneCount(text).let { if (it == 1) "toglie la spunta, il testo resta" else "toglie le $it spunte, il testo resta" },
+        ) { undoableAll(context, value, emit, NoteLines.uncheckAll(text), "Lista da rifare", Icons.Outlined.Replay) } else null,
         Slot.remove {
             set(NoteLines.remove(text, line.index))
             CaptureFeedback.tell(context, "Riga tolta", Icons.Outlined.Delete, "Annulla") { emit(TextFieldValue(text, value.selection)) }
         },
+    )
+}
+
+/** Tutta la nota cambia, con Annulla. */
+private fun undoableAll(context: android.content.Context, value: TextFieldValue, emit: (TextFieldValue) -> Unit, next: String, said: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    emit(TextFieldValue(next, TextRange(next.length.coerceAtMost(value.selection.end))))
+    CaptureFeedback.tell(context, said, icon, "Annulla") { emit(value) }
+}
+
+/** La fila "Lista" (Fatte giù · A-Z · Togli fatte): solo su una voce di una lista con più di una voce. */
+private fun listActions(context: android.content.Context, line: NoteLines.Line, value: TextFieldValue, emit: (TextFieldValue) -> Unit): BubbleAction? {
+    val text = value.text
+    if (!line.isList || NoteLines.parse(text).count { it.isList } < 2) return null
+    val done = NoteLines.hasDone(text)
+    return choice(
+        "Lista",
+        *listOfNotNull(
+            if (!done) null else BubbleChip("Fatte giù", icon = Icons.Outlined.VerticalAlignBottom) { undoableAll(context, value, emit, NoteLines.doneToBottom(text), "Fatte in fondo", Icons.Outlined.VerticalAlignBottom) },
+            BubbleChip("A-Z", icon = Icons.Outlined.SortByAlpha) { undoableAll(context, value, emit, NoteLines.sortAlpha(text), "Lista in ordine", Icons.Outlined.SortByAlpha) },
+            if (!done) null else BubbleChip("Togli fatte", icon = Icons.Outlined.RemoveDone) { undoableAll(context, value, emit, NoteLines.removeDone(text), "Fatte tolte", Icons.Outlined.Delete) },
+        ).toTypedArray(),
     )
 }
 
@@ -1648,7 +1681,8 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                 BarIcon(Icons.Outlined.Link, "Link (copia prima l'indirizzo)", on = NoteFormat.Kind.LINK in active) { link() }
                 BarIcon(Icons.Outlined.Palette, "Colore del testo o dello sfondo", on = NoteFormat.Kind.COLOR in active) {
                     haptic(Haptic.TICK)
-                    ActionBubble.show(BubbleHead("Colore"), *colorActions { code ->
+                    val was = target.value().let { NoteFormat.colorHere(it.text, it.selection.min, it.selection.max) }
+                    ActionBubble.show(BubbleHead("Colore"), *colorActions(was) { code ->
                         val now = target.value()
                         val e = NoteFormat.color(now.text, now.selection.min, now.selection.max, code)
                         target.set(TextFieldValue(e.text, TextRange(e.start, e.end)))
@@ -1907,12 +1941,13 @@ internal fun noteColor(code: Char): androidx.compose.ui.graphics.Color {
 
 /** Il fumetto dei colori: testo o sfondo, e Togli. */
 internal fun colorActions(now: Char? = null, apply: (Char?) -> Unit): List<BubbleAction> = listOf(
-    selector(
+    // Pallini piccoli su una riga, come le emoji (Antonio 2026-11-24).
+    dots(
         "Testo",
         *NOTE_COLORS.map { (c, n) -> BubbleChip(n, selected = now == c, color = noteColor(c)) { apply(c) } }.toTypedArray(),
         BubbleChip("Normale", icon = Icons.Outlined.FormatColorReset) { apply(null) },
     ),
-    selector(
+    dots(
         "Sfondo",
         *NOTE_COLORS.map { (c, n) -> BubbleChip(n, selected = now == c.uppercaseChar(), color = noteColor(c.uppercaseChar())) { apply(c.uppercaseChar()) } }.toTypedArray(),
     ),

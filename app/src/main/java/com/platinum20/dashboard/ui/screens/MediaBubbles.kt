@@ -3,6 +3,7 @@ package com.platinum20.dashboard.ui.screens
 import androidx.compose.material.icons.rounded.PlayArrow
 import android.content.Context
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.SwapVert
 import androidx.compose.material.icons.rounded.AddCircleOutline
@@ -105,26 +106,32 @@ internal fun showMediaBubble(
     val seed = com.platinum20.dashboard.media.spotify.MadeStore.seedOf(item)
     fun build(): List<BubbleAction> = buildList {
         addAll(extra)
-        if (queue && SavedLinks.queueable(item)) add(
+        // Un album o una playlist di Spotify: parte dal tasto Riproduci e va in coda senza aprirla (Antonio 2026-11-24).
+        val collection = page != null && item.key.startsWith("spotify:") && kind != "Artista"
+        if (queue && (SavedLinks.queueable(item) || collection && spotifyParent(item) != null)) add(
             choice(
                 "Coda",
                 BubbleChip("Subito dopo", icon = Icons.Rounded.PlaylistPlay) {
-                    CanvasPlayer.addNext(item)
-                    CaptureFeedback.tell(context, "Dopo questo: ${item.title}", Icons.Rounded.PlaylistPlay)
+                    if (collection) queueCollection(context, item, next = true) else {
+                        CanvasPlayer.addNext(item)
+                        CaptureFeedback.tell(context, "Dopo questo: ${item.title}", Icons.Rounded.PlaylistPlay)
+                    }
                 },
                 BubbleChip("In fondo", icon = Icons.Rounded.QueueMusic) {
-                    CanvasPlayer.add(item)
-                    CaptureFeedback.tell(context, "In coda: ${item.title}", Icons.Rounded.QueueMusic)
+                    if (collection) queueCollection(context, item, next = false) else {
+                        CanvasPlayer.add(item)
+                        CaptureFeedback.tell(context, "In coda: ${item.title}", Icons.Rounded.QueueMusic)
+                    }
                 },
             ),
-        )
-        // Una raccolta di Spotify parte da qui senza aprirla.
-        if (page != null && item.key.startsWith("spotify:") && kind != "Artista") add(
-            choice("Riproduci", BubbleChip("Ora", icon = Icons.Rounded.PlayArrow) { com.platinum20.dashboard.media.spotify.SpotifyPlayer.playLink(context, item.key, item.title, item.subtitle, item.image) }),
         )
         addAll(pageRows(context, item))
         if (playlistId != null) addAll(playlistRows(playlistId, item, openRoute))
         goToCreatorAction(context, item, openRoute)?.let { add(it.copy(group = BubbleGroup.VAI)) }
+        // Apri diventa una riga intera ("Apri playlist"), subito dopo Vai all'artista: in barra c'è Riproduci.
+        if (collection && openRoute != null && page != null) add(
+            act(BubbleGroup.VAI, Icons.AutoMirrored.Outlined.OpenInNew, "Apri ${kind.lowercase()}", "tutti i brani") { openRoute(page) },
+        )
         // "Annota" (1.606): se è quello che suona, una nota col minuto già messo; il video continua.
         val playing = com.platinum20.dashboard.media.Playback.currentAsItem()
             ?.takeIf { it.kind == item.kind && it.key == item.key && com.platinum20.dashboard.notes.NoteSeek.canAnnotate(it) }
@@ -138,15 +145,17 @@ internal fun showMediaBubble(
             )
         }
         if (seed != null) {
+            // Vai all'artista, Aggiungi a una playlist, poi Radio in fondo alle righe (Antonio 2026-11-24).
+            add(act(BubbleGroup.METTI, Icons.Rounded.PlaylistAdd, "Aggiungi a una playlist", "una delle tue o una nuova") { PlaylistPicker.open(context, seed) })
             add(
-                act(BubbleGroup.CREA, Icons.Rounded.Radio, "Radio", "brani simili, poi resta in Musica") {
+                act(BubbleGroup.METTI, Icons.Rounded.Radio, "Radio del brano", "brani simili, poi resta in Musica") {
                     CaptureFeedback.tell(context, "Preparo la radio di ${item.title}", Icons.Rounded.Radio)
                     com.platinum20.dashboard.media.spotify.MadeStore.startRadio(context, seed) { error -> CaptureFeedback.tell(context, error) }
                 },
             )
-            add(act(BubbleGroup.METTI, Icons.Rounded.PlaylistAdd, "Aggiungi a una playlist", "una delle tue o una nuova") { PlaylistPicker.open(context, seed) })
         }
-        if (openRoute != null) add(
+        if (collection) add(Slot.play { com.platinum20.dashboard.media.spotify.SpotifyPlayer.playLink(context, item.key, item.title, item.subtitle, item.image) })
+        else if (openRoute != null) add(
             if (page != null) Slot.open { openRoute(page) }
             else Slot.play { openResumeItem(context, item, openRoute = openRoute) },
         )
@@ -164,6 +173,33 @@ internal fun showMediaBubble(
             PlaylistManage.load(playlistId)
             if (ActionBubble.head === head) ActionBubble.show(head, *build().toTypedArray())
         }
+    }
+}
+
+/** L'album o la playlist di Spotify dietro la chiave "spotify:album:ID", per leggerne i brani. */
+private fun spotifyParent(item: ResumeItem): com.platinum20.dashboard.media.spotify.SpItem? {
+    val parts = item.key.split(":")
+    val kind = when (parts.getOrNull(1)) {
+        "album" -> com.platinum20.dashboard.media.spotify.SpKind.ALBUM
+        "playlist" -> com.platinum20.dashboard.media.spotify.SpKind.PLAYLIST
+        else -> return null
+    }
+    val id = parts.getOrNull(2)?.takeIf { it.isNotBlank() } ?: return null
+    return com.platinum20.dashboard.media.spotify.SpItem(id, item.key, kind, item.title, item.subtitle, item.image)
+}
+
+/** Tutti i brani della raccolta in coda, subito dopo (nell'ordine dell'album) o in fondo. */
+private fun queueCollection(context: Context, item: ResumeItem, next: Boolean) {
+    val parent = spotifyParent(item) ?: return
+    CaptureFeedback.tell(context, "Leggo i brani di ${item.title}…", Icons.Rounded.QueueMusic)
+    bubbleScope.launch {
+        val found = com.platinum20.dashboard.media.spotify.SpotifyStore.tracksOf(parent)
+        val tracks = found.data.orEmpty()
+        if (tracks.isEmpty()) { CaptureFeedback.tell(context, found.error ?: "Nessun brano da mettere in coda"); return@launch }
+        val now = System.currentTimeMillis()
+        val items = tracks.map { t -> ResumeItem(ResumeKind.SPOTIFY, t.uri, t.title, t.subtitle, t.image, durationMs = t.durationMs, at = now) }
+        if (next) items.asReversed().forEach { CanvasPlayer.addNext(it) } else items.forEach { CanvasPlayer.add(it) }
+        CaptureFeedback.tell(context, (if (next) "Dopo questo: " else "In coda: ") + "${items.size} brani", Icons.Rounded.QueueMusic)
     }
 }
 
@@ -233,8 +269,9 @@ private fun playlistRows(id: String, item: ResumeItem, openRoute: ((String) -> U
     if (PlaylistManage.infos[id]?.second != true) return emptyList()
     val playlist = playlistItem(id, item)
     return listOf(
-        act(BubbleGroup.CAMBIA, Icons.Outlined.Edit, "Modifica", "nome, descrizione, privata") { PlaylistManage.edit(id) },
-        act(BubbleGroup.CAMBIA, Icons.Outlined.SwapVert, "Riordina e togli brani", "si apre la playlist") {
+        // Dopo Vai all'artista e Apri playlist (Antonio 2026-11-24): stanno nel gruppo dopo "Vai a".
+        act(BubbleGroup.CREA, Icons.Outlined.Edit, "Modifica", "nome, descrizione, privata") { PlaylistManage.edit(id) },
+        act(BubbleGroup.CREA, Icons.Outlined.SwapVert, "Riordina e togli brani", "si apre la playlist") {
             PlaylistManage.arranging[id] = true
             openRoute?.invoke(com.platinum20.dashboard.Routes.spotifyItem(playlist.copy(title = PlaylistManage.title(playlist))))
         },

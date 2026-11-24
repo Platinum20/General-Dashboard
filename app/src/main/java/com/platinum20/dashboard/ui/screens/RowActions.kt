@@ -211,8 +211,8 @@ internal fun parcelBubble(
 }
 
 /**
- * Il fumetto di una nota, uguale in Appunti, nel Calendario e in Da fare (le liste): Ricomincia, Duplica, Archivia,
- * Mostra nel widget, poi Apri · Fissa · Condividi · Elimina. Il nome sta solo nella testata.
+ * Il fumetto di una nota, uguale in Appunti, nel Calendario, in Da fare e in Altro dell'editor (Antonio 2026-11-24,
+ * "unifica le bolle"): Archivia, la fila di emoji, poi Apri · Fissa · Condividi · Elimina. Il nome sta solo nella testata.
  */
 internal fun showNoteBubble(context: android.content.Context, n: Note, openRoute: (String) -> Unit, open: Boolean = true) {
     val list = com.platinum20.dashboard.notes.NoteLists.of(n)
@@ -220,27 +220,14 @@ internal fun showNoteBubble(context: android.content.Context, n: Note, openRoute
     fun undo(message: String, icon: androidx.compose.ui.graphics.vector.ImageVector, restore: () -> Unit) =
         CaptureFeedback.tell(context, message, icon, "Annulla") { restore() }
     ActionBubble.show(
-        BubbleHead(if (list != null) "Lista" else "Nota", n.title + if (list != null) " · $done di ${list.total}" else ""),
+        BubbleHead(if (list != null) "Lista" else "Nota", listOfNotNull(n.emoji, n.title).joinToString(" ") + if (list != null) " · $done di ${list.total}" else ""),
         *listOfNotNull(
-            if (list == null || done == 0) null else act(BubbleGroup.CAMBIA, Icons.Outlined.Replay, "Ricomincia", if (done == 1) "toglie la spunta, il testo resta" else "toglie le $done spunte, il testo resta") {
-                NotesStore.editNoteText(n.id) { com.platinum20.dashboard.notes.NoteLists.restart(it) }
-                undo("Lista da rifare", Icons.Outlined.Replay) { NotesStore.editNoteText(n.id) { n.text } }
-            },
-            if (list == null) null else act(BubbleGroup.CREA, Icons.Outlined.FileCopy, "Duplica", "una copia con tutto da rifare") {
-                NotesStore.duplicateNote(n.id)?.let { openRoute(Routes.noteEdit(it)) }
-            },
             // L'archivio di Appunti (Antonio, 2026-11-20): la nota esce dalla card senza perdersi.
             if (n.archivedAt == null) act(BubbleGroup.METTI, Icons.Outlined.Archive, "Archivia", "esce dalla card, resta nell'archivio") {
                 NotesStore.toggleNoteArchive(n.id)
                 undo("Archiviata", Icons.Outlined.Archive) { NotesStore.toggleNoteArchive(n.id) }
             } else act(BubbleGroup.METTI, Icons.Outlined.Unarchive, "Rimetti negli appunti", "torna nella card della Home") { NotesStore.toggleNoteArchive(n.id) },
-            if (list == null) null else act(
-                BubbleGroup.METTI, Icons.Outlined.Widgets, "Mostra nel widget",
-                if (com.platinum20.dashboard.widget.NoteWidget.placed(context)) "il widget Nota mostra questa" else "poi aggiungi il widget Nota",
-            ) {
-                com.platinum20.dashboard.widget.NoteWidget.choose(context, n.id)
-                CaptureFeedback.tell(context, "Nel widget Nota", Icons.Outlined.Widgets)
-            },
+            noteEmojiDots(n.id, n.emoji),
             if (open) Slot.open { openRoute(Routes.noteEdit(n.id)) } else null,
             Slot.pin(n.pinned) { NotesStore.togglePin(n.id) },
             Slot.share { shareText(context, n.text) },

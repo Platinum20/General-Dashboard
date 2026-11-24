@@ -19,6 +19,8 @@ object ReminderText {
         val whenText = when {
             task.alert == Alert.DAY_BEFORE -> "Domani" + (time?.let { " alle $it" } ?: "")
             task.allDay || time == null -> "Oggi"
+            task.alert == Alert.MIN_10 -> "Tra 10 minuti, alle $time"
+            task.alert == Alert.HOUR_1 -> "Tra un'ora, alle $time"
             else -> "Adesso"
         }
         val years = task.yearsAtNext(today, zone)?.let { "$it anni" }

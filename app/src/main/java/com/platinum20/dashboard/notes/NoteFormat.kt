@@ -480,6 +480,13 @@ object NoteFormat {
     fun colorAt(text: String, contentStart: Int): Char? =
         text.getOrNull(contentStart - 3)?.takeIf { it == '{' }?.let { text.getOrNull(contentStart - 2) }?.takeIf { it.lowercaseChar() in COLORS }
 
+    /** Il colore che c'è già dove sta la scelta ('r', 'R'…), null se niente: il fumetto lo accende. */
+    fun colorHere(text: String, start: Int, end: Int): Char? {
+        val s = minOf(start, end).coerceIn(0, text.length)
+        val e = maxOf(start, end).coerceIn(0, text.length)
+        return colorRx.findAll(text).firstOrNull { m -> s >= m.range.first && s <= m.range.last + 1 && e <= m.range.last + 1 }?.groupValues?.get(1)?.firstOrNull()
+    }
+
     /**
      * Il colore sul testo scelto (1.590): [code] = la lettera ('r' testo rosso, 'R' sfondo rosso…), null = toglie il colore.
      * Un colore che c'è già dove sta la scelta si cambia o si toglie; il resto prende il colore riga per riga.

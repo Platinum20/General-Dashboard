@@ -104,7 +104,12 @@ data class TaskItem(
         if (done || alert == Alert.NONE) return null
         val next = nextAt(today, zone) ?: return null
         val base = (if (allDay) next.toLocalDate().atTime(ALL_DAY_ALERT) else next).atZone(zone)
-        return (if (alert == Alert.DAY_BEFORE) base.minusDays(1) else base).toInstant().toEpochMilli()
+        val at = when {
+            alert == Alert.DAY_BEFORE -> base.minusDays(1)
+            allDay -> base
+            else -> base.minusMinutes(alert.minutesBefore)
+        }
+        return at.toInstant().toEpochMilli()
     }
 
     companion object {
@@ -125,9 +130,11 @@ data class TaskItem(
     }
 }
 
-/** Quando avvisare, per promemoria e date: all'ora (o alle 9 per tutto il giorno), il giorno prima, mai. */
-enum class Alert(val label: String) {
-    ON_TIME("All'ora"),
+/** Quando avvisare, per promemoria e date: all'inizio (o alle 9 per tutto il giorno), 10 minuti o 1 ora prima, il giorno prima, mai. */
+enum class Alert(val label: String, val minutesBefore: Long = 0) {
+    ON_TIME("All'inizio"),
+    MIN_10("10 min prima", 10),
+    HOUR_1("1 ora prima", 60),
     DAY_BEFORE("Il giorno prima"),
     NONE("Nessun avviso"),
 }

@@ -32,7 +32,7 @@ class ItemDetailTest {
         assertEquals("Mercoledì 28 ottobre 2026, 10:00", d.lines.first().text)
         assertEquals("A un'ora precisa", d.lines[1].text)
         assertEquals("Si ripete ogni anno", d.lines[2].text)
-        assertEquals("Avviso all'ora", d.lines[3].text)
+        assertEquals("Avviso all'inizio", d.lines[3].text)
         assertEquals("Tra 2 giorni", d.lines.last().text)
     }
 

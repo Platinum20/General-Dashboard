@@ -114,7 +114,7 @@ internal fun docPdfChoice(context: android.content.Context, scope: kotlinx.corou
     "PDF fronte e retro",
     *listOfNotNull(
         BubbleChip("Condividi", icon = Icons.Outlined.Share) { exportDocPdf(context, scope, doc, save = false) },
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) BubbleChip("Salva in Download", icon = Icons.Outlined.Download) { exportDocPdf(context, scope, doc, save = true) } else null,
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) BubbleChip("Salva", icon = Icons.Outlined.Download) { exportDocPdf(context, scope, doc, save = true) } else null,
     ).toTypedArray(),
 )
 
@@ -254,14 +254,8 @@ internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
         }
         return
     }
-    // "Altro" = il fumetto del tieni premuto, senza Apri, più il retro (scelte della stessa cosa).
-    val back = choice(
-        "Retro",
-        BubbleChip(if (doc.back == null) "Fotocamera" else "Rifai", icon = Icons.Outlined.PhotoCamera) { runCatching { camera.launch(ReceiptReader.photoUri(context)) } },
-        BubbleChip("Galleria", icon = Icons.Outlined.PhotoLibrary) { gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
-        *listOfNotNull(if (doc.back != null) BubbleChip("Togli", icon = Icons.Outlined.HideImage) { DocumentsStore.removeBack(id) } else null).toTypedArray(),
-    )
-    val more = docActions(context, scope, doc, open = null, extra = listOf(back)).toList()
+    // "Altro" = il fumetto del tieni premuto, senza Apri (la fila Retro tolta, Antonio 2026-11-24).
+    val more = docActions(context, scope, doc, open = null).toList()
         .filter { it.slot != BubbleSlot.AWAY }
     DetailPage(
         onBack = onBack,
