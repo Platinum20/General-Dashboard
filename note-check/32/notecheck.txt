@@ -1,0 +1,121 @@
+
+com.platinum20.dashboard.NoteEditorDeviceCheck:...........................
+Error in voiceNoteRecordAndPill(com.platinum20.dashboard.NoteEditorDeviceCheck):
+java.lang.AssertionError: Failed to inject touch input.
+Reason: Expected exactly '1' node but could not find any node that satisfies: (ContentDescription = 'Ferma' (ignoreCase: false))
+
+	at androidx.compose.ui.test.SemanticsNodeInteraction.fetchOneOrThrow(SemanticsNodeInteraction.kt:178)
+	at androidx.compose.ui.test.SemanticsNodeInteraction.fetchOneOrThrow$default(SemanticsNodeInteraction.kt:150)
+	at androidx.compose.ui.test.SemanticsNodeInteraction.fetchSemanticsNode(SemanticsNodeInteraction.kt:84)
+	at androidx.compose.ui.test.ActionsKt.performTouchInput(Actions.kt:394)
+	at androidx.compose.ui.test.Actions_androidKt.performClickImpl(Actions.android.kt:20)
+	at androidx.compose.ui.test.ActionsKt.performClick(Actions.kt:54)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.tap(NoteEditorDeviceCheck.kt:163)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.voiceNoteRecordAndPill(NoteEditorDeviceCheck.kt:680)
+
+
+Time: 314.746
+There was 1 failure:
+1) voiceNoteRecordAndPill(com.platinum20.dashboard.NoteEditorDeviceCheck)
+java.lang.AssertionError: Failed to inject touch input.
+Reason: Expected exactly '1' node but could not find any node that satisfies: (ContentDescription = 'Ferma' (ignoreCase: false))
+
+	at androidx.compose.ui.test.SemanticsNodeInteraction.fetchOneOrThrow(SemanticsNodeInteraction.kt:178)
+	at androidx.compose.ui.test.SemanticsNodeInteraction.fetchOneOrThrow$default(SemanticsNodeInteraction.kt:150)
+	at androidx.compose.ui.test.SemanticsNodeInteraction.fetchSemanticsNode(SemanticsNodeInteraction.kt:84)
+	at androidx.compose.ui.test.ActionsKt.performTouchInput(Actions.kt:394)
+	at androidx.compose.ui.test.Actions_androidKt.performClickImpl(Actions.android.kt:20)
+	at androidx.compose.ui.test.ActionsKt.performClick(Actions.kt:54)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.tap(NoteEditorDeviceCheck.kt:163)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.voiceNoteRecordAndPill(NoteEditorDeviceCheck.kt:680)
+
+FAILURES!!!
+Tests run: 28,  Failures: 1
+
+
+
+---- log
+--------- beginning of main
+11-24 12:52:11.888  3514  3820 I NoteCheck: [trasforma/fumetto_voce] ime=false body=[ ] una voce
+11-24 12:52:14.899  3514  3820 I NoteCheck: [trasforma/numeri] ime=false body=1. una voce
+11-24 12:52:23.065  3514  3820 I NoteCheck: [trasforma/fila_aa] ime=true body=1. una voce
+11-24 12:52:28.570  3514  3820 I NoteCheck: [trasforma/riquadro] ime=true body=!! una voce
+11-24 12:52:38.141  3514  3820 I NoteCheck: [spunta_senza_tastiera/spuntata] ime=false body=[x] pane⏎[ ] latte
+11-24 12:52:52.045  3514  3820 I NoteCheck: [anteprima/anteprima] ime=true body=[🔗 example.com](https://example.com)⏎
+11-24 12:52:57.651  3514  3820 I NoteCheck: [spunte/prima] ime=false body=[ ] maglie⏎  [ ] calze⏎[ ] scarpe
+11-24 12:52:58.484  3514  3820 I NoteCheck: [spunte/sotto_voce_spuntata] ime=false body=[ ] maglie⏎  [x] calze⏎[ ] scarpe
+11-24 12:53:00.406  3514  3820 I NoteCheck: spunte: prima di Sotto-voce -> [ ] maglie
+11-24 12:53:00.406  3514  3820 I NoteCheck:   [ ] calze
+11-24 12:53:00.406  3514  3820 I NoteCheck: [x] scarpe
+11-24 12:53:03.289  3514  3820 I NoteCheck: [spunte/spuntata_rientrata] ime=true body=[ ] maglie⏎  [ ] calze⏎  [x] scarpe
+11-24 12:53:14.658  3514  3820 I NoteCheck: [tocco_sotto/tocco_sotto] ime=true body=[ ] uno⏎[ ] 
+11-24 12:53:14.689  3514  3820 I NoteCheck: tocco sotto: [CHECK, CHECK]
+11-24 12:53:24.181  3514  3820 I NoteCheck: [tag/cerca_nota] ime=true body=vedi @Spe
+11-24 12:53:26.415  3514  3820 I NoteCheck: [tag/tag_nota] ime=true body=vedi [🛒 Spesa settimanale](nota:136143142191) 
+11-24 12:53:30.950  3514  3820 I NoteCheck: [tag/cerca_evento] ime=true body=vedi [🛒 Spesa settimanale](nota:136143142191)  e @Dent
+11-24 12:53:33.073  3514  3820 I NoteCheck: [tag/tag_evento] ime=true body=vedi [🛒 Spesa settimanale](nota:136143142191)  e [Dentista Rossi](app:home/calendar/event?id=1&begin=1795611200156&end=1795614800156) 
+11-24 12:53:35.265  3514  3820 I NoteCheck: [tag/indietro_sul_tag] ime=true body=vedi [🛒 Spesa settimanale](nota:136143142191)  e [Dentista Rossi](app:home/calendar/event?id=1&begin=1795611200156&end=1795614800156)
+11-24 12:53:35.310  3514  3820 I NoteCheck: indietro sul tag: 'vedi [🛒 Spesa settimanale](nota:136143142191)  e [Dentista Rossi](app:home/calendar/event?id=1&begin=1795611200156&end=1795614800156) ' -> 'vedi [🛒 Spesa settimanale](nota:136143142191)  e [Dentista Rossi](app:home/calendar/event?id=1&begin=1795611200156&end=1795614800156)'
+11-24 12:53:47.201  3514  3820 I NoteCheck: [sottonota/sottonota] ime=false body=[📄 Nuova pagina](nota:162957757750)⏎
+11-24 12:53:53.551  3514  3820 I NoteCheck: [trascina_di_lato/rientrata] ime=false body=[ ] uno⏎  [ ] due
+11-24 12:54:04.460  3514  3820 I NoteCheck: [tocco_in_cima/primo_tocco] ime=true body=riga numero 1⏎riga numero 2⏎riga numero 3⏎riga numero 4⏎riga numero 5⏎riga numero 6⏎riga numero 7⏎riga numero 8⏎riga numero 9⏎riga numero 10⏎riga numero 11⏎riga numero 12⏎riga numero 13⏎riga numero 14⏎riga numero 15⏎riga numero 16⏎riga numero 17⏎riga numero 18⏎riga numero 19⏎riga numero 20⏎riga numero 21⏎riga numero 22⏎riga numero 23⏎riga numero 24⏎riga numero 25⏎riga numero 26⏎riga numero 27⏎riga numero 28⏎riga numero 29⏎riga numero 30⏎riga numero 31⏎riga numero 32⏎riga numero 33⏎riga numero 34⏎riga numero 35⏎riga numero 36⏎riga numero 37⏎riga numero 38⏎riga numero 39⏎riga numero 40
+11-24 12:54:04.619  3514  3820 I NoteCheck: primo tocco: cursore fondo=731.0 schermo=2400.0
+11-24 12:54:07.625  3514  3820 I NoteCheck: [tocco_in_cima/secondo_tocco] ime=true body=riga numero 1⏎riga numero 2⏎riga numero 3⏎riga numero 4⏎riga numero 5⏎riga numero 6⏎riga numero 7⏎riga numero 8⏎riga numero 9⏎riga numero 10⏎riga numero 11⏎riga numero 12⏎riga numero 13⏎riga numero 14⏎riga numero 15⏎riga numero 16⏎riga numero 17⏎riga numero 18⏎riga numero 19⏎riga numero 20⏎riga numero 21⏎riga numero 22⏎riga numero 23⏎riga numero 24⏎riga numero 25⏎riga numero 26⏎riga numero 27⏎riga numero 28⏎riga numero 29⏎riga numero 30⏎riga numero 31⏎riga numero 32⏎riga numero 33⏎riga numero 34⏎riga numero 35⏎riga numero 36⏎riga numero 37⏎riga numero 38⏎riga numero 39⏎riga numero 40
+11-24 12:54:07.743  3514  3820 I NoteCheck: secondo tocco: cursore fondo=1291.0
+11-24 12:54:13.937  3514  3820 I NoteCheck: [fumetto_riga/fumetto] ime=false body=[ ] prima⏎[ ] seconda
+11-24 12:54:16.874  3514  3820 I NoteCheck: [fumetto_riga/mandata_in_da_fare] ime=false body=[ ] prima
+11-24 12:54:23.570  3514  3820 I NoteCheck: [blocchi/piu_Colonne] ime=true body=
+11-24 12:54:25.629  3514  3820 I NoteCheck: [blocchi/Colonne] ime=true body=‖  ‖  ‖⏎
+11-24 12:54:28.027  3514  3820 I NoteCheck: [blocchi/piu_Bacheca] ime=false body=‖  ‖  ‖⏎
+11-24 12:54:29.409  3514  3820 I NoteCheck: [blocchi/Bacheca] ime=false body=‖  ‖  ‖⏎[bacheca]⏎
+11-24 12:54:31.225  3514  3820 I NoteCheck: [blocchi/piu_Tabella] ime=false body=‖  ‖  ‖⏎[bacheca]⏎
+11-24 12:54:33.327  3514  3820 I NoteCheck: [blocchi/Tabella] ime=true body=‖  ‖  ‖⏎[bacheca]⏎|  |  |⏎|  |  |
+11-24 12:54:33.354  3514  3820 I NoteCheck: blocchi: [COLUMNS, BOARD, TABLE, TABLE]
+11-24 12:54:40.095  3514  3820 I NoteCheck: barra: scritto -> [ ] uno
+11-24 12:54:40.095  3514  3820 I NoteCheck: [ ] scarpe
+11-24 12:54:41.359  3514  3820 I NoteCheck: barra: subito dopo Numeri -> [ ] uno
+11-24 12:54:41.359  3514  3820 I NoteCheck: 1. scarpe
+11-24 12:54:43.202  3514  3820 I NoteCheck: [barra_dopo_parola/numeri] ime=true body=[ ] uno⏎1. scarpe
+11-24 12:54:43.665  3514  3820 I NoteCheck: barra: e poi x -> [ ] uno
+11-24 12:54:43.665  3514  3820 I NoteCheck: 1. scarpex
+11-24 12:54:47.397  3514  3820 I NoteCheck: [barra_dopo_parola/punti] ime=true body=[ ] uno⏎1. scarpex⏎- pane
+11-24 12:54:47.427  3514  3820 I NoteCheck: barra: Punti dopo pane -> [ ] uno
+11-24 12:54:47.427  3514  3820 I NoteCheck: 1. scarpex
+11-24 12:54:47.427  3514  3820 I NoteCheck: - pane
+11-24 12:54:56.212  3514  3820 I NoteCheck: [annulla/annullato] ime=true body=ciao
+11-24 12:54:57.487  3514  3820 I NoteCheck: [annulla/ripetuto] ime=true body=ciao mondo
+11-24 12:55:19.298  3514  3820 I NoteCheck: [tastiera_scrivi/dopo_12_righe] ime=true body=riga 1⏎riga 2⏎riga 3⏎riga 4⏎riga 5⏎riga 6⏎riga 7⏎riga 8⏎riga 9⏎riga 10⏎riga 11⏎riga 12⏎riga 13⏎riga 14⏎riga 15⏎riga 16⏎riga 17⏎riga 18⏎riga 19⏎riga 20⏎riga 21⏎riga 22⏎riga 23⏎riga 24⏎riga 25⏎nuova riga 0⏎nuova riga 1⏎nuova riga 2⏎nuova riga 3⏎nuova riga 4⏎nuova riga 5⏎nuova riga 6⏎nuova riga 7⏎nuova riga 8⏎nuova riga 9⏎nuova riga 10⏎nuova riga 11
+11-24 12:55:19.376  3514  3820 I NoteCheck: cursore fondo=890.0 barra cima=1414.0
+11-24 12:55:33.397  3514  3820 I NoteCheck: [scorciatoie/scorciatoie] ime=true body=- a⏎[] b⏎1. c⏎2. d⏎> e⏎## f⏎---⏎fine
+11-24 12:55:33.442  3514  3820 I NoteCheck: scorciatoie: [BULLET, CHECK, NUMBER, NUMBER, QUOTE, HEADING, DIVIDER, TEXT]
+11-24 12:55:41.434  3514  3820 I NoteCheck: [tastiera_tocco/dopo_il_tocco_0] ime=true body=riga numero 1⏎riga numero 2⏎riga numero 3⏎riga numero 4⏎riga numero 5⏎riga numero 6⏎riga numero 7⏎riga numero 8⏎riga numero 9⏎riga numero 10⏎riga numero 11⏎riga numero 12⏎riga numero 13⏎riga numero 14⏎riga numero 15⏎riga numero 16⏎riga numero 17⏎riga numero 18⏎riga numero 19⏎riga numero 20⏎riga numero 21⏎riga numero 22⏎riga numero 23⏎riga numero 24⏎riga numero 25⏎riga numero 26⏎riga numero 27⏎riga numero 28⏎riga numero 29⏎riga numero 30⏎riga numero 31⏎riga numero 32⏎riga numero 33⏎riga numero 34⏎riga numero 35⏎riga numero 36⏎riga numero 37⏎riga numero 38⏎riga numero 39⏎riga numero 40
+11-24 12:55:41.504  3514  3820 I NoteCheck: tocco 0: cursore fondo=730.0 barra cima=1414.0
+11-24 12:55:43.935  3514  3820 I NoteCheck: [tastiera_tocco/dopo_il_tocco_1] ime=true body=riga numero 1⏎riga numero 2⏎riga numero 3⏎riga numero 4⏎riga numero 5⏎riga numero 6⏎riga numero 7⏎riga numero 8⏎riga numero 9⏎riga numero 10⏎riga numero 11⏎riga numero 12⏎riga numero 13⏎riga numero 14⏎riga numero 15⏎riga numero 16⏎riga numero 17⏎riga numero 18⏎riga numero 19⏎riga numero 20⏎riga numero 21⏎riga numero 22⏎riga numero 23⏎riga numero 24⏎riga numero 25⏎riga numero 26⏎riga numero 27⏎riga numero 28⏎riga numero 29⏎riga numero 30⏎riga numero 31⏎riga numero 32⏎riga numero 33⏎riga numero 34⏎riga numero 35⏎riga numero 36⏎riga numero 37⏎riga numero 38⏎riga numero 39⏎riga numero 40
+11-24 12:55:44.016  3514  3820 I NoteCheck: tocco 1: cursore fondo=730.0 barra cima=1414.0
+11-24 12:55:46.520  3514  3820 I NoteCheck: [tastiera_tocco/dopo_il_tocco_2] ime=true body=riga numero 1⏎riga numero 2⏎riga numero 3⏎riga numero 4⏎riga numero 5⏎riga numero 6⏎riga numero 7⏎riga numero 8⏎riga numero 9⏎riga numero 10⏎riga numero 11⏎riga numero 12⏎riga numero 13⏎riga numero 14⏎riga numero 15⏎riga numero 16⏎riga numero 17⏎riga numero 18⏎riga numero 19⏎riga numero 20⏎riga numero 21⏎riga numero 22⏎riga numero 23⏎riga numero 24⏎riga numero 25⏎riga numero 26⏎riga numero 27⏎riga numero 28⏎riga numero 29⏎riga numero 30⏎riga numero 31⏎riga numero 32⏎riga numero 33⏎riga numero 34⏎riga numero 35⏎riga numero 36⏎riga numero 37⏎riga numero 38⏎riga numero 39⏎riga numero 40
+11-24 12:55:46.618  3514  3820 I NoteCheck: tocco 2: cursore fondo=731.0 barra cima=1414.0
+11-24 12:55:53.117  3514  3820 I NoteCheck: [indietro/indietro_su_voce_vuota] ime=true body=- uno⏎
+11-24 12:55:57.341  3514  3820 I NoteCheck: [tutto_fatto/tutto_fatto] ime=false body=[x] pane⏎[x] latte
+11-24 12:55:57.347  3514  3820 I NoteCheck: tutto fatto: 0 nodi
+11-24 12:56:02.380  3514  3820 I NoteCheck: [foto/foto_e_copertina] ime=false body=sopra⏎[🖼 Foto](img:/data/user/0/com.platinum20.dashboard/files/prova.png)⏎sotto
+11-24 12:56:03.484  3514  3820 I NoteCheck: [foto/fumetto_foto] ime=false body=sopra⏎[🖼 Foto](img:/data/user/0/com.platinum20.dashboard/files/prova.png)⏎sotto
+11-24 12:56:05.442  3514  3820 I NoteCheck: [foto/fumetto_copertina] ime=false body=sopra⏎sotto
+11-24 12:56:12.008  3514  3820 I NoteCheck: [maniglia/maniglia] ime=true body=una riga di testo
+11-24 12:56:12.691  3514  3820 I NoteCheck: [maniglia/fumetto_riga] ime=true body=una riga di testo
+11-24 12:56:18.092  3514  3820 I NoteCheck: [barra_fissa/barra] ime=true body=ciao
+11-24 12:56:19.995  3514  3820 I NoteCheck: [barra_fissa/tastiera_chiusa] ime=false body=ciao
+11-24 12:56:25.011  3514  3820 I NoteCheck: [emoji/altro] ime=false body=Porto
+11-24 12:56:26.310  3514  3820 I NoteCheck: [emoji/emoji_nel_titolo] ime=false body=Porto
+11-24 12:56:27.550  3514  3820 I NoteCheck: [emoji/cambia_emoji] ime=false body=Porto
+11-24 12:56:33.993  3514  3820 I NoteCheck: [slash/slash] ime=true body=/
+11-24 12:56:40.801  3514  3820 I NoteCheck: [titolo/invio_nel_titolo] ime=true body=latte
+11-24 12:56:46.085  3514  3820 I NoteCheck: [aa/scelta] ime=true body=parola importante
+11-24 12:56:47.369  3514  3820 I NoteCheck: [aa/grassetto] ime=true body=**parola** importante
+11-24 12:56:48.140  3514  3820 I NoteCheck: [aa/colori] ime=true body=**parola** importante
+11-24 12:56:49.185  3514  3820 I NoteCheck: [aa/rosso] ime=true body=**parola** {r:importante}
+11-24 12:56:51.397  3514  3820 I NoteCheck: [aa/aa_aperto] ime=true body=**parola** {r:importante}
+11-24 12:57:00.058  3514  3820 I NoteCheck: [tastiera_trascina/trascinata] ime=false body=riga 1⏎riga 2⏎riga 3⏎riga 4⏎riga 5⏎riga 6⏎riga 7⏎riga 8⏎riga 9⏎riga 10⏎riga 11⏎riga 12⏎riga 13⏎riga 14⏎riga 15⏎riga 16⏎riga 17⏎riga 18⏎riga 19⏎riga 20⏎riga 21⏎riga 22⏎riga 23⏎riga 24⏎riga 25⏎riga 26⏎riga 27⏎riga 28⏎riga 29⏎riga 30⏎riga 31⏎riga 32⏎riga 33⏎riga 34⏎riga 35⏎riga 36⏎riga 37⏎riga 38⏎riga 39⏎riga 40
+11-24 12:57:06.793  3514  3820 I NoteCheck: [punti/due_punti_e_vuoto] ime=true body=- uno⏎- due⏎- 
+11-24 12:57:08.177  3514  3820 I NoteCheck: [punti/uscito_dalla_lista] ime=true body=- uno⏎- due⏎testo
+11-24 12:57:13.302  3514  3820 I NoteCheck: [vocale/aggiungi] ime=false body=prima
+11-24 12:57:16.361  3514  3820 I NoteCheck: [vocale/registro] ime=false body=prima
