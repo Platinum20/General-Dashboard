@@ -161,8 +161,8 @@ internal fun slashEntries(target: RichBar.Target, openPage: (Long, String) -> Un
             target.set(TextFieldValue(e.text, TextRange(e.start)))
         },
     ) + target.extras.mapIndexed { i, x ->
-        // Le prime tre sono foto, le altre voce e disegno: due righe, ognuna col suo nome.
-        val group = if (i < 3) "Foto" else "Voce e disegno"
+        // Le prime due sono foto (Foto, Scatta), le altre voce e disegno: due righe, ognuna col suo nome.
+        val group = if (i < 2) "Foto" else "Voce e disegno"
         SlashEntry(x.label, group, x.icon, x.label, "", chip = if (group == "Foto") x.label.removePrefix("Foto ").replaceFirstChar { it.uppercase() } else x.label) { x.run() }
     } + listOf(
         SlashEntry("collega", "Collega", Icons.Outlined.AlternateEmail, "Nota o pagina di Canvas", "@", chip = "Un'altra nota") { now ->

@@ -109,6 +109,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -169,7 +170,7 @@ import kotlin.math.roundToInt
 
 /**
  * Editor di una nota lunga (1.529, Antonio scelta B di /mnt/project-files/editor-note/): fatto come le altre schede.
- * In alto Indietro e una riga sola (quando, parole, foto); il titolo; le foto in fila sotto il titolo (tocca = grande,
+ * In alto Indietro e una riga sola (quando o "Salvata ora", voci fatte, foto); il titolo; le foto in fila sotto il titolo (tocca = grande,
  * tieni premuto = fumetto, tieni premuto e trascina = ordine); il testo. In basso "Aggiungi" a sinistra (foto, scatta,
  * detta; tenuto premuto = foto subito) e "Altro" a destra. Punti, spunte, titoletti e grassetto stanno solo nella barra
  * sopra la tastiera (1.577). Si salva da sola.
@@ -217,8 +218,37 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
     // "Ricordamelo" sulla riga e il posto della nota (idee 16 e 11, NoteExtrasUi.kt).
     val extras = rememberNoteExtras()
 
+    // Quando è stata salvata l'ultima volta da qui: la riga in alto dice "Salvata ora" (2026-11-24, proposta 8).
+    var savedAt by remember { mutableLongStateOf(0L) }
+    var justSaved by remember { mutableStateOf(false) }
     fun save(next: String = NoteText.join(title.text, body.text)) {
+        val before = id?.let { NotesStore.note(it)?.text }
         id = NotesStore.saveNote(id, next) ?: id
+        if (before != next) savedAt = System.currentTimeMillis()
+    }
+    LaunchedEffect(savedAt) {
+        if (savedAt == 0L) return@LaunchedEffect
+        justSaved = true
+        kotlinx.coroutines.delay(60_000)
+        justSaved = false
+    }
+
+    // Scrivendo si salva alla prima pausa (2026-11-24, proposta 10), non a ogni lettera: ogni salvataggio riscriveva
+    // tutto il file delle note, ridisegnava i widget e la pagina intera. Uscendo o andando in un'altra app si salva subito.
+    var typedTick by remember { mutableIntStateOf(0) }
+    fun typed() { typedTick++ }
+    LaunchedEffect(typedTick) {
+        if (typedTick == 0) return@LaunchedEffect
+        kotlinx.coroutines.delay(SAVE_PAUSE_MS)
+        save()
+    }
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(lifecycle) {
+        val watch = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP && !deleted) NotesStore.saveNote(id, NoteText.join(title.text, body.text))?.let { id = it }
+        }
+        lifecycle.addObserver(watch)
+        onDispose { lifecycle.removeObserver(watch) }
     }
 
     fun setText(next: String) {
@@ -326,6 +356,13 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
             else NotesStore.editNotePhotos(nid) { NotePhotos.replace(it, path, turned) }
         }
     }
+    /** Una foto del testo va fra quelle in cima (2026-11-24): la riga è già tolta dal campo. */
+    fun photoToTop(path: String) {
+        save()
+        val nid = id ?: return
+        NotesStore.editNotePhotos(nid) { NotePhotos.add(it, listOf(path)) }
+        haptic(Haptic.CONFIRM)
+    }
     fun photoActions(path: String, open: Boolean): Array<BubbleAction> {
         val index = photos.indexOf(path)
         val nid = id
@@ -334,6 +371,15 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
             if (index > 0 && nid != null) act(BubbleGroup.CAMBIA, Icons.Outlined.Star, "Metti per prima", "diventa la copertina nel Calendario") {
                 haptic(Haptic.CONFIRM)
                 NotesStore.editNotePhotos(nid) { NotePhotos.toFront(it, path) }
+            } else null,
+            // Dalle foto in cima al testo (2026-11-24, proposta 6): dove sta il cursore, se no in fondo.
+            if (nid != null) act(BubbleGroup.CAMBIA, Icons.AutoMirrored.Outlined.Notes, "Metti nel testo", if (bodyFocused) "dove sta il cursore" else "in fondo alla nota") {
+                val at = if (bodyFocused) body.selection.end.coerceIn(0, body.text.length) else body.text.length
+                val e = NoteLines.insertBlock(body.text, at, NoteLines.imageLine(path))
+                body = TextFieldValue(e.text, TextRange(e.start))
+                save()
+                NotesStore.editNotePhotos(nid) { NotePhotos.remove(it, path) }
+                haptic(Haptic.CONFIRM)
             } else null,
             // Testo da una foto (1.588): quello che c'è scritto nella foto va in fondo alla nota.
             act(BubbleGroup.CREA, Icons.Outlined.DocumentScanner, "Copia il testo nella nota", "quello scritto nella foto, in fondo") {
@@ -489,8 +535,8 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
     }
 
     /**
-     * Il + dell'editor (Antonio 2026-11-24, /mnt/project-files/fumetti/piu/): tutto quello che si aggiunge (i blocchi del
-     * menu «/», foto, voce e disegno) e in fondo "Dalla nota", le cose tolte da Altro. Niente da scorrere.
+     * Il + dell'editor (2026-11-24, /mnt/project-files/editor-fluido/): solo quello che si aggiunge, in tre file (foto e
+     * voce, blocchi, collega). Lo stesso fumetto dal + in basso e dal + della barra sopra la tastiera.
      */
     fun add() {
         haptic(Haptic.LONG_PRESS)
@@ -502,63 +548,36 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                 if (entryId == "collega") scope.launch { kotlinx.coroutines.delay(150); runCatching { bodyFocus.requestFocus() } }
             }
         }
-        val nid = id?.takeIf { current != null }
-        val songs = com.platinum20.dashboard.notes.NoteSpoken.songs(body.text)
         ActionBubble.show(
             BubbleHead("Aggiungi", "nella nota"),
+            // Il + fa solo "aggiungi" (2026-11-24, proposte 6 e 7): tre file da quattro. Linea sta nella "/" e scrivendo ---;
+            // le cose da fare con la nota (PDF, Duplica, Versioni…) stanno in Altro.
             *listOfNotNull(
-                choice("Blocchi", *listOfNotNull(entry("tabella", "Tabella"), entry("linea", "Linea"), entry("colonne", "Colonne"), entry("bacheca", "Bacheca")).toTypedArray()),
-                choice("Collega", *listOfNotNull(entry("sottonota", "Sotto-nota"), entry("collega", "Un'altra nota")).toTypedArray()),
                 choice(
-                    "Foto",
-                    BubbleChip("Nel testo", icon = Icons.Outlined.Image) { pickInline() },
-                    BubbleChip("In cima", icon = Icons.Outlined.AddPhotoAlternate) { pickPhotos() },
+                    "Foto e voce",
+                    // Una foto sola: va dove sta il cursore; senza cursore, in cima. Si sposta dal suo fumetto.
+                    BubbleChip("Foto", icon = Icons.Outlined.Image) { if (bodyFocused) pickInline() else pickPhotos() },
                     BubbleChip("Scatta", icon = Icons.Outlined.PhotoCamera) { camera.launch(ReceiptReader.photoUri(context)) },
-                ),
-                choice(
-                    "Voce e disegno",
                     BubbleChip("Detta", icon = Icons.Outlined.Mic) { dictate() },
                     BubbleChip("Vocale", icon = Icons.Outlined.GraphicEq) { record() },
-                    BubbleChip("Disegno", icon = Icons.Outlined.Draw) { draw() },
                 ),
-                listOfNotNull(
-                    if (text.isBlank() && photos.isEmpty()) null else BubbleChip("PDF", icon = Icons.Outlined.PictureAsPdf) { exportPdf() },
-                    if (text.isBlank()) null else BubbleChip("Copia testo", icon = Icons.Outlined.ContentCopy) { Clip.copy(context, "Nota", NoteFormat.plain(text), "Testo copiato") },
-                    if (text.isBlank()) null else BubbleChip("Duplica", icon = Icons.Outlined.FileCopy) {
-                        save()
-                        val copy = NoteText.join(NoteText.copyTitle(title.text), NoteLines.uncheckAll(body.text))
-                        NotesStore.saveNote(null, copy)?.let { made ->
-                            current?.emoji?.let { NotesStore.setNoteEmoji(made, it) }
-                            inApp?.openRoute(Routes.noteEdit(made))
-                        }
-                    },
-                    id?.takeIf { NoteVersions.of(it).isNotEmpty() }?.let { BubbleChip("Versioni", icon = Icons.Outlined.History) { versions() } },
-                    if (body.text.isBlank()) null else BubbleChip("Ascolta", icon = Icons.Outlined.Headphones) {
-                        save()
-                        val script = com.platinum20.dashboard.notes.NoteSpoken.script(title.text, body.text)
-                        com.platinum20.dashboard.news.RecapSpeaker.play(
-                            context, script, title = title.text.ifBlank { "Nota" }, labels = script.map(com.platinum20.dashboard.news.RecapReader::chapterLabel),
-                        )
-                    },
-                    nid?.takeIf { text.isNotBlank() }?.let { n ->
-                        BubbleChip("Nel widget", icon = Icons.Outlined.Widgets) {
-                            save()
-                            com.platinum20.dashboard.widget.NoteWidget.choose(context, n)
-                            CaptureFeedback.tell(context, "Nel widget Nota", Icons.Outlined.Widgets)
-                        }
-                    },
-                    if (songs.isEmpty()) null else BubbleChip("Su Spotify", icon = Icons.AutoMirrored.Outlined.QueueMusic) { songsToSpotify(songs) },
-                ).takeIf { it.isNotEmpty() }?.let { choice("Dalla nota", *it.toTypedArray()) },
-            ).filter { it.chips.isNotEmpty() || it.slot != null }.toTypedArray(),
+                choice(
+                    "Blocchi",
+                    *listOfNotNull(entry("tabella", "Tabella"), entry("colonne", "Colonne"), entry("bacheca", "Bacheca"), BubbleChip("Disegno", icon = Icons.Outlined.Draw) { draw() }).toTypedArray(),
+                ),
+                choice("Collega", *listOfNotNull(entry("sottonota", "Sotto-nota"), entry("collega", "Un'altra nota")).toTypedArray()),
+            ).filter { it.chips.isNotEmpty() }.toTypedArray(),
         )
     }
 
     fun emojiAction(nid: Long, now: String?): BubbleAction = noteEmojiDots(nid, now)
 
-    /** Altro (Antonio 2026-11-24): copertina, cerca, archivia, la fila di emoji e i tasti. Il resto sta nel + e nella voce. */
+    /** Altro: copertina, cerca, quello che si fa con la nota (PDF, Duplica…), i titoli, archivia, la fila di emoji e i tasti. */
     fun more() {
         haptic(Haptic.LONG_PRESS)
         val nid = id?.takeIf { current != null }
+        val songs = com.platinum20.dashboard.notes.NoteSpoken.songs(body.text)
+        val heads = NoteLines.headings(body.text)
         ActionBubble.show(
             BubbleHead("Nota", listOfNotNull(current?.emoji, title.text.ifBlank { "Nuova nota" }).joinToString(" ")),
             *listOfNotNull(
@@ -568,6 +587,45 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                 if (body.text.isBlank()) null else act(BubbleGroup.VAI, Icons.Outlined.Search, "Cerca nella nota", "le parole trovate si colorano") {
                     findAt = 0
                     finding = ""
+                },
+                // Quello che si fa con la nota (2026-11-24, proposta 7): era nel +, che ora aggiunge e basta.
+                if (text.isBlank() && photos.isEmpty()) null else act(BubbleGroup.CREA, Icons.Outlined.PictureAsPdf, "Salva come PDF", "con le foto, nei Download") { exportPdf() },
+                if (text.isBlank()) null else act(BubbleGroup.CREA, Icons.Outlined.FileCopy, "Duplica", "una copia con le spunte tolte") {
+                    save()
+                    val copy = NoteText.join(NoteText.copyTitle(title.text), NoteLines.uncheckAll(body.text))
+                    NotesStore.saveNote(null, copy)?.let { made ->
+                        current?.emoji?.let { NotesStore.setNoteEmoji(made, it) }
+                        inApp?.openRoute(Routes.noteEdit(made))
+                    }
+                },
+                if (text.isBlank()) null else act(BubbleGroup.CREA, Icons.Outlined.ContentCopy, "Copia il testo", "senza formati, da incollare altrove") {
+                    Clip.copy(context, "Nota", NoteFormat.plain(text), "Testo copiato")
+                },
+                id?.takeIf { NoteVersions.of(it).isNotEmpty() }?.let {
+                    act(BubbleGroup.VAI, Icons.Outlined.History, "Versioni precedenti", "i testi di prima, da rimettere") { versions() }
+                },
+                if (body.text.isBlank()) null else act(BubbleGroup.VAI, Icons.Outlined.Headphones, "Ascolta", "te la legge la voce delle news") {
+                    save()
+                    val script = com.platinum20.dashboard.notes.NoteSpoken.script(title.text, body.text)
+                    com.platinum20.dashboard.news.RecapSpeaker.play(
+                        context, script, title = title.text.ifBlank { "Nota" }, labels = script.map(com.platinum20.dashboard.news.RecapReader::chapterLabel),
+                    )
+                },
+                nid?.takeIf { text.isNotBlank() }?.let { n ->
+                    act(BubbleGroup.METTI, Icons.Outlined.Widgets, "Mostra nel widget", "nel widget Nota della schermata Home") {
+                        save()
+                        com.platinum20.dashboard.widget.NoteWidget.choose(context, n)
+                        CaptureFeedback.tell(context, "Nel widget Nota", Icons.Outlined.Widgets)
+                    }
+                },
+                songs.takeIf { it.isNotEmpty() }?.let { list ->
+                    act(BubbleGroup.CREA, Icons.AutoMirrored.Outlined.QueueMusic, "Playlist su Spotify", "con i ${list.size} brani scritti nella nota") { songsToSpotify(list) }
+                },
+                // L'indice dei titoli (proposta 8): era una fila di chip sopra il testo.
+                heads.takeIf { it.size >= 2 }?.let { list ->
+                    choice("Vai a un titolo", *list.take(8).map { (at, name) ->
+                        BubbleChip(name.take(18)) { haptic(Haptic.TICK); reveal = at to ((reveal?.second ?: 0) + 1) }
+                    }.toTypedArray())
                 },
                 nid?.let { n ->
                     if (current?.archivedAt == null) act(BubbleGroup.METTI, Icons.Outlined.Archive, "Archivia", "esce dalla card, resta nell'archivio") {
@@ -601,9 +659,15 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
         recordingSince != null -> "Registro l'audio… tocca Ferma"
         arranging -> "Trascina per cambiare l'ordine"
         else -> listOfNotNull(
-            if (opened == null) "Nuova nota" else NoteText.moment(opened.createdAt, opened.updatedAt),
+            when {
+                justSaved -> "Salvata ora"
+                current != null -> NoteText.moment(current.createdAt, current.updatedAt)
+                opened != null -> NoteText.moment(opened.createdAt, opened.updatedAt)
+                else -> "Nuova nota"
+            },
             if (pinned) "fissata" else null,
-            Checklist.progressLabel(text) ?: NoteText.stats(text),
+            // Il conteggio delle parole non serve (proposta 8): resta solo quante voci sono fatte.
+            Checklist.progressLabel(text),
             NotePhotos.label(photos.size),
         ).joinToString(" · ")
     }
@@ -749,8 +813,8 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                                 body = TextFieldValue(joined, TextRange(rest.length))
                                 bodyFocus.requestFocus()
                             }
-                            // Salvataggio continuo: niente perso se l'app viene chiusa.
-                            save()
+                            // Salva alla prima pausa: niente perso se l'app viene chiusa (si salva anche uscendo).
+                            if (cut < 0) typed() else save()
                         },
                         textStyle = titleStyle,
                         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
@@ -780,29 +844,14 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                     )
                 }
                 Spacer(Modifier.size(12.dp))
-                // L'indice dei titoli (1.586): con almeno 3 titoli, in cima; tocchi e la nota scorre lì.
-                val heads = remember(body.text) { NoteLines.headings(body.text) }
-                if (heads.size >= 3 && finding == null) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState())
-                            .padding(horizontal = 24.dp)
-                            .padding(bottom = 12.dp),
-                    ) {
-                        heads.forEach { (at, name) ->
-                            CanvasChip(selected = false, onClick = { haptic(Haptic.TICK); reveal = at to ((reveal?.second ?: 0) + 1) }, label = name.take(24))
-                        }
-                    }
-                }
                 // Tenendo premuto un punto del testo (1.606, idea 14): "Detta qui" nel menu, il testo entra lì mentre parli.
                 WithTextExtras(listOf(TextToolbarExtra("Detta qui") { dictate() })) {
                 RichNoteField(
                     value = body,
                     onValueChange = { v ->
+                        val changed = v.text != body.text
                         body = v
-                        save()
+                        if (changed) typed()
                     },
                     textStyle = bodyStyle,
                     placeholder = "Scrivi qui…",
@@ -816,13 +865,15 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                     noteId = id,
                     // Ricordamelo sulla voce tenuta premuta (2026-11-24, era in Altro).
                     lineMore = { t, at -> listOf(extras.remindChoice({ save(); id }, title.text, t, at, id)) },
+                    onAdd = { add() },
+                    onPhotoToTop = { path -> photoToTop(path) },
+                    lineHandle = true,
                     onAllDone = { allDone() },
                     find = finding,
                     findAt = findAt.coerceAtMost((found.size - 1).coerceAtLeast(0)),
                     revealAt = reveal,
                     slashExtras = listOf(
-                        SlashItem(Icons.Outlined.Image, "Foto nel testo", "dove c'è il cursore") { pickInline() },
-                        SlashItem(Icons.Outlined.AddPhotoAlternate, "Foto in cima", "dalla galleria") { pickPhotos() },
+                        SlashItem(Icons.Outlined.Image, "Foto", "dove c'è il cursore") { pickInline() },
                         SlashItem(Icons.Outlined.PhotoCamera, "Scatta", "con la fotocamera") { camera.launch(ReceiptReader.photoUri(context)) },
                         SlashItem(Icons.Outlined.Mic, "Detta", "dove c'è il cursore") { dictate() },
                         SlashItem(Icons.Outlined.Draw, "Disegno", "a mano") { draw() },
@@ -896,6 +947,9 @@ internal fun noteEmojiRow(now: String?): List<String> =
 
 /** Quante foto si scelgono al massimo in una volta dalla galleria. */
 private const val MAX_PICK = 20
+
+/** La pausa dopo cui si salva quello che si sta scrivendo (2026-11-24). */
+internal const val SAVE_PAUSE_MS = 500L
 
 /** Il tasto tondo delle schede, che sa anche il tieni premuto (qui: "Aggiungi" tenuto = foto subito). */
 @OptIn(ExperimentalFoundationApi::class)
@@ -1165,14 +1219,16 @@ private fun PhotoViewer(
 
 /**
  * Tiene la riga del cursore ([top]..[bottom], sullo schermo) nella parte visibile [visTop]..[visBottom] (sopra barra e
- * tastiera). Toccata (1.606): la riga va in cima, subito sotto la testata. Scrivendo, quando la riga scende oltre metà,
+ * tastiera). Toccata: resta dov'è, o sale a un terzo se finirebbe sotto la tastiera. Scrivendo, quando la riga scende oltre metà,
  * la pagina la riporta in alto (un terzo): non si scrive mai sotto la tastiera. Muovendo solo il cursore basta che si veda.
  */
 internal fun keepLineDelta(top: Float, bottom: Float, mode: LineFollow, visTop: Float, visBottom: Float, margin: Float): Float {
     val h = visBottom - visTop
     if (h <= margin * 3) return 0f
     return when {
-        mode == LineFollow.TAPPED -> top - (visTop + margin * 0.5f)
+        // Toccata (2026-11-24, proposta 9): resta dov'è se si vede; se la tastiera la coprirebbe sale a un terzo, non in cima.
+        mode == LineFollow.TAPPED && (bottom > visBottom - margin || top < visTop) -> top - (visTop + h * 0.3f)
+        mode == LineFollow.TAPPED -> 0f
         mode == LineFollow.TYPING && bottom > visTop + h * 0.55f -> top - (visTop + h * 0.3f)
         bottom > visBottom - margin -> bottom - (visBottom - margin)
         top < visTop + margin -> top - (visTop + margin)
