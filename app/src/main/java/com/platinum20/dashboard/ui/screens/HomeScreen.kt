@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.outlined.DoneAll
 import androidx.compose.material.icons.outlined.Settings
 import coil3.compose.AsyncImage
 import androidx.compose.material3.LinearProgressIndicator
@@ -654,7 +655,17 @@ private fun NewsCard(
         val shown = state.home
         fun isRead(story: NewsStory) = story.items.any { it.link in state.read }
         // "25 nuove dalle 18:40" sta sulla riga del titolo, tutto a destra: una riga in meno (Antonio, 2026-11-10).
-        CardSection("News", onClick = onOpenNews, trailing = {
+        CardSection("News", modifier = Modifier.sharedItem(SharedKeys.NEWS, rounded = true), onClick = onOpenNews, onLongClick = if (feed.isEmpty) null else ({
+            ActionBubble.show(
+                BubbleHead("News", NewsStories.unreadLine(state.unreadCount)),
+                act(BubbleGroup.METTI, Icons.Outlined.Headphones, "Ascolta", "le notizie della card, una dopo l'altra") { listenStories(context, shown, null) },
+                act(BubbleGroup.SEGNA, Icons.Outlined.DoneAll, "Segna come lette", "le notizie della card") {
+                    NewsHistory.init(context)
+                    shown.forEach { story -> story.items.forEach { NewsHistory.markRead(it.link) } }
+                },
+                Slot.open(onOpenNews),
+            )
+        }), trailing = {
             if (!feed.isEmpty) Text(
                 NewsStories.unreadLine(state.unreadCount),
                 style = MaterialTheme.typography.labelMedium,
@@ -677,6 +688,7 @@ private fun NewsCard(
                                 dim = if (isRead(story)) 0.85f else 1f,
                                 onLongClick = { ActionBubble.show(*storyActions(context, story) {}) },
                                 expandable = false,
+                                scope = SharedRows.HOME,
                                 thumb = if (index == 0) 56.dp else 0.dp,
                                 horizontal = 16.dp,
                             )

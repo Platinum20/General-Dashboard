@@ -248,7 +248,7 @@ class ScreenshotTour {
             "77_turno" to Routes.calendarEvent(tourShift),
             "78_cerca" to Routes.SEARCH,
             "79_calendario" to Routes.NOTES,
-            "80_musica" to Routes.SPOTIFY_FEED,
+            "80_musica" to Routes.MUSIC_DISCOVER,
             "81_video" to Routes.YOUTUBE_FEED,
             "82_radio" to Routes.RADIO,
             "83_compila_da_solo" to Routes.AUTOFILL,

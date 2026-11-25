@@ -27,6 +27,11 @@ object SharedKeys {
     /** Le card della Home che si allargano nella loro pagina (1.357). */
     const val WEATHER = "weather"
     const val SIM = "sim"
+    /** 2026-11-25: anche News, Da fare, Musica e Video crescono dalla loro card. */
+    const val NEWS = "news-card"
+    const val LATER = "later-card"
+    const val MUSIC = "music-card"
+    const val VIDEO = "video-card"
     fun document(id: Long) = "document-$id"
 
     fun item(kind: ItemKind, id: Long): String? = when (kind) {

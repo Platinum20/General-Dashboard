@@ -442,7 +442,7 @@ object Routes {
     private val BAR_PAGES = setOf(
         HOME, NEWS, MEDIA, NOTES,
         LATER_ARCHIVE, JOTTINGS_ARCHIVE, WEATHER, SIM, TAG, PERSON,
-        RADIO, PODCAST, SPOTIFY_ITEM, SPOTIFY_FEED, YOUTUBE_CHANNEL, YOUTUBE_PLAYLIST, YOUTUBE_FEED,
+        RADIO, PODCAST, SPOTIFY_ITEM, YOUTUBE_CHANNEL, YOUTUBE_PLAYLIST, YOUTUBE_FEED,
         MEDIA_MIX, MEDIA_NEWS, SAVED_MEDIA, MUSIC_ALL, MUSIC_DISCOVER, LIKED_TRACKS,
     )
     const val SEARCH = "home/search"
@@ -455,7 +455,6 @@ object Routes {
     const val VIDEO_PATTERN = "media/video?uri={uri}"
 
     const val YOUTUBE_FEED = "media/youtube"
-    const val SPOTIFY_FEED = "media/spotify"
     const val RADIO = "media/radio"
     const val PODCAST = "media/podcast"
     /** Il player grande unico (musica, radio, podcast). */
@@ -1151,7 +1150,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         runCatching {
             navController.switchTab(
                 when (request.target) {
-                    OpenRequest.MEDIA, OpenRequest.PLAY -> Routes.MEDIA
                     // Il titolo delle notizie nel widget apre la scheda News (la pagina del punto del giorno non c'è più).
                     OpenRequest.RECAP -> Routes.NEWS
                     else -> Routes.HOME
@@ -1289,7 +1287,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             if (intoComposer || voiceToEdit) {
                 voiceToEdit = false
                 CaptureComposer.dictating = false
-                // Nessuna parola ma suono per un po': è musica, Canvas la riconosce (si era persa col tasto unico, 1.642).
+                // Nessuna parola ma suono per un po': è musica, Canvas la riconosce (si era persa col tasto unico, 1.643).
                 if (text.isNullOrBlank() && dictation.soundedLikeMusic() && SongId.ready) identifySong()
                 else if (text.isNullOrBlank()) voiceScope.launch {
                     delay(1_600)
@@ -1426,14 +1424,9 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 )
                 }
             }
+            // La pagina Media non c'è più (1.634): un vecchio collegamento (note, widget) torna in Home.
             composable(Routes.MEDIA) {
-                MediaScreen(
-                    bottomPadding = padding,
-                    onOpenPlayer = { navController.navigate(if (it.isVideo) Routes.youtubeWatch() else Routes.PLAYER) },
-                    onPlayVideo = { navController.navigate(Routes.youtubeWatch(it)) },
-                    onOpenRoute = { navController.navigate(it) },
-                    onBack = { navController.popBackStack() },
-                )
+                LaunchedEffect(Unit) { navController.popBackStack(Routes.HOME, inclusive = false) }
             }
             // Dalla 1.437 la radio è una sezione da sola e i podcast stanno in Musica: la vecchia strada dei podcast apre Musica.
             composable(Routes.RADIO) {
@@ -1550,11 +1543,14 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onBack = { navController.popBackStack() },
                 )
             }
+            // Le pagine di Video e Musica crescono dalla loro card in Home (2026-11-25).
             composable(Routes.MEDIA_NEWS) {
+                CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {
                 com.platinum20.dashboard.ui.screens.MediaNewsScreen(
                     onBack = { navController.popBackStack() },
                     onPlayVideo = { navController.navigate(Routes.youtubeWatch(it)) },
                 )
+                }
             }
             composable(Routes.SAVED_MEDIA) { entry ->
                 com.platinum20.dashboard.ui.screens.SavedMediaScreen(
@@ -1570,23 +1566,18 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 )
             }
             composable(Routes.MUSIC_DISCOVER) {
+                CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {
                 com.platinum20.dashboard.ui.screens.MusicDiscoverScreen(
                     onBack = { navController.popBackStack() },
                     onOpen = { navController.navigate(Routes.spotifyItem(it)) },
                 )
+                }
             }
             composable(Routes.LIKED_TRACKS) {
                 com.platinum20.dashboard.ui.screens.MediaLikedScreen(
                     videosOnly = false,
                     onBack = { navController.popBackStack() },
                     onPlayVideo = { navController.navigate(Routes.youtubeWatch(it)) },
-                )
-            }
-            // Playlist (1.485): quelle di Spotify e di YouTube e gli album salvati.
-            composable(Routes.SPOTIFY_FEED) {
-                com.platinum20.dashboard.ui.screens.MediaPlaylistsScreen(
-                    onBack = { navController.popBackStack() },
-                    onOpenSpotify = { navController.navigate(Routes.spotifyItem(it)) },
                 )
             }
             composable(
@@ -1682,10 +1673,14 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 com.platinum20.dashboard.ui.screens.PersonScreen(name = entry.arguments?.getString("name").orEmpty(), onBack = { navController.popBackStack() })
             }
             composable(Routes.LATER_ARCHIVE) {
+                CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {
                 com.platinum20.dashboard.ui.screens.LaterArchiveScreen(onBack = { navController.popBackStack() })
+                }
             }
             composable(Routes.JOTTINGS_ARCHIVE) {
+                CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {
                 com.platinum20.dashboard.ui.screens.LaterArchiveScreen(onBack = { navController.popBackStack() })
+                }
             }
             composable(Routes.SIM) {
                 CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {
