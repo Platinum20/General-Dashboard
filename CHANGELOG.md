@@ -5,6 +5,8 @@
 - Toccando il + prima gira e diventa la freccia, poi la bolla per scrivere le cresce attorno mentre sale con la tastiera
 - Quando tiri su per bloccare il vocale il lucchetto si chiude e resta lì blu pieno, con una vibrazione: così sai che puoi togliere il dito
 - Portando il mini player sul + ora diventa rosso pieno anche col tema scuro, e torna del suo colore appena si chiude
+- Chiudendo o inviando si fa il contrario: la bolla rientra nella freccia e la freccia torna +; dopo un invio il + fa un piccolo salto con un colpetto
+- Se chiudi la bolla con del testo dentro, lo ritrovi quando la riapri
 
 ## 1.640.0
 **Accesso WindTre senza pagina che lampeggia**

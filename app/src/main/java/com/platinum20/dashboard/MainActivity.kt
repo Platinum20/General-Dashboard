@@ -590,7 +590,27 @@ private fun CanvasNavBar(
     var voiceLift by remember { mutableFloatStateOf(0f) }
     val barOrigin = remember { FloatArray(2) }
     val plusMorph = remember { androidx.compose.animation.core.Animatable(0f) }
+    val plusPop = remember { androidx.compose.animation.core.Animatable(1f) }
     val morphScope = androidx.compose.runtime.rememberCoroutineScope()
+    // Chiudendo si fa il contrario (1.641, Antonio): la bolla rientra nella freccia e la freccia torna +. Dopo un invio
+    // il + fa un piccolo salto con un colpetto: "salvato".
+    val lastMode = remember { intArrayOf(barMode) }
+    val justSent = remember { booleanArrayOf(false) }
+    LaunchedEffect(barMode) {
+        val was = lastMode[0]
+        lastMode[0] = barMode
+        if (barMode == BAR_PLUS && was == BAR_WRITE) {
+            plusMorph.snapTo(1f)
+            delay(140)
+            plusMorph.animateTo(0f, tween(PLUS_MORPH_MS + 60))
+            if (justSent[0]) {
+                justSent[0] = false
+                haptic(Haptic.TICK)
+                plusPop.animateTo(1.18f, tween(110))
+                plusPop.animateTo(1f, Motion.lively())
+            }
+        }
+    }
     val density = LocalDensity.current
     val cancelAt = with(density) { VOICE_CANCEL_DP.dp.toPx() }
     val lockAt = with(density) { VOICE_LOCK_DP.dp.toPx() }
@@ -651,7 +671,7 @@ private fun CanvasNavBar(
                                         plusMorph.snapTo(0f)
                                     }
                                     empty -> mic()
-                                    else -> send()
+                                    else -> { justSent[0] = true; send() }
                                 }
                                 return@awaitEachGesture
                             }
@@ -706,7 +726,9 @@ private fun CanvasNavBar(
                 // Dal + al riquadro la freccia resta dov'è: niente dissolvenza, la bolla le cresce attorno (il resto compare
                 // da solo dentro il riquadro).
                 val fromPlus = initialState == BAR_PLUS && targetState == BAR_WRITE
+                val toPlus = initialState == BAR_WRITE && targetState == BAR_PLUS
                 (if (fromPlus) EnterTransition.None togetherWith fadeOut(tween(60))
+                else if (toPlus) EnterTransition.None togetherWith fadeOut(tween(140))
                 else fadeIn(tween(160, delayMillis = 50)) togetherWith fadeOut(tween(90)))
                     .using(SizeTransform(clip = true) { _, _ -> Springs.snappy() })
             },
@@ -714,7 +736,7 @@ private fun CanvasNavBar(
             label = "plusMorph",
         ) { mode ->
             when (mode) {
-                BAR_PLUS -> PlusButton(onPlus = onPlus, onHoldStart = onHoldStart, morph = plusMorph.value)
+                BAR_PLUS -> PlusButton(onPlus = onPlus, onHoldStart = onHoldStart, morph = plusMorph.value, pop = plusPop.value)
                 else -> {
                     val shape = RoundedCornerShape(28.dp)
                     Surface(
@@ -746,11 +768,12 @@ private fun CanvasNavBar(
 
 /** Il + tondo, l'unico dell'app (1.636). I gesti li legge il riquadro sopra, che resta anche quando diventa il vocale. */
 @Composable
-private fun PlusButton(onPlus: () -> Unit, onHoldStart: () -> Boolean, morph: Float = 0f) {
+private fun PlusButton(onPlus: () -> Unit, onHoldStart: () -> Boolean, morph: Float = 0f, pop: Float = 1f) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .size(COMPOSER_KEY_DP.dp)
+            .graphicsLayer { scaleX = pop; scaleY = pop }
             // Il pallino delle cose salvate atterra sul + (le schede non ci sono più).
             .captureTarget(CaptureTargets.HOME_TAB)
             .captureTarget(CaptureTargets.MEDIA_TAB)

@@ -143,7 +143,7 @@ internal fun rememberComposerSend(onNeedsDialog: (String) -> Unit): () -> Unit {
         {
             val value = CaptureComposer.text.text.trim()
             val chosen = CaptureComposer.chosen
-            CaptureComposer.close()
+            CaptureComposer.finish()
             if (value.isNotEmpty()) {
                 haptic(Haptic.CONFIRM)
                 scope.launch {
@@ -198,7 +198,7 @@ private fun rememberPhotoAttach(onReading: (Boolean) -> Unit): PhotoPick {
             when {
                 found is PhotoAttach.Found.Text -> CaptureComposer.append(found.text)
                 isDoc && kept != null -> {
-                    CaptureComposer.close()
+                    CaptureComposer.finish()
                     val notice = if (found is PhotoAttach.Found.Back && waiting != null) {
                         DocumentsStore.addBack(waiting.id, kept, found.scan)
                         CaptureNotice(CaptureMode.NOTE, "Retro aggiunto a ${waiting.title}", undo = { DocumentsStore.removeBack(waiting.id) }, icon = Icons.Outlined.Badge)
@@ -212,7 +212,7 @@ private fun rememberPhotoAttach(onReading: (Boolean) -> Unit): PhotoPick {
                     // Quello già scritto nella barra fa da titolo della nota.
                     val title = CaptureComposer.text.text.trim().ifEmpty { "Foto" }
                     val note = NotesStore.addPhotoNote(listOf(title, (found as PhotoAttach.Found.Photo).text).filter { it.isNotBlank() }.joinToString("\n"), kept.path)
-                    CaptureComposer.close()
+                    CaptureComposer.finish()
                     CaptureFeedback.show(CaptureNotice(CaptureMode.NOTE, "Foto salvata nelle note", undo = { NotesStore.deleteNote(note.id) }))
                 }
             }
