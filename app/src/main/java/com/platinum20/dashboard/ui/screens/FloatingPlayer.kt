@@ -476,7 +476,7 @@ private fun androidx.compose.foundation.layout.BoxScope.PlusMark(show: Boolean, 
     if (shown <= 0.01f) return
     // Si arrossa man mano che ti avvicini (1.638), tutto rosso quando la calamita lo prende.
     val red by androidx.compose.animation.core.animateFloatAsState(maxOf(near * 0.8f, if (hot) 1f else 0f), androidx.compose.animation.core.tween(90), label = "plusRed")
-    val color = androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.error, red)
+    val color = androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.primary, DangerRed, red)
     Box(
         Modifier
             .align(Alignment.TopStart)
@@ -495,7 +495,7 @@ private fun androidx.compose.foundation.layout.BoxScope.PlusMark(show: Boolean, 
         Icon(
             Icons.Filled.Add,
             contentDescription = if (hot) "Lascia per chiudere" else "Portalo sul + per chiudere",
-            tint = MaterialTheme.colorScheme.onPrimary,
+            tint = if (red > 0.5f) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onPrimary,
             modifier = Modifier.size(24.dp).graphicsLayer { rotationZ = 45f * heat },
         )
     }

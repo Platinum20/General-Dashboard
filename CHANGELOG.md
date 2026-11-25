@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.641.0
+## 1.642.0
 **Le card della Home si aprono dove sono**
 - News, Da fare, Musica e Video ora si allargano dalla card fino a diventare la pagina e, tornando indietro, ci rientrano (come già Calendario, Meteo e SIM)
 - Indietro è uguale ovunque: la pagina si rimpicciolisce e segue il dito mentre scorri dal bordo, poi sotto torna quella di prima
@@ -9,6 +9,21 @@
 - Le notifiche del player, la sveglia radio, le prime di YouTube e i link condivisi non riaprono più la vecchia pagina Media sotto al player: Indietro torna in Home
 - Nelle note, "@Media" non c'è più: ci sono "@Musica" e "@Video", che aprono le pagine delle card
 - Tolta la pagina Playlist, che nessun tasto apriva più
+
+## 1.641.0
+**Il + che si apre, il lucchetto che si chiude**
+- Toccando il + prima gira e diventa la freccia, poi la bolla per scrivere le cresce attorno mentre sale con la tastiera
+- Quando tiri su per bloccare il vocale il lucchetto si chiude e resta lì blu pieno, con una vibrazione: così sai che puoi togliere il dito
+- Portando il mini player sul + ora diventa rosso pieno anche col tema scuro, e torna del suo colore appena si chiude
+- Chiudendo o inviando si fa il contrario: la bolla rientra nella freccia e la freccia torna +; dopo un invio il + fa un piccolo salto con un colpetto
+- Se chiudi la bolla con del testo dentro, lo ritrovi quando la riapri
+- Tirando giù la bolla si chiude, e il testo resta come bozza
+- Mentre parli, accanto all'onda c'è da quanto stai registrando (0:12)
+- Se hai appena copiato qualcosa, in cima alla bolla vuota c'è "Incolla quello che hai copiato"
+- Col vocale bloccato, dopo qualche secondo di silenzio si ferma da solo e il testo va nella bolla
+- Tenendo premuta la graffetta si apre subito la fotocamera
+- Più righe che cominciano con "- " diventano tante cose Da fare, con un solo Annulla
+- Mentre scrivi, le parole del quando ("domani", "alle 9", "il 3 dicembre") si colorano di blu: così vedi che le ho capite
 
 ## 1.640.0
 **Accesso WindTre senza pagina che lampeggia**

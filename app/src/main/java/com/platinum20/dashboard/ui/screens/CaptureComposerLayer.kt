@@ -64,6 +64,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.border
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Mic
@@ -81,6 +82,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.ui.unit.sp
 import com.platinum20.dashboard.capture.CaptureHints
 import com.platinum20.dashboard.capture.icon
@@ -143,8 +145,21 @@ internal fun rememberComposerSend(onNeedsDialog: (String) -> Unit): () -> Unit {
         {
             val value = CaptureComposer.text.text.trim()
             val chosen = CaptureComposer.chosen
-            CaptureComposer.close()
-            if (value.isNotEmpty()) {
+            CaptureComposer.finish()
+            // Righe "- " (1.641, Antonio): ognuna un Da fare, un solo fumetto con Annulla per tutte.
+            val items = com.platinum20.dashboard.capture.CaptureMarks.dashItems(value)
+            if (items != null && (chosen == null || chosen == com.platinum20.dashboard.capture.CaptureDestination.TODO)) {
+                haptic(Haptic.CONFIRM)
+                scope.launch {
+                    val undos = items.mapNotNull { item ->
+                        (VoiceCapture.save(context, item, com.platinum20.dashboard.capture.CaptureDestination.TODO) as? VoiceCapture.Outcome.Saved)?.undo
+                    }
+                    AppSettings.countCaptureSave()
+                    CaptureFeedback.show(
+                        CaptureNotice(CaptureMode.TASK, "${items.size} cose da fare salvate", undo = { undos.forEach { it() } }),
+                    )
+                }
+            } else if (value.isNotEmpty()) {
                 haptic(Haptic.CONFIRM)
                 scope.launch {
                     when (val outcome = VoiceCapture.save(context, value, chosen)) {
@@ -198,7 +213,7 @@ private fun rememberPhotoAttach(onReading: (Boolean) -> Unit): PhotoPick {
             when {
                 found is PhotoAttach.Found.Text -> CaptureComposer.append(found.text)
                 isDoc && kept != null -> {
-                    CaptureComposer.close()
+                    CaptureComposer.finish()
                     val notice = if (found is PhotoAttach.Found.Back && waiting != null) {
                         DocumentsStore.addBack(waiting.id, kept, found.scan)
                         CaptureNotice(CaptureMode.NOTE, "Retro aggiunto a ${waiting.title}", undo = { DocumentsStore.removeBack(waiting.id) }, icon = Icons.Outlined.Badge)
@@ -212,7 +227,7 @@ private fun rememberPhotoAttach(onReading: (Boolean) -> Unit): PhotoPick {
                     // Quello già scritto nella barra fa da titolo della nota.
                     val title = CaptureComposer.text.text.trim().ifEmpty { "Foto" }
                     val note = NotesStore.addPhotoNote(listOf(title, (found as PhotoAttach.Found.Photo).text).filter { it.isNotBlank() }.joinToString("\n"), kept.path)
-                    CaptureComposer.close()
+                    CaptureComposer.finish()
                     CaptureFeedback.show(CaptureNotice(CaptureMode.NOTE, "Foto salvata nelle note", undo = { NotesStore.deleteNote(note.id) }))
                 }
             }
@@ -268,9 +283,35 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier, onSend: () -> U
         }
     }
     // Misure dell'app Claude (Antonio, 1.636): riquadro alto, testo più grande staccato dai tasti, tasti pieni.
+    // Aprendo (1.639, Antonio): il + è già diventato la freccia; la bolla le cresce attorno e il resto compare dopo.
+    val reveal = remember { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(Unit) {
+        delay(REVEAL_DELAY_MS)
+        reveal.animateTo(1f, tween(220))
+    }
+    val appear = Modifier.graphicsLayer { alpha = reveal.value }
     Column(modifier.padding(start = 10.dp, end = 10.dp, top = 18.dp, bottom = 10.dp)) {
-        CaptureDestinationChips(text.text, Modifier.padding(start = 6.dp, bottom = 8.dp))
-        Box(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 22.dp), contentAlignment = Alignment.TopStart) {
+        CaptureDestinationChips(text.text, Modifier.padding(start = 6.dp, bottom = 8.dp).then(appear))
+        // Copiato da poco e campo vuoto: una chip "Incolla" in cima (1.641, Antonio). Si guarda solo l'ora della copia,
+        // non il testo: leggerlo farebbe comparire l'avviso di Android a ogni apertura; si legge quando la tocchi.
+        val clipboard = LocalContext.current.getSystemService(android.content.ClipboardManager::class.java)
+        val fresh = remember {
+            val desc = runCatching { clipboard?.primaryClipDescription }.getOrNull()
+            desc != null && desc.hasMimeType(android.content.ClipDescription.MIMETYPE_TEXT_PLAIN) &&
+                CaptureHints.freshClip(desc.timestamp, System.currentTimeMillis())
+        }
+        if (empty && fresh) androidx.compose.material3.AssistChip(
+            onClick = {
+                haptic(Haptic.TICK)
+                val pasted = runCatching { clipboard?.primaryClip?.getItemAt(0)?.coerceToText(null)?.toString() }.getOrNull()?.trim().orEmpty()
+                if (pasted.isNotEmpty()) CaptureComposer.text = TextFieldValue(pasted, TextRange(pasted.length))
+            },
+            label = { Text("Incolla quello che hai copiato", style = MaterialTheme.typography.labelLarge, maxLines = 1) },
+            leadingIcon = { Icon(Icons.Rounded.ContentPaste, contentDescription = null, modifier = Modifier.size(18.dp)) },
+            shape = androidx.compose.foundation.shape.CircleShape,
+            modifier = Modifier.padding(start = 6.dp, bottom = 8.dp).then(appear),
+        )
+        Box(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 22.dp).then(appear), contentAlignment = Alignment.TopStart) {
             val style = MaterialTheme.typography.bodyLarge.copy(fontSize = 19.sp, lineHeight = 26.sp)
             if (empty) {
                 // Prima la riga che spiega la freccia (1.637), poi gli esempi che girano.
@@ -289,6 +330,8 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier, onSend: () -> U
                 onValueChange = { CaptureComposer.text = it },
                 textStyle = style.copy(color = MaterialTheme.colorScheme.onSurface),
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                // "domani", "alle 9": colorate mentre scrivi, così vedi che le ho capite (1.641, Antonio).
+                visualTransformation = rememberWhenColors(MaterialTheme.colorScheme.primary),
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 maxLines = 6,
                 modifier = Modifier
@@ -321,21 +364,54 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier, onSend: () -> U
         // Niente X: si chiude toccando fuori o con Indietro.
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             // La graffetta (Antonio, 1.636): un + a sinistra sembrava il + di destra che si spostava.
-            ComposerKey(Icons.Rounded.AttachFile, if (tray) "Chiudi allegati" else "Allega") { if (!reading) { haptic(Haptic.TICK); tray = !tray } }
+            Box(appear) {
+                // Tenuta premuta apre subito la fotocamera (1.641, Antonio).
+                ComposerKey(
+                    Icons.Rounded.AttachFile,
+                    if (tray) "Chiudi allegati" else "Allega",
+                    onLongClick = { if (!reading) { haptic(Haptic.CONFIRM); tray = false; attach.camera() } },
+                ) { if (!reading) { haptic(Haptic.TICK); tray = !tray } }
+            }
             Spacer(Modifier.weight(1f))
-            // Il + che si è aperto ruota e diventa la freccia, nello stesso punto.
-            val spin = remember { androidx.compose.animation.core.Animatable(-135f) }
-            LaunchedEffect(Unit) { spin.animateTo(0f, Motion.lively()) }
-            ComposerKey(Icons.Rounded.ArrowUpward, "Inserisci", main = true, touch = false, iconTurn = spin.value) { onSend() }
+            // La freccia è il + di prima: parte dal suo punto (un poco più in basso a destra) e si assesta nella bolla.
+            val settle = remember { androidx.compose.animation.core.Animatable(1f) }
+            LaunchedEffect(Unit) { settle.animateTo(0f, Motion.lively()) }
+            Box(Modifier.graphicsLayer {
+                translationX = settle.value * 10.dp.toPx()
+                translationY = settle.value * 10.dp.toPx()
+            }) {
+                ComposerKey(Icons.Rounded.ArrowUpward, "Inserisci", main = true, touch = false) { onSend() }
+            }
         }
     }
 }
+
+/** Colora le parole del quando ([CaptureMarks.whenRanges]) senza toccare il testo. */
+@Composable
+private fun rememberWhenColors(color: Color): androidx.compose.ui.text.input.VisualTransformation = remember(color) {
+    androidx.compose.ui.text.input.VisualTransformation { text ->
+        val ranges = com.platinum20.dashboard.capture.CaptureMarks.whenRanges(text.text)
+        if (ranges.isEmpty()) androidx.compose.ui.text.input.TransformedText(text, androidx.compose.ui.text.input.OffsetMapping.Identity)
+        else {
+            val styled = androidx.compose.ui.text.AnnotatedString.Builder(text).apply {
+                ranges.forEach {
+                    addStyle(androidx.compose.ui.text.SpanStyle(color = color, fontWeight = androidx.compose.ui.text.font.FontWeight.Medium), it.first, it.last + 1)
+                }
+            }.toAnnotatedString()
+            androidx.compose.ui.text.input.TransformedText(styled, androidx.compose.ui.text.input.OffsetMapping.Identity)
+        }
+    }
+}
+
+/** Quanto aspetta il resto del riquadro prima di comparire: prima cresce la bolla attorno alla freccia. */
+private const val REVEAL_DELAY_MS = 120L
 
 /** Grande come il play di Riprendi e l'ingranaggio (Antonio, 1.636): tutti i tasti tondi uguali. */
 internal const val COMPOSER_KEY_DP = 40
 
 /** Un tasto tondo del riquadro: grigio, o blu pieno per Invia (blu = azione). */
 @Composable
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 internal fun ComposerKey(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
@@ -351,6 +427,8 @@ internal fun ComposerKey(
     danger: Float = 0f,
     /** False: il tocco lo legge chi sta sopra (la freccia, che tenuta premuta detta); resta solo per l'accessibilità. */
     touch: Boolean = true,
+    /** Tenuto premuto (la graffetta = fotocamera). */
+    onLongClick: (() -> Unit)? = null,
     onClick: () -> Unit,
 ) {
     val base = when {
@@ -359,7 +437,7 @@ internal fun ComposerKey(
         outlined || plain -> Color.Transparent
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
     }
-    val bg = if (danger > 0f) androidx.compose.ui.graphics.lerp(base, MaterialTheme.colorScheme.error, danger) else base
+    val bg = if (danger > 0f) androidx.compose.ui.graphics.lerp(base, DangerRed, danger) else base
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -368,7 +446,13 @@ internal fun ComposerKey(
             .clip(CircleShape)
             .background(bg)
             .then(if (outlined) Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape) else Modifier)
-            .then(if (touch) Modifier.clickable(enabled = enabled, onClick = onClick) else Modifier)
+            .then(
+                when {
+                    !touch -> Modifier
+                    onLongClick != null -> Modifier.combinedClickable(enabled = enabled, onLongClick = onLongClick, onClick = onClick)
+                    else -> Modifier.clickable(enabled = enabled, onClick = onClick)
+                },
+            )
             .semantics {
                 contentDescription = label
                 if (!touch) semanticsClick(label = label) { onClick(); true }
