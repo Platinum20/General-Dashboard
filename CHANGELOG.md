@@ -1,7 +1,8 @@
 # Changelog
 
 ## 1.635.0
-**Musica e Video come Documenti**
+**Riquadro come Claude, Musica e Video come Documenti**
+- Il riquadro per scrivere ha i tasti messi come in Claude: + per allegare a sinistra, microfono e Invia a destra; si chiude toccando fuori
 - Nelle card Musica e Video le copertine scorrendo spariscono al margine della card, a destra e a sinistra, come in Documenti
 
 ## 1.634.0

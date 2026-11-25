@@ -60,6 +60,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.border
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.rounded.ArrowUpward
@@ -257,7 +259,7 @@ private fun rememberPhotoAttach(onReading: (Boolean) -> Unit): () -> Unit {
 
 /**
  * Il riquadro per scrivere (1.634, come nell'app Claude): in cima dove andrà (le chip), poi il campo che cresce col
- * testo fino a sei righe, sotto i tasti: graffetta e microfono a sinistra, la X e Invia a destra.
+ * testo fino a sei righe, sotto i tasti come in Claude: + per allegare a sinistra, microfono e Invia a destra.
  * Il microfono detta dentro il testo a mani libere.
  */
 @Composable
@@ -299,16 +301,12 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier, onMic: () -> Un
                     .semantics { contentDescription = "Scrivi" },
             )
         }
+        // I tasti come nell'app Claude (Antonio, 1.635): + per allegare a sinistra; a destra il microfono e Invia.
+        // Niente X: si chiude toccando fuori o con Indietro.
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            ComposerKey(Icons.Rounded.AttachFile, "Allega") { if (!reading) { haptic(Haptic.TICK); attach() } }
-            Spacer(Modifier.width(6.dp))
-            ComposerKey(Icons.Rounded.Mic, "Detta") { haptic(Haptic.TICK); onMic() }
+            ComposerKey(Icons.Rounded.Add, "Allega", outlined = true) { if (!reading) { haptic(Haptic.TICK); attach() } }
             Spacer(Modifier.weight(1f))
-            // La X: con del testo lo cancella, a campo vuoto chiude senza salvare.
-            ComposerKey(Icons.Rounded.Close, if (empty) "Annulla" else "Cancella il testo") {
-                haptic(Haptic.TICK)
-                if (empty) CaptureComposer.close() else CaptureComposer.text = TextFieldValue("")
-            }
+            ComposerKey(Icons.Rounded.Mic, "Detta", plain = true) { haptic(Haptic.TICK); onMic() }
             Spacer(Modifier.width(6.dp))
             ComposerKey(Icons.Rounded.ArrowUpward, "Inserisci", main = true, enabled = !empty) { haptic(Haptic.TICK); onSend() }
         }
@@ -322,11 +320,16 @@ internal fun ComposerKey(
     label: String,
     main: Boolean = false,
     enabled: Boolean = true,
+    /** Solo il contorno (il + per allegare, come in Claude). */
+    outlined: Boolean = false,
+    /** Solo l'icona, senza fondo (il microfono accanto a Invia). */
+    plain: Boolean = false,
     onClick: () -> Unit,
 ) {
     val bg = when {
         main && enabled -> MaterialTheme.colorScheme.primary
         main -> MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+        outlined || plain -> Color.Transparent
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
     }
     Box(
@@ -336,6 +339,7 @@ internal fun ComposerKey(
             .bouncyPress(0.88f)
             .clip(CircleShape)
             .background(bg)
+            .then(if (outlined) Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape) else Modifier)
             .clickable(enabled = enabled, onClick = onClick)
             .semantics { contentDescription = label },
     ) {
