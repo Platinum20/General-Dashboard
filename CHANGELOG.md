@@ -7,6 +7,13 @@
 - Portando il mini player sul + ora diventa rosso pieno anche col tema scuro, e torna del suo colore appena si chiude
 - Chiudendo o inviando si fa il contrario: la bolla rientra nella freccia e la freccia torna +; dopo un invio il + fa un piccolo salto con un colpetto
 - Se chiudi la bolla con del testo dentro, lo ritrovi quando la riapri
+- Tirando giù la bolla si chiude, e il testo resta come bozza
+- Mentre parli, accanto all'onda c'è da quanto stai registrando (0:12)
+- Se hai appena copiato qualcosa, in cima alla bolla vuota c'è "Incolla quello che hai copiato"
+- Col vocale bloccato, dopo qualche secondo di silenzio si ferma da solo e il testo va nella bolla
+- Tenendo premuta la graffetta si apre subito la fotocamera
+- Più righe che cominciano con "- " diventano tante cose Da fare, con un solo Annulla
+- Mentre scrivi, le parole del quando ("domani", "alle 9", "il 3 dicembre") si colorano di blu: così vedi che le ho capite
 
 ## 1.640.0
 **Accesso WindTre senza pagina che lampeggia**

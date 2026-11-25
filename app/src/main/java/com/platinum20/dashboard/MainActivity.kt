@@ -164,6 +164,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.Lifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.gestures.draggable
 import androidx.compose.animation.EnterTransition
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.layout.positionInWindow
@@ -739,10 +740,33 @@ private fun CanvasNavBar(
                 BAR_PLUS -> PlusButton(onPlus = onPlus, onHoldStart = onHoldStart, morph = plusMorph.value, pop = plusPop.value)
                 else -> {
                     val shape = RoundedCornerShape(28.dp)
+                    // Tirata giù la bolla si chiude e il testo resta come bozza (1.641, Antonio).
+                    val pullDown = remember { androidx.compose.animation.core.Animatable(0f) }
+                    val closeAt = with(density) { COMPOSER_PULL_DP.dp.toPx() }
+                    val dragScope = androidx.compose.runtime.rememberCoroutineScope()
+                    val dragState = androidx.compose.foundation.gestures.rememberDraggableState { d ->
+                        dragScope.launch { pullDown.snapTo((pullDown.value + d).coerceAtLeast(0f)) }
+                    }
                     Surface(
                         shape = shape,
                         color = androidx.compose.ui.graphics.Color.Transparent,
-                        modifier = Modifier.fillMaxWidth().glass(shape),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .graphicsLayer {
+                                translationY = pullDown.value
+                                alpha = 1f - (pullDown.value / (closeAt * 2.5f)).coerceIn(0f, 0.5f)
+                            }
+                            .then(
+                                if (mode == BAR_WRITE) Modifier.draggable(
+                                    dragState,
+                                    androidx.compose.foundation.gestures.Orientation.Vertical,
+                                    onDragStopped = {
+                                        if (pullDown.value >= closeAt) { haptic(Haptic.TICK); CaptureComposer.close() }
+                                        pullDown.animateTo(0f, Motion.lively())
+                                    },
+                                ) else Modifier,
+                            )
+                            .glass(shape),
                     ) {
                         if (mode == BAR_WRITE) CaptureComposerInput(Modifier.fillMaxWidth(), onSend = onSend)
                         else VoiceBox(
@@ -830,6 +854,25 @@ private fun VoiceBox(
 ) {
     // Dopo due secondi di solo silenzio: "Nessun suono rilevato" invece di "Ti ascolto…".
     var silent by remember { mutableStateOf(false) }
+    // Da quanto stai registrando, accanto all'onda (1.641, Antonio).
+    var seconds by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    LaunchedEffect(listening) {
+        seconds = 0
+        while (listening) {
+            delay(1_000)
+            seconds += 1
+        }
+    }
+    // Bloccato e zitto da qualche secondo (1.641, Antonio): si ferma da solo e il testo va nel riquadro.
+    val stopNow by rememberUpdatedState(onStop)
+    var quietSince by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
+    LaunchedEffect(partial, held, listening, music) {
+        quietSince = System.currentTimeMillis()
+        if (!held && listening && !music && partial.isNotBlank()) {
+            delay(com.platinum20.dashboard.capture.CaptureMarks.SILENCE_MS)
+            if (com.platinum20.dashboard.capture.CaptureMarks.autoStop(true, partial, System.currentTimeMillis() - quietSince)) stopNow()
+        }
+    }
     LaunchedEffect(listening, heardSound) {
         silent = false
         if (listening && !heardSound) {
@@ -928,6 +971,12 @@ private fun VoiceBox(
             Box(Modifier.graphicsLayer { val sc = 1f + 0.2f * slide; scaleX = sc; scaleY = sc }) {
                 ComposerKey(Icons.Rounded.Close, "Butta il vocale", danger = slide * 0.65f, onClick = onCancel)
             }
+            if (!music) Text(
+                VoiceSlide.clock(seconds),
+                style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum"),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 10.dp),
+            )
             val barColor = MaterialTheme.colorScheme.primary
             // Accanto alla ✕ tre ‹ che si accendono una dopo l'altra verso sinistra: "scorri per annullare". L'onda, che
             // entra da destra, quando si è parlato abbastanza ci arriva sopra e le copre.
@@ -984,6 +1033,9 @@ private const val BAR_MAX = 90
 
 /** Quanto ci mette il + a diventare la freccia prima che si apra il riquadro. */
 private const val PLUS_MORPH_MS = 170
+
+/** Quanto tirare giù la bolla per chiuderla. */
+private const val COMPOSER_PULL_DP = 70f
 private const val BAR_W_DP = 3f
 private const val BAR_GAP_DP = 3f
 
