@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.643.0
+**Torna il riconoscimento delle canzoni**
+- Tieni premuta la freccia vicino a una canzone che suona, senza parlare, e lasciala: Canvas la riconosce, la fa partire e la mette in "Sentite da Canvas". Col tasto unico si era persa
+
 ## 1.642.0
 **Le card della Home si aprono dove sono**
 - News, Da fare, Musica e Video ora si allargano dalla card fino a diventare la pagina e, tornando indietro, ci rientrano (come già Calendario, Meteo e SIM)
