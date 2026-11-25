@@ -3,10 +3,12 @@ package com.platinum20.dashboard.ui.screens
 import androidx.compose.material.icons.outlined.QueueMusic
 import com.platinum20.dashboard.capture.SavedLink
 import com.platinum20.dashboard.capture.SavedLinks
+import com.platinum20.dashboard.notes.NotesStore
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -1120,9 +1122,19 @@ private fun TitleBlock(
                 haptic(if (disliked) Haptic.TICK else Haptic.CONFIRM)
                 YtRatings.toggleDislike(context, stream.id)
             }
-            PillButton(icon = Icons.Outlined.BookmarkBorder, label = "Salva", selected = false, description = "Salva per dopo") {
-                haptic(Haptic.CONFIRM)
-                SavedLinks.offer(SavedLink.Media(YtPlayer.resumeEntry(stream, 0, 0, System.currentTimeMillis())))
+            // Salva = un tocco salva per dopo (con "Annulla"), un altro tocco lo toglie: niente fumetto che ripete "Salva".
+            NotesStore.init(context)
+            val notes by NotesStore.data.collectAsState()
+            val link = remember(stream.id) { SavedLink.Media(YtPlayer.resumeEntry(stream, 0, 0, System.currentTimeMillis())) }
+            val saved = remember(notes.notes, link) { SavedLinks.notesWith(notes.notes, link).isNotEmpty() }
+            PillButton(
+                icon = if (saved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                label = if (saved) "Salvato" else "Salva",
+                selected = saved,
+                description = if (saved) "Togli dai salvati" else "Salva per dopo",
+            ) {
+                haptic(if (saved) Haptic.TICK else Haptic.CONFIRM)
+                if (saved) SavedLinks.remove(context, link) else SavedLinks.save(context, link)
             }
             PillButton(icon = Icons.Outlined.Share, label = "Condividi", selected = false, description = "Condividi il video") {
                 val send = android.content.Intent(android.content.Intent.ACTION_SEND)
