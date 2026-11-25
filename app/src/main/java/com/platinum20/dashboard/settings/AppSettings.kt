@@ -54,6 +54,9 @@ data class HomeLayout(val order: List<HomeCard>, val hidden: Set<HomeCard>) {
          */
         const val VERSION = 4
 
+        /** Le card nuove che arrivano sempre in fondo, qualunque fosse l'ordine salvato. */
+        private val BOTTOM_NEW = setOf(HomeCard.MUSIC, HomeCard.VIDEO)
+
         /**
          * Legge ordine e card nascoste salvate. Da una versione vecchia l'ordine torna quello
          * predefinito e "Dalla posta" resta nascosta solo se lo erano sia Posta sia Trovati per te.
@@ -70,7 +73,9 @@ data class HomeLayout(val order: List<HomeCard>, val hidden: Set<HomeCard>) {
             val order = parse(names(orderRaw)).distinct().toMutableList()
             // Le card aggiunte in versioni successive finiscono nella loro posizione predefinita.
             HomeCard.entries.forEach { card ->
-                if (card !in order) {
+                // Musica e Video (1.634) vanno in fondo alla Home, sotto tutto quello che c'era.
+                if (card !in order && card in BOTTOM_NEW) order.add(card)
+                else if (card !in order) {
                     val before = HomeCard.entries.take(card.ordinal).lastOrNull { it in order }
                     order.add(if (before == null) 0 else order.indexOf(before) + 1, card)
                 }
