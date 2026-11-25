@@ -376,7 +376,8 @@ private fun WindTreLogin(onClose: () -> Unit) {
         WebView(context).also { view ->
             WindTreLink.prepare(view, context, login = true) { canGoBack = view.canGoBack() }
             SimStore.beginSession()
-            com.platinum20.dashboard.sim.WindTreAuto.begin()
+            com.platinum20.dashboard.sim.WindTreAuto.begin(context)
+            SimStore.note("— accesso a mano")
             view.loadUrl(WindTreLink.HOME)
         }
     }

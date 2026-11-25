@@ -81,17 +81,25 @@ object WindTreLink {
         fun typed(user: String, pass: String) = WindTreAuto.typed(user, pass)
 
         @JavascriptInterface
-        fun loginSeen() = WindTreAuto.seen()
+        fun loginSeen() {
+            if (WindTreAuto.loginSeenAt < WindTreAuto.startedAt) SimStore.note("modulo d'accesso visto" + if (WindTreAuto.hasSavedCached) "" else ", ma nessuna password salvata")
+            WindTreAuto.seen()
+        }
 
         @JavascriptInterface
-        fun mayFill(): Boolean = WindTreAuto.mayFill()
+        fun mayFill(): Boolean = WindTreAuto.mayFill().also { SimStore.note(if (it) "compilato e inviato il modulo" else "basta tentativi") }
 
         @JavascriptInterface
         fun codeSeen() {
             if (!WindTreAuto.codeSeen(allowed = visibleLogin || WindTreAuto.submitted)) return
             val app = appContext ?: return
             val since = WindTreAuto.codeAskedAt
-            mailScope.launch { WindTreCode.await(app, since)?.let { WindTreAuto.code = it } }
+            SimStore.note("la pagina chiede il codice: lo cerco nella posta")
+            mailScope.launch {
+                val code = WindTreCode.await(app, since)
+                SimStore.note(code?.let { "codice trovato nella posta" } ?: "codice non trovato nella posta (Gmail collegato?)")
+                code?.let { WindTreAuto.code = it }
+            }
         }
 
         @JavascriptInterface
@@ -112,7 +120,8 @@ object WindTreLink {
         CookieManager.getInstance().setAcceptCookie(true)
         // Come per Creators Pro: cookie di sessione e sessionStorage dell'ultima lettura buona tornano al loro posto.
         if (SimStore.linked.value) WindTreSession.restore(context)
-        val keep = if (SimStore.linked.value) WindTreSession.storageScript(context) else null
+        // Con l'accesso scaduto il sessionStorage salvato è vecchio: rimetterlo fa solo rientrare e uscire di continuo.
+        val keep = if (SimStore.linked.value && !SimStore.expired.value) WindTreSession.storageScript(context) else null
         CookieManager.getInstance().setAcceptThirdPartyCookies(view, true)
         view.addJavascriptInterface(Bridge, "CanvasSim")
         // Accesso visibile: si tiene da parte quello che scrivi. Rilettura nascosta: si rientra da soli se serve.
@@ -141,6 +150,7 @@ object WindTreLink {
 
             override fun onPageFinished(view: WebView, url: String) {
                 if (!early) { view.evaluateJavascript(script, null); view.evaluateJavascript(auto, null) }
+                SimStore.note("pagina " + url.substringBefore('?').substringBefore('#'))
                 onPage(url)
             }
         }
@@ -159,7 +169,8 @@ object WindTreLink {
         val before = SimStore.status.value?.at ?: 0
         val asked = System.currentTimeMillis()
         var lastUrl: String? = null
-        WindTreAuto.begin()
+        WindTreAuto.begin(context)
+        SimStore.note("— rilettura nascosta" + if (WindTreAuto.hasSaved(context)) " (password salvata)" else " (nessuna password salvata)")
         try {
             withContext(Dispatchers.Main) {
                 val view = WebView(context.applicationContext)
@@ -183,6 +194,7 @@ object WindTreLink {
             SimStore.setRefreshing(false)
         }
         val got = (SimStore.status.value?.at ?: 0) > before
+        SimStore.note(if (got) "letto" else "niente letto")
         if (!got && sessionGone(WindTreAuto.loginSeenAt >= asked || WindTreAuto.codeAskedAt >= asked, lastUrl)) SimStore.setExpired(true)
         return got
     }

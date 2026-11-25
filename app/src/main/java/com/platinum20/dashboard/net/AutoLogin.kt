@@ -53,8 +53,19 @@ open class AutoLogin(private val prefsName: String) {
         context.getSharedPreferences(prefsName, Context.MODE_PRIVATE).edit().remove(KEY).apply()
     }
 
-    /** All'inizio di ogni rilettura nascosta. */
-    fun begin() { tries = 0; code = null; codeAskedAt = 0L }
+    /** Quando è partita la rilettura in corso. */
+    @Volatile var startedAt = 0L
+        private set
+    /** Se c'erano dati salvati all'inizio della rilettura (per il registro, senza rileggere il Vault). */
+    @Volatile var hasSavedCached = false
+        private set
+
+    /** All'inizio di ogni rilettura nascosta (o accesso visibile). */
+    fun begin(context: Context? = null) {
+        startedAt = System.currentTimeMillis()
+        context?.let { hasSavedCached = hasSaved(it) }
+        tries = 0; code = null; codeAskedAt = 0L
+    }
 
     /** Il modulo d'accesso è sulla pagina. */
     fun seen() { loginSeenAt = System.currentTimeMillis() }

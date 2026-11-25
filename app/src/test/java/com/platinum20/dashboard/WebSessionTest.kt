@@ -20,6 +20,8 @@ class WebSessionTest {
         assertFalse(js.contains("a\"b"))
         // Solo le chiavi che mancano: un token più nuovo della pagina non si tocca.
         assertTrue(js.contains("sessionStorage.getItem(k) === null"))
+        // Una volta sola per scheda: se il sito ti fa uscire il token vecchio non torna (pagina che lampeggiava).
+        assertTrue(js.contains("window.name"))
     }
 
     @Test
