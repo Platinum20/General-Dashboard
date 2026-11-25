@@ -207,4 +207,6 @@ private fun HomeCard.accent(): TileAccent = when (this) {
     HomeCard.DOCS -> TileAccent.BLUE
     HomeCard.MAIL -> TileAccent.ORANGE
     HomeCard.RECAP -> TileAccent.GREEN
+    HomeCard.MUSIC -> TileAccent.PURPLE
+    HomeCard.VIDEO -> TileAccent.PURPLE
 }
