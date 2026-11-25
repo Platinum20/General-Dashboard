@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.641.0
+**Il + che si apre, il lucchetto che si chiude**
+- Toccando il + prima gira e diventa la freccia, poi la bolla per scrivere le cresce attorno mentre sale con la tastiera
+- Quando tiri su per bloccare il vocale il lucchetto si chiude e resta lì blu pieno, con una vibrazione: così sai che puoi togliere il dito
+- Portando il mini player sul + ora diventa rosso pieno anche col tema scuro, e torna del suo colore appena si chiude
+
 ## 1.640.0
 **Accesso WindTre senza pagina che lampeggia**
 - La pagina d'accesso WindTre non lampeggia più chiaro/scuro: Canvas rimetteva di continuo la sessione vecchia, il sito la rifiutava e ricominciava da capo. Era anche il motivo per cui l'accesso da solo non partiva mai

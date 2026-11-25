@@ -268,9 +268,16 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier, onSend: () -> U
         }
     }
     // Misure dell'app Claude (Antonio, 1.636): riquadro alto, testo più grande staccato dai tasti, tasti pieni.
+    // Aprendo (1.639, Antonio): il + è già diventato la freccia; la bolla le cresce attorno e il resto compare dopo.
+    val reveal = remember { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(Unit) {
+        delay(REVEAL_DELAY_MS)
+        reveal.animateTo(1f, tween(220))
+    }
+    val appear = Modifier.graphicsLayer { alpha = reveal.value }
     Column(modifier.padding(start = 10.dp, end = 10.dp, top = 18.dp, bottom = 10.dp)) {
-        CaptureDestinationChips(text.text, Modifier.padding(start = 6.dp, bottom = 8.dp))
-        Box(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 22.dp), contentAlignment = Alignment.TopStart) {
+        CaptureDestinationChips(text.text, Modifier.padding(start = 6.dp, bottom = 8.dp).then(appear))
+        Box(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 22.dp).then(appear), contentAlignment = Alignment.TopStart) {
             val style = MaterialTheme.typography.bodyLarge.copy(fontSize = 19.sp, lineHeight = 26.sp)
             if (empty) {
                 // Prima la riga che spiega la freccia (1.637), poi gli esempi che girano.
@@ -321,15 +328,25 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier, onSend: () -> U
         // Niente X: si chiude toccando fuori o con Indietro.
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             // La graffetta (Antonio, 1.636): un + a sinistra sembrava il + di destra che si spostava.
-            ComposerKey(Icons.Rounded.AttachFile, if (tray) "Chiudi allegati" else "Allega") { if (!reading) { haptic(Haptic.TICK); tray = !tray } }
+            Box(appear) {
+                ComposerKey(Icons.Rounded.AttachFile, if (tray) "Chiudi allegati" else "Allega") { if (!reading) { haptic(Haptic.TICK); tray = !tray } }
+            }
             Spacer(Modifier.weight(1f))
-            // Il + che si è aperto ruota e diventa la freccia, nello stesso punto.
-            val spin = remember { androidx.compose.animation.core.Animatable(-135f) }
-            LaunchedEffect(Unit) { spin.animateTo(0f, Motion.lively()) }
-            ComposerKey(Icons.Rounded.ArrowUpward, "Inserisci", main = true, touch = false, iconTurn = spin.value) { onSend() }
+            // La freccia è il + di prima: parte dal suo punto (un poco più in basso a destra) e si assesta nella bolla.
+            val settle = remember { androidx.compose.animation.core.Animatable(1f) }
+            LaunchedEffect(Unit) { settle.animateTo(0f, Motion.lively()) }
+            Box(Modifier.graphicsLayer {
+                translationX = settle.value * 10.dp.toPx()
+                translationY = settle.value * 10.dp.toPx()
+            }) {
+                ComposerKey(Icons.Rounded.ArrowUpward, "Inserisci", main = true, touch = false) { onSend() }
+            }
         }
     }
 }
+
+/** Quanto aspetta il resto del riquadro prima di comparire: prima cresce la bolla attorno alla freccia. */
+private const val REVEAL_DELAY_MS = 120L
 
 /** Grande come il play di Riprendi e l'ingranaggio (Antonio, 1.636): tutti i tasti tondi uguali. */
 internal const val COMPOSER_KEY_DP = 40
@@ -359,7 +376,7 @@ internal fun ComposerKey(
         outlined || plain -> Color.Transparent
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
     }
-    val bg = if (danger > 0f) androidx.compose.ui.graphics.lerp(base, MaterialTheme.colorScheme.error, danger) else base
+    val bg = if (danger > 0f) androidx.compose.ui.graphics.lerp(base, DangerRed, danger) else base
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
