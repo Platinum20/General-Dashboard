@@ -102,4 +102,14 @@ class MiniTuckTest {
         assertEquals(0f, MiniTuck.tabCorner(0.8f, -2f), 0f)
         assertEquals(1f, MiniTuck.tabCorner(0.2f, 2f), 0f)
     }
+
+    @Test
+    fun siChiudePortandoloSulPiu() {
+        // 1.634: la calamita prende quando il dito arriva entro 64 dp dal centro del +.
+        val d = 3f
+        assertTrue(MiniTuck.overPlus(1_000f, 2_000f, 1_000f, 2_000f, d))
+        assertTrue(MiniTuck.overPlus(1_000f + 60f * d, 2_000f, 1_000f, 2_000f, d))
+        assertFalse(MiniTuck.overPlus(1_000f + 70f * d, 2_000f, 1_000f, 2_000f, d))
+        assertFalse(MiniTuck.overPlus(1_000f - 50f * d, 2_000f - 50f * d, 1_000f, 2_000f, d))
+    }
 }

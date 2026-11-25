@@ -224,15 +224,16 @@ internal object PodcastOpen {
  * uscite. In fondo "I tuoi podcast" e il tasto Radio.
  */
 @Composable
-internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOpenPodcast: (Podcast?) -> Unit, onOpenRadio: () -> Unit, onOpenLiked: () -> Unit, onDiscover: () -> Unit, onOpenSaved: () -> Unit, onOpenAll: () -> Unit) {
+internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOpenPodcast: (Podcast?) -> Unit, onOpenRadio: () -> Unit, onOpenLiked: () -> Unit, onDiscover: () -> Unit, onOpenSaved: () -> Unit, onOpenAll: () -> Unit, inCard: Boolean = false) {
     val saved = rememberSavedMedia(video = false)
     val (entries, podcasts) = rememberPerTe()
     val radioLogos = rememberRadioLogos()
     val tile = coverTileWidth()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         // Il titolo apre Scopri, il tastino a destra la fila intera in verticale (1.493, Antonio: "invertire la funzione").
-        OpenableHeader("Musica", onDiscover, Modifier.padding(horizontal = 16.dp)) { HistoryButton(onOpenAll) }
-        LazyRow(state = rememberRowAtStart(), contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Nella card della Home (1.634) il titolo è quello della card.
+        if (!inCard) OpenableHeader("Musica", onDiscover, Modifier.padding(horizontal = 16.dp)) { HistoryButton(onOpenAll) }
+        LazyRow(state = rememberRowAtStart(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = if (inCard) 14.dp else 0.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             // Le cose salvate per dopo, prima di tutto; senza niente di salvato la tessera non c'è (1.490, Antonio).
             // Dal 2026-11-22 (Antonio) tutti dentro la playlist "Salvati", sempre la prima della fila.
             if (saved.isNotEmpty()) item(key = "saved") { SavedTile(tile, saved, wide = false, onClick = onOpenSaved) }

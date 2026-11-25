@@ -134,6 +134,8 @@ fun MediaScreen(
     onPlayVideo: (String) -> Unit = {},
     /** Una pagina dentro Media (canale, artista, radio, Mi piace, Cronologia, I tuoi podcast, accesso). */
     onOpenRoute: (String) -> Unit = {},
+    /** Dalla 1.634 Media non è più una scheda: la freccia torna alla Home. */
+    onBack: (() -> Unit)? = null,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val context = LocalContext.current
@@ -227,6 +229,7 @@ fun MediaScreen(
         contentWindowInsets = topLevelInsets,
         topBar = {
             TopLevelBar(
+                onBack = onBack,
                 title = "Media",
                 subtitle = com.platinum20.dashboard.media.MediaFresh.mediaLine(freshVideos, freshEpisodes) ?: "Video, musica e podcast",
                 scrollBehavior = scrollBehavior,

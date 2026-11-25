@@ -2,6 +2,10 @@
 
 package com.platinum20.dashboard
 
+import com.platinum20.dashboard.ui.screens.ComposerKey
+import androidx.compose.material.icons.rounded.ArrowUpward
+import androidx.compose.material.icons.rounded.Stop
+import androidx.compose.material.icons.rounded.Close
 import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.capture.CaptureNotice
 import com.platinum20.dashboard.capture.CaptureComposer
@@ -535,298 +539,167 @@ private val topDestinations = listOf(
 // Le Impostazioni non stanno nella barra: si aprono tenendo premuta una sezione, alla sua parte.
 
 /**
- * Barra in basso flottante: una pillola con le quattro sezioni (il nome compare solo su quella aperta)
- * e accanto il + tondo per aggiungere al volo. La pillola è di vetro sfocato sopra le liste.
+ * In basso solo il + (1.634, Antonio: "lasciamo solo la Home"): niente più pillola delle sezioni. Toccandolo il + si
+ * allunga verso sinistra e diventa il riquadro per scrivere, come nell'app Claude; tenendolo premuto diventa il vocale
+ * a mani libere (le parole compaiono scritte, poi ✕ butta, ■ ferma e lascia correggere, Invia salva). Finito, il
+ * riquadro rientra nel +.
  */
 @Composable
 private fun CanvasNavBar(
-    currentRoute: String?,
-    dueToday: Int,
-    onSelect: (TopDestination) -> Unit,
-    /** Il + trascinato in giù: le Impostazioni. */
-    onOpenSettings: () -> Unit,
     onPlus: () -> Unit,
     listening: Boolean,
     level: Float,
     partial: String,
-    /** Dito tenuto sul +: true se la dettatura è partita. */
+    /** Dito tenuto sul +: true se la dettatura è partita (resta accesa senza dito). */
     onHoldStart: () -> Boolean,
-    onHoldEnd: () -> Unit,
-    /** Trascinato verso l'alto: la dettatura resta accesa senza dito. */
-    locked: Boolean,
-    onLock: () -> Unit,
+    /** Invia mentre si detta: smette di ascoltare e salva (o aggiunge al testo che si stava scrivendo). */
+    onVoiceSend: () -> Unit,
+    /** ■ mentre si detta: smette di ascoltare e mette le parole nel riquadro, da correggere. */
+    onVoiceStop: () -> Unit,
     onCancelDictation: () -> Unit,
     heardSound: Boolean,
     notice: String?,
     /** Sta ascoltando la musica per riconoscerla, non la voce. */
     music: Boolean,
-    onIdentifySong: () -> Unit,
-    /** Il + toccato: la barra è diventata il campo per scrivere e il + la freccia per inviare. */
+    /** Il + toccato: il riquadro per scrivere è aperto. */
     composing: Boolean,
     onSend: () -> Unit,
+    /** Il microfono nel riquadro: detta dentro il testo. */
+    onMic: () -> Unit,
 ) {
     val haptic = rememberHaptic()
-    // Quanto si è trascinato il dito verso l'alto: il lucchetto sale con lui.
-    var drag by remember { mutableFloatStateOf(0f) }
-    // Quanto verso sinistra: la barra scivola con il dito e il cestino si fa rosso; in fondo annulla.
-    var slide by remember { mutableFloatStateOf(0f) }
-    val lockDistance = with(LocalDensity.current) { 64.dp.toPx() }
-    val cancelDistance = with(LocalDensity.current) { 110.dp.toPx() }
-    // Mentre si scrive la barra è il campo: sale con la tastiera.
+    // Mentre si scrive il riquadro sale con la tastiera.
     val insets = if (composing) WindowInsets.navigationBars.union(WindowInsets.ime) else WindowInsets.navigationBars
-    Column(Modifier.fillMaxWidth().windowInsetsPadding(insets)) {
-    // Sopra la barra, mentre si scrive: dove andrà, come chip da correggere con un tocco (1.532, Antonio scelta A).
-    CaptureDestinationChips(
-        if (composing) CaptureComposer.text.text else "",
-        Modifier.padding(start = 16.dp, end = 16.dp, top = 10.dp),
-    )
-    Row(
-        modifier = Modifier
+    val barMode = when {
+        listening || notice != null -> BAR_VOICE
+        composing -> BAR_WRITE
+        else -> BAR_PLUS
+    }
+    Box(
+        Modifier
             .fillMaxWidth()
+            .windowInsetsPadding(insets)
             .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 10.dp),
-        verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        contentAlignment = Alignment.BottomEnd,
     ) {
-        // La barra si trasforma: le schede, la voce che si sta dettando o il campo per scrivere.
-        // La voce vince sul campo: dettando dal tasto invia si vede l'onda, poi si torna a scrivere.
-        val barMode = when {
-            listening || notice != null -> BAR_VOICE
-            composing -> BAR_WRITE
-            else -> BAR_TABS
-        }
-        val barShape = RoundedCornerShape(30.dp)
-        // Pillola di vetro: le liste scorrono sotto e si intravedono sfocate.
-        Surface(
-            shape = barShape,
-            color = androidx.compose.ui.graphics.Color.Transparent,
-            // Niente ombra: sotto un fondo trasparente scurirebbe il vetro rendendolo opaco. Il bordo lo mette glass().
-            modifier = Modifier.weight(1f).heightIn(min = 60.dp).glass(barShape),
-        ) {
-            AnimatedContent(
-                targetState = barMode,
-                transitionSpec = {
-                    (fadeIn(tween(180, delayMillis = 60)) togetherWith fadeOut(tween(90)))
-                        .using(SizeTransform(clip = true) { _, _ -> Springs.snappy() })
-                },
-                contentAlignment = Alignment.BottomStart,
-                label = "barMorph",
-            ) { mode ->
-                when (mode) {
-                    BAR_WRITE -> CaptureComposerInput(Modifier.fillMaxWidth())
-                    BAR_VOICE -> DictationContent(
-                        listening, partial, locked, level, heardSound || music, notice, music,
-                        slide = (slide / cancelDistance).coerceIn(0f, 1f), slidePx = slide, onCancel = onCancelDictation,
-                    )
-                    // Le pillole stanno a 9 dp dal bordo su tutti i lati (60 − 42 = 18 / 2): ai lati
-                    // la pillola agli estremi è concentrica agli angoli della barra. Con tre voci
-                    // SpaceAround le staccava dai bordi (~23 dp) e gli angoli non combaciavano più.
-                    else -> Row(
-                        modifier = Modifier.fillMaxWidth().height(60.dp).padding(horizontal = NAV_PILL_INSET),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
+        AnimatedContent(
+            targetState = barMode,
+            transitionSpec = {
+                // Il riquadro nasce dal + e ci rientra: cresce verso sinistra e verso l'alto dall'angolo in basso a destra.
+                (fadeIn(tween(160, delayMillis = 50)) togetherWith fadeOut(tween(90)))
+                    .using(SizeTransform(clip = true) { _, _ -> Springs.snappy() })
+            },
+            contentAlignment = Alignment.BottomEnd,
+            label = "plusMorph",
+        ) { mode ->
+            when (mode) {
+                BAR_PLUS -> PlusButton(onPlus = onPlus, onHoldStart = onHoldStart, music = music)
+                else -> {
+                    val shape = RoundedCornerShape(28.dp)
+                    Surface(
+                        shape = shape,
+                        color = androidx.compose.ui.graphics.Color.Transparent,
+                        modifier = Modifier.fillMaxWidth().glass(shape),
                     ) {
-                        topDestinations.forEach { dest ->
-                            NavPill(
-                                dest = dest,
-                                selected = currentRoute == dest.route,
-                                badge = if (dest.route == Routes.HOME) dueToday else 0,
-                                onClick = { haptic(Haptic.TICK); onSelect(dest) },
-                            )
-                        }
-                    }
-                }
-            }
-        }
-        // Il +: tocco = scrivi; tenuto premuto o trascinato = diventa un microfono e detta, come i vocali di WhatsApp.
-        val grow by animateFloatAsState(if (listening) 1.18f else 1f, Springs.snappy(), label = "micGrow")
-        val pulse by animateFloatAsState(if (listening) level else 0f, tween(90), label = "micLevel")
-        val ring = MaterialTheme.colorScheme.primary
-        // Il gesto vive più a lungo di una ricomposizione: sempre le azioni aggiornate.
-        val tap by rememberUpdatedState(onPlus)
-        val holdStart by rememberUpdatedState(onHoldStart)
-        val holdEnd by rememberUpdatedState(onHoldEnd)
-        val isLocked by rememberUpdatedState(locked)
-        val lock by rememberUpdatedState(onLock)
-        val isMusic by rememberUpdatedState(music)
-        val settings by rememberUpdatedState(onOpenSettings)
-        val cancelVoice by rememberUpdatedState(onCancelDictation)
-        val isComposing by rememberUpdatedState(composing)
-        val send by rememberUpdatedState(onSend)
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(60.dp)
-                .drawBehind {
-                    // L'alone cresce con la voce.
-                    if (grow > 1.01f) drawCircle(ring.copy(alpha = 0.22f), radius = size.minDimension / 2 * (grow + 0.15f + pulse * 0.45f))
-                }
-                // Il gesto si legge prima dell'ingrandimento: con il microfono il cerchio cresce e
-                // le coordinate del dito non devono cambiare (altrimenti il blocco scattava a caso).
-                .pointerInput(Unit) {
-                    awaitEachGesture {
-                        val down = awaitFirstDown()
-                        // Fino al tempo del tocco lungo: un tocco, oppure un trascinamento che fa partire subito la voce.
-                        var outcome = PRESS_HOLD
-                        withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
-                            while (outcome == PRESS_HOLD) {
-                                val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id }
-                                outcome = when {
-                                    change == null -> PRESS_CANCEL
-                                    !change.pressed -> if (change.isConsumed) PRESS_CANCEL else PRESS_TAP
-                                    (change.position - down.position).getDistance() > viewConfiguration.touchSlop * 2.5f -> {
-                                        // In giù le Impostazioni; in su o di lato la voce.
-                                        val d = change.position - down.position
-                                        if (d.y > 0 && d.y > kotlin.math.abs(d.x)) PRESS_DOWN else PRESS_DRAG
-                                    }
-                                    else -> PRESS_HOLD
-                                }
-                            }
-                        }
-                        when {
-                            // Microfono bloccato: il tocco inserisce quello che si è detto.
-                            outcome == PRESS_TAP && isLocked -> { haptic(Haptic.CONFIRM); holdEnd() }
-                            // Mentre ascolta una canzone il + non fa altro: finisce da solo.
-                            isMusic -> Unit
-                            // La barra è il campo: il tocco invia, ma tenendo premuto si detta come dal +.
-                            isComposing && outcome == PRESS_TAP -> { haptic(Haptic.TICK); send() }
-                            // In giù, mentre si scrive, niente Impostazioni: la nota andrebbe persa.
-                            isComposing && outcome == PRESS_DOWN -> Unit
-                            outcome == PRESS_DOWN && !isLocked -> { haptic(Haptic.CONFIRM); settings() }
-                            outcome == PRESS_DOWN -> Unit
-                            outcome == PRESS_TAP -> { haptic(Haptic.TICK); tap() }
-                            // Annullato (es. il dito è scivolato via): niente.
-                            outcome == PRESS_CANCEL -> Unit
-                            isLocked -> Unit
-                            else -> {
-                                if (holdStart()) {
-                                    haptic(Haptic.CONFIRM)
-                                    // Come WhatsApp: trascinando in su il microfono si blocca, a sinistra si annulla.
-                                    var lockedNow = false
-                                    var cancelled = false
-                                    while (true) {
-                                        val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
-                                        if (!change.pressed) break
-                                        if (!lockedNow && !cancelled) {
-                                            val up = (down.position.y - change.position.y).coerceAtLeast(0f)
-                                            val left = (down.position.x - change.position.x).coerceAtLeast(0f)
-                                            // Vince la direzione prevalente: il lucchetto e il cestino non si muovono insieme.
-                                            drag = if (up >= left) up else 0f
-                                            slide = if (left > up) left else 0f
-                                            if (drag > lockDistance) {
-                                                lockedNow = true
-                                                haptic(Haptic.CONFIRM)
-                                                lock()
-                                            } else if (slide > cancelDistance) {
-                                                cancelled = true
-                                                haptic(Haptic.CONFIRM)
-                                                cancelVoice()
-                                            }
-                                        }
-                                        change.consume()
-                                    }
-                                    drag = 0f
-                                    slide = 0f
-                                    if (!lockedNow && !cancelled) {
-                                        haptic(Haptic.TICK)
-                                        holdEnd()
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                .graphicsLayer { scaleX = grow; scaleY = grow },
-        ) {
-            Surface(
-                shape = CircleShape,
-                // Vetro colorato come la pillola accanto: stesso materiale, tinta del tema.
-                color = androidx.compose.ui.graphics.Color.Transparent,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.fillMaxSize().bouncyPress(0.88f).glass(CircleShape, MaterialTheme.colorScheme.primary)
-                    .semantics {
-                        contentDescription = when {
-                            composing -> "Inserisci"
-                            listening && locked -> "Inserisci"
-                            listening -> "In ascolto"
-                            else -> "Aggiungi"
-                        }
-                        onClick(label = "Aggiungi") { onPlus(); true }
-                        onLongClick(label = "Detta a voce") { onHoldStart() }
-                    },
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    val icon = when {
-                        composing -> 2
-                        listening && locked -> 2
-                        listening -> 1
-                        else -> 0
-                    }
-                    Crossfade(icon, label = "plusMic") { i ->
-                        Icon(
-                            when (i) {
-                                2 -> Icons.AutoMirrored.Rounded.Send
-                                1 -> Icons.Rounded.Mic
-                                else -> Icons.Rounded.Add
-                            },
-                            contentDescription = null,
-                            modifier = Modifier.size(if (i == 2) 24.dp else 28.dp),
-                        )
-                    }
-                }
-            }
-            // Il lucchetto sopra il microfono: sale con il dito, arrivato in cima blocca.
-            if (listening && !locked && !music && slide == 0f) {
-                val progress = (drag / lockDistance).coerceIn(0f, 1f)
-                Surface(
-                    shape = CircleShape,
-                    color = androidx.compose.ui.graphics.Color.Transparent,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .offset { IntOffset(0, (-62.dp.toPx() - drag * 0.6f).roundToInt()) }
-                        .glass(CircleShape),
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
-                    ) {
-                        Icon(
-                            if (progress >= 1f) Icons.Rounded.Lock else Icons.Rounded.LockOpen,
-                            contentDescription = "Trascina in su per bloccare",
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(18.dp),
-                        )
-                        Icon(
-                            Icons.Rounded.KeyboardArrowUp,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 1f - progress * 0.7f),
-                            modifier = Modifier.size(16.dp),
+                        if (mode == BAR_WRITE) CaptureComposerInput(Modifier.fillMaxWidth(), onMic = onMic, onSend = onSend)
+                        else VoiceBox(
+                            listening = listening,
+                            partial = partial,
+                            level = level,
+                            heardSound = heardSound || music,
+                            notice = notice,
+                            music = music,
+                            onCancel = { haptic(Haptic.TICK); onCancelDictation() },
+                            onStop = { haptic(Haptic.TICK); onVoiceStop() },
+                            onSend = { haptic(Haptic.CONFIRM); onVoiceSend() },
                         )
                     }
                 }
             }
         }
     }
+}
+
+/** Il + tondo: tocco = scrivi; tenuto premuto (o trascinato) = vocale, che poi resta acceso anche lasciando il dito. */
+@Composable
+private fun PlusButton(onPlus: () -> Unit, onHoldStart: () -> Boolean, music: Boolean) {
+    val haptic = rememberHaptic()
+    val tap by rememberUpdatedState(onPlus)
+    val holdStart by rememberUpdatedState(onHoldStart)
+    val isMusic by rememberUpdatedState(music)
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(60.dp)
+            // Il pallino delle cose salvate atterra sul + (le schede non ci sono più).
+            .captureTarget(CaptureTargets.HOME_TAB)
+            .captureTarget(CaptureTargets.MEDIA_TAB)
+            .captureTarget(CaptureTargets.NEWS_TAB)
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    val down = awaitFirstDown()
+                    var outcome = PRESS_HOLD
+                    withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                        while (outcome == PRESS_HOLD) {
+                            val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id }
+                            outcome = when {
+                                change == null -> PRESS_CANCEL
+                                !change.pressed -> if (change.isConsumed) PRESS_CANCEL else PRESS_TAP
+                                (change.position - down.position).getDistance() > viewConfiguration.touchSlop * 2.5f -> PRESS_DRAG
+                                else -> PRESS_HOLD
+                            }
+                        }
+                    }
+                    when {
+                        isMusic -> Unit
+                        outcome == PRESS_TAP -> { haptic(Haptic.TICK); tap() }
+                        outcome == PRESS_CANCEL -> Unit
+                        // Tenuto o trascinato: il vocale parte e resta acceso, il dito si può staccare.
+                        holdStart() -> {
+                            haptic(Haptic.CONFIRM)
+                            while (true) {
+                                val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
+                                change.consume()
+                                if (!change.pressed) break
+                            }
+                        }
+                    }
+                }
+            },
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = androidx.compose.ui.graphics.Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier.fillMaxSize().bouncyPress(0.88f).glass(CircleShape, MaterialTheme.colorScheme.primary)
+                .semantics {
+                    contentDescription = "Aggiungi"
+                    onClick(label = "Aggiungi") { onPlus(); true }
+                    onLongClick(label = "Detta a voce") { onHoldStart() }
+                },
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(28.dp))
+            }
+        }
     }
 }
 
 /**
- * La barra mentre si detta tenendo premuto il +: le barre che seguono la voce e, accanto,
- * quello che Canvas sta capendo. Se dopo un attimo non si sente niente lo dice.
- * Scorrendo a sinistra tutto segue il dito e compare il cestino: in fondo il vocale si butta.
+ * Il riquadro del vocale, come nell'app Claude: sopra le parole capite finora (a capo, fino a cinque righe), sotto
+ * ✕ per buttarlo, l'onda che segue la voce, ■ per fermarsi e correggere il testo, Invia per salvarlo.
  */
 @Composable
-private fun DictationContent(
+private fun VoiceBox(
     listening: Boolean,
     partial: String,
-    locked: Boolean,
     level: Float,
     heardSound: Boolean,
     notice: String?,
     music: Boolean,
-    /** Da 0 a 1: quanto manca al cestino. */
-    slide: Float,
-    slidePx: Float,
     onCancel: () -> Unit,
+    onStop: () -> Unit,
+    onSend: () -> Unit,
 ) {
     // Dopo due secondi di solo silenzio: "Nessun suono rilevato" invece di "Ti ascolto…".
     var silent by remember { mutableStateOf(false) }
@@ -837,7 +710,7 @@ private fun DictationContent(
             silent = true
         }
     }
-    // Le ultime misure del volume, la più nuova a destra: un piccolo visualizzatore.
+    // Le ultime misure del volume, la più nuova a destra.
     val bars = remember { mutableStateListOf<Float>().apply { repeat(BAR_COUNT) { add(0f) } } }
     val currentLevel by rememberUpdatedState(level)
     LaunchedEffect(listening) {
@@ -848,100 +721,43 @@ private fun DictationContent(
         }
         for (i in bars.indices) bars[i] = 0f
     }
-    Box(Modifier.fillMaxWidth()) {
-        // Il cestino aspetta a sinistra: compare e diventa rosso mentre il dito scorre.
-        if (slide > 0f) {
-            Icon(
-                Icons.Rounded.Delete,
-                contentDescription = null,
-                tint = androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.onSurfaceVariant, MaterialTheme.colorScheme.error, slide),
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .padding(start = 18.dp)
-                    .size(24.dp)
-                    .graphicsLayer {
-                        alpha = (slide * 2f).coerceAtMost(1f)
-                        scaleX = 0.8f + slide * 0.5f
-                        scaleY = 0.8f + slide * 0.5f
-                    },
-            )
-        }
-        // Sempre alta come la barra: visualizzatore a sinistra e una sola riga di testo
-        // che mostra le parole più nuove, le prime sfumano a sinistra mentre si parla.
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp)
-                .graphicsLayer {
-                    translationX = -slidePx * 0.6f
-                    alpha = 1f - slide * 0.6f
+    val shown = when {
+        !listening && notice != null -> notice
+        partial.isNotBlank() -> partial
+        silent -> Dictation.NO_SOUND
+        else -> "Ti ascolto…"
+    }
+    Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 14.dp, bottom = 8.dp)) {
+        Text(
+            shown,
+            style = MaterialTheme.typography.bodyLarge,
+            color = if (shown == Dictation.NO_SOUND || shown == "Ti ascolto…") MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+            maxLines = 5,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth().padding(end = 8.dp, bottom = 10.dp).animateContentSize(Springs.snappy()),
+        )
+        if (listening) Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            ComposerKey(Icons.Rounded.Close, "Butta il vocale", onClick = onCancel)
+            val barColor = MaterialTheme.colorScheme.primary
+            Canvas(Modifier.weight(1f).height(26.dp).padding(horizontal = 12.dp)) {
+                val gap = 3.dp.toPx()
+                val w = ((size.width - gap * (BAR_COUNT - 1)) / BAR_COUNT).coerceAtMost(4.dp.toPx())
+                val start = size.width - (w + gap) * BAR_COUNT + gap
+                bars.forEachIndexed { i, v ->
+                    val h = (size.height * (0.14f + 0.86f * v)).coerceAtMost(size.height)
+                    drawRoundRect(
+                        color = barColor.copy(alpha = 0.35f + 0.65f * v),
+                        topLeft = Offset(start + i * (w + gap), (size.height - h) / 2),
+                        size = Size(w, h),
+                        cornerRadius = CornerRadius(w / 2, w / 2),
+                    )
                 }
-                .padding(start = 18.dp, end = 14.dp),
-        ) {
-            if (listening) {
-                val barColor = MaterialTheme.colorScheme.primary
-                Canvas(Modifier.width(56.dp).height(26.dp)) {
-                    val gap = 2.dp.toPx()
-                    val w = (size.width - gap * (BAR_COUNT - 1)) / BAR_COUNT
-                    bars.forEachIndexed { i, v ->
-                        val h = (size.height * (0.14f + 0.86f * v)).coerceAtMost(size.height)
-                        drawRoundRect(
-                            color = barColor.copy(alpha = 0.35f + 0.65f * v),
-                            topLeft = Offset(i * (w + gap), (size.height - h) / 2),
-                            size = Size(w, h),
-                            cornerRadius = CornerRadius(w / 2, w / 2),
-                        )
-                    }
-                }
-                Spacer(Modifier.width(12.dp))
             }
-            val shown = when {
-                !listening && notice != null -> notice
-                partial.isNotBlank() -> partial
-                silent -> Dictation.NO_SOUND
-                else -> "Ti ascolto…"
-            }
-            val fade = 28.dp
-            Box(
-                contentAlignment = Alignment.CenterEnd,
-                modifier = Modifier
-                    .weight(1f)
-                    .clipToBounds()
-                    // Sfumatura solo a sinistra: lì escono le parole vecchie.
-                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                    .drawWithContent {
-                        drawContent()
-                        val f = fade.toPx().coerceAtMost(size.width / 3)
-                        drawRect(
-                            Brush.horizontalGradient(0f to androidx.compose.ui.graphics.Color.Transparent, f / size.width to androidx.compose.ui.graphics.Color.Black),
-                            blendMode = BlendMode.DstIn,
-                        )
-                    },
-            ) {
-                // Senza andare a capo e allineato a destra: si vede sempre la fine della frase.
-                Text(
-                    shown,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = if (shown == Dictation.NO_SOUND) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    softWrap = false,
-                    modifier = Modifier.wrapContentWidth(Alignment.End, unbounded = true),
-                )
-            }
-            // Bloccato il dito non c'è più: resta solo il cestino per buttare il vocale.
-            if (listening && locked && !music) {
-                Icon(
-                    Icons.Rounded.Delete,
-                    contentDescription = "Annulla",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .padding(start = 8.dp)
-                        .clip(CircleShape)
-                        .clickable(onClick = onCancel)
-                        .padding(6.dp)
-                        .size(22.dp),
-                )
+            // La canzone si riconosce da sola: niente ■ e Invia.
+            if (!music) {
+                ComposerKey(Icons.Rounded.Stop, "Ferma e correggi", onClick = onStop)
+                Spacer(Modifier.width(6.dp))
+                ComposerKey(Icons.Rounded.ArrowUpward, "Inserisci", main = true, onClick = onSend)
             }
         }
     }
@@ -949,11 +765,8 @@ private fun DictationContent(
 
 private const val BAR_COUNT = 14
 
-/** Distanza delle pillole dal bordo della barra, uguale sopra, sotto e ai lati. */
-private val NAV_PILL_INSET = 9.dp
-
-// Cosa mostra la barra in basso.
-private const val BAR_TABS = 0
+// Cosa mostra il fondo dello schermo.
+private const val BAR_PLUS = 0
 private const val BAR_VOICE = 1
 private const val BAR_WRITE = 2
 
@@ -962,53 +775,7 @@ private const val PRESS_HOLD = 0
 private const val PRESS_TAP = 1
 private const val PRESS_CANCEL = 2
 private const val PRESS_DRAG = 3
-private const val PRESS_DOWN = 4
 
-@Composable
-private fun NavPill(dest: TopDestination, selected: Boolean, badge: Int, onClick: () -> Unit) {
-    // Il pallino di una cosa appena salvata atterra qui: la scheda fa un piccolo sobbalzo.
-    val targetKey = when (dest.route) {
-        Routes.HOME -> CaptureTargets.HOME_TAB
-        Routes.MEDIA -> CaptureTargets.MEDIA_TAB
-        Routes.NEWS -> CaptureTargets.NEWS_TAB
-        else -> null
-    }
-    val bump = remember { Animatable(1f) }
-    val arrivals = targetKey?.let { CaptureTargets.arrivals[it] } ?: 0
-    LaunchedEffect(arrivals) {
-        if (arrivals > 0) {
-            bump.animateTo(1.25f, tween(110))
-            bump.animateTo(1f, Springs.snappy())
-        }
-    }
-    val container by animateColorAsState(
-        if (selected) MaterialTheme.colorScheme.onSurface else androidx.compose.ui.graphics.Color.Transparent, label = "pill",
-    )
-    val content by animateColorAsState(
-        if (selected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurfaceVariant, label = "pillText",
-    )
-    Row(
-        modifier = Modifier
-            .then(if (targetKey != null) Modifier.captureTarget(targetKey) else Modifier)
-            .graphicsLayer { scaleX = bump.value; scaleY = bump.value }
-            .bouncyPress(0.9f)
-            .clip(CircleShape)
-            .background(container)
-            .clickable(onClick = onClick)
-            .semantics { contentDescription = dest.label }
-            .animateContentSize(Springs.snappy())
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        BadgedBox(badge = { if (badge > 0) Badge { Text("$badge") } }) {
-            Icon(if (selected) dest.selectedIcon else dest.icon, contentDescription = null, tint = content, modifier = Modifier.size(22.dp))
-        }
-        if (selected) {
-            Spacer(Modifier.width(8.dp))
-            Text(dest.label, style = MaterialTheme.typography.labelLarge, color = content, maxLines = 1)
-        }
-    }
-}
 
 // Molle delle transizioni: le pagine arrivano con un leggero rimbalzo invece di una curva fissa.
 private val pageSpring = spring(
@@ -1017,9 +784,9 @@ private val pageSpring = spring(
     visibilityThreshold = IntOffset.VisibilityThreshold,
 )
 
-private fun AnimatedContentTransitionScope<NavBackStackEntry>.isTabSwitch(): Boolean =
-    topDestinations.any { it.route == initialState.destination.route } &&
-        topDestinations.any { it.route == targetState.destination.route }
+// Dalla 1.634 non ci sono più schede: News e Media si aprono sopra la Home, come le altre pagine.
+@Suppress("UnusedReceiverParameter")
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.isTabSwitch(): Boolean = false
 
 /** Verso destra nella barra (Home → Note): la pagina nuova arriva da destra. */
 private fun AnimatedContentTransitionScope<NavBackStackEntry>.tabForward(): Boolean =
@@ -1034,10 +801,15 @@ private fun NavController.openCalendar() {
 }
 
 private fun NavController.switchTab(route: String) {
+    // La Home è il fondo di tutto: ci si torna togliendo le pagine sopra.
+    if (route == Routes.HOME) {
+        popBackStack(graph.findStartDestination().id, inclusive = false)
+        return
+    }
+    // News e Media (1.634): pagine sopra la Home, Indietro torna lì.
     navigate(route) {
-        popUpTo(graph.findStartDestination().id) { saveState = true }
+        popUpTo(graph.findStartDestination().id)
         launchSingleTop = true
-        restoreState = true
     }
 }
 
@@ -1174,10 +946,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         kotlinx.coroutines.delay(4_000)
         com.platinum20.dashboard.notes.NotePhotoText.scan(context, notes.notes)
     }
-    val dueToday = remember(notes) {
-        val endOfDay = LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-        notes.openTasks.count { (it.dueAt ?: Long.MAX_VALUE) < endOfDay }
-    }
 
     // Il + della barra: cattura veloce, oppure l'azione della sezione aperta (in Note, la scheda scelta).
     var capturing by remember { mutableStateOf(false) }
@@ -1189,6 +957,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     com.platinum20.dashboard.ui.screens.CaptureWhenPickers()
     // Tenendo premuto il + si detta, senza finestre: il microfono e il testo li disegna la barra.
     val dictation = remember { Dictation(context.applicationContext) }
+    // ■ nel vocale: il testo resta da correggere invece di salvarsi.
+    var voiceToEdit by remember { mutableStateOf(false) }
     val voiceScope = rememberCoroutineScope()
     DisposableEffect(Unit) { onDispose { dictation.cancel() } }
     val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -1234,8 +1004,11 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         // Si stava già scrivendo nella barra: la voce completa quel testo invece di salvarsi da sola.
         val intoComposer = CaptureComposer.isOpen
         CaptureComposer.dictating = intoComposer
+        voiceToEdit = false
         dictation.start { text ->
-            if (intoComposer) {
+            // ■ toccato: come se si stesse scrivendo, le parole vanno nel riquadro da correggere.
+            if (intoComposer || voiceToEdit) {
+                voiceToEdit = false
                 CaptureComposer.dictating = false
                 if (text.isNullOrBlank()) voiceScope.launch {
                     delay(1_600)
@@ -1306,34 +1079,25 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 exit = slideOutVertically(tween(Motion.EXIT_MS, easing = Motion.Accelerate)) { it } + fadeOut(tween(Motion.EXIT_MS)),
             ) {
                 CanvasNavBar(
-                    currentRoute = Routes.barTab(currentRoute),
-                    dueToday = dueToday,
-                    onSelect = { dest ->
-                        // Toccare la scheda già aperta riporta la lista in cima.
-                        when {
-                            currentRoute == dest.route -> TabReselect.events.tryEmit(dest.route)
-                            // Da una pagina della sezione (Radio in Media): la scheda accesa riporta alla sezione, in cima.
-                            Routes.barTab(currentRoute) == dest.route && navController.popBackStack(dest.route, inclusive = false) ->
-                                TabReselect.events.tryEmit(dest.route)
-                            else -> navController.switchTab(dest.route)
-                        }
-                    },
-                    onOpenSettings = { navController.navigate(Routes.SETTINGS) { launchSingleTop = true } },
                     onPlus = { plusOverride?.invoke() ?: CaptureComposer.open() },
                     listening = dictation.listening || SongId.listening,
                     level = if (SongId.listening) SongId.level else dictation.level,
                     partial = if (SongId.listening) "Ascolto la musica…" else dictation.partial,
                     music = SongId.listening,
-                    onIdentifySong = identifySong,
-                    onHoldStart = startDictation,
-                    onHoldEnd = dictation::release,
-                    locked = dictation.locked,
-                    onLock = dictation::lock,
-                    onCancelDictation = { CaptureComposer.dictating = false; dictation.discard() },
+                    onHoldStart = { startDictation().also { if (it) dictation.lock() } },
+                    onVoiceSend = dictation::release,
+                    onVoiceStop = {
+                        // Le parole vanno nel riquadro per scrivere invece di salvarsi da sole.
+                        voiceToEdit = true
+                        CaptureComposer.dictating = true
+                        dictation.release()
+                    },
+                    onCancelDictation = { voiceToEdit = false; CaptureComposer.dictating = false; dictation.discard() },
                     heardSound = dictation.heardSound,
                     notice = dictation.notice,
                     composing = composing,
                     onSend = sendComposer,
+                    onMic = { if (startDictation()) dictation.lock() },
                 )
             }
         },
@@ -1386,6 +1150,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onOpenPlayer = { navController.navigate(if (it.isVideo) Routes.youtubeWatch() else Routes.PLAYER) },
                     onPlayVideo = { navController.navigate(Routes.youtubeWatch(it)) },
                     onOpenRoute = { navController.navigate(it) },
+                    onBack = { navController.popBackStack() },
                 )
             }
             // Dalla 1.437 la radio è una sezione da sola e i podcast stanno in Musica: la vecchia strada dei podcast apre Musica.
@@ -1661,6 +1426,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     NewsScreen(
                         bottomPadding = padding,
                         onOpenArticle = { navController.navigate(Routes.reader(it.link, it.source.name, it.title)) },
+                        onBack = { navController.popBackStack() },
                     )
                 }
             }

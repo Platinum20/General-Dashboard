@@ -10,8 +10,9 @@ no history ("since 1.x", "removed in"). Add a line only when you create or move 
 
 ## Code map (`app/src/main/java/com/platinum20/dashboard/`)
 
-**Shell**: `MainActivity.kt` = NavHost (`object Routes`), `CanvasNavBar` (floating `NavPill` Home/News/Media + round
-"+" that morphs into the capture bar), predictive back, `OpenRequest` deep links, PullToSearch, mini player and glass
+**Shell**: `MainActivity.kt` = NavHost (`object Routes`), `CanvasNavBar` (only the round "+" bottom-right, no tabs:
+tap = Claude-style capture box `CaptureComposerInput`, hold = hands-free voice `VoiceBox` ✕/■/Invia; News and Media
+are pages pushed over Home, `switchTab`), predictive back, `OpenRequest` deep links, PullToSearch, mini player and glass
 layers (queue, video settings, What's new) drawn OUTSIDE the NavHost. Calendario page = `Routes.NOTES`, pushed over Home. Bar + "+" rule = `Routes.hasBar` (list pages yes; detail/editor/player/settings/search no); list pages pad their bottom with `listBottom(min)` (Common.kt, reads `LocalBarSpace`).
 `settings/AppSettings.kt` = every preference (StateFlow). `ui/theme/Theme.kt` = themes Canvas / Material You / Puro, Inter.
 
@@ -32,7 +33,7 @@ layers (queue, video settings, What's new) drawn OUTSIDE the NavHost. Calendario
 - `DetailPage.kt` = THE detail scaffold (back + meta line, bottom `primary` + "Altro"); `WhenHero.kt` first block.
 - `HomeScreen.kt` `Urgent.color()` = the attention orange in every theme (don't use `colorScheme.tertiary` for it).
 
-**Home** (`HomeScreen.kt`, `HomeCards.kt`, order in `HomeCard` / `CustomizeScreen.kt`): `InvitesRow` (orange line on
+**Home** (`HomeScreen.kt`, `HomeCards.kt`, gear = Settings in `TopLevelBar` actions, `HomeMediaCards.kt` Musica/Video cards, order in `HomeCard` / `CustomizeScreen.kt`): `InvitesRow` (orange line on
 top, only when something needs doing), Adesso/weather (`WeatherBits.kt`, page `WeatherScreen.kt`, pure phrases `weather/WeatherText.kt`), Riprendi, `CalendarCard` (today + tomorrow,
 count to month end), `LaterCard` (LaterUi.kt) = ONE "Da fare" card, in order: to-dos (max `HOME_TODO_MAX`),
 habits (`HabitTodoRow`, repeat badge; `habitTodoLine`/`habitFlame` in BriefActions.kt; orange from `HABIT_LATE_HOUR`),
@@ -78,7 +79,7 @@ original-language titles). Also `media/radio/` (`RadioHero`), `media/podcast/` (
 Screens: `MediaScreen` (hero/queue, rows Musica `PerTeRow` + Video), `MediaPageKit.kt` (`MediaHero`, `mediaGroup`,
 `mediaShelf`, `MediaRow`: pages on the background, no cards), `MediaMarks.kt` (`MediaTile`, `MediaLine`),
 `PlayerScreen` (audio = tinted full page; YouTube = `YouTubeWatchScreen`), `QueueScreen` (popup), mini player
-`FloatingPlayer.kt` + `MiniTuck.kt`/`MiniDock.kt` (box in 4 corners, edge tab, drag down to close; bars that stay
+`FloatingPlayer.kt` + `MiniTuck.kt`/`MiniDock.kt` (box in 4 corners, edge tab, drag onto the + to close = `PlusMark`; bars that stay
 put mark `Modifier.miniPlayerFloor()`). Any WebView goes through `MediaWebViews.inFrame`.
 
 **Accounts / data from websites**: `net/WebSession.kt` (sealed cookies) + `work/KeepAliveWorker`. `net/AutoLogin.kt` = saved login (Vault) refilled by the hidden refresh (`WindTreAuto`, `CreatorsAuto`); WindTre mail code via IMAP `sim/WindTreCode.kt`; `SimStore.expired` → "Rientra". `sim/` WindTre
@@ -106,7 +107,7 @@ unique. Tours (`ScreenshotTour`, `YouTubeTour`, …) and `LiveChecks` run only w
 - Everything native in-app: no external browser/app handoff, no service website shown in a WebView. Spotify audio
   only via the official Web Playback SDK. Never bypass paywalls.
 - One look: Canvas components, no ElevatedCard, no FABs, no buttons in section headers (search = pull down,
-  settings = drag "+" down). One colored hero per page. No serif fonts. UI polish before new features.
+  settings = gear on Home). One colored hero per page. No serif fonts. UI polish before new features.
 - The Canvas row: left = time or icon, middle = name + at most one line, right = value or action.
 - One color, one meaning: blue = now + actions, orange = attention, red = delete, rest ink.
 - Every page answers one question. Each piece of info lives in one place. Settings = set-once things only.
@@ -115,6 +116,7 @@ unique. Tours (`ScreenshotTour`, `YouTubeTour`, …) and `LiveChecks` run only w
 - "+" and voice never ask for the type. NO money/expense tracking anywhere (shift pay stays).
 - Month views show only the current month. Player: one source at a time, no sleep timer, no close button.
 - Nav pill animation stays exactly as it is. Only the three springs.
+- No tab bar: only Home + the "+"; Settings = gear on Home.
 - Rejected, don't re-add: calendar fast scroll / day scrubber, hold+drag on the Calendar card, filter chips,
   stories row in Media, auto diary ("La linea che ricorda"), YouTube Music, One UI ProgressStyle notification.
 - Mockups for him: PRIMA vs DOPO side by side, rows stacked vertically, readable on a phone, in

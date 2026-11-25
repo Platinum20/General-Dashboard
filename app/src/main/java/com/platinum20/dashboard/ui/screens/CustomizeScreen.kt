@@ -1,5 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.outlined.OndemandVideo
+import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.AddCircleOutline
@@ -190,6 +192,8 @@ private fun HomeCard.icon(): ImageVector = when (this) {
     HomeCard.RESUME -> Icons.Outlined.PlayCircle
     HomeCard.SIM -> Icons.Outlined.SimCard
     HomeCard.DOCS -> Icons.Outlined.Badge
+    HomeCard.MUSIC -> Icons.Outlined.MusicNote
+    HomeCard.VIDEO -> Icons.Outlined.OndemandVideo
     HomeCard.MAIL -> Icons.Outlined.Mail
     HomeCard.RECAP -> Icons.Outlined.Newspaper
 }
@@ -203,4 +207,6 @@ private fun HomeCard.accent(): TileAccent = when (this) {
     HomeCard.DOCS -> TileAccent.BLUE
     HomeCard.MAIL -> TileAccent.ORANGE
     HomeCard.RECAP -> TileAccent.GREEN
+    HomeCard.MUSIC -> TileAccent.PURPLE
+    HomeCard.VIDEO -> TileAccent.PURPLE
 }

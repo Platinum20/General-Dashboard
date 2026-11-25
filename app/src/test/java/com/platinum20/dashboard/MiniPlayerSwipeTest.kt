@@ -24,7 +24,7 @@ import org.robolectric.annotation.Config
 
 /**
  * Il riquadro del mini player (1.546) si aggancia ai quattro angoli; lanciato verso il suo bordo si ritira nella
- * linguetta (1.508), anche mentre lo si sposta su e giù. Si chiude solo portandolo giù, sotto lo schermo (calamita).
+ * linguetta (1.508), anche mentre lo si sposta su e giù. Si chiude portandolo sul + in basso a destra (calamita, 1.634).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h914dp-xxhdpi")
@@ -159,11 +159,14 @@ class MiniPlayerSwipeTest {
         assertEquals(0, closed)
     }
 
+    /** 1.634: si chiude portandolo sul + in basso a destra (qui senza barra: la ✕ compare nello stesso punto). */
     @Test
-    fun portatoSottoLoSchermoSiChiude() {
+    fun portatoSulPiuSiChiude() {
         show()
         val p = boxPoint()
-        drag(p, Offset(p.x, p.y + 330f), 600)
+        val root = compose.onRoot().fetchSemanticsNode().boundsInRoot
+        // Il centro del +: 16 + 30 dp dal bordo destro, 40 dp sopra il fondo (xxhdpi = 3 px per dp).
+        drag(p, Offset(root.right - 46f * 3f, root.bottom - 40f * 3f), 600)
         assertEquals(1, closed)
     }
 
@@ -175,14 +178,14 @@ class MiniPlayerSwipeTest {
         assertEquals(0, closed)
     }
 
-    /** Senza barra delle sezioni sotto (come qui): basta portarlo fino al fondo dello schermo, non oltre (1.521). */
+    /** In fondo allo schermo ma lontano dal +: non si chiude più (prima bastava portarlo giù). */
     @Test
-    fun senzaBarraSiChiudeAlFondoDelloSchermo() {
+    fun inFondoLontanoDalPiuNonChiude() {
         show()
         val p = boxPoint()
         val bottom = compose.onRoot().fetchSemanticsNode().boundsInRoot.bottom - 2f
         drag(p, Offset(p.x, bottom), 600)
-        assertEquals(1, closed)
+        assertEquals(0, closed)
     }
 
     private fun tabCenter(): Offset =

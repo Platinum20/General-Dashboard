@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.634.0
+**Tutto nella Home**
+- In basso resta solo il +, in basso a destra: niente più barra con Home, News e Media
+- Musica e Video sono due card in fondo alla Home che scorrono di lato, con le copertine grandi; il titolo apre la pagina intera, il tasto a destra la cronologia
+- News si apre dalla sua card nella Home; la freccia in alto torna indietro
+- Le Impostazioni si aprono dall'ingranaggio in alto a destra nella Home
+- Scrivere: toccando il + si apre un riquadro come nell'app Claude, che cresce col testo, con graffetta, microfono, X e Invia
+- Vocale: tieni premuto il + e parla a mani libere, le parole compaiono scritte; ✕ lo butta, ■ si ferma e ti lascia correggere, Invia lo salva
+- Mini player: per chiuderlo portalo sul +, che si gonfia, ruota e diventa una ✕ rossa con una vibrazione; dove il + non c'è, la ✕ compare nello stesso punto
+
 ## 1.633.0
 **Video di YouTube tutti in grande**
 - In Scopri (la Home di YouTube) ogni video è grande come il primo, con l'anteprima larga e il titolo sotto: niente più righe piccole in mezzo

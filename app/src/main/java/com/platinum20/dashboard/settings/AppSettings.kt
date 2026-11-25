@@ -36,6 +36,9 @@ enum class HomeCard(val label: String, val description: String) {
     MAIL("Dalla posta", "Le mail importanti non lette"),
     // Il nome resta RECAP per le preferenze salvate: dalla 1.356 è la card News (le storie nuove dall'ultima visita).
     RECAP("News", "Le notizie nuove dall'ultima visita"),
+    // 1.634 (Antonio: "lasciamo solo la Home"): le file di Media diventano due card in fondo alla Home.
+    MUSIC("Musica", "Mix, playlist, radio e podcast"),
+    VIDEO("Video", "I nuovi video dei canali che segui"),
 }
 
 data class HomeLayout(val order: List<HomeCard>, val hidden: Set<HomeCard>) {
@@ -50,6 +53,9 @@ data class HomeLayout(val order: List<HomeCard>, val hidden: Set<HomeCard>) {
          * 4 = 1.314: diventa il Calendario unico (con le note) e torna visibile; via le card Spese e Note.
          */
         const val VERSION = 4
+
+        /** Le card nuove che arrivano sempre in fondo, qualunque fosse l'ordine salvato. */
+        private val BOTTOM_NEW = setOf(HomeCard.MUSIC, HomeCard.VIDEO)
 
         /**
          * Legge ordine e card nascoste salvate. Da una versione vecchia l'ordine torna quello
@@ -67,7 +73,9 @@ data class HomeLayout(val order: List<HomeCard>, val hidden: Set<HomeCard>) {
             val order = parse(names(orderRaw)).distinct().toMutableList()
             // Le card aggiunte in versioni successive finiscono nella loro posizione predefinita.
             HomeCard.entries.forEach { card ->
-                if (card !in order) {
+                // Musica e Video (1.634) vanno in fondo alla Home, sotto tutto quello che c'era.
+                if (card !in order && card in BOTTOM_NEW) order.add(card)
+                else if (card !in order) {
                     val before = HomeCard.entries.take(card.ordinal).lastOrNull { it in order }
                     order.add(if (before == null) 0 else order.indexOf(before) + 1, card)
                 }
