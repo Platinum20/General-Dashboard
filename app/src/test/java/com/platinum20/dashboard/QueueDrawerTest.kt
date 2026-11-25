@@ -21,7 +21,7 @@ class QueueDrawerTest {
     }
 
     @Test fun peekSaysWhatComesNext() {
-        val next = QueueEntry(1, ResumeItem(ResumeKind.SPOTIFY, "spotify:track:a", "Silent Running", "Gorillaz"))
+        val next = QueueEntry(1, ResumeItem(ResumeKind.SPOTIFY, "spotify:track:a", "Silent Running", "Gorillaz", at = 0L))
         assertEquals("Silent Running · Gorillaz · altri 3", QueueDrawer.peekLine(next, 4))
         assertEquals("Silent Running · Gorillaz", QueueDrawer.peekLine(next, 1))
         assertEquals("la coda è vuota", QueueDrawer.peekLine(null, 0))

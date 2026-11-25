@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.638.0
+**Il player risponde a ogni tasto**
+- La coda è un foglio di vetro solo: in fondo ne spunta la cima ("Dopo · il prossimo"), la tiri su ed è la coda intera, la tiri giù e torna a spuntare
+- Radio e Playlist fanno vedere subito che stanno lavorando (Spotify ci mette qualche secondo), la radio lo dice anche con una riga
+- Casuale e Ripeti dicono cosa hanno fatto ("la coda è mescolata", "Ripeti questo brano")
+- Condividi apre il solito fumetto: Copia il link · Manda a…
+
 ## 1.637.0
 **La freccia si spiega da sola**
 - Con il riquadro aperto, tenendo premuta la freccia parte il vocale e diventa il microfono, come dal + chiuso
