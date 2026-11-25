@@ -1289,7 +1289,9 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             if (intoComposer || voiceToEdit) {
                 voiceToEdit = false
                 CaptureComposer.dictating = false
-                if (text.isNullOrBlank()) voiceScope.launch {
+                // Nessuna parola ma suono per un po': è musica, Canvas la riconosce (si era persa col tasto unico, 1.642).
+                if (text.isNullOrBlank() && dictation.soundedLikeMusic() && SongId.ready) identifySong()
+                else if (text.isNullOrBlank()) voiceScope.launch {
                     delay(1_600)
                     dictation.clearNotice()
                 } else CaptureComposer.append(text)

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.642.0
+**Torna il riconoscimento delle canzoni**
+- Tieni premuta la freccia vicino a una canzone che suona, senza parlare, e lasciala: Canvas la riconosce, la fa partire e la mette in "Sentite da Canvas". Col tasto unico si era persa
+
 ## 1.641.0
 **Il + che si apre, il lucchetto che si chiude**
 - Toccando il + prima gira e diventa la freccia, poi la bolla per scrivere le cresce attorno mentre sale con la tastiera
