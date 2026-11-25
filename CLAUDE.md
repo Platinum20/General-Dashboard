@@ -29,7 +29,7 @@ layers (queue, video settings, What's new) drawn OUTSIDE the NavHost. Calendario
 - `RowActions.kt` `rememberRowActions()` = long-press bubble of calendar rows. RULE: anything with a page/menu of
   actions gets the same actions on long press.
 - `Timeline.kt`: `TimelineRow` (line on the left, `RowDot`, `TripBlock` for timed events/trains/shifts), day/month
-  markers, `TimelineNowMarker` + `PastBarrier`, `RowFlash`/`FlashNewRows`. `SharedItems.kt` = shared elements.
+  markers, `TimelineNowMarker` + `PastBarrier`, `RowFlash`/`FlashNewRows`. `SharedItems.kt` = shared elements (Home cards Calendario, Meteo, SIM, News, Da fare, Musica, Video grow into their page; `Motion.popExit` = the one back animation).
 - `StatusLine.kt` `LinkStatus` (old data says so + "Rientra"/"Aggiorna"), `net/Online.kt` connectivity.
 - `DetailPage.kt` = THE detail scaffold (back + meta line, bottom `primary` + "Altro"); `WhenHero.kt` first block.
 - `HomeScreen.kt` `Urgent.color()` = the attention orange in every theme (don't use `colorScheme.tertiary` for it).

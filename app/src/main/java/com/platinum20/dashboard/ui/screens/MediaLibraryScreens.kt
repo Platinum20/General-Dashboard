@@ -175,46 +175,6 @@ fun MediaLikedScreen(videosOnly: Boolean, onBack: () -> Unit, onPlayVideo: (Stri
     }
 }
 
-/**
- * "Playlist" (1.488, Antonio: quelle di YouTube no): le playlist di Spotify e gli album salvati, dall'ultimo ascoltato;
- * ognuna si apre nella sua pagina.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun MediaPlaylistsScreen(onBack: () -> Unit, onOpenSpotify: (SpItem) -> Unit) {
-    val context = LocalContext.current
-    SpotifyAuth.init(context)
-    val spotify by SpotifyStore.playlists.collectAsState()
-    val library by SpotifyStore.library.collectAsState()
-    LaunchedEffect(Unit) {
-        SpotifyStore.refreshPlaylists()
-        SpotifyStore.refreshLibrary()
-    }
-    val heard = rememberHeardAt()
-    val entries = MediaMerge.byRecency((spotify.data.orEmpty() + library.data?.albums.orEmpty()).distinctBy { it.uri }) { heard[it.uri] }
-    val state = Loadable(data = entries.takeIf { spotify.data != null }, loading = spotify.loading, error = if (spotify.data == null) spotify.error else null)
-    val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
-    Scaffold(
-        modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
-        topBar = { TopLevelBar(title = "Playlist", subtitle = "Playlist e album salvati", scrollBehavior = bar, onBack = onBack) },
-    ) { inner ->
-        Column(Modifier.fillMaxSize().padding(inner)) {
-            FeedList(state, empty = "Nessuna playlist", spacing = 0.dp, edge = 0.dp) {
-                // Una card sola con le righe Canvas (1.563, strada A).
-                if (entries.isNotEmpty()) mediaGroup(
-                    key = "lists", title = "Dall'ultima ascoltata", items = entries, itemKey = { it.uri },
-                    trailing = { Text("${entries.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                ) { _, e ->
-                    MediaRow(
-                        title = e.title, line = e.subtitle.substringBefore(" · "), image = e.image, mark = MediaMarks.of(e),
-                        click = Modifier.tapOrSave({ com.platinum20.dashboard.capture.SavedLinks.spotify(e) }) { onOpenSpotify(e) },
-                    )
-                }
-            }
-        }
-    }
-}
-
 /** "412 brani · 86 video"; una parte sola se l'altra è zero, vuoto se tutte e due. */
 internal fun countLine(a: Int, aName: String, b: Int, bName: String): String =
     listOfNotNull(a.takeIf { it > 0 }?.let { "$it $aName" }, b.takeIf { it > 0 }?.let { "$it $bName" }).joinToString(" · ")

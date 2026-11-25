@@ -1477,7 +1477,7 @@ internal fun mentionTargets(
 /** Le sezioni di Canvas che si possono collegare con "@". */
 private val MENTION_PAGES = listOf(
     "Meteo" to Routes.WEATHER, "SIM" to Routes.SIM, "Calendario" to Routes.NOTES, "News" to Routes.NEWS,
-    "Media" to Routes.MEDIA, "Musica" to Routes.MUSIC_ALL, "Radio" to Routes.RADIO, "Podcast" to Routes.PODCAST,
+    "Musica" to Routes.MUSIC_DISCOVER, "Video" to Routes.MEDIA_NEWS, "Radio" to Routes.RADIO, "Podcast" to Routes.PODCAST,
     "Da fare" to Routes.LATER_ARCHIVE, "Cerca" to Routes.SEARCH,
 )
 
@@ -1487,7 +1487,8 @@ private fun pageIcon(route: String): ImageVector = when (route) {
     Routes.SIM -> Icons.Outlined.SimCard
     Routes.NOTES -> Icons.Outlined.CalendarMonth
     Routes.NEWS -> Icons.Outlined.Newspaper
-    Routes.MEDIA, Routes.MUSIC_ALL -> Icons.Outlined.MusicNote
+    Routes.MEDIA, Routes.MUSIC_ALL, Routes.MUSIC_DISCOVER -> Icons.Outlined.MusicNote
+    Routes.MEDIA_NEWS -> Icons.Outlined.SmartDisplay
     Routes.RADIO -> Icons.Outlined.Radio
     Routes.PODCAST -> Icons.Outlined.Podcasts
     Routes.LATER_ARCHIVE -> Icons.Outlined.TaskAlt

@@ -610,17 +610,23 @@ private fun MiniPlayer(now: Playing, onExpand: () -> Unit) {
     }
     val shownState = androidx.compose.runtime.rememberUpdatedState(controls)
     val videoState = androidx.compose.runtime.rememberUpdatedState(now.isVideo)
+    val nowState = androidx.compose.runtime.rememberUpdatedState(now)
+    val haptic = rememberHaptic()
     Box(
         Modifier
             .fillMaxSize()
             .background(if (now.isVideo) Color.Black else MaterialTheme.colorScheme.surfaceVariant)
             .pointerInput(Unit) {
-                detectTapGestures(onTap = {
-                    when (MiniTuck.tap(videoState.value, shownState.value)) {
-                        MiniTuck.Tap.SHOW_CONTROLS -> { asked = true; poke++ }
-                        MiniTuck.Tap.EXPAND -> expand()
-                    }
-                })
+                detectTapGestures(
+                    onTap = {
+                        when (MiniTuck.tap(videoState.value, shownState.value)) {
+                            MiniTuck.Tap.SHOW_CONTROLS -> { asked = true; poke++ }
+                            MiniTuck.Tap.EXPAND -> expand()
+                        }
+                    },
+                    // Tenendolo premuto: il fumetto con quello che si fa col player (regola della pressione lunga, 2026-11-25).
+                    onLongPress = { haptic(Haptic.LONG_PRESS); ActionBubble.show(miniHead(nowState.value), *miniActions(nowState.value, expand)) },
+                )
             },
     ) {
         if (now.isVideo) {
@@ -752,3 +758,19 @@ private fun MiniPlayer(now: Playing, onExpand: () -> Unit) {
         }
     }
 }
+
+/** La testata del fumetto del mini player: il video o il brano che suona. */
+internal fun miniHead(now: Playing) = BubbleHead(if (now.isVideo) "Video" else "In ascolto", now.title)
+
+/** Pura: le scelte del mini player tenuto premuto. Apri resta il tasto grande, come il tocco. */
+internal fun miniActions(now: Playing, open: () -> Unit): Array<BubbleAction> = arrayOf(
+    act(
+        BubbleGroup.CAMBIA,
+        if (now.playing) androidx.compose.material.icons.Icons.Filled.Pause else androidx.compose.material.icons.Icons.Filled.PlayArrow,
+        if (now.playing) "Pausa" else "Riprendi",
+        if (now.playing) "ferma qui, riparte da dove eri" else "riparte da dove eri",
+    ) { Playback.toggle() },
+    act(BubbleGroup.CAMBIA, androidx.compose.material.icons.Icons.Filled.SkipNext, "Il prossimo", "salta a quello dopo nella coda") { Playback.next() },
+    act(BubbleGroup.CAMBIA, androidx.compose.material.icons.Icons.Filled.SkipPrevious, "Da capo", "torna all'inizio o a quello prima") { Playback.previous() },
+    Slot.open(open),
+)

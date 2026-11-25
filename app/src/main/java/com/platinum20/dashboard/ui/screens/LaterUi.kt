@@ -153,7 +153,14 @@ internal fun LaterCard(
         )
     }
     // Toccando la card, fuori dalle righe, si apre la sua pagina intera: attive e vecchie insieme (1.539).
-    CanvasCard(Modifier.fillMaxWidth().sharedItem(SharedKeys.LATER, rounded = true).captureTarget(kind.mode), onClick = onOpen) {
+    CanvasCard(Modifier.fillMaxWidth().sharedItem(SharedKeys.LATER, rounded = true).captureTarget(kind.mode), onClick = onOpen, onLongClick = {
+        // Tenendo premuta la card (regola della pressione lunga, 2026-11-25): scrivere una cosa o aprire tutto.
+        ActionBubble.show(
+            BubbleHead("Da fare"),
+            act(BubbleGroup.CREA, androidx.compose.material.icons.Icons.Outlined.Add, "Scrivi una cosa", "da fare, una nota o una data: la riconosce da sola") { com.platinum20.dashboard.capture.CaptureComposer.open() },
+            Slot.open(onOpen),
+        )
+    }) {
         CardTitle(kind.title, opens = true, trailing = {
             if (count > 0) Text(looseCount(count), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 4.dp))
         })

@@ -440,7 +440,7 @@ object Routes {
     private val BAR_PAGES = setOf(
         HOME, NEWS, MEDIA, NOTES,
         LATER_ARCHIVE, JOTTINGS_ARCHIVE, WEATHER, SIM, TAG, PERSON,
-        RADIO, PODCAST, SPOTIFY_ITEM, SPOTIFY_FEED, YOUTUBE_CHANNEL, YOUTUBE_PLAYLIST, YOUTUBE_FEED,
+        RADIO, PODCAST, SPOTIFY_ITEM, YOUTUBE_CHANNEL, YOUTUBE_PLAYLIST, YOUTUBE_FEED,
         MEDIA_MIX, MEDIA_NEWS, SAVED_MEDIA, MUSIC_ALL, MUSIC_DISCOVER, LIKED_TRACKS,
     )
     const val SEARCH = "home/search"
@@ -453,7 +453,6 @@ object Routes {
     const val VIDEO_PATTERN = "media/video?uri={uri}"
 
     const val YOUTUBE_FEED = "media/youtube"
-    const val SPOTIFY_FEED = "media/spotify"
     const val RADIO = "media/radio"
     const val PODCAST = "media/podcast"
     /** Il player grande unico (musica, radio, podcast). */
@@ -1026,7 +1025,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         runCatching {
             navController.switchTab(
                 when (request.target) {
-                    OpenRequest.MEDIA, OpenRequest.PLAY -> Routes.MEDIA
                     // Il titolo delle notizie nel widget apre la scheda News (la pagina del punto del giorno non c'è più).
                     OpenRequest.RECAP -> Routes.NEWS
                     else -> Routes.HOME
@@ -1299,14 +1297,9 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 )
                 }
             }
+            // La pagina Media non c'è più (1.634): un vecchio collegamento (note, widget) torna in Home.
             composable(Routes.MEDIA) {
-                MediaScreen(
-                    bottomPadding = padding,
-                    onOpenPlayer = { navController.navigate(if (it.isVideo) Routes.youtubeWatch() else Routes.PLAYER) },
-                    onPlayVideo = { navController.navigate(Routes.youtubeWatch(it)) },
-                    onOpenRoute = { navController.navigate(it) },
-                    onBack = { navController.popBackStack() },
-                )
+                LaunchedEffect(Unit) { navController.popBackStack(Routes.HOME, inclusive = false) }
             }
             // Dalla 1.437 la radio è una sezione da sola e i podcast stanno in Musica: la vecchia strada dei podcast apre Musica.
             composable(Routes.RADIO) {
@@ -1458,13 +1451,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     videosOnly = false,
                     onBack = { navController.popBackStack() },
                     onPlayVideo = { navController.navigate(Routes.youtubeWatch(it)) },
-                )
-            }
-            // Playlist (1.485): quelle di Spotify e di YouTube e gli album salvati.
-            composable(Routes.SPOTIFY_FEED) {
-                com.platinum20.dashboard.ui.screens.MediaPlaylistsScreen(
-                    onBack = { navController.popBackStack() },
-                    onOpenSpotify = { navController.navigate(Routes.spotifyItem(it)) },
                 )
             }
             composable(

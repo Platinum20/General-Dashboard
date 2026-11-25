@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.641.0
+**Le card della Home si aprono dove sono**
+- News, Da fare, Musica e Video ora si allargano dalla card fino a diventare la pagina e, tornando indietro, ci rientrano (come già Calendario, Meteo e SIM)
+- Indietro è uguale ovunque: la pagina si rimpicciolisce e segue il dito mentre scorri dal bordo, poi sotto torna quella di prima
+- Tenendo premute le card News, Da fare, Musica e Video si apre il fumetto con le loro azioni (Ascolta le notizie, Segna come lette, Cronologia, Radio, Podcast, Da vedere dopo…)
+- Anche il mini player tenuto premuto apre il fumetto: Pausa, Il prossimo, Da capo, Apri
+- Le notifiche del player, la sveglia radio, le prime di YouTube e i link condivisi non riaprono più la vecchia pagina Media sotto al player: Indietro torna in Home
+- Nelle note, "@Media" non c'è più: ci sono "@Musica" e "@Video", che aprono le pagine delle card
+- Tolta la pagina Playlist, che nessun tasto apriva più
+
 ## 1.640.0
 **Accesso WindTre senza pagina che lampeggia**
 - La pagina d'accesso WindTre non lampeggia più chiaro/scuro: Canvas rimetteva di continuo la sessione vecchia, il sito la rifiutava e ricominciava da capo. Era anche il motivo per cui l'accesso da solo non partiva mai
