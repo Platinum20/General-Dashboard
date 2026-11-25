@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.632.0
+**Il riepilogo del turno non ricompare di notte**
+- La notifica di fine turno esce solo nelle 2 ore dopo la fine: ore dopo non compare più
+- Se l'hai tolta col dito non torna, anche quando cambiano i numeri del venduto
+- Se è ancora nella tendina si aggiorna in silenzio, senza suonare
+
 ## 1.631.0
 **Salva nel player YouTube salva subito**
 - Toccando Salva sotto il video si salva per dopo con un tocco, con "Annulla": niente più bolla che chiedeva di nuovo se salvare
