@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.outlined.Settings
 import coil3.compose.AsyncImage
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.ui.layout.ContentScale
@@ -362,6 +363,8 @@ fun HomeScreen(
                 },
                 onOpenNews = onOpenNews,
             )
+            HomeCard.MUSIC -> HomeMusicCard(open = { inApp?.openRoute?.invoke(it) })
+            HomeCard.VIDEO -> HomeVideoCard(open = { inApp?.openRoute?.invoke(it) })
         }
     }
 
@@ -374,6 +377,11 @@ fun HomeScreen(
                 title = today,
                 subtitle = Greeting.subtitle(minute.hour, minute.toLocalDate()),
                 scrollBehavior = scrollBehavior,
+                // L'ingranaggio sulla riga del titolo (1.634, Antonio): le Impostazioni non si aprono più tirando giù il +.
+                actions = {
+                    val openSettings = LocalOpenSettings.current
+                    RoundIconButton(Icons.Outlined.Settings, "Impostazioni") { haptic(Haptic.TICK); openSettings?.invoke() }
+                },
             )
         },
     ) { inner ->

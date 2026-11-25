@@ -94,6 +94,8 @@ fun NewsScreen(
     bottomPadding: PaddingValues,
     onOpenArticle: (NewsItem) -> Unit,
     viewModel: NewsViewModel = viewModel(),
+    /** Dalla 1.634 News si apre dalla card della Home: la freccia torna lì. */
+    onBack: (() -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -136,6 +138,7 @@ fun NewsScreen(
         contentWindowInsets = topLevelInsets,
         topBar = {
             TopLevelBar(
+                onBack = onBack,
                 title = "News",
                 subtitle = NewsHistory.headline(
                     feed.all.size,

@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
@@ -141,6 +142,9 @@ fun FloatingPlayer(
         val range = (maxH - barH - topGap).coerceAtLeast(1f)
         val magnetAt = MiniTuck.threshold(barH / 2f + screenBelow, density.density)
         val navInset = androidx.compose.foundation.layout.WindowInsets.navigationBars.getBottom(density).toFloat()
+        // Il centro del + in basso a destra (1.634): lì si porta il riquadro per chiuderlo, anche dove il + non c'è.
+        val plusX = maxW - MiniTuck.PLUS_FROM_RIGHT_DP * density.density
+        val plusY = maxH + screenBelow - navInset - MiniTuck.PLUS_FROM_BOTTOM_DP * density.density
         // L'angolo: in alto o in basso, a destra o a sinistra; ricordato anche ruotando lo schermo. In basso a destra all'inizio.
         var atTop by rememberSaveable { mutableStateOf(MiniDock.atTop) }
         var atRight by rememberSaveable { mutableStateOf(MiniDock.atRight) }
@@ -312,7 +316,7 @@ fun FloatingPlayer(
                     MiniDock.tucked = false
                 },
             )
-            CloseMark(tabNear, tabMagnet, screenBelow, navInset)
+            PlusMark(tabNear > 0f, tabMagnet, plusX, plusY)
             return@BoxWithConstraints
         }
 
@@ -347,7 +351,7 @@ fun FloatingPlayer(
                     // sul riquadro la velocità risulterebbe sempre quasi zero e il lancio non partirebbe.
                     var travelled = androidx.compose.ui.geometry.Offset.Zero
                     // Fin dove si può portare giù: oltre la calamita, sotto lo schermo.
-                    val bottom = 1f + 2f * MiniTuck.MAGNET_DP * density.density / range
+                    val bottom = 1f + (screenBelow + barH) / range
                     detectDragGestures(
                         onDragStart = {
                             view.haptic(Haptic.GRAB)
@@ -376,10 +380,10 @@ fun FloatingPlayer(
                                 MiniTuck.Drop.CLOSE -> {
                                     closing = true
                                     view.haptic(Haptic.CONFIRM)
-                                    // Giù, fuori dallo schermo, tirato dalla calamita.
-                                    val out = 1f + (maxH + barH) / range
+                                    // Si rimpicciolisce dentro la ✕ e sparisce.
                                     scope.launch {
-                                        y.animateTo(out, Motion.fling((out - y.value) * range, velocity.y.coerceAtLeast(0f)))
+                                        appear.animateTo(0f, androidx.compose.animation.core.tween(200))
+                                        magnet = false
                                         onClose?.invoke() ?: Playback.stop()
                                     }
                                 }
@@ -433,10 +437,13 @@ fun FloatingPlayer(
                             tuckArmed = side
                             view.haptic(if (side) Haptic.THRESHOLD else Haptic.TICK)
                         }
-                        val held = MiniTuck.magnet((curY - 1f).coerceAtLeast(0f) * range, magnetAt)
+                        // Il dito sullo schermo (il riquadro si muove con lui): vicino al + la calamita lo prende.
+                        val fingerX = (if (atRight) maxW - boxW else 0f) + x.value + change.position.x
+                        val fingerY = topGap + y.value * range + pull.value + change.position.y
+                        val held = MiniTuck.overPlus(fingerX, fingerY, plusX, plusY, density.density)
                         if (held != magnet) {
                             magnet = held
-                            // La calamita: vibra e lo tira giù di scatto; risalendo lo lascia andare.
+                            // La calamita: vibra e lo tira verso il +; allontanandosi lo lascia andare.
                             view.haptic(if (held) Haptic.THRESHOLD else Haptic.TICK)
                             scope.launch { pull.animateTo(if (held) MiniTuck.PULL_DP * density.density else 0f, Motion.lively()) }
                         }
@@ -450,38 +457,43 @@ fun FloatingPlayer(
             MiniPlayer(now, onExpand = { onExpand(now) })
         }
 
-        CloseMark(near, magnet, screenBelow, navInset)
+        PlusMark(dragging || closing, magnet, plusX, plusY)
     }
 }
 
-/** La X rossa sul fondo dello schermo: compare man mano che lo porti giù e cresce quando la calamita lo prende. */
+/**
+ * Il + che chiude (1.634, Antonio): appena prendi il riquadro il + si gonfia un poco ("portalo qui"); quando la
+ * calamita lo prende ruota di 45° e diventa una ✕ rossa. Disegnato sopra il + vero, nello stesso punto: dove il + non
+ * c'è (dentro una nota, un evento) compare lì da solo.
+ */
 @Composable
-private fun androidx.compose.foundation.layout.BoxScope.CloseMark(near: Float, magnet: Boolean, screenBelow: Float, navInset: Float) {
-    if (near <= 0f) return
-            Box(
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    // Il centro della X sul fondo dello schermo, appena sopra i tasti di sistema (22 dp di raggio + 6 di margine).
-                    .offset { IntOffset(0, (screenBelow - navInset - 28.dp.toPx() + 22.dp.toPx()).roundToInt()) }
-                    .size(44.dp)
-                    .graphicsLayer {
-                        val sc = 0.6f + 0.4f * near + if (magnet) 0.15f else 0f
-                        scaleX = sc
-                        scaleY = sc
-                        alpha = near
-                    }
-                    .clip(CircleShape)
-                    // Rossa da subito (rosso = elimina): dice che lì sotto si chiude; più piena quando la calamita lo prende.
-                    .background(MaterialTheme.colorScheme.error.copy(alpha = if (magnet) 1f else 0.75f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    Icons.Filled.Close,
-                    contentDescription = if (magnet) "Lascia per chiudere" else "Portalo qui per chiudere",
-                    tint = MaterialTheme.colorScheme.onError,
-                    modifier = Modifier.graphicsLayer { rotationZ = 90f * (1f - near) },
-                )
+private fun androidx.compose.foundation.layout.BoxScope.PlusMark(show: Boolean, hot: Boolean, plusX: Float, plusY: Float) {
+    val shown by androidx.compose.animation.core.animateFloatAsState(if (show) 1f else 0f, Motion.lively(), label = "plusShow")
+    val heat by androidx.compose.animation.core.animateFloatAsState(if (hot) 1f else 0f, Motion.lively(), label = "plusHot")
+    if (shown <= 0.01f) return
+    val color = androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.error, heat)
+    Box(
+        Modifier
+            .align(Alignment.TopStart)
+            .offset { IntOffset((plusX - 30.dp.toPx()).roundToInt(), (plusY - 30.dp.toPx()).roundToInt()) }
+            .size(60.dp)
+            .graphicsLayer {
+                val sc = (0.7f + 0.38f * shown) + 0.1f * heat
+                scaleX = sc
+                scaleY = sc
+                alpha = shown.coerceIn(0f, 1f)
             }
+            .clip(CircleShape)
+            .background(color),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            Icons.Filled.Add,
+            contentDescription = if (hot) "Lascia per chiudere" else "Portalo sul + per chiudere",
+            tint = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier.size(28.dp).graphicsLayer { rotationZ = 45f * heat },
+        )
+    }
 }
 
 /**

@@ -36,6 +36,9 @@ enum class HomeCard(val label: String, val description: String) {
     MAIL("Dalla posta", "Le mail importanti non lette"),
     // Il nome resta RECAP per le preferenze salvate: dalla 1.356 è la card News (le storie nuove dall'ultima visita).
     RECAP("News", "Le notizie nuove dall'ultima visita"),
+    // 1.634 (Antonio: "lasciamo solo la Home"): le file di Media diventano due card in fondo alla Home.
+    MUSIC("Musica", "Mix, playlist, radio e podcast"),
+    VIDEO("Video", "I nuovi video dei canali che segui"),
 }
 
 data class HomeLayout(val order: List<HomeCard>, val hidden: Set<HomeCard>) {

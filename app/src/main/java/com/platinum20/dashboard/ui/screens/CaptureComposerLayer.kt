@@ -60,6 +60,10 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.rounded.ArrowUpward
+import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -252,12 +256,12 @@ private fun rememberPhotoAttach(onReading: (Boolean) -> Unit): () -> Unit {
 }
 
 /**
- * Dentro la barra trasformata, sempre alta quanto il +: la graffetta, il campo (gli esempi fanno da
- * segnaposto), la X e, tutto a destra mentre si scrive, il simbolo di cosa diventerà. Il tasto
- * invia è il + accanto, che intanto è diventato una freccia.
+ * Il riquadro per scrivere (1.634, come nell'app Claude): in cima dove andrà (le chip), poi il campo che cresce col
+ * testo fino a sei righe, sotto i tasti: graffetta e microfono a sinistra, la X e Invia a destra.
+ * Il microfono detta dentro il testo a mani libere.
  */
 @Composable
-internal fun CaptureComposerInput(modifier: Modifier = Modifier) {
+internal fun CaptureComposerInput(modifier: Modifier = Modifier, onMic: () -> Unit, onSend: () -> Unit) {
     val haptic = rememberHaptic()
     val text = CaptureComposer.text
     var reading by remember { mutableStateOf(false) }
@@ -271,20 +275,9 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier) {
             exampleAt += 1
         }
     }
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier.height(CaptureHints.BAR_DP.dp).padding(horizontal = 6.dp),
-    ) {
-        // Tutto a sinistra, come nelle chat: allega una foto.
-        IconButton(onClick = { if (!reading) { haptic(Haptic.TICK); attach() } }, modifier = Modifier.size(40.dp)) {
-            Icon(
-                Icons.Rounded.AttachFile,
-                contentDescription = "Allega",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp),
-            )
-        }
-        Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+    Column(modifier.padding(start = 14.dp, end = 8.dp, top = 12.dp, bottom = 8.dp)) {
+        CaptureDestinationChips(text.text, Modifier.padding(bottom = 6.dp))
+        Box(Modifier.fillMaxWidth().padding(end = 6.dp, bottom = 4.dp), contentAlignment = Alignment.TopStart) {
             val style = MaterialTheme.typography.bodyLarge
             if (empty) {
                 val hint = if (reading) "Leggo la foto…" else CaptureHints.example(exampleAt)
@@ -292,35 +285,66 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier) {
                     Text(shown, style = style, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
-            // Una riga sola visibile: il testo lungo o a capo scorre dentro, la barra non cresce mai.
+            // Cresce col testo fino a sei righe, poi scorre dentro.
             BasicTextField(
                 value = text,
                 onValueChange = { CaptureComposer.text = it },
                 textStyle = style.copy(color = MaterialTheme.colorScheme.onSurface),
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                maxLines = 1,
+                maxLines = 6,
                 modifier = Modifier
                     .fillMaxWidth()
                     .autoFocus()
                     .semantics { contentDescription = "Scrivi" },
             )
         }
-        // La X: con del testo lo cancella, a campo vuoto chiude senza salvare.
-        IconButton(
-            onClick = {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            ComposerKey(Icons.Rounded.AttachFile, "Allega") { if (!reading) { haptic(Haptic.TICK); attach() } }
+            Spacer(Modifier.width(6.dp))
+            ComposerKey(Icons.Rounded.Mic, "Detta") { haptic(Haptic.TICK); onMic() }
+            Spacer(Modifier.weight(1f))
+            // La X: con del testo lo cancella, a campo vuoto chiude senza salvare.
+            ComposerKey(Icons.Rounded.Close, if (empty) "Annulla" else "Cancella il testo") {
                 haptic(Haptic.TICK)
                 if (empty) CaptureComposer.close() else CaptureComposer.text = TextFieldValue("")
-            },
-            modifier = Modifier.size(40.dp),
-        ) {
-            Icon(
-                Icons.Rounded.Close,
-                contentDescription = if (empty) "Annulla" else "Cancella il testo",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp),
-            )
+            }
+            Spacer(Modifier.width(6.dp))
+            ComposerKey(Icons.Rounded.ArrowUpward, "Inserisci", main = true, enabled = !empty) { haptic(Haptic.TICK); onSend() }
         }
+    }
+}
+
+/** Un tasto tondo del riquadro: grigio, o blu pieno per Invia (blu = azione). */
+@Composable
+internal fun ComposerKey(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    main: Boolean = false,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
+    val bg = when {
+        main && enabled -> MaterialTheme.colorScheme.primary
+        main -> MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+    }
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(40.dp)
+            .bouncyPress(0.88f)
+            .clip(CircleShape)
+            .background(bg)
+            .clickable(enabled = enabled, onClick = onClick)
+            .semantics { contentDescription = label },
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = if (main) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 

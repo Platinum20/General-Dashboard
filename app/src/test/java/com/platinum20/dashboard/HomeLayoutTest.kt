@@ -11,7 +11,7 @@ class HomeLayoutTest {
 
     @Test fun ordineNuovo() {
         assertEquals(
-            listOf("Adesso", "Media", "Calendario", "Da fare", "SIM", "Documenti", "Dalla posta", "News"),
+            listOf("Adesso", "Media", "Calendario", "Da fare", "SIM", "Documenti", "Dalla posta", "News", "Musica", "Video"),
             HomeLayout.DEFAULT.order.map { it.label },
         )
     }
@@ -66,7 +66,14 @@ class HomeLayoutTest {
         // "La giornata" nascosta prima della 1.186 diventa "Prossimi giorni": si rivede, le altre restano come erano.
         val layout = HomeLayout.read("WEATHER,DAY,RECAP", "DAY,RECAP", version = 2)
         assertEquals(setOf(HomeCard.RECAP), layout.hidden)
-        assertEquals(HomeCard.RECAP, layout.order.last())
+        assertEquals(listOf(HomeCard.RECAP, HomeCard.MUSIC, HomeCard.VIDEO), layout.order.takeLast(3))
+    }
+
+    @Test fun musicaEVideoArrivanoInFondo() {
+        // 1.634: chi aveva un ordine salvato trova Musica e Video in fondo alla Home, dopo l'ultima card che aveva.
+        val layout = HomeLayout.read("RECAP,DAY,WEATHER,RESUME,LATER,SIM,DOCS,MAIL", "", HomeLayout.VERSION)
+        assertEquals(listOf(HomeCard.MUSIC, HomeCard.VIDEO), layout.order.takeLast(2))
+        assertEquals(HomeCard.entries.size, layout.order.size)
     }
 
     @Test fun calendarioSempreVisibileDalla1314() {

@@ -3,8 +3,8 @@ package com.platinum20.dashboard.ui.screens
 /**
  * Le regole del mini player (1.508, Antonio; riquadro dal 1.546): un riquadro con video o copertina e i tasti
  * dentro, agganciato a uno dei quattro angoli; lanciato di lato (solo a mano) si ritira in una linguetta alta
- * quanto lui sul bordo, che si tira fuori con una vibrazione; si chiude solo portandolo giù, sotto lo schermo,
- * dove una calamita lo prende con una vibrazione. Pure, provate nei test.
+ * quanto lui sul bordo, che si tira fuori con una vibrazione; si chiude portandolo sul + in basso a destra
+ * (1.634), dove una calamita lo prende con una vibrazione. Pure, provate nei test.
  */
 object MiniTuck {
     /**
@@ -32,6 +32,24 @@ object MiniTuck {
 
     /** La calamita lo tiene: è sceso di almeno [thresholdPx] sotto il suo posto in basso. */
     fun magnet(belowPx: Float, thresholdPx: Float): Boolean = belowPx > thresholdPx
+
+    /** Il centro del + (1.634): 30 dp dal bordo destro dell'area del mini player e 40 dp sopra i tasti di sistema. */
+    const val PLUS_FROM_RIGHT_DP = 30f
+    const val PLUS_FROM_BOTTOM_DP = 40f
+
+    /** Entro quanti dp dal centro del + il dito fa scattare la calamita (il + diventa la ✕ rossa). */
+    const val PLUS_MAGNET_DP = 64f
+
+    /**
+     * Si chiude portandolo sul + (1.634, Antonio): la calamita lo prende quando il dito arriva vicino al +, in
+     * basso a destra; nelle pagine senza + nello stesso punto. Coordinate in px, [density] in px per dp.
+     */
+    fun overPlus(fingerX: Float, fingerY: Float, plusX: Float, plusY: Float, density: Float): Boolean {
+        val dx = fingerX - plusX
+        val dy = fingerY - plusY
+        val r = PLUS_MAGNET_DP * density
+        return dx * dx + dy * dy <= r * r
+    }
 
     /** Il riquadro del mini player (1.546, Antonio): circa il doppio del video di prima (84 × 48), 16:9. */
     const val BOX_W = 200f
