@@ -400,6 +400,8 @@ private fun WindTreLogin(onClose: () -> Unit) {
         }
     }
     BackHandler(enabled = canGoBack) { webView.goBack() }
+    // Dentro l'accesso niente barra né "+" (regola della barra).
+    BarHide.Here()
     Scaffold(
         topBar = {
             Column {
@@ -416,7 +418,7 @@ private fun WindTreLogin(onClose: () -> Unit) {
                     },
                 )
                 Text(
-                    "Una volta sola: poi Canvas legge giga e credito da solo. La password va solo a WindTre.",
+                    "Una volta sola con la tua e-mail: poi Canvas rientra da sola col codice che arriva per mail.",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),

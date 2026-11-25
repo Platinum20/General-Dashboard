@@ -1288,3 +1288,20 @@ fun DangerButton(
     enabled: Boolean = true,
     content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit,
 ) = DismissButton(onClick = onClick, modifier = modifier, enabled = enabled, danger = true, content = content)
+
+/**
+ * Nasconde barra e "+" finché è sullo schermo: per le pagine dentro una pagina con la barra che però sono
+ * "dentro una cosa" (l'accesso WindTre dentro la pagina SIM). Regola della barra: mai il "+" lì.
+ */
+object BarHide {
+    var count by androidx.compose.runtime.mutableIntStateOf(0)
+        private set
+
+    @Composable
+    fun Here() {
+        androidx.compose.runtime.DisposableEffect(Unit) {
+            count++
+            onDispose { count-- }
+        }
+    }
+}

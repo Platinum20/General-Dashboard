@@ -30,8 +30,9 @@ open class AutoLogin(private val prefsName: String) {
     /** Lettura riuscita: quello scritto era giusto, si salva. */
     fun confirm(context: Context) {
         val user = pendingUser
-        val pass = pendingPass ?: return
         val old = saved(context)
+        // Senza password (WindTre: e-mail e codice per mail) basta l'utente.
+        val pass = pendingPass ?: old?.second.orEmpty()
         val keepUser = user ?: old?.first ?: return
         if (old == keepUser to pass) return
         val prefs = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
@@ -97,7 +98,8 @@ open class AutoLogin(private val prefsName: String) {
         private const val KEY = "login"
         const val MAX_TRIES = 3
 
-        internal fun usable(user: String?, pass: String?) = !user.isNullOrBlank() && !pass.isNullOrEmpty()
+        /** Basta l'utente: ci sono accessi senza password (WindTre: e-mail, poi il codice per mail). */
+        internal fun usable(user: String?, pass: String?) = !user.isNullOrBlank()
         internal fun tryAgain(done: Int) = done < MAX_TRIES
 
         /** Pezzi JS comuni: campo visibile, campo utente (quello prima della password). */
@@ -131,7 +133,9 @@ open class AutoLogin(private val prefsName: String) {
               function send(e) {
                 var scope = e.form || document;
                 var bs = [].slice.call(scope.querySelectorAll('button, input[type=submit], [role=button]')).filter(vis);
-                var b = bs.filter(function (b) { return /accedi|entra|login|log in|continua|avanti|prosegui|sign in|next|conferma/i.test(b.innerText || b.value || ''); })[0]
+                // Il più corto fra quelli giusti: "ACCEDI", non "ACCEDI CON IL TUO NUMERO".
+                var b = bs.filter(function (b) { return /accedi|entra|login|log in|continua|avanti|prosegui|sign in|next|conferma|verifica/i.test(b.innerText || b.value || ''); })
+                  .sort(function (x, y) { return (x.innerText || x.value || '').trim().length - (y.innerText || y.value || '').trim().length; })[0]
                   || bs.filter(function (b) { return b.type === 'submit' && (b.innerText || b.value || '').trim(); })[0];
                 if (b) b.click();
                 else if (e.form && e.form.requestSubmit) e.form.requestSubmit();
@@ -186,6 +190,8 @@ open class AutoLogin(private val prefsName: String) {
                 try {
                   var p = pass(), u = user(p);
                   var uv = u && (p || hinted(u)) ? u.value : '', pv = p ? p.value : '';
+                  // Il codice per mail non è l'utente (campo tel/numero con sole cifre).
+                  if (/^\d{4,8}$/.test(uv) && !p) uv = '';
                   if (uv || pv) $bridge.typed(uv, pv);
                 } catch (e) {}
               }
@@ -202,14 +208,17 @@ open class AutoLogin(private val prefsName: String) {
             (function (U, P) {
               if (window.__cvFill) return; window.__cvFill = true;
               $FIELDS
+              $CODE_FIELDS
               $PUT
               function step() {
                 try {
                   var p = pass(), u = user(p);
                   if (!p && !(u && hinted(u))) return;
+                  // La pagina del codice la compila codeScript, non qui.
+                  if (codeFields().length && (!u || codeFields().indexOf(u) >= 0)) return;
                   $bridge.loginSeen();
-                  if (!U || !P) return;
-                  if (p && p.value) return;
+                  if (!U) return;
+                  if (p && (p.value || !P)) return;
                   if (!p && u.value) return;
                   if (!$bridge.mayFill()) return;
                   if (u && !u.value) put(u, U);
