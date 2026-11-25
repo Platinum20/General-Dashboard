@@ -8,6 +8,7 @@ import com.platinum20.dashboard.ui.screens.COMPOSER_KEY_DP
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.AttachFile
 import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.capture.CaptureNotice
 import com.platinum20.dashboard.capture.CaptureComposer
@@ -577,8 +578,8 @@ private fun CanvasNavBar(
         composing -> BAR_WRITE
         else -> BAR_PLUS
     }
-    // La freccia fa tutto (1.636, Antonio): tocco = scrivi (aperto: invia), tenuta = vocale, su = bloccato a mani
-    // libere, a sinistra = la ✕ si fa rossiccia e lasciando si butta il vocale e il testo.
+    // Un tasto solo (1.636, Antonio): il + toccato apre il riquadro e diventa la freccia (aperto: invia), tenuto = vocale
+    // (diventa il microfono), su = bloccato a mani libere, a sinistra = la graffetta diventa una ✕ rossiccia e butta l'audio.
     var voiceDrag by remember { mutableFloatStateOf(0f) }
     var voiceHeld by remember { mutableStateOf(false) }
     var voiceLift by remember { mutableFloatStateOf(0f) }
@@ -720,7 +721,7 @@ private fun CanvasNavBar(
     }
 }
 
-/** La freccia tonda (1.636: era il +). I gesti li legge il riquadro sopra, che resta anche quando diventa il vocale. */
+/** Il + tondo, l'unico dell'app (1.636). I gesti li legge il riquadro sopra, che resta anche quando diventa il vocale. */
 @Composable
 private fun PlusButton(onPlus: () -> Unit, onHoldStart: () -> Boolean) {
     Box(
@@ -738,13 +739,13 @@ private fun PlusButton(onPlus: () -> Unit, onHoldStart: () -> Boolean) {
             contentColor = MaterialTheme.colorScheme.onPrimary,
             modifier = Modifier.fillMaxSize().glass(CircleShape, MaterialTheme.colorScheme.primary)
                 .semantics {
-                    contentDescription = "Scrivi"
-                    onClick(label = "Scrivi") { onPlus(); true }
+                    contentDescription = "Aggiungi"
+                    onClick(label = "Aggiungi") { onPlus(); true }
                     onLongClick(label = "Detta a voce") { onHoldStart() }
                 },
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.ArrowUpward, contentDescription = null, modifier = Modifier.size(24.dp))
+                Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(24.dp))
             }
         }
     }
@@ -752,7 +753,7 @@ private fun PlusButton(onPlus: () -> Unit, onHoldStart: () -> Boolean) {
 
 /**
  * Il riquadro del vocale, come nell'app Claude: sopra le parole capite finora (a capo, fino a cinque righe), sotto
- * a sinistra una ✕ che trascinando diventa rossiccia (butta), l'onda, a destra la freccia: toccata ferma il vocale
+ * a sinistra la graffetta che trascinando diventa una ✕ rossiccia (butta), l'onda, a destra la freccia: toccata ferma il vocale
  * e mette le parole nel riquadro, da inviare a mano (Antonio, 1.636: il vocale non parte mai da solo).
  */
 @Composable
@@ -811,9 +812,11 @@ private fun VoiceBox(
             modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 22.dp).animateContentSize(Springs.snappy()),
         )
         if (listening) Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            // Al posto della graffetta una ✕: trascinando a sinistra cresce e si fa rossiccia, lasciando butta (anche un tocco).
+            // La graffetta: trascinando a sinistra diventa una ✕ che cresce e si fa rossiccia, lasciando butta l'audio.
+            // Bloccato è già la ✕ (un tocco butta).
             Box(Modifier.graphicsLayer { val sc = 1f + 0.2f * slide; scaleX = sc; scaleY = sc }) {
-                ComposerKey(Icons.Rounded.Close, "Butta il vocale", danger = slide * 0.65f, onClick = onCancel)
+                val clip = held && slide < 0.3f
+                ComposerKey(if (clip) Icons.Rounded.AttachFile else Icons.Rounded.Close, "Butta il vocale", danger = slide * 0.65f, onClick = onCancel)
             }
             val barColor = MaterialTheme.colorScheme.primary
             Canvas(Modifier.weight(1f).height(26.dp).padding(horizontal = 12.dp)) {
@@ -838,7 +841,8 @@ private fun VoiceBox(
                     translationY = -lift * 14.dp.toPx()
                 },
             ) {
-                ComposerKey(Icons.Rounded.ArrowUpward, "Metti nel testo", main = true, onClick = onStop)
+                // Col dito sopra è il microfono (il + diventato vocale); bloccato è la freccia: toccata mette le parole nel testo.
+                ComposerKey(if (held) Icons.Rounded.Mic else Icons.Rounded.ArrowUpward, "Metti nel testo", main = true, onClick = onStop)
             }
         }
     }
@@ -1179,13 +1183,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                         CaptureComposer.dictating = true
                         dictation.release()
                     },
-                    // Buttato: via l'audio e anche il testo scritto (Antonio, 1.636).
-                    onCancelDictation = {
-                        voiceToEdit = false
-                        CaptureComposer.dictating = false
-                        dictation.discard()
-                        CaptureComposer.text = androidx.compose.ui.text.input.TextFieldValue("")
-                    },
+                    // Buttato solo l'audio: il testo già scritto nel riquadro resta (Antonio, 1.636).
+                    onCancelDictation = { voiceToEdit = false; CaptureComposer.dictating = false; dictation.discard() },
                     heardSound = dictation.heardSound,
                     notice = dictation.notice,
                     composing = composing,

@@ -318,7 +318,10 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier, onSend: () -> U
             // La graffetta (Antonio, 1.636): un + a sinistra sembrava il + di destra che si spostava.
             ComposerKey(Icons.Rounded.AttachFile, if (tray) "Chiudi allegati" else "Allega") { if (!reading) { haptic(Haptic.TICK); tray = !tray } }
             Spacer(Modifier.weight(1f))
-            ComposerKey(Icons.Rounded.ArrowUpward, "Inserisci", main = true, touch = false) { onSend() }
+            // Il + che si è aperto ruota e diventa la freccia, nello stesso punto.
+            val spin = remember { androidx.compose.animation.core.Animatable(-135f) }
+            LaunchedEffect(Unit) { spin.animateTo(0f, Motion.lively()) }
+            ComposerKey(Icons.Rounded.ArrowUpward, "Inserisci", main = true, touch = false, iconTurn = spin.value) { onSend() }
         }
     }
 }

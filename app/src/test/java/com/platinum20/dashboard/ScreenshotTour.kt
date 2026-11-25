@@ -164,7 +164,7 @@ class ScreenshotTour {
         scroll(down = true)
         shot(p + "05_oggi_fondo")
         // Il + della barra in basso: la cattura veloce. "Aggiungi" c'è anche nelle card: il + della barra è il più in basso.
-        if (tapLowest("Scrivi")) {
+        if (tapLowest("Aggiungi")) {
             settle(1_000); shot(p + "06_aggiungi")
             // Il + apre il fumetto per scrivere, con il suo tasto per inserire.
             if (!exists("Inserisci")) missing += p + "06_aggiungi (il fumetto del + non si è aperto)"
