@@ -17,5 +17,5 @@ object VoiceSlide {
 
     /** Dove comincia l'onda (da destra, [count] barrette): a sinistra di lì la scritta si vede ancora. */
     fun waveStart(width: Float, count: Int, barPx: Float, gapPx: Float): Float =
-        (width - count * (barPx + gapPx) + gapPx).coerceAtLeast(0f)
+        if (count <= 0) width else (width - count * (barPx + gapPx) + gapPx).coerceIn(0f, width)
 }
