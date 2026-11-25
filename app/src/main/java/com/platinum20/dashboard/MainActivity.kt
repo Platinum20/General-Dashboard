@@ -1719,9 +1719,12 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     }
     }
     CompositionLocalProvider(LocalBackdrop provides screenBackdrop) {
+    // La coda per prima: sul player della musica spunta sempre dal bordo, e i fumetti devono starle sopra.
+    com.platinum20.dashboard.ui.screens.QueueLayer(
+        drawer = currentRoute == Routes.PLAYER && com.platinum20.dashboard.ui.screens.QueueOpen.peek,
+    )
     SaveToNotesLayer()
     com.platinum20.dashboard.ui.screens.VideoSettingsLayer()
-    com.platinum20.dashboard.ui.screens.QueueLayer()
     ActionBubbleLayer()
     com.platinum20.dashboard.ui.screens.PlaylistNameLayer()
     WhatsNewLayer()

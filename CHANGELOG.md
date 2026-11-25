@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.639.0
+## 1.640.0
 **Accesso WindTre senza pagina che lampeggia**
 - La pagina d'accesso WindTre non lampeggia più chiaro/scuro: Canvas rimetteva di continuo la sessione vecchia, il sito la rifiutava e ricominciava da capo. Era anche il motivo per cui l'accesso da solo non partiva mai
 - Con l'accesso scaduto la pagina si apre pulita, pronta per la tua e-mail
@@ -8,6 +8,13 @@
 - Per attivarlo: tocca "Rientra" e accedi una volta con l'e-mail; il codice lo scrive già Canvas se Gmail è collegato
 - Nella pagina d'accesso niente più "+" in basso, e la frase in alto non parla più di password
 - In Account › WindTre › Dati letti c'è il registro dei passaggi dell'accesso (pagine, modulo, codice dalla posta): se si ferma ancora, mandamelo
+
+## 1.639.0
+**Il player risponde a ogni tasto**
+- La coda è un foglio di vetro solo: in fondo ne spunta la cima ("Dopo · il prossimo"), la tiri su ed è la coda intera, la tiri giù e torna a spuntare
+- Radio e Playlist fanno vedere subito che stanno lavorando (Spotify ci mette qualche secondo), la radio lo dice anche con una riga
+- Casuale e Ripeti dicono cosa hanno fatto ("la coda è mescolata", "Ripeti questo brano")
+- Condividi apre il solito fumetto: Copia il link · Manda a…
 
 ## 1.638.0
 **Il + si arrossa mentre ti avvicini**

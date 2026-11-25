@@ -267,12 +267,33 @@ private fun NothingNext() {
 /** La coda aperta: disegnata fuori dal NavHost (MainActivity) perché il vetro sfochi davvero il video sotto. */
 internal object QueueOpen {
     var open by mutableStateOf(false)
+    /** Il player della musica è a schermo: la coda spunta dal bordo come un foglio solo ([QueueDrawerSheet]). */
+    var peek by mutableStateOf(false)
 }
 
-/** Il livello della coda in MainActivity, sopra pagine, barra e mini player (vetro, 1.518). */
+/**
+ * Il livello della coda in MainActivity, sopra pagine, barra e mini player (vetro, 1.518). Sul player della musica
+ * ([drawer], solo in verticale) è il foglio che spunta in fondo; altrove (video, Media) il pannello che sale.
+ */
 @Composable
-internal fun QueueLayer() {
-    QueuePopup(open = QueueOpen.open, onClose = { QueueOpen.open = false })
+internal fun QueueLayer(drawer: Boolean = false) {
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+        val portrait = !QueueSheet.sideways(constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat())
+        androidx.compose.animation.AnimatedVisibility(
+            visible = drawer && portrait,
+            enter = androidx.compose.animation.slideInVertically(Motion.settle()) { it / 6 } + androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.slideOutVertically(Motion.settle()) { it / 6 } + androidx.compose.animation.fadeOut(),
+        ) {
+            QueueDrawerSheet(open = QueueOpen.open, onOpen = { QueueOpen.open = true }, onClose = { QueueOpen.open = false })
+        }
+        if (!(drawer && portrait)) QueuePopup(open = QueueOpen.open, onClose = { QueueOpen.open = false })
+    }
+}
+
+/** La lista della coda (o "vuota"), la stessa nel pannello e nel foglio del player. */
+@Composable
+internal fun QueueList(now: QueueEntry?, upcoming: List<QueueEntry>, modifier: Modifier, contentPadding: PaddingValues) {
+    if (now == null && upcoming.isEmpty()) EmptyQueue(modifier) else UpcomingList(now, upcoming, modifier, contentPadding)
 }
 
 @Composable

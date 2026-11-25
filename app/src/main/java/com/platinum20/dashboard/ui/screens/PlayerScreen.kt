@@ -354,8 +354,13 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
                     Spacer(Modifier.height(8.dp))
                     SpeechChapters()
                 }
-                Spacer(Modifier.height(12.dp))
-                NextPeek(onOpenQueue)
+                // Sotto resta il posto per la coda in vetro che spunta dal bordo (QueueDrawer): si tira su e basta.
+                Spacer(Modifier.height(12.dp + QueueDrawer.PEEK))
+            }
+            // La coda in vetro spunta sotto finché questa pagina è aperta.
+            androidx.compose.runtime.DisposableEffect(Unit) {
+                QueueOpen.peek = true
+                onDispose { QueueOpen.peek = false }
             }
         }
     }
@@ -419,60 +424,73 @@ private fun PlayerTools(
 ) {
     val context = LocalContext.current
     val ytLink = if (now.source == PlaySource.MUSIC) YtPlayer.now.value?.link else null
+    // Ogni tasto risponde subito (Antonio 2026-11-25: "alcuni tasti non fanno nulla"): la radio e le playlist
+    // passano dalla rete e ci mettono qualche secondo, quindi il tasto lo dice finché non arriva la risposta.
+    // La radio partita cambia la voce della coda (anche se il primo brano è lo stesso): lì il tasto torna com'era.
+    val entry = com.platinum20.dashboard.media.CanvasPlayer.queue.collectAsState().value.now?.id
+    var radioBusy by remember(entry) { mutableStateOf(false) }
+    var listsBusy by remember(now.title) { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-        if (seed != null) PlayerTool(Icons.AutoMirrored.Outlined.PlaylistAdd, "Playlist") { PlaylistPicker.open(context, seed) }
+        if (seed != null) PlayerTool(Icons.AutoMirrored.Outlined.PlaylistAdd, "Playlist", busy = listsBusy) {
+            if (!listsBusy) {
+                listsBusy = true
+                PlaylistPicker.open(context, seed) { listsBusy = false }
+            }
+        }
         if (lyrics) PlayerTool(Icons.AutoMirrored.Outlined.Notes, if (showLyrics) "Copertina" else "Testo", on = showLyrics, onClick = onLyrics)
-        if (seed != null) PlayerTool(Icons.Outlined.Sensors, "Radio") {
-            com.platinum20.dashboard.media.spotify.MadeStore.startRadio(context, seed) { CaptureFeedback.tell(context, it) }
+        if (seed != null) PlayerTool(Icons.Outlined.Sensors, "Radio", busy = radioBusy) {
+            if (!radioBusy) {
+                radioBusy = true
+                CaptureFeedback.tell(context, "Preparo la radio di ${seed.title}…", Icons.Outlined.Sensors)
+                com.platinum20.dashboard.media.spotify.MadeStore.startRadio(context, seed) {
+                    radioBusy = false
+                    CaptureFeedback.tell(context, it)
+                }
+            }
         }
         // La musica di YouTube suona in solo audio: da qui si passa al video, dallo stesso punto.
         ytLink?.let { link -> PlayerTool(Icons.Outlined.OndemandVideo, "Video") { YtPlayer.play(context, link) } }
+        // Condividi come in ogni fumetto: Copia il link · Manda a…, non subito il foglio di Android.
         if (!now.live) PlayerTool(Icons.Outlined.Share, "Condividi") {
-            shareText(context, seed?.webUrl ?: listOf(now.title, now.subtitle).filter { it.isNotBlank() }.joinToString(" · "))
+            val text = seed?.webUrl ?: listOf(now.title, now.subtitle).filter { it.isNotBlank() }.joinToString(" · ")
+            val link = seed?.webUrl != null
+            ActionBubble.show(
+                BubbleHead("Condividi", now.title),
+                *shareRows(
+                    copy = { Clip.copy(context, if (link) "Link" else "Testo", text, if (link) "Link copiato" else "Testo copiato") },
+                    copyTitle = if (link) "Copia il link" else "Copia il testo",
+                    copyDetail = "da incollare altrove",
+                    pdf = null,
+                ) { runCatching { shareText(context, text) } }.toTypedArray(),
+            )
         }
     }
 }
 
 @Composable
-private fun PlayerTool(icon: ImageVector, label: String, on: Boolean = false, onClick: () -> Unit) {
+private fun PlayerTool(icon: ImageVector, label: String, on: Boolean = false, busy: Boolean = false, onClick: () -> Unit) {
     val tint = if (on) MaterialTheme.colorScheme.primary else LocalContentColor.current
+    val view = LocalView.current
     Column(
-        Modifier.clip(MaterialTheme.shapes.medium).clickable(onClick = onClick).padding(horizontal = 6.dp, vertical = 6.dp).widthIn(min = 52.dp),
+        Modifier.clip(MaterialTheme.shapes.medium).clickable { view.haptic(Haptic.TICK); onClick() }
+            .padding(horizontal = 6.dp, vertical = 6.dp).widthIn(min = 52.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
+        Box(Modifier.size(22.dp), contentAlignment = Alignment.Center) {
+            if (busy) LoadingPulse(size = 10.dp) else Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
+        }
         Spacer(Modifier.height(4.dp))
         Text(label, style = MaterialTheme.typography.labelSmall, color = tint, maxLines = 1)
     }
 }
 
-/** La linguetta "Dopo" in fondo (giro 2): il prossimo della coda; toccandola (o tirando su la pagina) si apre la coda. */
-@Composable
-private fun NextPeek(onOpenQueue: () -> Unit) {
-    val queue by com.platinum20.dashboard.media.CanvasPlayer.queue.collectAsState()
-    val next = queue.upcoming.firstOrNull()
-    Column(
-        Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
-            .background(MaterialTheme.colorScheme.card).clickable(onClickLabel = "Apri la coda", onClick = onOpenQueue)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Box(Modifier.size(width = 36.dp, height = 4.dp).clip(CircleShape).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)))
-        Spacer(Modifier.height(6.dp))
-        Text(
-            androidx.compose.ui.text.buildAnnotatedString {
-                withStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold)) { append("Dopo") }
-                withStyle(androidx.compose.ui.text.SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant)) {
-                    append(if (next == null) " · la coda è vuota" else " · " + listOf(next.item.title, next.item.subtitle).filter { it.isNotBlank() }.joinToString(" · "))
-                    if (queue.upcoming.size > 1) append(" · altri ${queue.upcoming.size - 1}")
-                }
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
+/** La riga che conferma Casuale o Ripeti appena toccati. */
+internal fun playerModeText(shuffle: Boolean? = null, repeat: com.platinum20.dashboard.media.Repeat? = null): String = when {
+    shuffle == true -> "Casuale: la coda è mescolata"
+    shuffle == false -> "Casuale spento: la coda torna in ordine"
+    repeat == com.platinum20.dashboard.media.Repeat.ALL -> "Ripeti tutta la coda"
+    repeat == com.platinum20.dashboard.media.Repeat.ONE -> "Ripeti questo brano"
+    else -> "Ripeti spento"
 }
 
 /** "In diretta" lo dice già la riga del tempo, sotto il titolo: non due volte. */
@@ -635,6 +653,7 @@ private fun TimeBar(now: Playing) {
 
 @Composable
 private fun Controls(now: Playing) {
+    val context = LocalContext.current
     Row(
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly,
@@ -653,6 +672,8 @@ private fun Controls(now: Playing) {
             val shuffle by com.platinum20.dashboard.media.CanvasPlayer.shuffle.collectAsState()
             ModeButton(Icons.Filled.Shuffle, if (shuffle) "Casuale attivo" else "Casuale", on = shuffle) {
                 com.platinum20.dashboard.media.CanvasPlayer.toggleShuffle()
+                // Mescolare si vede solo nella coda: lo dice una riga, se no sembra che il tasto non faccia nulla.
+                CaptureFeedback.tell(context, playerModeText(shuffle = !shuffle), Icons.Filled.Shuffle)
             }
         }
         IconButton(onClick = { Playback.previous() }, modifier = Modifier.size(56.dp)) {
@@ -682,7 +703,10 @@ private fun Controls(now: Playing) {
                     com.platinum20.dashboard.media.Repeat.ONE -> "Ripeti questo brano"
                 },
                 on = repeat != com.platinum20.dashboard.media.Repeat.OFF,
-            ) { com.platinum20.dashboard.media.CanvasPlayer.cycleRepeat() }
+            ) {
+                com.platinum20.dashboard.media.CanvasPlayer.cycleRepeat()
+                CaptureFeedback.tell(context, playerModeText(repeat = repeat.next()), Icons.Filled.Repeat)
+            }
         }
         if (podcast) {
             IconButton(onClick = { Playback.seekBy(30_000) }, modifier = Modifier.size(48.dp)) {
