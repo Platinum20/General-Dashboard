@@ -8,7 +8,7 @@ import com.platinum20.dashboard.ui.screens.COMPOSER_KEY_DP
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.AttachFile
+import androidx.compose.material.icons.rounded.ChevronLeft
 import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.capture.CaptureNotice
 import com.platinum20.dashboard.capture.CaptureComposer
@@ -812,36 +812,70 @@ private fun VoiceBox(
     }
     Column(Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, top = 18.dp, bottom = 10.dp)) {
         val quiet = shown == Dictation.NO_SOUND || shown == "Ti ascolto…" 
-        Text(
-            shown,
-            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 19.sp, lineHeight = 26.sp),
-            color = if (quiet) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-            maxLines = 5,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-            modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 22.dp).animateContentSize(Springs.snappy()),
+        // Gli aiuti dei gesti si muovono invece di scrivere (Antonio, 1.637, B): un'onda lenta che ripete la strada.
+        val hintMove = androidx.compose.animation.core.rememberInfiniteTransition(label = "aiuti")
+        val hintPhase by hintMove.animateFloat(
+            0f, 1f,
+            androidx.compose.animation.core.infiniteRepeatable(tween(1_100), androidx.compose.animation.core.RepeatMode.Restart),
+            label = "fase",
         )
+        val showHints = held && listening && !music
+        Box(Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
+            Text(
+                shown,
+                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 19.sp, lineHeight = 26.sp),
+                color = if (quiet) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                maxLines = 5,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = if (showHints) 52.dp else 12.dp, bottom = 12.dp)
+                    .heightIn(min = if (showHints) 52.dp else 0.dp).animateContentSize(Springs.snappy()),
+            )
+            // Il lucchetto dentro il riquadro, subito sopra il microfono: la freccia sale piano e dice "tira su".
+            if (showHints) Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .width(COMPOSER_KEY_DP.dp)
+                    .graphicsLayer { translationY = -lift * 10.dp.toPx() },
+            ) {
+                val tint = androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.onSurfaceVariant, MaterialTheme.colorScheme.primary, lift)
+                Icon(Icons.Rounded.Lock, contentDescription = "Tira su per bloccare", tint = tint, modifier = Modifier.size(18.dp))
+                Icon(
+                    Icons.Rounded.KeyboardArrowUp,
+                    contentDescription = null,
+                    tint = tint,
+                    modifier = Modifier.size(22.dp).graphicsLayer {
+                        translationY = -4.dp.toPx() * hintPhase
+                        alpha = 1f - 0.6f * hintPhase
+                    },
+                )
+            }
+        }
         if (listening) Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            // La graffetta: trascinando a sinistra diventa una ✕ che cresce e si fa rossiccia, lasciando butta l'audio.
-            // Bloccato è già la ✕ (un tocco butta).
+            // Mentre registri la graffetta è una ✕ (Antonio, 1.637): trascinando a sinistra cresce e si fa rossiccia, lasciando
+            // butta l'audio; un tocco butta.
             Box(Modifier.graphicsLayer { val sc = 1f + 0.2f * slide; scaleX = sc; scaleY = sc }) {
-                val clip = held && slide < 0.3f
-                ComposerKey(if (clip) Icons.Rounded.AttachFile else Icons.Rounded.Close, "Butta il vocale", danger = slide * 0.65f, onClick = onCancel)
+                ComposerKey(Icons.Rounded.Close, "Butta il vocale", danger = slide * 0.65f, onClick = onCancel)
             }
             val barColor = MaterialTheme.colorScheme.primary
-            // Accanto alla graffetta la scritta coi gesti, ogni volta (Antonio, 1.637): l'onda che entra da destra, quando
-            // si è parlato abbastanza, ci arriva sopra e la copre.
+            // Accanto alla ✕ tre ‹ che si accendono una dopo l'altra verso sinistra: "scorri per annullare". L'onda, che
+            // entra da destra, quando si è parlato abbastanza ci arriva sopra e le copre.
             Box(Modifier.weight(1f).height(26.dp).padding(horizontal = 12.dp), contentAlignment = Alignment.CenterStart) {
-                if (!music) Text(
-                    if (held) VoiceSlide.HELD_TIP else VoiceSlide.LOCKED_TIP,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    softWrap = false,
+                if (showHints) Row(
                     modifier = Modifier.fillMaxWidth().drawWithContent {
                         val cover = VoiceSlide.waveStart(size.width, bars.size, BAR_W_DP.dp.toPx(), BAR_GAP_DP.dp.toPx()) - BAR_GAP_DP.dp.toPx() * 2
                         if (cover > 0f) clipRect(right = cover) { this@drawWithContent.drawContent() }
                     },
-                )
+                ) {
+                    repeat(3) { i ->
+                        Icon(
+                            Icons.Rounded.ChevronLeft,
+                            contentDescription = if (i == 0) "Scorri a sinistra per annullare" else null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp).graphicsLayer { alpha = VoiceSlide.chevronAlpha(i, hintPhase) },
+                        )
+                    }
+                }
                 Canvas(Modifier.fillMaxSize()) {
                     val w = BAR_W_DP.dp.toPx()
                     val gap = BAR_GAP_DP.dp.toPx()
