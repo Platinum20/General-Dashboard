@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.outlined.SmartDisplay
 import androidx.compose.material.icons.outlined.CheckBox
 import androidx.compose.material.icons.outlined.East
 import androidx.compose.material.icons.outlined.West

@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -157,7 +158,7 @@ internal fun LaterCard(
         // Tenendo premuta la card (regola della pressione lunga, 2026-11-25): scrivere una cosa o aprire tutto.
         ActionBubble.show(
             BubbleHead("Da fare"),
-            act(BubbleGroup.CREA, androidx.compose.material.icons.Icons.Outlined.Add, "Scrivi una cosa", "da fare, una nota o una data: la riconosce da sola") { com.platinum20.dashboard.capture.CaptureComposer.open() },
+            act(BubbleGroup.CREA, Icons.Outlined.Add, "Scrivi una cosa", "da fare, una nota o una data: la riconosce da sola") { com.platinum20.dashboard.capture.CaptureComposer.open() },
             Slot.open(onOpen),
         )
     }) {

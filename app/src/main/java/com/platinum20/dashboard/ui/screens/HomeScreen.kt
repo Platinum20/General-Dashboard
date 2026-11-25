@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.outlined.DoneAll
 import androidx.compose.material.icons.outlined.Settings
 import coil3.compose.AsyncImage
 import androidx.compose.material3.LinearProgressIndicator
@@ -657,8 +658,8 @@ private fun NewsCard(
         CardSection("News", modifier = Modifier.sharedItem(SharedKeys.NEWS, rounded = true), onClick = onOpenNews, onLongClick = if (feed.isEmpty) null else ({
             ActionBubble.show(
                 BubbleHead("News", NewsStories.unreadLine(state.unreadCount)),
-                act(BubbleGroup.METTI, androidx.compose.material.icons.Icons.Outlined.Headphones, "Ascolta", "le notizie della card, una dopo l'altra") { listenStories(context, shown, null) },
-                act(BubbleGroup.SEGNA, androidx.compose.material.icons.Icons.Outlined.DoneAll, "Segna come lette", "le notizie della card") {
+                act(BubbleGroup.METTI, Icons.Outlined.Headphones, "Ascolta", "le notizie della card, una dopo l'altra") { listenStories(context, shown, null) },
+                act(BubbleGroup.SEGNA, Icons.Outlined.DoneAll, "Segna come lette", "le notizie della card") {
                     NewsHistory.init(context)
                     shown.forEach { story -> story.items.forEach { NewsHistory.markRead(it.link) } }
                 },
