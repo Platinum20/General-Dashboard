@@ -1423,11 +1423,14 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onBack = { navController.popBackStack() },
                 )
             }
+            // Le pagine di Video e Musica crescono dalla loro card in Home (2026-11-25).
             composable(Routes.MEDIA_NEWS) {
+                CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {
                 com.platinum20.dashboard.ui.screens.MediaNewsScreen(
                     onBack = { navController.popBackStack() },
                     onPlayVideo = { navController.navigate(Routes.youtubeWatch(it)) },
                 )
+                }
             }
             composable(Routes.SAVED_MEDIA) { entry ->
                 com.platinum20.dashboard.ui.screens.SavedMediaScreen(
@@ -1443,10 +1446,12 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 )
             }
             composable(Routes.MUSIC_DISCOVER) {
+                CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {
                 com.platinum20.dashboard.ui.screens.MusicDiscoverScreen(
                     onBack = { navController.popBackStack() },
                     onOpen = { navController.navigate(Routes.spotifyItem(it)) },
                 )
+                }
             }
             composable(Routes.LIKED_TRACKS) {
                 com.platinum20.dashboard.ui.screens.MediaLikedScreen(
@@ -1555,10 +1560,14 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 com.platinum20.dashboard.ui.screens.PersonScreen(name = entry.arguments?.getString("name").orEmpty(), onBack = { navController.popBackStack() })
             }
             composable(Routes.LATER_ARCHIVE) {
+                CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {
                 com.platinum20.dashboard.ui.screens.LaterArchiveScreen(onBack = { navController.popBackStack() })
+                }
             }
             composable(Routes.JOTTINGS_ARCHIVE) {
+                CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {
                 com.platinum20.dashboard.ui.screens.LaterArchiveScreen(onBack = { navController.popBackStack() })
+                }
             }
             composable(Routes.SIM) {
                 CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {

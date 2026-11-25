@@ -3,6 +3,7 @@ package com.platinum20.dashboard.ui.screens
 import android.os.SystemClock
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Spring
@@ -71,16 +72,20 @@ object Motion {
             fadeOut(tween(EXIT_MS + 60, easing = Accelerate)) +
             scaleOut(tween(ENTER_MS, easing = Decelerate), targetScale = 0.98f)
 
-    /** Indietro: lo stesso movimento al contrario, così si capisce da dove si torna (anche col gesto). */
+    /**
+     * Indietro, uguale in ogni pagina (2026-11-25): la pagina si rimpicciolisce e scivola verso destra seguendo il dito
+     * (il gesto Indietro scorre questa animazione passo passo, per questo va dritta, senza accelerare), sparisce solo alla
+     * fine; sotto torna la pagina di prima. Le pagine nate da una card della Home rientrano nella card ([sharedItem]).
+     */
     val popEnter: EnterTransition =
-        slideInHorizontally(tween(ENTER_MS, easing = Decelerate)) { -it / (SHIFT * 2) } +
-            fadeIn(tween(ENTER_MS - 80, delayMillis = 40, easing = Decelerate)) +
-            scaleIn(tween(ENTER_MS, easing = Decelerate), initialScale = 0.98f)
+        slideInHorizontally(tween(ENTER_MS, easing = LinearEasing)) { -it / (SHIFT * 2) } +
+            fadeIn(tween(ENTER_MS - 80, delayMillis = 40, easing = LinearEasing), initialAlpha = 0.4f) +
+            scaleIn(tween(ENTER_MS, easing = LinearEasing), initialScale = 0.96f)
 
     val popExit: ExitTransition =
-        slideOutHorizontally(tween(ENTER_MS, easing = Decelerate)) { it / SHIFT } +
-            fadeOut(tween(EXIT_MS + 60, easing = Accelerate)) +
-            scaleOut(tween(ENTER_MS, easing = Decelerate), targetScale = 0.98f)
+        slideOutHorizontally(tween(ENTER_MS, easing = LinearEasing)) { it / 6 } +
+            scaleOut(tween(ENTER_MS, easing = LinearEasing), targetScale = 0.88f) +
+            fadeOut(tween(ENTER_MS / 2, delayMillis = ENTER_MS / 2, easing = LinearEasing))
 
     /*
      * Le tre molle di Canvas. Tutto quello che si muove usa una di queste (la pillola della barra

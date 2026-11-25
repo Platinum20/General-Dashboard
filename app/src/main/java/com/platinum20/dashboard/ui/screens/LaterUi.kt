@@ -153,7 +153,7 @@ internal fun LaterCard(
         )
     }
     // Toccando la card, fuori dalle righe, si apre la sua pagina intera: attive e vecchie insieme (1.539).
-    CanvasCard(Modifier.fillMaxWidth().captureTarget(kind.mode), onClick = onOpen) {
+    CanvasCard(Modifier.fillMaxWidth().sharedItem(SharedKeys.LATER, rounded = true).captureTarget(kind.mode), onClick = onOpen) {
         CardTitle(kind.title, opens = true, trailing = {
             if (count > 0) Text(looseCount(count), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 4.dp))
         })
@@ -506,7 +506,7 @@ fun LaterArchiveScreen(onBack: () -> Unit) {
         )
     }
     androidx.compose.material3.Scaffold(
-        modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
+        modifier = Modifier.sharedItem(SharedKeys.LATER, rounded = true).nestedScroll(bar.nestedScrollConnection),
         topBar = { TopLevelBar(title = LooseCardKind.TODO.title, subtitle = laterPageLine(activeCount, jottings.size, archived.size), scrollBehavior = bar, onBack = onBack) },
     ) { inner ->
         androidx.compose.foundation.lazy.LazyColumn(Modifier.fillMaxSize().padding(inner), state = list, contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = listBottom(160.dp))) {

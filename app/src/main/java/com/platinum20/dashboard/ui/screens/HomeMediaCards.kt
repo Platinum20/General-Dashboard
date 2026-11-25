@@ -52,6 +52,7 @@ internal fun HomeMusicCard(open: (String) -> Unit) {
     }
     CardSection(
         title = "Musica",
+        modifier = Modifier.sharedItem(SharedKeys.MUSIC.takeIf { spotifyOn }, rounded = true),
         onClick = { open(if (spotifyOn) Routes.MUSIC_DISCOVER else Routes.login(MediaService.SPOTIFY)) },
         trailing = { HistoryButton { open(Routes.MUSIC_ALL) } },
     ) {
@@ -94,6 +95,7 @@ internal fun HomeVideoCard(open: (String) -> Unit) {
     }
     CardSection(
         title = "Video",
+        modifier = Modifier.sharedItem(SharedKeys.VIDEO.takeIf { youTubeOn }, rounded = true),
         onClick = { open(if (youTubeOn) Routes.MEDIA_NEWS else Routes.login(MediaService.YOUTUBE)) },
         trailing = { HistoryButton { open(Routes.YOUTUBE_FEED) } },
     ) {

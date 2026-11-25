@@ -301,7 +301,7 @@ fun MediaNewsScreen(onBack: () -> Unit, onPlayVideo: (String) -> Unit) {
     }
     val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     Scaffold(
-        modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
+        modifier = Modifier.sharedItem(SharedKeys.VIDEO, rounded = true).nestedScroll(bar.nestedScrollConnection),
         topBar = { TopLevelBar(title = "Scopri", subtitle = "Home di YouTube", scrollBehavior = bar, onBack = onBack) },
     ) { inner ->
         val count = tips.size
@@ -356,7 +356,7 @@ fun MusicDiscoverScreen(onBack: () -> Unit, onOpen: (SpItem) -> Unit) {
     val rows = discover.data.orEmpty()
     val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     Scaffold(
-        modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
+        modifier = Modifier.sharedItem(SharedKeys.MUSIC, rounded = true).nestedScroll(bar.nestedScrollConnection),
         topBar = { TopLevelBar(title = "Scopri", subtitle = "Musica dai tuoi ascolti", scrollBehavior = bar, onBack = onBack) },
     ) { inner ->
         val tile = coverTileWidth()

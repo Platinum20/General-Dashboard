@@ -67,8 +67,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalTime
 
-/** La chiave che lega il titolo di una notizia nella lista al titolo nel lettore (elemento condiviso). */
-fun newsSharedKey(link: String) = "news:$link"
+/**
+ * La chiave che lega il titolo di una notizia nella lista al titolo nel lettore (elemento condiviso). Ogni lista ha la
+ * sua [scope] (Home o pagina News): fra la card News e la pagina vola la card intera, non i titoli uno per uno.
+ */
+fun newsSharedKey(link: String, scope: String = NewsShared.origin) = "news:$scope/$link"
+
+/** Da quale lista si è aperta l'ultima notizia: il lettore lo legge per far volare il titolo giusto. */
+object NewsShared {
+    var origin: String = SharedRows.PAGE
+}
 
 /** Le storie (una per fatto) dalle notizie scaricate: il raggruppamento gira fuori dal thread della UI. */
 @Composable
@@ -137,6 +145,7 @@ private fun Modifier.readFade(read: Boolean, dim: Float = 1f): Modifier {
 @Composable
 fun StoryLead(story: NewsStory, read: Boolean, onOpen: (NewsItem) -> Unit, onLongClick: () -> Unit, modifier: Modifier = Modifier) {
     val lead = story.headline
+    val onOpen: (NewsItem) -> Unit = { NewsShared.origin = SharedRows.PAGE; onOpen(it) }
     Column(
         modifier
             .fillMaxWidth()
@@ -167,7 +176,7 @@ fun StoryLead(story: NewsStory, read: Boolean, onOpen: (NewsItem) -> Unit, onLon
             style = MaterialTheme.typography.headlineSmall,
             maxLines = 4,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 4.dp).sharedItem(newsSharedKey(lead.link)),
+            modifier = Modifier.padding(horizontal = 4.dp).sharedItem(newsSharedKey(lead.link, SharedRows.PAGE)),
         )
         Text(
             story.metaLine(),
@@ -198,8 +207,11 @@ fun StoryRow(
     horizontal: Dp = 4.dp,
     /** In Home un tocco apre sempre l'articolo: le altre testate stanno nella scheda. */
     expandable: Boolean = true,
+    /** La lista in cui sta la riga ([SharedRows.HOME] nella card): il titolo vola solo verso il lettore. */
+    scope: String = SharedRows.PAGE,
 ) {
     val lead = story.headline
+    val onOpen: (NewsItem) -> Unit = { NewsShared.origin = scope; onOpen(it) }
     val many = expandable && story.items.size > 1
     var expanded by remember(story.key) { mutableStateOf(false) }
     val storyRead = story.items.any { read(it.link) }
@@ -223,7 +235,7 @@ fun StoryRow(
                     style = MaterialTheme.typography.titleSmall,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.sharedItem(newsSharedKey(lead.link)),
+                    modifier = Modifier.sharedItem(newsSharedKey(lead.link, scope)),
                 )
                 Spacer(Modifier.height(3.dp))
                 Text(
