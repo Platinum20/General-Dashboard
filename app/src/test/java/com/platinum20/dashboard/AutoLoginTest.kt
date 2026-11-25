@@ -57,6 +57,18 @@ class AutoLoginTest {
         assertNull(auto.saved(context))
     }
 
+    /** WindTre non ha password: e-mail, poi il codice per mail. Basta l'e-mail. */
+    @Test
+    fun emailOnlyLoginIsSaved() {
+        val auto = AutoLogin("test_login4")
+        auto.clear(context)
+        auto.typed("antonio@x.it", "")
+        auto.confirm(context)
+        assertEquals("antonio@x.it" to "", auto.saved(context))
+        assertTrue(AutoLogin.fillScript("CanvasSim", "antonio@x.it", "").contains("codeFields()"))
+        auto.clear(context)
+    }
+
     /** Al massimo tre invii per rilettura: con la password cambiata non si insiste. */
     @Test
     fun stopsAfterThreeTries() {

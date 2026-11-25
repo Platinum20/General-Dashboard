@@ -21,6 +21,7 @@ object SimStore {
     private const val KEY_FORMAT = "format"
     private const val KEY_HISTORY = "history"
     private const val KEY_EXPIRED = "expired"
+    private const val KEY_STEPS = "steps"
     private const val FORMAT = 2
     private const val CAPTURES = "windtre-captures.json"
     private const val MAX_CAPTURES = 40
@@ -52,6 +53,21 @@ object SimStore {
     private val captures = ArrayDeque<JSONObject>()
     private val requests = LinkedHashSet<String>()
     private var lastText = ""
+    /** I passaggi delle ultime riletture e accessi (senza dati personali): dicono dove si ferma l'accesso da solo. */
+    private val steps = ArrayDeque<String>()
+    private val stepTime = java.time.format.DateTimeFormatter.ofPattern("d/M HH:mm:ss")
+
+    /** Un passaggio nel registro (qualsiasi thread). */
+    fun note(step: String) {
+        val line = java.time.LocalDateTime.now().format(stepTime) + " " + step
+        val all = synchronized(this) {
+            steps.addLast(line)
+            while (steps.size > 80) steps.removeFirst()
+            steps.joinToString("\n")
+        }
+        // Sul telefono, così resta anche se Android chiude Canvas dopo la rilettura nascosta.
+        appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()?.putString(KEY_STEPS, all)?.apply()
+    }
 
     fun init(context: Context) {
         if (appContext != null) return
@@ -60,6 +76,7 @@ object SimStore {
         val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         _linked.value = prefs.getBoolean(KEY_LINKED, false)
         _expired.value = prefs.getBoolean(KEY_EXPIRED, false)
+        prefs.getString(KEY_STEPS, null)?.split('\n')?.filter { it.isNotBlank() }?.let { synchronized(this) { steps.addAll(it) } }
         // Fino alla 1.288 si leggevano anche i testi di configurazione di WindTre: quei numeri erano sbagliati.
         if (prefs.getInt(KEY_FORMAT, 1) < FORMAT) {
             prefs.edit().remove(KEY_STATUS).putInt(KEY_FORMAT, FORMAT).apply()
@@ -174,6 +191,7 @@ object SimStore {
     /** Le risposte catturate, da mandare a chi sistema la lettura se qualcosa non torna. */
     fun capturesText(): String = synchronized(this) {
         JSONObject()
+            .put("accesso", JSONArray(steps.toList()))
             .put("richieste", JSONArray(requests.toList()))
             .put("testo", lastText)
             .put("risposte", JSONArray(captures.toList()))

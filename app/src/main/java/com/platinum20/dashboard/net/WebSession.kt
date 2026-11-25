@@ -93,11 +93,18 @@ open class WebSession(private val prefsName: String, private val hosts: List<Str
 
         /**
          * Rimette solo le chiavi che mancano: se la pagina ha già un token più nuovo vince il suo.
+         * Una volta sola per scheda e origine (segno in window.name, che resta fra le pagine dello stesso sito):
+         * prima si rimetteva a ogni pagina, così quando il sito ti faceva uscire (svuotando il sessionStorage)
+         * il token vecchio tornava, la pagina rientrava, il server la rifiutava e via così all'infinito:
+         * la pagina d'accesso WindTre lampeggiava chiaro/scuro e l'accesso da solo non partiva mai (2026-11-25).
          * Il JSON entra come stringa JS quotata ([JSONObject.quote]), mai come codice.
          */
         fun restoreScript(savedJson: String): String = """
             (function () {
               try {
+                var mark = '|cvr:' + location.origin;
+                if (String(window.name || '').indexOf(mark) >= 0) return;
+                window.name = String(window.name || '') + mark;
                 var all = JSON.parse(${JSONObject.quote(savedJson)}), s = all[location.origin];
                 if (!s) return;
                 for (var k in s) if (sessionStorage.getItem(k) === null) sessionStorage.setItem(k, s[k]);

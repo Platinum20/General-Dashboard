@@ -1080,7 +1080,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
     // Barra e + dove si sfoglia un elenco, non dentro una cosa sola: vedi Routes.hasBar.
-    val showBottomBar = Routes.hasBar(currentRoute)
+    val showBottomBar = Routes.hasBar(currentRoute) && com.platinum20.dashboard.ui.screens.BarHide.count == 0
     val composing = CaptureComposer.isOpen
     val imeOpen = WindowInsets.isImeVisible
     // Uscendo dalle sezioni della barra (es. da una notifica) quello che si scriveva si chiude.

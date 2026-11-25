@@ -229,7 +229,7 @@ object CreatorsLink {
         CookieManager.getInstance().setAcceptCookie(true)
         // Come WindTre: cookie di sessione e sessionStorage dell'ultima lettura buona tornano al loro posto.
         if (ShiftStore.linked.value) CreatorsSession.restore(context)
-        val keep = if (ShiftStore.linked.value) CreatorsSession.storageScript(context) else null
+        val keep = if (ShiftStore.linked.value && !ShiftStore.expired.value) CreatorsSession.storageScript(context) else null
         CookieManager.getInstance().setAcceptThirdPartyCookies(view, true)
         view.addJavascriptInterface(Bridge, "CanvasShift")
         // Accesso visibile (quello con le finestre): si tiene da parte email e password. Nascosta: rientra da sola.
