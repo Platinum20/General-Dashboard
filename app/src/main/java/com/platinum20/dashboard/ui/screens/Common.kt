@@ -589,6 +589,9 @@ fun RoundIconButton(icon: ImageVector, contentDescription: String, enabled: Bool
     }
 }
 
+/** Il rosso pieno del "butta" (1.639, Antonio): uguale nel tema chiaro e scuro, dove il rosso del tema è un rosa chiaro. */
+internal val DangerRed = androidx.compose.ui.graphics.Color(0xFFE5483B)
+
 /** Solo l'icona, senza bolla (Antonio, 1.636: l'ingranaggio della Home, la cronologia di Musica e Video). */
 @Composable
 fun BareIconButton(icon: ImageVector, contentDescription: String, onClick: () -> Unit) {

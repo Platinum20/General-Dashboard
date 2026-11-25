@@ -29,12 +29,24 @@ object CaptureComposer {
     /** Si sta scegliendo o leggendo una foto con la graffetta: anche qui la tastiera chiusa non annulla. */
     var attaching by mutableStateOf(false)
 
+    /** Senza testo nuovo riapre la bozza lasciata (1.641, Antonio: chiudendo non si perde quello che si scriveva). */
     fun open(text: String = "") {
-        this.text = TextFieldValue(text, TextRange(text.length))
+        val start = draftOnOpen(this.text.text, text)
+        this.text = TextFieldValue(start, TextRange(start.length))
         chosen = null
-        request = text
+        request = start
     }
 
+    /** Pura: cosa c'è nel campo riaprendo. Un testo nuovo vince sulla bozza. */
+    fun draftOnOpen(draft: String, incoming: String): String = incoming.ifEmpty { draft }
+
+    /** Salvato (o finito altrove): si chiude e la bozza si svuota. */
+    fun finish() {
+        close()
+        text = TextFieldValue("")
+    }
+
+    /** Chiuso senza salvare: il testo resta come bozza per la prossima volta. */
     fun close() {
         request = null
         chosen = null

@@ -164,6 +164,8 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.Lifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.animation.EnterTransition
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -588,6 +590,28 @@ private fun CanvasNavBar(
     var voiceHeld by remember { mutableStateOf(false) }
     var voiceLift by remember { mutableFloatStateOf(0f) }
     val barOrigin = remember { FloatArray(2) }
+    val plusMorph = remember { androidx.compose.animation.core.Animatable(0f) }
+    val plusPop = remember { androidx.compose.animation.core.Animatable(1f) }
+    val morphScope = androidx.compose.runtime.rememberCoroutineScope()
+    // Chiudendo si fa il contrario (1.641, Antonio): la bolla rientra nella freccia e la freccia torna +. Dopo un invio
+    // il + fa un piccolo salto con un colpetto: "salvato".
+    val lastMode = remember { intArrayOf(barMode) }
+    val justSent = remember { booleanArrayOf(false) }
+    LaunchedEffect(barMode) {
+        val was = lastMode[0]
+        lastMode[0] = barMode
+        if (barMode == BAR_PLUS && was == BAR_WRITE) {
+            plusMorph.snapTo(1f)
+            delay(140)
+            plusMorph.animateTo(0f, tween(PLUS_MORPH_MS + 60))
+            if (justSent[0]) {
+                justSent[0] = false
+                haptic(Haptic.TICK)
+                plusPop.animateTo(1.18f, tween(110))
+                plusPop.animateTo(1f, Motion.lively())
+            }
+        }
+    }
     val density = LocalDensity.current
     val cancelAt = with(density) { VOICE_CANCEL_DP.dp.toPx() }
     val lockAt = with(density) { VOICE_LOCK_DP.dp.toPx() }
@@ -640,9 +664,15 @@ private fun CanvasNavBar(
                             outcome == PRESS_TAP -> {
                                 haptic(Haptic.TICK)
                                 when {
-                                    mode == BAR_PLUS -> tap()
+                                    // Prima il + ruota e diventa la freccia, poi la bolla le cresce attorno (1.639, Antonio).
+                                    mode == BAR_PLUS -> morphScope.launch {
+                                        plusMorph.animateTo(1f, tween(PLUS_MORPH_MS))
+                                        tap()
+                                        delay(400)
+                                        plusMorph.snapTo(0f)
+                                    }
                                     empty -> mic()
-                                    else -> send()
+                                    else -> { justSent[0] = true; send() }
                                 }
                                 return@awaitEachGesture
                             }
@@ -694,20 +724,49 @@ private fun CanvasNavBar(
             targetState = barMode,
             transitionSpec = {
                 // Il riquadro nasce dal + e ci rientra: cresce verso sinistra e verso l'alto dall'angolo in basso a destra.
-                (fadeIn(tween(160, delayMillis = 50)) togetherWith fadeOut(tween(90)))
+                // Dal + al riquadro la freccia resta dov'è: niente dissolvenza, la bolla le cresce attorno (il resto compare
+                // da solo dentro il riquadro).
+                val fromPlus = initialState == BAR_PLUS && targetState == BAR_WRITE
+                val toPlus = initialState == BAR_WRITE && targetState == BAR_PLUS
+                (if (fromPlus) EnterTransition.None togetherWith fadeOut(tween(60))
+                else if (toPlus) EnterTransition.None togetherWith fadeOut(tween(140))
+                else fadeIn(tween(160, delayMillis = 50)) togetherWith fadeOut(tween(90)))
                     .using(SizeTransform(clip = true) { _, _ -> Springs.snappy() })
             },
             contentAlignment = Alignment.BottomEnd,
             label = "plusMorph",
         ) { mode ->
             when (mode) {
-                BAR_PLUS -> PlusButton(onPlus = onPlus, onHoldStart = onHoldStart)
+                BAR_PLUS -> PlusButton(onPlus = onPlus, onHoldStart = onHoldStart, morph = plusMorph.value, pop = plusPop.value)
                 else -> {
                     val shape = RoundedCornerShape(28.dp)
+                    // Tirata giù la bolla si chiude e il testo resta come bozza (1.641, Antonio).
+                    val pullDown = remember { androidx.compose.animation.core.Animatable(0f) }
+                    val closeAt = with(density) { COMPOSER_PULL_DP.dp.toPx() }
+                    val dragScope = androidx.compose.runtime.rememberCoroutineScope()
+                    val dragState = androidx.compose.foundation.gestures.rememberDraggableState { d ->
+                        dragScope.launch { pullDown.snapTo((pullDown.value + d).coerceAtLeast(0f)) }
+                    }
                     Surface(
                         shape = shape,
                         color = androidx.compose.ui.graphics.Color.Transparent,
-                        modifier = Modifier.fillMaxWidth().glass(shape),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .graphicsLayer {
+                                translationY = pullDown.value
+                                alpha = 1f - (pullDown.value / (closeAt * 2.5f)).coerceIn(0f, 0.5f)
+                            }
+                            .then(
+                                if (mode == BAR_WRITE) Modifier.draggable(
+                                    dragState,
+                                    androidx.compose.foundation.gestures.Orientation.Vertical,
+                                    onDragStopped = {
+                                        if (pullDown.value >= closeAt) { haptic(Haptic.TICK); CaptureComposer.close() }
+                                        pullDown.animateTo(0f, Motion.lively())
+                                    },
+                                ) else Modifier,
+                            )
+                            .glass(shape),
                     ) {
                         if (mode == BAR_WRITE) CaptureComposerInput(Modifier.fillMaxWidth(), onSend = onSend)
                         else VoiceBox(
@@ -733,11 +792,12 @@ private fun CanvasNavBar(
 
 /** Il + tondo, l'unico dell'app (1.636). I gesti li legge il riquadro sopra, che resta anche quando diventa il vocale. */
 @Composable
-private fun PlusButton(onPlus: () -> Unit, onHoldStart: () -> Boolean) {
+private fun PlusButton(onPlus: () -> Unit, onHoldStart: () -> Boolean, morph: Float = 0f, pop: Float = 1f) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .size(COMPOSER_KEY_DP.dp)
+            .graphicsLayer { scaleX = pop; scaleY = pop }
             // Il pallino delle cose salvate atterra sul + (le schede non ci sono più).
             .captureTarget(CaptureTargets.HOME_TAB)
             .captureTarget(CaptureTargets.MEDIA_TAB)
@@ -754,8 +814,16 @@ private fun PlusButton(onPlus: () -> Unit, onHoldStart: () -> Boolean) {
                     onLongClick(label = "Detta a voce") { onHoldStart() }
                 },
         ) {
+            // Toccato: il + gira e sfuma nella freccia, che resta lì quando la bolla le cresce attorno.
             Box(contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(24.dp))
+                Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(24.dp).graphicsLayer {
+                    rotationZ = 90f * morph
+                    alpha = 1f - morph
+                })
+                Icon(Icons.Rounded.ArrowUpward, contentDescription = null, modifier = Modifier.size(24.dp).graphicsLayer {
+                    rotationZ = -90f * (1f - morph)
+                    alpha = morph
+                })
             }
         }
     }
@@ -786,6 +854,25 @@ private fun VoiceBox(
 ) {
     // Dopo due secondi di solo silenzio: "Nessun suono rilevato" invece di "Ti ascolto…".
     var silent by remember { mutableStateOf(false) }
+    // Da quanto stai registrando, accanto all'onda (1.641, Antonio).
+    var seconds by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    LaunchedEffect(listening) {
+        seconds = 0
+        while (listening) {
+            delay(1_000)
+            seconds += 1
+        }
+    }
+    // Bloccato e zitto da qualche secondo (1.641, Antonio): si ferma da solo e il testo va nel riquadro.
+    val stopNow by rememberUpdatedState(onStop)
+    var quietSince by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
+    LaunchedEffect(partial, held, listening, music) {
+        quietSince = System.currentTimeMillis()
+        if (!held && listening && !music && partial.isNotBlank()) {
+            delay(com.platinum20.dashboard.capture.CaptureMarks.SILENCE_MS)
+            if (com.platinum20.dashboard.capture.CaptureMarks.autoStop(true, partial, System.currentTimeMillis() - quietSince)) stopNow()
+        }
+    }
     LaunchedEffect(listening, heardSound) {
         silent = false
         if (listening && !heardSound) {
@@ -821,6 +908,14 @@ private fun VoiceBox(
             label = "fase",
         )
         val showHints = held && listening && !music
+        // Bloccato (1.639, Antonio: "mostrami che l'ho fatto"): il lucchetto si chiude, diventa blu pieno e resta lì.
+        val locked = !held && listening && !music
+        val lockPop by androidx.compose.animation.core.animateFloatAsState(
+            if (locked) 1f else 0f,
+            androidx.compose.animation.core.spring(dampingRatio = 0.45f, stiffness = 500f),
+            label = "lucchetto",
+        )
+        val showLock = showHints || locked
         Box(Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
             Text(
                 shown,
@@ -828,9 +923,27 @@ private fun VoiceBox(
                 color = if (quiet) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                 maxLines = 5,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = if (showHints) 52.dp else 12.dp, bottom = 12.dp)
-                    .heightIn(min = if (showHints) 52.dp else 0.dp).animateContentSize(Springs.snappy()),
+                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = if (showLock) 52.dp else 12.dp, bottom = 12.dp)
+                    .heightIn(min = if (showLock) 52.dp else 0.dp).animateContentSize(Springs.snappy()),
             )
+            if (locked) Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(bottom = 6.dp)
+                    .width(COMPOSER_KEY_DP.dp),
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(30.dp)
+                        .graphicsLayer { scaleX = 0.6f + 0.4f * lockPop; scaleY = 0.6f + 0.4f * lockPop; alpha = lockPop.coerceIn(0f, 1f) }
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary),
+                ) {
+                    Icon(Icons.Rounded.Lock, contentDescription = "Bloccato: puoi togliere il dito", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(17.dp))
+                }
+            }
             // Il lucchetto dentro il riquadro, subito sopra il microfono: la freccia sale piano e dice "tira su".
             if (showHints) Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -840,7 +953,7 @@ private fun VoiceBox(
                     .graphicsLayer { translationY = -lift * 10.dp.toPx() },
             ) {
                 val tint = androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.onSurfaceVariant, MaterialTheme.colorScheme.primary, lift)
-                Icon(Icons.Rounded.Lock, contentDescription = "Tira su per bloccare", tint = tint, modifier = Modifier.size(18.dp))
+                Icon(Icons.Rounded.LockOpen, contentDescription = "Tira su per bloccare", tint = tint, modifier = Modifier.size(18.dp))
                 Icon(
                     Icons.Rounded.KeyboardArrowUp,
                     contentDescription = null,
@@ -858,6 +971,12 @@ private fun VoiceBox(
             Box(Modifier.graphicsLayer { val sc = 1f + 0.2f * slide; scaleX = sc; scaleY = sc }) {
                 ComposerKey(Icons.Rounded.Close, "Butta il vocale", danger = slide * 0.65f, onClick = onCancel)
             }
+            if (!music) Text(
+                VoiceSlide.clock(seconds),
+                style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum"),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 10.dp),
+            )
             val barColor = MaterialTheme.colorScheme.primary
             // Accanto alla ✕ tre ‹ che si accendono una dopo l'altra verso sinistra: "scorri per annullare". L'onda, che
             // entra da destra, quando si è parlato abbastanza ci arriva sopra e le copre.
@@ -911,6 +1030,12 @@ private fun VoiceBox(
 
 /** L'onda: barrette sottili, fino a riempire la riga. */
 private const val BAR_MAX = 90
+
+/** Quanto ci mette il + a diventare la freccia prima che si apra il riquadro. */
+private const val PLUS_MORPH_MS = 170
+
+/** Quanto tirare giù la bolla per chiuderla. */
+private const val COMPOSER_PULL_DP = 70f
 private const val BAR_W_DP = 3f
 private const val BAR_GAP_DP = 3f
 

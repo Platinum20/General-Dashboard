@@ -21,6 +21,10 @@ internal object CaptureHints {
     /** Ogni quanto cambia l'esempio nel campo vuoto. */
     const val EXAMPLE_MS = 3_000L
 
+    /** Una copia è "di poco fa" (la chip Incolla) nei 10 minuti dopo. */
+    const val FRESH_CLIP_MS = 10 * 60_000L
+    fun freshClip(copiedAt: Long, now: Long): Boolean = copiedAt > 0 && now - copiedAt in 0..FRESH_CLIP_MS
+
     /** Il primo segnaposto: come si usa la freccia (Antonio, 1.637). */
     const val GESTURE = "Scrivi, o tieni premuta la freccia per parlare"
 

@@ -20,6 +20,9 @@ object VoiceSlide {
         return if (i == 2 - step) 1f else 0.3f
     }
 
+    /** Il tempo del vocale accanto all'onda: "0:07", "1:23". */
+    fun clock(seconds: Int): String = "%d:%02d".format(seconds / 60, seconds % 60)
+
     /** Dove comincia l'onda (da destra, [count] barrette): a sinistra di lì la scritta si vede ancora. */
     fun waveStart(width: Float, count: Int, barPx: Float, gapPx: Float): Float =
         if (count <= 0) width else (width - count * (barPx + gapPx) + gapPx).coerceIn(0f, width)

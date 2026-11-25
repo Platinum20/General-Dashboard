@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.641.0
+**Il + che si apre, il lucchetto che si chiude**
+- Toccando il + prima gira e diventa la freccia, poi la bolla per scrivere le cresce attorno mentre sale con la tastiera
+- Quando tiri su per bloccare il vocale il lucchetto si chiude e resta lì blu pieno, con una vibrazione: così sai che puoi togliere il dito
+- Portando il mini player sul + ora diventa rosso pieno anche col tema scuro, e torna del suo colore appena si chiude
+- Chiudendo o inviando si fa il contrario: la bolla rientra nella freccia e la freccia torna +; dopo un invio il + fa un piccolo salto con un colpetto
+- Se chiudi la bolla con del testo dentro, lo ritrovi quando la riapri
+- Tirando giù la bolla si chiude, e il testo resta come bozza
+- Mentre parli, accanto all'onda c'è da quanto stai registrando (0:12)
+- Se hai appena copiato qualcosa, in cima alla bolla vuota c'è "Incolla quello che hai copiato"
+- Col vocale bloccato, dopo qualche secondo di silenzio si ferma da solo e il testo va nella bolla
+- Tenendo premuta la graffetta si apre subito la fotocamera
+- Più righe che cominciano con "- " diventano tante cose Da fare, con un solo Annulla
+- Mentre scrivi, le parole del quando ("domani", "alle 9", "il 3 dicembre") si colorano di blu: così vedi che le ho capite
+
 ## 1.640.0
 **Accesso WindTre senza pagina che lampeggia**
 - La pagina d'accesso WindTre non lampeggia più chiaro/scuro: Canvas rimetteva di continuo la sessione vecchia, il sito la rifiutava e ricominciava da capo. Era anche il motivo per cui l'accesso da solo non partiva mai
