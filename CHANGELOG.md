@@ -3,6 +3,8 @@
 ## 1.635.0
 **Riquadro come Claude, Musica e Video come Documenti**
 - Il riquadro per scrivere ha i tasti messi come in Claude: + per allegare a sinistra, microfono e Invia a destra; si chiude toccando fuori
+- Allega si apre dentro il riquadro come in Claude: la X, Fotocamera e Foto; il + ruota e diventa una X rossiccia
+- Vocale: tenendo il dito, trascina a sinistra e il + diventa una ✕ rossa (lasciando butti l'audio), trascina a destra per inviarlo, con le vibrazioni
 - Nelle card Musica e Video le copertine scorrendo spariscono al margine della card, a destra e a sinistra, come in Documenti
 
 ## 1.634.0

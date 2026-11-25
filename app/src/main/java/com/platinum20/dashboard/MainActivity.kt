@@ -2,6 +2,7 @@
 
 package com.platinum20.dashboard
 
+import com.platinum20.dashboard.capture.VoiceSlide
 import com.platinum20.dashboard.ui.screens.ComposerKey
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Stop
@@ -575,11 +576,75 @@ private fun CanvasNavBar(
         composing -> BAR_WRITE
         else -> BAR_PLUS
     }
+    // Il dito sul vocale (1.635, Antonio: come Claude): trascinato a sinistra butta l'audio, a destra lo invia.
+    var voiceDrag by remember { mutableFloatStateOf(0f) }
+    val density = LocalDensity.current
+    val cancelAt = with(density) { VOICE_CANCEL_DP.dp.toPx() }
+    val sendAt = with(density) { VOICE_SEND_DP.dp.toPx() }
+    val plusPx = with(density) { 60.dp.toPx() }
+    val mode by rememberUpdatedState(barMode)
+    val isListening by rememberUpdatedState(listening)
+    val isMusic by rememberUpdatedState(music)
+    val tap by rememberUpdatedState(onPlus)
+    val holdStart by rememberUpdatedState(onHoldStart)
+    val cancelVoice by rememberUpdatedState(onCancelDictation)
+    val sendVoice by rememberUpdatedState(onVoiceSend)
     Box(
         Modifier
             .fillMaxWidth()
             .windowInsetsPadding(insets)
-            .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 10.dp),
+            .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 10.dp)
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    val onPlus = mode == BAR_PLUS && down.position.x > size.width - plusPx && down.position.y > size.height - plusPx
+                    val onVoice = mode == BAR_VOICE && isListening && !isMusic
+                    if (!onPlus && !onVoice) return@awaitEachGesture
+                    if (onPlus) {
+                        // Fino al tempo del tocco lungo: un tocco, oppure tenuto/trascinato = il vocale.
+                        var outcome = PRESS_HOLD
+                        withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                            while (outcome == PRESS_HOLD) {
+                                val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id }
+                                outcome = when {
+                                    change == null -> PRESS_CANCEL
+                                    !change.pressed -> if (change.isConsumed) PRESS_CANCEL else PRESS_TAP
+                                    (change.position - down.position).getDistance() > viewConfiguration.touchSlop * 2.5f -> PRESS_DRAG
+                                    else -> PRESS_HOLD
+                                }
+                            }
+                        }
+                        when {
+                            isMusic || outcome == PRESS_CANCEL -> return@awaitEachGesture
+                            outcome == PRESS_TAP -> { haptic(Haptic.TICK); tap(); return@awaitEachGesture }
+                            !holdStart() -> return@awaitEachGesture
+                            else -> haptic(Haptic.CONFIRM)
+                        }
+                    }
+                    // Il dito segue: oltre la soglia a sinistra la ✕ si fa rossa, a destra Invia si accende.
+                    var armed = 0
+                    var moved = false
+                    while (true) {
+                        val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
+                        if (!change.pressed) break
+                        val dx = change.position.x - down.position.x
+                        if (!moved && kotlin.math.abs(dx) > viewConfiguration.touchSlop) moved = true
+                        if (!moved) continue
+                        voiceDrag = dx
+                        val now = VoiceSlide.armed(dx, cancelAt, sendAt)
+                        if (now != armed) {
+                            armed = now
+                            haptic(if (now != 0) Haptic.THRESHOLD else Haptic.TICK)
+                        }
+                        change.consume()
+                    }
+                    voiceDrag = 0f
+                    when (armed) {
+                        -1 -> { haptic(Haptic.CONFIRM); cancelVoice() }
+                        1 -> { haptic(Haptic.CONFIRM); sendVoice() }
+                    }
+                }
+            },
         contentAlignment = Alignment.BottomEnd,
     ) {
         AnimatedContent(
@@ -593,7 +658,7 @@ private fun CanvasNavBar(
             label = "plusMorph",
         ) { mode ->
             when (mode) {
-                BAR_PLUS -> PlusButton(onPlus = onPlus, onHoldStart = onHoldStart, music = music)
+                BAR_PLUS -> PlusButton(onPlus = onPlus, onHoldStart = onHoldStart)
                 else -> {
                     val shape = RoundedCornerShape(28.dp)
                     Surface(
@@ -612,6 +677,12 @@ private fun CanvasNavBar(
                             onCancel = { haptic(Haptic.TICK); onCancelDictation() },
                             onStop = { haptic(Haptic.TICK); onVoiceStop() },
                             onSend = { haptic(Haptic.CONFIRM); onVoiceSend() },
+                            slide = when {
+                                voiceDrag < 0f -> -(voiceDrag / cancelAt).coerceIn(-1f, 0f)
+                                else -> 0f
+                            },
+                            send = (voiceDrag / sendAt).coerceIn(0f, 1f),
+                            slidePx = voiceDrag,
                         )
                     }
                 }
@@ -620,13 +691,9 @@ private fun CanvasNavBar(
     }
 }
 
-/** Il + tondo: tocco = scrivi; tenuto premuto (o trascinato) = vocale, che poi resta acceso anche lasciando il dito. */
+/** Il + tondo (i gesti li legge il riquadro sopra, che resta anche quando il + diventa il vocale). */
 @Composable
-private fun PlusButton(onPlus: () -> Unit, onHoldStart: () -> Boolean, music: Boolean) {
-    val haptic = rememberHaptic()
-    val tap by rememberUpdatedState(onPlus)
-    val holdStart by rememberUpdatedState(onHoldStart)
-    val isMusic by rememberUpdatedState(music)
+private fun PlusButton(onPlus: () -> Unit, onHoldStart: () -> Boolean) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -634,44 +701,13 @@ private fun PlusButton(onPlus: () -> Unit, onHoldStart: () -> Boolean, music: Bo
             // Il pallino delle cose salvate atterra sul + (le schede non ci sono più).
             .captureTarget(CaptureTargets.HOME_TAB)
             .captureTarget(CaptureTargets.MEDIA_TAB)
-            .captureTarget(CaptureTargets.NEWS_TAB)
-            .pointerInput(Unit) {
-                awaitEachGesture {
-                    val down = awaitFirstDown()
-                    var outcome = PRESS_HOLD
-                    withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
-                        while (outcome == PRESS_HOLD) {
-                            val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id }
-                            outcome = when {
-                                change == null -> PRESS_CANCEL
-                                !change.pressed -> if (change.isConsumed) PRESS_CANCEL else PRESS_TAP
-                                (change.position - down.position).getDistance() > viewConfiguration.touchSlop * 2.5f -> PRESS_DRAG
-                                else -> PRESS_HOLD
-                            }
-                        }
-                    }
-                    when {
-                        isMusic -> Unit
-                        outcome == PRESS_TAP -> { haptic(Haptic.TICK); tap() }
-                        outcome == PRESS_CANCEL -> Unit
-                        // Tenuto o trascinato: il vocale parte e resta acceso, il dito si può staccare.
-                        holdStart() -> {
-                            haptic(Haptic.CONFIRM)
-                            while (true) {
-                                val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
-                                change.consume()
-                                if (!change.pressed) break
-                            }
-                        }
-                    }
-                }
-            },
+            .captureTarget(CaptureTargets.NEWS_TAB),
     ) {
         Surface(
             shape = CircleShape,
             color = androidx.compose.ui.graphics.Color.Transparent,
             contentColor = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.fillMaxSize().bouncyPress(0.88f).glass(CircleShape, MaterialTheme.colorScheme.primary)
+            modifier = Modifier.fillMaxSize().glass(CircleShape, MaterialTheme.colorScheme.primary)
                 .semantics {
                     contentDescription = "Aggiungi"
                     onClick(label = "Aggiungi") { onPlus(); true }
@@ -700,6 +736,11 @@ private fun VoiceBox(
     onCancel: () -> Unit,
     onStop: () -> Unit,
     onSend: () -> Unit,
+    /** Da 0 a 1: quanto il dito è andato a sinistra (1 = lasciando si butta). */
+    slide: Float = 0f,
+    /** Da 0 a 1: quanto è andato a destra (1 = lasciando si invia). */
+    send: Float = 0f,
+    slidePx: Float = 0f,
 ) {
     // Dopo due secondi di solo silenzio: "Nessun suono rilevato" invece di "Ti ascolto…".
     var silent by remember { mutableStateOf(false) }
@@ -736,8 +777,14 @@ private fun VoiceBox(
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             modifier = Modifier.fillMaxWidth().padding(end = 8.dp, bottom = 10.dp).animateContentSize(Springs.snappy()),
         )
-        if (listening) Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            ComposerKey(Icons.Rounded.Close, "Butta il vocale", onClick = onCancel)
+        if (listening) Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().graphicsLayer { translationX = slidePx * 0.25f },
+        ) {
+            // Trascinando a sinistra la ✕ si fa rossa e cresce: lasciando, il vocale si butta.
+            Box(Modifier.graphicsLayer { val sc = 1f + 0.25f * slide; scaleX = sc; scaleY = sc }) {
+                ComposerKey(Icons.Rounded.Close, "Butta il vocale", danger = slide, onClick = onCancel)
+            }
             val barColor = MaterialTheme.colorScheme.primary
             Canvas(Modifier.weight(1f).height(26.dp).padding(horizontal = 12.dp)) {
                 val gap = 3.dp.toPx()
@@ -757,13 +804,21 @@ private fun VoiceBox(
             if (!music) {
                 ComposerKey(Icons.Rounded.Stop, "Ferma e correggi", onClick = onStop)
                 Spacer(Modifier.width(6.dp))
-                ComposerKey(Icons.Rounded.ArrowUpward, "Inserisci", main = true, onClick = onSend)
+                // Sotto il dito: a sinistra il + ruota e diventa una ✕ rossa, a destra Invia cresce.
+                Box(Modifier.graphicsLayer { val sc = 1f + 0.2f * maxOf(send, slide); scaleX = sc; scaleY = sc }) {
+                    if (slide > 0f) ComposerKey(Icons.Rounded.Add, "Butta il vocale", main = true, danger = slide, iconTurn = 45f * slide, onClick = onCancel)
+                    else ComposerKey(Icons.Rounded.ArrowUpward, "Inserisci", main = true, onClick = onSend)
+                }
             }
         }
     }
 }
 
 private const val BAR_COUNT = 14
+
+/** Quanto trascinare il dito sul vocale: a sinistra per buttarlo, a destra (c'è poco spazio dal +) per inviarlo. */
+private const val VOICE_CANCEL_DP = 110f
+private const val VOICE_SEND_DP = 32f
 
 // Cosa mostra il fondo dello schermo.
 private const val BAR_PLUS = 0
