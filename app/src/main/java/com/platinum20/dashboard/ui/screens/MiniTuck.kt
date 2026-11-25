@@ -33,9 +33,9 @@ object MiniTuck {
     /** La calamita lo tiene: è sceso di almeno [thresholdPx] sotto il suo posto in basso. */
     fun magnet(belowPx: Float, thresholdPx: Float): Boolean = belowPx > thresholdPx
 
-    /** Il centro del + (1.634): 30 dp dal bordo destro dell'area del mini player e 40 dp sopra i tasti di sistema. */
-    const val PLUS_FROM_RIGHT_DP = 30f
-    const val PLUS_FROM_BOTTOM_DP = 40f
+    /** Il centro della freccia (1.636, 40 dp come il play di Riprendi): 20 dp dal bordo destro dell'area del mini player e 30 dp sopra i tasti di sistema. */
+    const val PLUS_FROM_RIGHT_DP = 20f
+    const val PLUS_FROM_BOTTOM_DP = 30f
 
     /** Entro quanti dp dal centro del + il dito fa scattare la calamita (il + diventa la ✕ rossa). */
     const val PLUS_MAGNET_DP = 64f

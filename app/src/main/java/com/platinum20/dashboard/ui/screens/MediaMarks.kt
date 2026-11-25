@@ -261,13 +261,5 @@ internal fun MediaLine(
  */
 @Composable
 internal fun HistoryButton(onClick: () -> Unit) {
-    androidx.compose.material3.OutlinedIconButton(
-        onClick = onClick,
-        shape = MaterialTheme.shapes.medium,
-        border = cardBorder(),
-        colors = androidx.compose.material3.IconButtonDefaults.outlinedIconButtonColors(containerColor = MaterialTheme.colorScheme.card),
-        modifier = Modifier.size(40.dp).bouncyPress(0.9f),
-    ) {
-        Icon(Icons.Outlined.History, contentDescription = "Cronologia", modifier = Modifier.size(20.dp))
-    }
+    BareIconButton(Icons.Outlined.History, "Cronologia", onClick)
 }

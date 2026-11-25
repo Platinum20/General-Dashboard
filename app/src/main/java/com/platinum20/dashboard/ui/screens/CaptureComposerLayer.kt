@@ -75,6 +75,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.onClick as semanticsClick
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
@@ -250,7 +251,7 @@ private fun rememberPhotoAttach(onReading: (Boolean) -> Unit): PhotoPick {
  * Il microfono detta dentro il testo a mani libere.
  */
 @Composable
-internal fun CaptureComposerInput(modifier: Modifier = Modifier, onMic: () -> Unit, onSend: () -> Unit) {
+internal fun CaptureComposerInput(modifier: Modifier = Modifier, onSend: () -> Unit) {
     val haptic = rememberHaptic()
     val text = CaptureComposer.text
     var reading by remember { mutableStateOf(false) }
@@ -310,18 +311,20 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier, onMic: () -> Un
                 }
             }
         }
-        // I tasti come nell'app Claude (Antonio, 1.635): + per allegare a sinistra; a destra il microfono e Invia.
+        // I tasti come nell'app Claude (1.636, Antonio): + per allegare a sinistra, a destra solo la freccia. Il microfono
+        // non c'è: tenendo premuta la freccia si detta (i gesti li legge la barra in MainActivity, che resta sotto il dito).
         // Niente X: si chiude toccando fuori o con Indietro.
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             val turn by androidx.compose.animation.core.animateFloatAsState(if (tray) 45f else 0f, Motion.lively(), label = "plusTurn")
             ComposerKey(Icons.Rounded.Add, if (tray) "Chiudi allegati" else "Allega", iconTurn = turn, danger = turn / 45f * 0.55f) { if (!reading) { haptic(Haptic.TICK); tray = !tray } }
             Spacer(Modifier.weight(1f))
-            ComposerKey(Icons.Rounded.Mic, "Detta") { haptic(Haptic.TICK); onMic() }
-            Spacer(Modifier.width(10.dp))
-            ComposerKey(Icons.Rounded.ArrowUpward, "Inserisci", main = true, enabled = !empty) { haptic(Haptic.TICK); onSend() }
+            ComposerKey(Icons.Rounded.ArrowUpward, "Inserisci", main = true, touch = false) { onSend() }
         }
     }
 }
+
+/** Grande come il play di Riprendi e l'ingranaggio (Antonio, 1.636): tutti i tasti tondi uguali. */
+internal const val COMPOSER_KEY_DP = 40
 
 /** Un tasto tondo del riquadro: grigio, o blu pieno per Invia (blu = azione). */
 @Composable
@@ -338,6 +341,8 @@ internal fun ComposerKey(
     iconTurn: Float = 0f,
     /** Da 0 a 1: quanto diventa rosso (il vocale trascinato verso il cestino). */
     danger: Float = 0f,
+    /** False: il tocco lo legge chi sta sopra (la freccia, che tenuta premuta detta); resta solo per l'accessibilità. */
+    touch: Boolean = true,
     onClick: () -> Unit,
 ) {
     val base = when {
@@ -350,13 +355,16 @@ internal fun ComposerKey(
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .size(42.dp)
+            .size(COMPOSER_KEY_DP.dp)
             .bouncyPress(0.88f)
             .clip(CircleShape)
             .background(bg)
             .then(if (outlined) Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape) else Modifier)
-            .clickable(enabled = enabled, onClick = onClick)
-            .semantics { contentDescription = label },
+            .then(if (touch) Modifier.clickable(enabled = enabled, onClick = onClick) else Modifier)
+            .semantics {
+                contentDescription = label
+                if (!touch) semanticsClick(label = label) { onClick(); true }
+            },
     ) {
         Icon(
             icon,

@@ -380,7 +380,7 @@ fun HomeScreen(
                 // L'ingranaggio sulla riga del titolo (1.634, Antonio): le Impostazioni non si aprono più tirando giù il +.
                 actions = {
                     val openSettings = LocalOpenSettings.current
-                    RoundIconButton(Icons.Outlined.Settings, "Impostazioni") { haptic(Haptic.TICK); openSettings?.invoke() }
+                    BareIconButton(Icons.Outlined.Settings, "Impostazioni") { haptic(Haptic.TICK); openSettings?.invoke() }
                 },
             )
         },

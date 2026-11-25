@@ -1,14 +1,13 @@
 package com.platinum20.dashboard.capture
 
 /**
- * Il dito sul vocale (1.635, Antonio: come Claude): trascinato a sinistra oltre [cancelPx] lasciando si butta,
- * a destra oltre [sendPx] si invia. Pura, provata nei test.
+ * Il dito sulla freccia mentre si detta (1.636, Antonio: come Claude): a sinistra oltre la soglia lasciando si butta
+ * il vocale, in su oltre la soglia si blocca a mani libere. Pura, provata nei test.
  */
 object VoiceSlide {
-    /** -1 = butta, 1 = invia, 0 = niente (resta acceso a mani libere). */
-    fun armed(dx: Float, cancelPx: Float, sendPx: Float): Int = when {
-        dx <= -cancelPx -> -1
-        dx >= sendPx -> 1
-        else -> 0
-    }
+    /** Trascinato abbastanza a sinistra: lasciando si butta. */
+    fun cancels(dx: Float, cancelPx: Float): Boolean = dx <= -cancelPx
+
+    /** Tirato abbastanza in su: resta acceso senza dito. */
+    fun locks(dy: Float, lockPx: Float): Boolean = dy <= -lockPx
 }

@@ -4,8 +4,9 @@ package com.platinum20.dashboard
 
 import com.platinum20.dashboard.capture.VoiceSlide
 import com.platinum20.dashboard.ui.screens.ComposerKey
+import com.platinum20.dashboard.ui.screens.COMPOSER_KEY_DP
+import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.rounded.ArrowUpward
-import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material.icons.rounded.Close
 import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.capture.CaptureNotice
@@ -553,9 +554,7 @@ private fun CanvasNavBar(
     partial: String,
     /** Dito tenuto sul +: true se la dettatura è partita (resta accesa senza dito). */
     onHoldStart: () -> Boolean,
-    /** Invia mentre si detta: smette di ascoltare e salva (o aggiunge al testo che si stava scrivendo). */
-    onVoiceSend: () -> Unit,
-    /** ■ mentre si detta: smette di ascoltare e mette le parole nel riquadro, da correggere. */
+    /** Il vocale finito (dito sollevato o freccia toccata): le parole vanno nel riquadro, mai inviate da sole. */
     onVoiceStop: () -> Unit,
     onCancelDictation: () -> Unit,
     heardSound: Boolean,
@@ -565,8 +564,10 @@ private fun CanvasNavBar(
     /** Il + toccato: il riquadro per scrivere è aperto. */
     composing: Boolean,
     onSend: () -> Unit,
-    /** Il microfono nel riquadro: detta dentro il testo. */
+    /** La freccia toccata col riquadro vuoto: detta a mani libere. */
     onMic: () -> Unit,
+    /** Il riquadro non ha ancora testo (la freccia allora detta invece di inviare). */
+    composeEmpty: Boolean,
 ) {
     val haptic = rememberHaptic()
     // Mentre si scrive il riquadro sale con la tastiera.
@@ -576,19 +577,25 @@ private fun CanvasNavBar(
         composing -> BAR_WRITE
         else -> BAR_PLUS
     }
-    // Il dito sul vocale (1.635, Antonio: come Claude): trascinato a sinistra butta l'audio, a destra lo invia.
+    // La freccia fa tutto (1.636, Antonio): tocco = scrivi (aperto: invia), tenuta = vocale, su = bloccato a mani
+    // libere, a sinistra = il + diventa una ✕ rossiccia e lasciando si butta il vocale e il testo.
     var voiceDrag by remember { mutableFloatStateOf(0f) }
+    var voiceHeld by remember { mutableStateOf(false) }
+    var voiceLift by remember { mutableFloatStateOf(0f) }
     val density = LocalDensity.current
     val cancelAt = with(density) { VOICE_CANCEL_DP.dp.toPx() }
-    val sendAt = with(density) { VOICE_SEND_DP.dp.toPx() }
-    val plusPx = with(density) { 60.dp.toPx() }
+    val lockAt = with(density) { VOICE_LOCK_DP.dp.toPx() }
+    val keyPx = with(density) { 64.dp.toPx() }
     val mode by rememberUpdatedState(barMode)
     val isListening by rememberUpdatedState(listening)
     val isMusic by rememberUpdatedState(music)
     val tap by rememberUpdatedState(onPlus)
     val holdStart by rememberUpdatedState(onHoldStart)
     val cancelVoice by rememberUpdatedState(onCancelDictation)
-    val sendVoice by rememberUpdatedState(onVoiceSend)
+    val stopVoice by rememberUpdatedState(onVoiceStop)
+    val send by rememberUpdatedState(onSend)
+    val mic by rememberUpdatedState(onMic)
+    val empty by rememberUpdatedState(composeEmpty)
     Box(
         Modifier
             .fillMaxWidth()
@@ -597,11 +604,14 @@ private fun CanvasNavBar(
             .pointerInput(Unit) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
-                    val onPlus = mode == BAR_PLUS && down.position.x > size.width - plusPx && down.position.y > size.height - plusPx
+                    // La freccia sta sempre nell'angolo in basso a destra, chiusa o dentro il riquadro.
+                    val inCorner = down.position.x > size.width - keyPx && down.position.y > size.height - keyPx
+                    val onArrow = (mode == BAR_PLUS || mode == BAR_WRITE) && inCorner
                     val onVoice = mode == BAR_VOICE && isListening && !isMusic
-                    if (!onPlus && !onVoice) return@awaitEachGesture
-                    if (onPlus) {
-                        // Fino al tempo del tocco lungo: un tocco, oppure tenuto/trascinato = il vocale.
+                    if (!onArrow && !onVoice) return@awaitEachGesture
+                    var holding = false
+                    if (onArrow) {
+                        // Fino al tempo del tocco lungo: un tocco, oppure tenuta/trascinata = il vocale.
                         var outcome = PRESS_HOLD
                         withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
                             while (outcome == PRESS_HOLD) {
@@ -616,32 +626,54 @@ private fun CanvasNavBar(
                         }
                         when {
                             isMusic || outcome == PRESS_CANCEL -> return@awaitEachGesture
-                            outcome == PRESS_TAP -> { haptic(Haptic.TICK); tap(); return@awaitEachGesture }
+                            outcome == PRESS_TAP -> {
+                                haptic(Haptic.TICK)
+                                when {
+                                    mode == BAR_PLUS -> tap()
+                                    empty -> mic()
+                                    else -> send()
+                                }
+                                return@awaitEachGesture
+                            }
                             !holdStart() -> return@awaitEachGesture
-                            else -> haptic(Haptic.CONFIRM)
+                            else -> { haptic(Haptic.CONFIRM); holding = true; voiceHeld = true }
                         }
                     }
-                    // Il dito segue: oltre la soglia a sinistra la ✕ si fa rossa, a destra Invia si accende.
-                    var armed = 0
+                    // Il dito segue: su oltre la soglia si blocca, a sinistra oltre la soglia lasciando si butta.
+                    var cancel = false
+                    var locked = !holding
                     var moved = false
                     while (true) {
                         val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
                         if (!change.pressed) break
                         val dx = change.position.x - down.position.x
-                        if (!moved && kotlin.math.abs(dx) > viewConfiguration.touchSlop) moved = true
+                        val dy = change.position.y - down.position.y
+                        if (!moved && (change.position - down.position).getDistance() > viewConfiguration.touchSlop) moved = true
                         if (!moved) continue
-                        voiceDrag = dx
-                        val now = VoiceSlide.armed(dx, cancelAt, sendAt)
-                        if (now != armed) {
-                            armed = now
-                            haptic(if (now != 0) Haptic.THRESHOLD else Haptic.TICK)
+                        if (!locked) {
+                            voiceLift = (-dy / lockAt).coerceIn(0f, 1f)
+                            if (VoiceSlide.locks(dy, lockAt)) {
+                                locked = true
+                                voiceHeld = false
+                                voiceLift = 0f
+                                haptic(Haptic.CONFIRM)
+                            }
+                        }
+                        voiceDrag = dx.coerceAtMost(0f)
+                        val now = VoiceSlide.cancels(dx, cancelAt)
+                        if (now != cancel) {
+                            cancel = now
+                            haptic(if (now) Haptic.THRESHOLD else Haptic.TICK)
                         }
                         change.consume()
                     }
                     voiceDrag = 0f
-                    when (armed) {
-                        -1 -> { haptic(Haptic.CONFIRM); cancelVoice() }
-                        1 -> { haptic(Haptic.CONFIRM); sendVoice() }
+                    voiceLift = 0f
+                    voiceHeld = false
+                    when {
+                        cancel -> { haptic(Haptic.CONFIRM); cancelVoice() }
+                        // Dito sollevato senza bloccare: il vocale finisce e le parole vanno nel riquadro.
+                        holding && !locked -> { haptic(Haptic.TICK); stopVoice() }
                     }
                 }
             },
@@ -666,7 +698,7 @@ private fun CanvasNavBar(
                         color = androidx.compose.ui.graphics.Color.Transparent,
                         modifier = Modifier.fillMaxWidth().glass(shape),
                     ) {
-                        if (mode == BAR_WRITE) CaptureComposerInput(Modifier.fillMaxWidth(), onMic = onMic, onSend = onSend)
+                        if (mode == BAR_WRITE) CaptureComposerInput(Modifier.fillMaxWidth(), onSend = onSend)
                         else VoiceBox(
                             listening = listening,
                             partial = partial,
@@ -676,13 +708,10 @@ private fun CanvasNavBar(
                             music = music,
                             onCancel = { haptic(Haptic.TICK); onCancelDictation() },
                             onStop = { haptic(Haptic.TICK); onVoiceStop() },
-                            onSend = { haptic(Haptic.CONFIRM); onVoiceSend() },
-                            slide = when {
-                                voiceDrag < 0f -> -(voiceDrag / cancelAt).coerceIn(-1f, 0f)
-                                else -> 0f
-                            },
-                            send = (voiceDrag / sendAt).coerceIn(0f, 1f),
+                            slide = (-voiceDrag / cancelAt).coerceIn(0f, 1f),
                             slidePx = voiceDrag,
+                            held = voiceHeld,
+                            lift = voiceLift,
                         )
                     }
                 }
@@ -691,13 +720,13 @@ private fun CanvasNavBar(
     }
 }
 
-/** Il + tondo (i gesti li legge il riquadro sopra, che resta anche quando il + diventa il vocale). */
+/** La freccia tonda (1.636: era il +). I gesti li legge il riquadro sopra, che resta anche quando diventa il vocale. */
 @Composable
 private fun PlusButton(onPlus: () -> Unit, onHoldStart: () -> Boolean) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .size(60.dp)
+            .size(COMPOSER_KEY_DP.dp)
             // Il pallino delle cose salvate atterra sul + (le schede non ci sono più).
             .captureTarget(CaptureTargets.HOME_TAB)
             .captureTarget(CaptureTargets.MEDIA_TAB)
@@ -709,13 +738,13 @@ private fun PlusButton(onPlus: () -> Unit, onHoldStart: () -> Boolean) {
             contentColor = MaterialTheme.colorScheme.onPrimary,
             modifier = Modifier.fillMaxSize().glass(CircleShape, MaterialTheme.colorScheme.primary)
                 .semantics {
-                    contentDescription = "Aggiungi"
-                    onClick(label = "Aggiungi") { onPlus(); true }
+                    contentDescription = "Scrivi"
+                    onClick(label = "Scrivi") { onPlus(); true }
                     onLongClick(label = "Detta a voce") { onHoldStart() }
                 },
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(28.dp))
+                Icon(Icons.Rounded.ArrowUpward, contentDescription = null, modifier = Modifier.size(24.dp))
             }
         }
     }
@@ -723,7 +752,8 @@ private fun PlusButton(onPlus: () -> Unit, onHoldStart: () -> Boolean) {
 
 /**
  * Il riquadro del vocale, come nell'app Claude: sopra le parole capite finora (a capo, fino a cinque righe), sotto
- * ✕ per buttarlo, l'onda che segue la voce, ■ per fermarsi e correggere il testo, Invia per salvarlo.
+ * a sinistra il + che trascinando diventa una ✕ rossiccia (butta), l'onda, a destra la freccia: toccata ferma il vocale
+ * e mette le parole nel riquadro, da inviare a mano (Antonio, 1.636: il vocale non parte mai da solo).
  */
 @Composable
 private fun VoiceBox(
@@ -735,12 +765,13 @@ private fun VoiceBox(
     music: Boolean,
     onCancel: () -> Unit,
     onStop: () -> Unit,
-    onSend: () -> Unit,
     /** Da 0 a 1: quanto il dito è andato a sinistra (1 = lasciando si butta). */
     slide: Float = 0f,
-    /** Da 0 a 1: quanto è andato a destra (1 = lasciando si invia). */
-    send: Float = 0f,
     slidePx: Float = 0f,
+    /** Il dito è ancora sulla freccia (non bloccato). */
+    held: Boolean = false,
+    /** Da 0 a 1: quanto il dito è salito verso il blocco. */
+    lift: Float = 0f,
 ) {
     // Dopo due secondi di solo silenzio: "Nessun suono rilevato" invece di "Ti ascolto…".
     var silent by remember { mutableStateOf(false) }
@@ -766,24 +797,24 @@ private fun VoiceBox(
         !listening && notice != null -> notice
         partial.isNotBlank() -> partial
         silent -> Dictation.NO_SOUND
+        held -> VOICE_HINT
         else -> "Ti ascolto…"
     }
-    Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 14.dp, bottom = 8.dp)) {
+    Column(Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, top = 18.dp, bottom = 10.dp)) {
+        val quiet = shown == Dictation.NO_SOUND || shown == "Ti ascolto…" || shown == VOICE_HINT
         Text(
             shown,
-            style = MaterialTheme.typography.bodyLarge,
-            color = if (shown == Dictation.NO_SOUND || shown == "Ti ascolto…") MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 19.sp, lineHeight = 26.sp),
+            color = if (quiet) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
             maxLines = 5,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-            modifier = Modifier.fillMaxWidth().padding(end = 8.dp, bottom = 10.dp).animateContentSize(Springs.snappy()),
+            modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 22.dp).animateContentSize(Springs.snappy()),
         )
-        if (listening) Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().graphicsLayer { translationX = slidePx * 0.25f },
-        ) {
-            // Trascinando a sinistra la ✕ si fa rossa e cresce: lasciando, il vocale si butta.
-            Box(Modifier.graphicsLayer { val sc = 1f + 0.25f * slide; scaleX = sc; scaleY = sc }) {
-                ComposerKey(Icons.Rounded.Close, "Butta il vocale", danger = slide, onClick = onCancel)
+        if (listening) Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            // Il + per allegare: trascinando a sinistra ruota in una ✕ e si fa rossiccio; bloccato è già una ✕ (tocco = butta).
+            val turn = if (held) 45f * slide else 45f
+            Box(Modifier.graphicsLayer { val sc = 1f + 0.2f * slide; scaleX = sc; scaleY = sc }) {
+                ComposerKey(Icons.Rounded.Add, "Butta il vocale", danger = slide * 0.65f, iconTurn = turn, onClick = onCancel)
             }
             val barColor = MaterialTheme.colorScheme.primary
             Canvas(Modifier.weight(1f).height(26.dp).padding(horizontal = 12.dp)) {
@@ -800,15 +831,15 @@ private fun VoiceBox(
                     )
                 }
             }
-            // La canzone si riconosce da sola: niente ■ e Invia.
-            if (!music) {
-                ComposerKey(Icons.Rounded.Stop, "Ferma e correggi", onClick = onStop)
-                Spacer(Modifier.width(6.dp))
-                // Sotto il dito: a sinistra il + ruota e diventa una ✕ rossa, a destra Invia cresce.
-                Box(Modifier.graphicsLayer { val sc = 1f + 0.2f * maxOf(send, slide); scaleX = sc; scaleY = sc }) {
-                    if (slide > 0f) ComposerKey(Icons.Rounded.Add, "Butta il vocale", main = true, danger = slide, iconTurn = 45f * slide, onClick = onCancel)
-                    else ComposerKey(Icons.Rounded.ArrowUpward, "Inserisci", main = true, onClick = onSend)
-                }
+            // La canzone si riconosce da sola: niente freccia.
+            if (!music) Box(
+                Modifier.graphicsLayer {
+                    // Sotto il dito: segue un poco a sinistra e sale verso il blocco.
+                    translationX = slidePx * 0.25f
+                    translationY = -lift * 14.dp.toPx()
+                },
+            ) {
+                ComposerKey(Icons.Rounded.ArrowUpward, "Metti nel testo", main = true, onClick = onStop)
             }
         }
     }
@@ -816,9 +847,12 @@ private fun VoiceBox(
 
 private const val BAR_COUNT = 14
 
-/** Quanto trascinare il dito sul vocale: a sinistra per buttarlo, a destra (c'è poco spazio dal +) per inviarlo. */
+/** Quanto trascinare il dito sul vocale: a sinistra per buttarlo, in su per bloccarlo a mani libere. */
 private const val VOICE_CANCEL_DP = 110f
-private const val VOICE_SEND_DP = 32f
+private const val VOICE_LOCK_DP = 70f
+
+/** Mentre si tiene la freccia, finché non si sente nulla: come si blocca e come si butta. */
+private const val VOICE_HINT = "Su per bloccare, a sinistra per annullare"
 
 // Cosa mostra il fondo dello schermo.
 private const val BAR_PLUS = 0
@@ -1140,19 +1174,25 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     partial = if (SongId.listening) "Ascolto la musica…" else dictation.partial,
                     music = SongId.listening,
                     onHoldStart = { startDictation().also { if (it) dictation.lock() } },
-                    onVoiceSend = dictation::release,
                     onVoiceStop = {
                         // Le parole vanno nel riquadro per scrivere invece di salvarsi da sole.
                         voiceToEdit = true
                         CaptureComposer.dictating = true
                         dictation.release()
                     },
-                    onCancelDictation = { voiceToEdit = false; CaptureComposer.dictating = false; dictation.discard() },
+                    // Buttato: via l'audio e anche il testo scritto (Antonio, 1.636).
+                    onCancelDictation = {
+                        voiceToEdit = false
+                        CaptureComposer.dictating = false
+                        dictation.discard()
+                        CaptureComposer.text = androidx.compose.ui.text.input.TextFieldValue("")
+                    },
                     heardSound = dictation.heardSound,
                     notice = dictation.notice,
                     composing = composing,
                     onSend = sendComposer,
                     onMic = { if (startDictation()) dictation.lock() },
+                    composeEmpty = CaptureComposer.text.text.isBlank(),
                 )
             }
         },

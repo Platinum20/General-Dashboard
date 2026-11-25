@@ -10,8 +10,9 @@ no history ("since 1.x", "removed in"). Add a line only when you create or move 
 
 ## Code map (`app/src/main/java/com/platinum20/dashboard/`)
 
-**Shell**: `MainActivity.kt` = NavHost (`object Routes`), `CanvasNavBar` (only the round "+" bottom-right, no tabs:
-tap = Claude-style capture box `CaptureComposerInput`, hold = hands-free voice `VoiceBox` ✕/■/Invia; News and Media
+**Shell**: `MainActivity.kt` = NavHost (`object Routes`), `CanvasNavBar` (only a round arrow bottom-right, no tabs; ONE arrow does
+everything, gestures read by the bar's pointerInput: tap = Claude-style box `CaptureComposerInput` (open: tap sends), hold = voice
+`VoiceBox`, up = lock, left = cancel (`VoiceSlide`); voice text always lands in the box, never sent; keys `COMPOSER_KEY_DP`; News and Media
 are pages pushed over Home, `switchTab`), predictive back, `OpenRequest` deep links, PullToSearch, mini player and glass
 layers (queue, video settings, What's new) drawn OUTSIDE the NavHost. Calendario page = `Routes.NOTES`, pushed over Home. Bar + "+" rule = `Routes.hasBar` (list pages yes; detail/editor/player/settings/search no); list pages pad their bottom with `listBottom(min)` (Common.kt, reads `LocalBarSpace`).
 `settings/AppSettings.kt` = every preference (StateFlow). `ui/theme/Theme.kt` = themes Canvas / Material You / Puro, Inter.

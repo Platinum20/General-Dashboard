@@ -589,6 +589,14 @@ fun RoundIconButton(icon: ImageVector, contentDescription: String, enabled: Bool
     }
 }
 
+/** Solo l'icona, senza bolla (Antonio, 1.636: l'ingranaggio della Home, la cronologia di Musica e Video). */
+@Composable
+fun BareIconButton(icon: ImageVector, contentDescription: String, onClick: () -> Unit) {
+    IconButton(onClick = onClick, modifier = Modifier.size(40.dp).bouncyPress(0.85f)) {
+        Icon(icon, contentDescription = contentDescription, modifier = Modifier.size(24.dp))
+    }
+}
+
 /**
  * Le pagine come sorgente del vetro: da Android 13 per il vetro liquido, prima per Haze.
  */

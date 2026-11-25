@@ -166,7 +166,7 @@ class MiniPlayerSwipeTest {
         val p = boxPoint()
         val root = compose.onRoot().fetchSemanticsNode().boundsInRoot
         // Il centro del +: 16 + 30 dp dal bordo destro, 40 dp sopra il fondo (xxhdpi = 3 px per dp).
-        drag(p, Offset(root.right - 46f * 3f, root.bottom - 40f * 3f), 600)
+        drag(p, Offset(root.right - 36f * 3f, root.bottom - 30f * 3f), 600)
         assertEquals(1, closed)
     }
 
