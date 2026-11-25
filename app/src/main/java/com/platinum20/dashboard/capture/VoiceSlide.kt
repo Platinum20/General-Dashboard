@@ -11,13 +11,11 @@ object VoiceSlide {
     /** Tirato abbastanza in su: resta acceso senza dito. */
     fun locks(dy: Float, lockPx: Float): Boolean = dy <= -lockPx
 
-    /** Le prime volte (1.637) una riga spiega i gesti; poi si sanno e sparisce. */
-    const val TIP_USES = 6
-    fun showTips(uses: Int): Boolean = uses < TIP_USES
-
+    /** Accanto alla ✕/graffetta, sempre (1.637): l'onda che entra da destra la copre quando si è parlato abbastanza. */
     const val HELD_TIP = "↑ blocca  ·  ← annulla"
-    const val LOCKED_TIP = "Freccia: nel testo  ·  ✕: annulla"
+    const val LOCKED_TIP = "↑ nel testo  ·  ✕ annulla"
 
-    const val PREFS = "canvas_hints"
-    const val USES_KEY = "voice_uses"
+    /** Dove comincia l'onda (da destra, [count] barrette): a sinistra di lì la scritta si vede ancora. */
+    fun waveStart(width: Float, count: Int, barPx: Float, gapPx: Float): Float =
+        (width - count * (barPx + gapPx) + gapPx).coerceAtLeast(0f)
 }

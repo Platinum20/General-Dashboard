@@ -1,6 +1,7 @@
 package com.platinum20.dashboard
 
 import com.platinum20.dashboard.capture.VoiceSlide
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -23,9 +24,9 @@ class VoiceSlideTest {
 
 class VoiceTipsTest {
     @Test
-    fun laRigaDeiGestiSoloLePrimeVolte() {
-        assertTrue(VoiceSlide.showTips(0))
-        assertTrue(VoiceSlide.showTips(VoiceSlide.TIP_USES - 1))
-        assertFalse(VoiceSlide.showTips(VoiceSlide.TIP_USES))
+    fun lOndaEntraDaDestraECopreLaScritta() {
+        assertEquals(300f, VoiceSlide.waveStart(300f, 0, 3f, 3f), 0f)
+        assertEquals(243f, VoiceSlide.waveStart(300f, 10, 3f, 3f), 0f)
+        assertEquals(0f, VoiceSlide.waveStart(300f, 90, 3f, 3f), 0f)
     }
 }

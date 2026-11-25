@@ -163,6 +163,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.Lifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import com.platinum20.dashboard.adblock.AdBlocker
@@ -586,14 +587,6 @@ private fun CanvasNavBar(
     var voiceHeld by remember { mutableStateOf(false) }
     var voiceLift by remember { mutableFloatStateOf(0f) }
     val barOrigin = remember { FloatArray(2) }
-    // Quante volte si è usato il vocale: le prime volte la riga coi gesti, poi basta.
-    val hintPrefs = LocalContext.current.getSharedPreferences(VoiceSlide.PREFS, android.content.Context.MODE_PRIVATE)
-    var voiceTips by remember { mutableStateOf(false) }
-    fun countVoice() {
-        val uses = hintPrefs.getInt(VoiceSlide.USES_KEY, 0)
-        voiceTips = VoiceSlide.showTips(uses)
-        hintPrefs.edit().putInt(VoiceSlide.USES_KEY, uses + 1).apply()
-    }
     val density = LocalDensity.current
     val cancelAt = with(density) { VOICE_CANCEL_DP.dp.toPx() }
     val lockAt = with(density) { VOICE_LOCK_DP.dp.toPx() }
@@ -647,13 +640,13 @@ private fun CanvasNavBar(
                                 haptic(Haptic.TICK)
                                 when {
                                     mode == BAR_PLUS -> tap()
-                                    empty -> { countVoice(); mic() }
+                                    empty -> mic()
                                     else -> send()
                                 }
                                 return@awaitEachGesture
                             }
                             !holdStart() -> return@awaitEachGesture
-                            else -> { haptic(Haptic.CONFIRM); holding = true; voiceHeld = true; countVoice() }
+                            else -> { haptic(Haptic.CONFIRM); holding = true; voiceHeld = true }
                         }
                     }
                     // Il dito segue: su oltre la soglia si blocca, a sinistra oltre la soglia lasciando si butta.
@@ -729,7 +722,6 @@ private fun CanvasNavBar(
                             slidePx = voiceDrag,
                             held = voiceHeld,
                             lift = voiceLift,
-                            tips = voiceTips,
                         )
                     }
                 }
@@ -790,8 +782,6 @@ private fun VoiceBox(
     held: Boolean = false,
     /** Da 0 a 1: quanto il dito è salito verso il blocco. */
     lift: Float = 0f,
-    /** Mostra la riga che spiega i gesti (solo le prime volte). */
-    tips: Boolean = false,
 ) {
     // Dopo due secondi di solo silenzio: "Nessun suono rilevato" invece di "Ti ascolto…".
     var silent by remember { mutableStateOf(false) }
@@ -802,16 +792,17 @@ private fun VoiceBox(
             silent = true
         }
     }
-    // Le ultime misure del volume, la più nuova a destra.
-    val bars = remember { mutableStateListOf<Float>().apply { repeat(BAR_COUNT) { add(0f) } } }
+    // Le misure del volume, la più nuova a destra: l'onda entra da destra e cresce verso sinistra (1.637).
+    val bars = remember { mutableStateListOf<Float>() }
     val currentLevel by rememberUpdatedState(level)
     LaunchedEffect(listening) {
+        bars.clear()
         while (listening) {
-            bars.removeAt(0)
             bars.add(currentLevel)
+            if (bars.size > BAR_MAX) bars.removeAt(0)
             delay(70)
         }
-        for (i in bars.indices) bars[i] = 0f
+        bars.clear()
     }
     val shown = when {
         !listening && notice != null -> notice
@@ -827,15 +818,7 @@ private fun VoiceBox(
             color = if (quiet) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
             maxLines = 5,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-            modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = if (tips && listening && !music) 10.dp else 22.dp).animateContentSize(Springs.snappy()),
-        )
-        // Le prime volte una riga piccola spiega i gesti (Antonio, 1.637: "qualcosa che aiuti a capire"), poi sparisce.
-        if (tips && listening && !music) Text(
-            if (held) VoiceSlide.HELD_TIP else VoiceSlide.LOCKED_TIP,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary,
-            maxLines = 1,
-            modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 22.dp).animateContentSize(Springs.snappy()),
         )
         if (listening) Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             // La graffetta: trascinando a sinistra diventa una ✕ che cresce e si fa rossiccia, lasciando butta l'audio.
@@ -845,18 +828,35 @@ private fun VoiceBox(
                 ComposerKey(if (clip) Icons.Rounded.AttachFile else Icons.Rounded.Close, "Butta il vocale", danger = slide * 0.65f, onClick = onCancel)
             }
             val barColor = MaterialTheme.colorScheme.primary
-            Canvas(Modifier.weight(1f).height(26.dp).padding(horizontal = 12.dp)) {
-                val gap = 3.dp.toPx()
-                val w = ((size.width - gap * (BAR_COUNT - 1)) / BAR_COUNT).coerceAtMost(4.dp.toPx())
-                val start = size.width - (w + gap) * BAR_COUNT + gap
-                bars.forEachIndexed { i, v ->
-                    val h = (size.height * (0.14f + 0.86f * v)).coerceAtMost(size.height)
-                    drawRoundRect(
-                        color = barColor.copy(alpha = 0.35f + 0.65f * v),
-                        topLeft = Offset(start + i * (w + gap), (size.height - h) / 2),
-                        size = Size(w, h),
-                        cornerRadius = CornerRadius(w / 2, w / 2),
-                    )
+            // Accanto alla graffetta la scritta coi gesti, ogni volta (Antonio, 1.637): l'onda che entra da destra, quando
+            // si è parlato abbastanza, ci arriva sopra e la copre.
+            Box(Modifier.weight(1f).height(26.dp).padding(horizontal = 12.dp), contentAlignment = Alignment.CenterStart) {
+                if (!music) Text(
+                    if (held) VoiceSlide.HELD_TIP else VoiceSlide.LOCKED_TIP,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    softWrap = false,
+                    modifier = Modifier.fillMaxWidth().drawWithContent {
+                        val cover = VoiceSlide.waveStart(size.width, bars.size, BAR_W_DP.dp.toPx(), BAR_GAP_DP.dp.toPx()) - BAR_GAP_DP.dp.toPx() * 2
+                        if (cover > 0f) clipRect(right = cover) { this@drawWithContent.drawContent() }
+                    },
+                )
+                Canvas(Modifier.fillMaxSize()) {
+                    val w = BAR_W_DP.dp.toPx()
+                    val gap = BAR_GAP_DP.dp.toPx()
+                    val n = bars.size
+                    bars.forEachIndexed { i, v ->
+                        val x = size.width - (n - i) * (w + gap) + gap
+                        if (x < 0f) return@forEachIndexed
+                        val h = (size.height * (0.14f + 0.86f * v)).coerceAtMost(size.height)
+                        drawRoundRect(
+                            color = barColor.copy(alpha = 0.35f + 0.65f * v),
+                            topLeft = Offset(x, (size.height - h) / 2),
+                            size = Size(w, h),
+                            cornerRadius = CornerRadius(w / 2, w / 2),
+                        )
+                    }
                 }
             }
             // La canzone si riconosce da sola: niente freccia.
@@ -874,7 +874,10 @@ private fun VoiceBox(
     }
 }
 
-private const val BAR_COUNT = 14
+/** L'onda: barrette sottili, fino a riempire la riga. */
+private const val BAR_MAX = 90
+private const val BAR_W_DP = 3f
+private const val BAR_GAP_DP = 3f
 
 /** Quanto trascinare il dito sul vocale: a sinistra per buttarlo, in su per bloccarlo a mani libere. */
 private const val VOICE_CANCEL_DP = 110f

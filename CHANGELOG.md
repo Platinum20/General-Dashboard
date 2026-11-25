@@ -4,7 +4,7 @@
 **La freccia si spiega da sola**
 - Con il riquadro aperto, tenendo premuta la freccia parte il vocale e diventa il microfono, come dal + chiuso
 - Il riquadro vuoto dice prima "Scrivi, o tieni premuta la freccia per parlare", poi mostra gli esempi
-- Le prime volte che usi il vocale una riga piccola ricorda i gesti: "↑ blocca · ← annulla", poi sparisce
+- Mentre registri, accanto alla graffetta c'è sempre "↑ blocca · ← annulla": l'onda entra da destra e quando hai parlato abbastanza la copre
 
 ## 1.636.0
 **Un tasto solo per scrivere e parlare**
