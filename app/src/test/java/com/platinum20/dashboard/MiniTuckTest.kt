@@ -112,4 +112,16 @@ class MiniTuckTest {
         assertFalse(MiniTuck.overPlus(1_000f + 70f * d, 2_000f, 1_000f, 2_000f, d))
         assertFalse(MiniTuck.overPlus(1_000f - 50f * d, 2_000f - 50f * d, 1_000f, 2_000f, d))
     }
+
+    @Test
+    fun piuTiAvviciniPiuSiArrossa() {
+        // 1.638: 0 oltre 4 volte la calamita (256 dp), 1 dentro la calamita, in mezzo cresce.
+        val d = 3f
+        assertEquals(0f, MiniTuck.plusNear(1_000f + 300f * d, 2_000f, 1_000f, 2_000f, d), 0f)
+        assertEquals(1f, MiniTuck.plusNear(1_000f + 30f * d, 2_000f, 1_000f, 2_000f, d), 0f)
+        val far = MiniTuck.plusNear(1_000f + 200f * d, 2_000f, 1_000f, 2_000f, d)
+        val close = MiniTuck.plusNear(1_000f + 100f * d, 2_000f, 1_000f, 2_000f, d)
+        assertTrue(far in 0.01f..0.99f)
+        assertTrue(close > far)
+    }
 }

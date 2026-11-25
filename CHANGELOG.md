@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.638.0
+**Il + si arrossa mentre ti avvicini**
+- Trascinando il mini player verso il +, il + diventa sempre più rosso man mano che ti avvicini, e tutto rosso quando lo prende la calamita
+
 ## 1.637.0
 **La freccia si spiega da sola**
 - Con il riquadro aperto, tenendo premuta la freccia parte il vocale e diventa il microfono, come dal + chiuso

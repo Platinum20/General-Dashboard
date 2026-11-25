@@ -51,6 +51,16 @@ object MiniTuck {
         return dx * dx + dy * dy <= r * r
     }
 
+    /**
+     * Quanto è vicino al + (1.638, Antonio: "più mi avvicino, più diventa rosso"): 0 lontano (oltre 4 volte la
+     * calamita), 1 quando la calamita lo prende.
+     */
+    fun plusNear(fingerX: Float, fingerY: Float, plusX: Float, plusY: Float, density: Float): Float {
+        val d = kotlin.math.hypot(fingerX - plusX, fingerY - plusY)
+        val r = PLUS_MAGNET_DP * density
+        return (1f - (d - r) / (r * 3f)).coerceIn(0f, 1f)
+    }
+
     /** Il riquadro del mini player (1.546, Antonio): circa il doppio del video di prima (84 × 48), 16:9. */
     const val BOX_W = 200f
     const val BOX_H = 113f
