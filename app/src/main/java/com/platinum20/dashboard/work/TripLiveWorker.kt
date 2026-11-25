@@ -109,11 +109,15 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     posted += id
                     continue
                 }
-                kept += id
                 val sign = card.text + "|" + card.lines.joinToString("|")
-                if (prefs.getString("done_$id", null) == sign) continue
-                prefs.edit().putString("done_$id", sign).apply()
-                post(context, event, card, now)
+                val before = prefs.getString("done_$id", null)
+                val stillShown = before != null && isShown(context, event.eventId)
+                if (before == null || stillShown) kept += id
+                when (ShiftLive.summary(before != null, stillShown, before == sign, now, event.end)) {
+                    ShiftLive.Summary.SKIP -> if (before == null) prefs.edit().putString("done_$id", sign).apply()
+                    ShiftLive.Summary.POST -> { prefs.edit().putString("done_$id", sign).apply(); post(context, event, card, now) }
+                    ShiftLive.Summary.UPDATE_SILENT -> { prefs.edit().putString("done_$id", sign).apply(); post(context, event, card, now, silent = true) }
+                }
             }
         }
         // I treni già arrivati (sull'orario del biglietto) di cui non sappiamo com'è finita: una lettura ogni 15 minuti
@@ -142,7 +146,13 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
     companion object {
         /** Disegna (o ridisegna) la notifica di [event]; [now] = l'ora da mostrare (la prova usa un orologio finto). */
     @SuppressLint("MissingPermission")
-        fun post(context: Context, event: CalendarEvent, card: LiveCard, now: Long = System.currentTimeMillis()) {
+        /** Se la notifica di [eventId] è ancora nella tendina (non tolta col dito). */
+        fun isShown(context: Context, eventId: Long): Boolean = runCatching {
+            context.getSystemService(android.app.NotificationManager::class.java)?.activeNotifications
+                ?.any { it.id == notificationId(eventId) } == true
+        }.getOrDefault(true)
+
+        fun post(context: Context, event: CalendarEvent, card: LiveCard, now: Long = System.currentTimeMillis(), silent: Boolean = false) {
             ensureChannel(context)
             val open = Intent(context, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
@@ -196,6 +206,7 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 .setOngoing(!card.done)
                 .setAutoCancel(card.done)
                 .setOnlyAlertOnce(true)
+                .setSilent(silent)
                 .setShowWhen(false)
                 .setCategory(if (card.done) NotificationCompat.CATEGORY_STATUS else NotificationCompat.CATEGORY_PROGRESS)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
