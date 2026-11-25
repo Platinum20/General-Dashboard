@@ -167,6 +167,8 @@ fun FloatingPlayer(
         val x = remember { Animatable(0f) }
         // La calamita in fondo: quando lo prende scatta un po' giù da solo.
         var magnet by remember { mutableStateOf(false) }
+        // Da 0 a 1: quanto il dito è vicino al + (più è vicino, più il + si fa rosso).
+        var plusNear by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
         // Portato oltre il bordo: lasciandolo va nella linguetta (vibra come la calamita).
         var tuckArmed by remember { mutableStateOf(false) }
         val pull = remember { Animatable(0f) }
@@ -316,7 +318,7 @@ fun FloatingPlayer(
                     MiniDock.tucked = false
                 },
             )
-            PlusMark(tabNear > 0f, tabMagnet, plusX, plusY)
+            PlusMark(tabNear > 0f, tabMagnet, plusX, plusY, near = tabNear)
             return@BoxWithConstraints
         }
 
@@ -441,6 +443,7 @@ fun FloatingPlayer(
                         val fingerX = (if (atRight) maxW - boxW else 0f) + x.value + change.position.x
                         val fingerY = topGap + y.value * range + pull.value + change.position.y
                         val held = MiniTuck.overPlus(fingerX, fingerY, plusX, plusY, density.density)
+                        plusNear = MiniTuck.plusNear(fingerX, fingerY, plusX, plusY, density.density)
                         if (held != magnet) {
                             magnet = held
                             // La calamita: vibra e lo tira verso il +; allontanandosi lo lascia andare.
@@ -457,7 +460,7 @@ fun FloatingPlayer(
             MiniPlayer(now, onExpand = { onExpand(now) })
         }
 
-        PlusMark(dragging || closing, magnet, plusX, plusY)
+        PlusMark(dragging || closing, magnet, plusX, plusY, near = if (dragging || closing) plusNear else 0f)
     }
 }
 
@@ -467,11 +470,13 @@ fun FloatingPlayer(
  * c'è (dentro una nota, un evento) compare lì da solo.
  */
 @Composable
-private fun androidx.compose.foundation.layout.BoxScope.PlusMark(show: Boolean, hot: Boolean, plusX: Float, plusY: Float) {
+private fun androidx.compose.foundation.layout.BoxScope.PlusMark(show: Boolean, hot: Boolean, plusX: Float, plusY: Float, near: Float = 0f) {
     val shown by androidx.compose.animation.core.animateFloatAsState(if (show) 1f else 0f, Motion.lively(), label = "plusShow")
     val heat by androidx.compose.animation.core.animateFloatAsState(if (hot) 1f else 0f, Motion.lively(), label = "plusHot")
     if (shown <= 0.01f) return
-    val color = androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.error, heat)
+    // Si arrossa man mano che ti avvicini (1.638), tutto rosso quando la calamita lo prende.
+    val red by androidx.compose.animation.core.animateFloatAsState(maxOf(near * 0.8f, if (hot) 1f else 0f), androidx.compose.animation.core.tween(90), label = "plusRed")
+    val color = androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.error, red)
     Box(
         Modifier
             .align(Alignment.TopStart)
