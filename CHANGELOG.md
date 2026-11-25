@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.637.0
+**La freccia si spiega da sola**
+- Con il riquadro aperto, tenendo premuta la freccia parte il vocale e diventa il microfono, come dal + chiuso
+- Il riquadro vuoto dice prima "Scrivi, o tieni premuta la freccia per parlare", poi mostra gli esempi
+- Mentre registri, dentro il riquadro sopra il microfono c'è un lucchetto con una freccia che sale piano (tira su per bloccare), e accanto alla ✕ tre ‹ che si accendono verso sinistra (scorri per annullare)
+- Mentre registri la graffetta diventa una ✕
+
 ## 1.636.0
 **Un tasto solo per scrivere e parlare**
 - Il + in basso a destra è grande come il play di Riprendi; toccandolo si apre il riquadro e il + ruota e diventa la freccia per inviare
