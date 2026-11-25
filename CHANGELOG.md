@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.633.0
+**Video di YouTube tutti in grande**
+- In Scopri (la Home di YouTube) ogni video è grande come il primo, con l'anteprima larga e il titolo sotto: niente più righe piccole in mezzo
+- Anche nella pagina di un canale gli ultimi video e le live sono tutti in grande, uguali
+
 ## 1.632.0
 **Il riepilogo del turno non ricompare di notte**
 - La notifica di fine turno esce solo nelle 2 ore dopo la fine: ore dopo non compare più
