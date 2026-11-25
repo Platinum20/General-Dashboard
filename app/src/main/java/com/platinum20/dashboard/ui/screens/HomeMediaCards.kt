@@ -114,7 +114,8 @@ internal fun HomeVideoCard(open: (String) -> Unit) {
                 )
                 return@Column
             }
-            LazyRow(state = rememberRowAtStart(), contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Il margine fuori dallo scorrimento: i video spariscono al margine della card, come in Documenti.
+            LazyRow(state = rememberRowAtStart(), modifier = Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (savedVideos.isNotEmpty()) item(key = "saved") {
                     SavedTile(bigHeight, savedVideos, wide = true) { open(Routes.savedMedia(video = true)) }
                 }

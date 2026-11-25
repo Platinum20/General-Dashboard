@@ -60,6 +60,9 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.border
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.rounded.ArrowUpward
@@ -158,12 +161,15 @@ internal fun rememberComposerSend(onNeedsDialog: (String) -> Unit): () -> Unit {
     }
 }
 
+/** Le due strade per allegare: fotocamera o galleria. */
+private class PhotoPick(val camera: () -> Unit, val gallery: () -> Unit)
+
 /**
  * La graffetta: scatta o scegli una foto, Canvas la legge e la scrive nella barra. Si controlla e
  * si invia come sempre.
  */
 @Composable
-private fun rememberPhotoAttach(onReading: (Boolean) -> Unit): () -> Unit {
+private fun rememberPhotoAttach(onReading: (Boolean) -> Unit): PhotoPick {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val reading by rememberUpdatedState(onReading)
@@ -224,40 +230,22 @@ private fun rememberPhotoAttach(onReading: (Boolean) -> Unit): () -> Unit {
                 .onFailure { CaptureFeedback.tell(context, "Non riesco ad aprire questo video") }
         } else readInto(uri, cameraFile = false)
     }
-    // Il fumetto sta in basso: la tastiera si chiude per lasciarlo vedere, senza annullare la nota.
-    val keyboard = LocalSoftwareKeyboardController.current
-    var choosing by remember { mutableStateOf(false) }
-    var launched by remember { mutableStateOf(false) }
-    LaunchedEffect(ActionBubble.actions == null) {
-        if (ActionBubble.actions == null && choosing) {
-            choosing = false
-            // Chiuso senza scegliere: si torna a scrivere.
-            if (!launched) CaptureComposer.attaching = false
-        }
-    }
+    // Le scelte stanno dentro il riquadro, come in Claude (1.635): niente fumetto sopra.
     fun go(start: () -> Unit) {
-        launched = true
+        CaptureComposer.attaching = true
         runCatching(start).onFailure { CaptureComposer.attaching = false }
     }
-    return {
-        CaptureComposer.attaching = true
-        launched = false
-        choosing = true
-        keyboard?.hide()
-        ActionBubble.show(
-            BubbleHead("Allega", "scontrino, documento, biglietto: capisce da sé"),
-            choice(
-                "Foto o video",
-                BubbleChip("Scatta", icon = Icons.Outlined.PhotoCamera) { go { camera.launch(ReceiptReader.photoUri(context)) } },
-                BubbleChip("Galleria", icon = Icons.Outlined.PhotoLibrary) { go { gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) } },
-            ),
+    return remember {
+        PhotoPick(
+            camera = { go { camera.launch(ReceiptReader.photoUri(context)) } },
+            gallery = { go { gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) } },
         )
     }
 }
 
 /**
  * Il riquadro per scrivere (1.634, come nell'app Claude): in cima dove andrà (le chip), poi il campo che cresce col
- * testo fino a sei righe, sotto i tasti: graffetta e microfono a sinistra, la X e Invia a destra.
+ * testo fino a sei righe, sotto i tasti come in Claude: + per allegare a sinistra, microfono e Invia a destra.
  * Il microfono detta dentro il testo a mani libere.
  */
 @Composable
@@ -266,6 +254,8 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier, onMic: () -> Un
     val text = CaptureComposer.text
     var reading by remember { mutableStateOf(false) }
     val attach = rememberPhotoAttach { reading = it }
+    // Il + apre dentro il riquadro le scelte per allegare, come in Claude; ritoccato (ora è una ×) le chiude.
+    var tray by remember { mutableStateOf(false) }
     val empty = text.text.isEmpty()
     // Il segnaposto è un esempio che cambia: insegna cosa si può scrivere senza occupare una riga in più.
     var exampleAt by remember { mutableStateOf(0) }
@@ -299,16 +289,32 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier, onMic: () -> Un
                     .semantics { contentDescription = "Scrivi" },
             )
         }
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            ComposerKey(Icons.Rounded.AttachFile, "Allega") { if (!reading) { haptic(Haptic.TICK); attach() } }
-            Spacer(Modifier.width(6.dp))
-            ComposerKey(Icons.Rounded.Mic, "Detta") { haptic(Haptic.TICK); onMic() }
-            Spacer(Modifier.weight(1f))
-            // La X: con del testo lo cancella, a campo vuoto chiude senza salvare.
-            ComposerKey(Icons.Rounded.Close, if (empty) "Annulla" else "Cancella il testo") {
-                haptic(Haptic.TICK)
-                if (empty) CaptureComposer.close() else CaptureComposer.text = TextFieldValue("")
+        AnimatedVisibility(
+            visible = tray,
+            enter = fadeIn(Motion.lively()) + expandVertically(Motion.lively(), expandFrom = Alignment.Bottom),
+            exit = fadeOut(tween(Motion.EXIT_MS)) + shrinkVertically(Motion.settle(), shrinkTowards = Alignment.Bottom),
+        ) {
+            // Come "Aggiungi contesto" in Claude (Antonio, 1.635): la X e il titolo, sotto le tessere col bordo.
+            Column(Modifier.fillMaxWidth().padding(end = 6.dp, bottom = 10.dp)) {
+                Box(Modifier.fillMaxWidth().padding(bottom = 10.dp), contentAlignment = Alignment.Center) {
+                    Box(Modifier.align(Alignment.CenterStart)) {
+                        ComposerKey(Icons.Rounded.Close, "Chiudi", plain = true) { haptic(Haptic.TICK); tray = false }
+                    }
+                    Text("Allega", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+                    TrayTile(Icons.Outlined.PhotoCamera, "Fotocamera", Modifier.weight(1f)) { haptic(Haptic.TICK); tray = false; attach.camera() }
+                    TrayTile(Icons.Outlined.PhotoLibrary, "Foto", Modifier.weight(1f)) { haptic(Haptic.TICK); tray = false; attach.gallery() }
+                }
             }
+        }
+        // I tasti come nell'app Claude (Antonio, 1.635): + per allegare a sinistra; a destra il microfono e Invia.
+        // Niente X: si chiude toccando fuori o con Indietro.
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            val turn by androidx.compose.animation.core.animateFloatAsState(if (tray) 45f else 0f, Motion.lively(), label = "plusTurn")
+            ComposerKey(Icons.Rounded.Add, if (tray) "Chiudi allegati" else "Allega", outlined = true, iconTurn = turn, danger = turn / 45f * 0.55f) { if (!reading) { haptic(Haptic.TICK); tray = !tray } }
+            Spacer(Modifier.weight(1f))
+            ComposerKey(Icons.Rounded.Mic, "Detta", plain = true) { haptic(Haptic.TICK); onMic() }
             Spacer(Modifier.width(6.dp))
             ComposerKey(Icons.Rounded.ArrowUpward, "Inserisci", main = true, enabled = !empty) { haptic(Haptic.TICK); onSend() }
         }
@@ -322,13 +328,23 @@ internal fun ComposerKey(
     label: String,
     main: Boolean = false,
     enabled: Boolean = true,
+    /** Solo il contorno (il + per allegare, come in Claude). */
+    outlined: Boolean = false,
+    /** Solo l'icona, senza fondo (il microfono accanto a Invia). */
+    plain: Boolean = false,
+    /** Rotazione dell'icona in gradi (il + che diventa ×). */
+    iconTurn: Float = 0f,
+    /** Da 0 a 1: quanto diventa rosso (il vocale trascinato verso il cestino). */
+    danger: Float = 0f,
     onClick: () -> Unit,
 ) {
-    val bg = when {
+    val base = when {
         main && enabled -> MaterialTheme.colorScheme.primary
         main -> MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+        outlined || plain -> Color.Transparent
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
     }
+    val bg = if (danger > 0f) androidx.compose.ui.graphics.lerp(base, MaterialTheme.colorScheme.error, danger) else base
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -336,15 +352,38 @@ internal fun ComposerKey(
             .bouncyPress(0.88f)
             .clip(CircleShape)
             .background(bg)
+            .then(if (outlined) Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape) else Modifier)
             .clickable(enabled = enabled, onClick = onClick)
             .semantics { contentDescription = label },
     ) {
         Icon(
             icon,
             contentDescription = null,
-            tint = if (main) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.size(20.dp),
+            tint = when {
+                danger > 0.5f -> MaterialTheme.colorScheme.onError
+                main -> MaterialTheme.colorScheme.onPrimary
+                else -> MaterialTheme.colorScheme.onSurface
+            },
+            modifier = Modifier.size(20.dp).graphicsLayer { rotationZ = iconTurn },
         )
+    }
+}
+
+/** Una scelta per allegare dentro il riquadro: icona sopra, nome sotto, come le tessere di Claude. */
+@Composable
+private fun TrayTile(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, modifier: Modifier, onClick: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier
+            .bouncyPress(0.95f)
+            .clip(RoundedCornerShape(16.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 16.dp),
+    ) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(22.dp))
+        Spacer(Modifier.height(6.dp))
+        Text(label, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
     }
 }
 
