@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.638.0
+## 1.639.0
 **Accesso WindTre senza pagina che lampeggia**
 - La pagina d'accesso WindTre non lampeggia più chiaro/scuro: Canvas rimetteva di continuo la sessione vecchia, il sito la rifiutava e ricominciava da capo. Era anche il motivo per cui l'accesso da solo non partiva mai
 - Con l'accesso scaduto la pagina si apre pulita, pronta per la tua e-mail
@@ -9,6 +9,7 @@
 - Nella pagina d'accesso niente più "+" in basso, e la frase in alto non parla più di password
 - In Account › WindTre › Dati letti c'è il registro dei passaggi dell'accesso (pagine, modulo, codice dalla posta): se si ferma ancora, mandamelo
 
+## 1.638.0
 **Il + si arrossa mentre ti avvicini**
 - Trascinando il mini player verso il +, il + diventa sempre più rosso man mano che ti avvicini, e tutto rosso quando lo prende la calamita
 
