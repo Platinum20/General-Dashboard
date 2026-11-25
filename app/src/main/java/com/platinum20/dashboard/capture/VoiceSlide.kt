@@ -10,4 +10,14 @@ object VoiceSlide {
 
     /** Tirato abbastanza in su: resta acceso senza dito. */
     fun locks(dy: Float, lockPx: Float): Boolean = dy <= -lockPx
+
+    /** Le prime volte (1.637) una riga spiega i gesti; poi si sanno e sparisce. */
+    const val TIP_USES = 6
+    fun showTips(uses: Int): Boolean = uses < TIP_USES
+
+    const val HELD_TIP = "↑ blocca  ·  ← annulla"
+    const val LOCKED_TIP = "Freccia: nel testo  ·  ✕: annulla"
+
+    const val PREFS = "canvas_hints"
+    const val USES_KEY = "voice_uses"
 }

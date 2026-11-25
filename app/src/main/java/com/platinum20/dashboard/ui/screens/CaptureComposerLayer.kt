@@ -273,7 +273,12 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier, onSend: () -> U
         Box(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 22.dp), contentAlignment = Alignment.TopStart) {
             val style = MaterialTheme.typography.bodyLarge.copy(fontSize = 19.sp, lineHeight = 26.sp)
             if (empty) {
-                val hint = if (reading) "Leggo la foto…" else CaptureHints.example(exampleAt)
+                // Prima la riga che spiega la freccia (1.637), poi gli esempi che girano.
+                val hint = when {
+                    reading -> "Leggo la foto…"
+                    exampleAt == 0 -> CaptureHints.GESTURE
+                    else -> CaptureHints.example(exampleAt - 1)
+                }
                 Crossfade(hint, animationSpec = tween(Motion.EXIT_MS), label = "esempio") { shown ->
                     Text(shown, style = style, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }

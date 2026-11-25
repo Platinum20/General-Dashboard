@@ -163,6 +163,8 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.Lifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import com.platinum20.dashboard.adblock.AdBlocker
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.ui.screens.PullToSearchIndicator
@@ -583,6 +585,15 @@ private fun CanvasNavBar(
     var voiceDrag by remember { mutableFloatStateOf(0f) }
     var voiceHeld by remember { mutableStateOf(false) }
     var voiceLift by remember { mutableFloatStateOf(0f) }
+    val barOrigin = remember { FloatArray(2) }
+    // Quante volte si è usato il vocale: le prime volte la riga coi gesti, poi basta.
+    val hintPrefs = LocalContext.current.getSharedPreferences(VoiceSlide.PREFS, android.content.Context.MODE_PRIVATE)
+    var voiceTips by remember { mutableStateOf(false) }
+    fun countVoice() {
+        val uses = hintPrefs.getInt(VoiceSlide.USES_KEY, 0)
+        voiceTips = VoiceSlide.showTips(uses)
+        hintPrefs.edit().putInt(VoiceSlide.USES_KEY, uses + 1).apply()
+    }
     val density = LocalDensity.current
     val cancelAt = with(density) { VOICE_CANCEL_DP.dp.toPx() }
     val lockAt = with(density) { VOICE_LOCK_DP.dp.toPx() }
@@ -602,9 +613,14 @@ private fun CanvasNavBar(
             .fillMaxWidth()
             .windowInsetsPadding(insets)
             .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 10.dp)
+            // Dove sta il riquadro sullo schermo: partito il vocale la tastiera si chiude e il riquadro scende sotto il
+            // dito; i gesti si misurano sullo schermo, se no quel salto sembrava un "su" e lo bloccava subito (1.637).
+            .onGloballyPositioned { val p = it.positionInWindow(); barOrigin[0] = p.x; barOrigin[1] = p.y }
             .pointerInput(Unit) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
+                    val startX = down.position.x + barOrigin[0]
+                    val startY = down.position.y + barOrigin[1]
                     // La freccia sta sempre nell'angolo in basso a destra, chiusa o dentro il riquadro.
                     val inCorner = down.position.x > size.width - keyPx && down.position.y > size.height - keyPx
                     val onArrow = (mode == BAR_PLUS || mode == BAR_WRITE) && inCorner
@@ -631,13 +647,13 @@ private fun CanvasNavBar(
                                 haptic(Haptic.TICK)
                                 when {
                                     mode == BAR_PLUS -> tap()
-                                    empty -> mic()
+                                    empty -> { countVoice(); mic() }
                                     else -> send()
                                 }
                                 return@awaitEachGesture
                             }
                             !holdStart() -> return@awaitEachGesture
-                            else -> { haptic(Haptic.CONFIRM); holding = true; voiceHeld = true }
+                            else -> { haptic(Haptic.CONFIRM); holding = true; voiceHeld = true; countVoice() }
                         }
                     }
                     // Il dito segue: su oltre la soglia si blocca, a sinistra oltre la soglia lasciando si butta.
@@ -647,9 +663,9 @@ private fun CanvasNavBar(
                     while (true) {
                         val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
                         if (!change.pressed) break
-                        val dx = change.position.x - down.position.x
-                        val dy = change.position.y - down.position.y
-                        if (!moved && (change.position - down.position).getDistance() > viewConfiguration.touchSlop) moved = true
+                        val dx = change.position.x + barOrigin[0] - startX
+                        val dy = change.position.y + barOrigin[1] - startY
+                        if (!moved && kotlin.math.hypot(dx, dy) > viewConfiguration.touchSlop) moved = true
                         if (!moved) continue
                         if (!locked) {
                             voiceLift = (-dy / lockAt).coerceIn(0f, 1f)
@@ -713,6 +729,7 @@ private fun CanvasNavBar(
                             slidePx = voiceDrag,
                             held = voiceHeld,
                             lift = voiceLift,
+                            tips = voiceTips,
                         )
                     }
                 }
@@ -773,6 +790,8 @@ private fun VoiceBox(
     held: Boolean = false,
     /** Da 0 a 1: quanto il dito è salito verso il blocco. */
     lift: Float = 0f,
+    /** Mostra la riga che spiega i gesti (solo le prime volte). */
+    tips: Boolean = false,
 ) {
     // Dopo due secondi di solo silenzio: "Nessun suono rilevato" invece di "Ti ascolto…".
     var silent by remember { mutableStateOf(false) }
@@ -798,18 +817,25 @@ private fun VoiceBox(
         !listening && notice != null -> notice
         partial.isNotBlank() -> partial
         silent -> Dictation.NO_SOUND
-        held -> VOICE_HINT
         else -> "Ti ascolto…"
     }
     Column(Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, top = 18.dp, bottom = 10.dp)) {
-        val quiet = shown == Dictation.NO_SOUND || shown == "Ti ascolto…" || shown == VOICE_HINT
+        val quiet = shown == Dictation.NO_SOUND || shown == "Ti ascolto…" 
         Text(
             shown,
             style = MaterialTheme.typography.bodyLarge.copy(fontSize = 19.sp, lineHeight = 26.sp),
             color = if (quiet) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
             maxLines = 5,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-            modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 22.dp).animateContentSize(Springs.snappy()),
+            modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = if (tips && listening && !music) 10.dp else 22.dp).animateContentSize(Springs.snappy()),
+        )
+        // Le prime volte una riga piccola spiega i gesti (Antonio, 1.637: "qualcosa che aiuti a capire"), poi sparisce.
+        if (tips && listening && !music) Text(
+            if (held) VoiceSlide.HELD_TIP else VoiceSlide.LOCKED_TIP,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 1,
+            modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
         )
         if (listening) Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             // La graffetta: trascinando a sinistra diventa una ✕ che cresce e si fa rossiccia, lasciando butta l'audio.
@@ -854,8 +880,6 @@ private const val BAR_COUNT = 14
 private const val VOICE_CANCEL_DP = 110f
 private const val VOICE_LOCK_DP = 70f
 
-/** Mentre si tiene la freccia, finché non si sente nulla: come si blocca e come si butta. */
-private const val VOICE_HINT = "Su per bloccare, a sinistra per annullare"
 
 // Cosa mostra il fondo dello schermo.
 private const val BAR_PLUS = 0

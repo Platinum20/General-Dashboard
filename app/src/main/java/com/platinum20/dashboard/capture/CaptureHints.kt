@@ -21,6 +21,9 @@ internal object CaptureHints {
     /** Ogni quanto cambia l'esempio nel campo vuoto. */
     const val EXAMPLE_MS = 3_000L
 
+    /** Il primo segnaposto: come si usa la freccia (Antonio, 1.637). */
+    const val GESTURE = "Scrivi, o tieni premuta la freccia per parlare"
+
     /** Uno per tipo, nell'ordine in cui girano. */
     val examples = listOf(
         "domani alle 9 chiamare il dentista",

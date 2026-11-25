@@ -20,3 +20,12 @@ class VoiceSlideTest {
         assertFalse(VoiceSlide.locks(50f, 70f))
     }
 }
+
+class VoiceTipsTest {
+    @Test
+    fun laRigaDeiGestiSoloLePrimeVolte() {
+        assertTrue(VoiceSlide.showTips(0))
+        assertTrue(VoiceSlide.showTips(VoiceSlide.TIP_USES - 1))
+        assertFalse(VoiceSlide.showTips(VoiceSlide.TIP_USES))
+    }
+}
