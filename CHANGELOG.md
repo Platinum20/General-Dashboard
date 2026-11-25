@@ -3,9 +3,10 @@
 ## 1.636.0
 **Una freccia sola per scrivere e parlare**
 - In basso a destra c'è una freccia al posto del +, grande come il play di Riprendi; un tocco apre il riquadro per scrivere
-- Tieni premuta la freccia per il vocale: tirala in su e resta acceso senza dito, portala a sinistra e il + diventa una ✕ rossiccia (lasciando butti audio e testo)
+- Tieni premuta la freccia per il vocale: tirala in su e resta acceso senza dito, portala a sinistra e la ✕ diventa rossiccia (lasciando butti audio e testo)
 - Il vocale non si invia mai da solo: le parole finiscono nel riquadro e le mandi tu con la freccia
 - Nel riquadro aperto la freccia invia (se è vuoto, detta); niente più tasto microfono
+- Per allegare c'è una graffetta a sinistra nel riquadro, al posto del +
 - Il riquadro è alto come quello di Claude, col testo più grande e i tasti tondi pieni, tutti della stessa misura
 - L'ingranaggio della Home e la cronologia di Musica e Video sono solo icone, senza bolla
 

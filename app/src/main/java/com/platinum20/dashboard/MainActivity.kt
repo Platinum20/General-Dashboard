@@ -578,7 +578,7 @@ private fun CanvasNavBar(
         else -> BAR_PLUS
     }
     // La freccia fa tutto (1.636, Antonio): tocco = scrivi (aperto: invia), tenuta = vocale, su = bloccato a mani
-    // libere, a sinistra = il + diventa una ✕ rossiccia e lasciando si butta il vocale e il testo.
+    // libere, a sinistra = la ✕ si fa rossiccia e lasciando si butta il vocale e il testo.
     var voiceDrag by remember { mutableFloatStateOf(0f) }
     var voiceHeld by remember { mutableStateOf(false) }
     var voiceLift by remember { mutableFloatStateOf(0f) }
@@ -752,7 +752,7 @@ private fun PlusButton(onPlus: () -> Unit, onHoldStart: () -> Boolean) {
 
 /**
  * Il riquadro del vocale, come nell'app Claude: sopra le parole capite finora (a capo, fino a cinque righe), sotto
- * a sinistra il + che trascinando diventa una ✕ rossiccia (butta), l'onda, a destra la freccia: toccata ferma il vocale
+ * a sinistra una ✕ che trascinando diventa rossiccia (butta), l'onda, a destra la freccia: toccata ferma il vocale
  * e mette le parole nel riquadro, da inviare a mano (Antonio, 1.636: il vocale non parte mai da solo).
  */
 @Composable
@@ -811,10 +811,9 @@ private fun VoiceBox(
             modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 22.dp).animateContentSize(Springs.snappy()),
         )
         if (listening) Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            // Il + per allegare: trascinando a sinistra ruota in una ✕ e si fa rossiccio; bloccato è già una ✕ (tocco = butta).
-            val turn = if (held) 45f * slide else 45f
+            // Al posto della graffetta una ✕: trascinando a sinistra cresce e si fa rossiccia, lasciando butta (anche un tocco).
             Box(Modifier.graphicsLayer { val sc = 1f + 0.2f * slide; scaleX = sc; scaleY = sc }) {
-                ComposerKey(Icons.Rounded.Add, "Butta il vocale", danger = slide * 0.65f, iconTurn = turn, onClick = onCancel)
+                ComposerKey(Icons.Rounded.Close, "Butta il vocale", danger = slide * 0.65f, onClick = onCancel)
             }
             val barColor = MaterialTheme.colorScheme.primary
             Canvas(Modifier.weight(1f).height(26.dp).padding(horizontal = 12.dp)) {

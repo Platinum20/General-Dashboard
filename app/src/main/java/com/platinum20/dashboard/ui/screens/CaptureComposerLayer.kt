@@ -311,12 +311,12 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier, onSend: () -> U
                 }
             }
         }
-        // I tasti come nell'app Claude (1.636, Antonio): + per allegare a sinistra, a destra solo la freccia. Il microfono
+        // I tasti come nell'app Claude (1.636, Antonio): la graffetta per allegare a sinistra, a destra solo la freccia. Il microfono
         // non c'è: tenendo premuta la freccia si detta (i gesti li legge la barra in MainActivity, che resta sotto il dito).
         // Niente X: si chiude toccando fuori o con Indietro.
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            val turn by androidx.compose.animation.core.animateFloatAsState(if (tray) 45f else 0f, Motion.lively(), label = "plusTurn")
-            ComposerKey(Icons.Rounded.Add, if (tray) "Chiudi allegati" else "Allega", iconTurn = turn, danger = turn / 45f * 0.55f) { if (!reading) { haptic(Haptic.TICK); tray = !tray } }
+            // La graffetta (Antonio, 1.636): un + a sinistra sembrava il + di destra che si spostava.
+            ComposerKey(Icons.Rounded.AttachFile, if (tray) "Chiudi allegati" else "Allega") { if (!reading) { haptic(Haptic.TICK); tray = !tray } }
             Spacer(Modifier.weight(1f))
             ComposerKey(Icons.Rounded.ArrowUpward, "Inserisci", main = true, touch = false) { onSend() }
         }
