@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.635.0
+**Musica e Video come Documenti**
+- Nelle card Musica e Video le copertine scorrendo spariscono al margine della card, a destra e a sinistra, come in Documenti
+
 ## 1.634.0
 **Tutto nella Home**
 - In basso resta solo il +, in basso a destra: niente più barra con Home, News e Media

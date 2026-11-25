@@ -233,7 +233,11 @@ internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOp
         // Il titolo apre Scopri, il tastino a destra la fila intera in verticale (1.493, Antonio: "invertire la funzione").
         // Nella card della Home (1.634) il titolo è quello della card.
         if (!inCard) OpenableHeader("Musica", onDiscover, Modifier.padding(horizontal = 16.dp)) { HistoryButton(onOpenAll) }
-        LazyRow(state = rememberRowAtStart(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = if (inCard) 14.dp else 0.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Nella card il margine sta fuori dallo scorrimento: le copertine spariscono al margine, come in Documenti.
+        LazyRow(
+            state = rememberRowAtStart(),
+            modifier = if (inCard) Modifier.padding(start = 16.dp, end = 16.dp, bottom = 14.dp) else Modifier,
+            contentPadding = PaddingValues(horizontal = if (inCard) 0.dp else 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             // Le cose salvate per dopo, prima di tutto; senza niente di salvato la tessera non c'è (1.490, Antonio).
             // Dal 2026-11-22 (Antonio) tutti dentro la playlist "Salvati", sempre la prima della fila.
             if (saved.isNotEmpty()) item(key = "saved") { SavedTile(tile, saved, wide = false, onClick = onOpenSaved) }
