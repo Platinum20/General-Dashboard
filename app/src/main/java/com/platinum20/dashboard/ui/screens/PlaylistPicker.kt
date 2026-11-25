@@ -47,9 +47,10 @@ internal object PlaylistPicker {
         private set
 
     /** Il fumetto con le playlist dove si può scrivere: si leggono adesso, sono poche e cambiano. */
-    fun open(context: Context, track: SpItem, all: Boolean = false) {
+    /** [onReady]: la risposta di Spotify è arrivata (il tasto del player smette di dire che sta cercando). */
+    fun open(context: Context, track: SpItem, all: Boolean = false, onReady: () -> Unit = {}) {
         scope.launch {
-            val result = SpotifyStore.editablePlaylists()
+            val result = try { SpotifyStore.editablePlaylists() } finally { onReady() }
             val playlists = result.data
             if (playlists == null) {
                 CaptureFeedback.tell(context, result.error ?: "Spotify non risponde, riprova")
