@@ -8,6 +8,7 @@ import com.platinum20.dashboard.ui.screens.COMPOSER_KEY_DP
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.material.icons.rounded.ChevronLeft
 import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.capture.CaptureNotice
@@ -816,7 +817,7 @@ private fun VoiceBox(
         val hintMove = androidx.compose.animation.core.rememberInfiniteTransition(label = "aiuti")
         val hintPhase by hintMove.animateFloat(
             0f, 1f,
-            androidx.compose.animation.core.infiniteRepeatable(tween(1_100), androidx.compose.animation.core.RepeatMode.Restart),
+            androidx.compose.animation.core.infiniteRepeatable(tween<Float>(1_100), androidx.compose.animation.core.RepeatMode.Restart),
             label = "fase",
         )
         val showHints = held && listening && !music
