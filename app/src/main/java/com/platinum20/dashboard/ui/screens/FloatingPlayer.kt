@@ -475,8 +475,8 @@ private fun androidx.compose.foundation.layout.BoxScope.PlusMark(show: Boolean, 
     Box(
         Modifier
             .align(Alignment.TopStart)
-            .offset { IntOffset((plusX - 30.dp.toPx()).roundToInt(), (plusY - 30.dp.toPx()).roundToInt()) }
-            .size(60.dp)
+            .offset { IntOffset((plusX - (COMPOSER_KEY_DP / 2).dp.toPx()).roundToInt(), (plusY - (COMPOSER_KEY_DP / 2).dp.toPx()).roundToInt()) }
+            .size(COMPOSER_KEY_DP.dp)
             .graphicsLayer {
                 val sc = (0.7f + 0.38f * shown) + 0.1f * heat
                 scaleX = sc
@@ -491,7 +491,7 @@ private fun androidx.compose.foundation.layout.BoxScope.PlusMark(show: Boolean, 
             Icons.Filled.Add,
             contentDescription = if (hot) "Lascia per chiudere" else "Portalo sul + per chiudere",
             tint = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.size(28.dp).graphicsLayer { rotationZ = 45f * heat },
+            modifier = Modifier.size(24.dp).graphicsLayer { rotationZ = 45f * heat },
         )
     }
 }

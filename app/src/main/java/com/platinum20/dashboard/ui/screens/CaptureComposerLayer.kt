@@ -75,11 +75,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.onClick as semanticsClick
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.platinum20.dashboard.capture.CaptureHints
 import com.platinum20.dashboard.capture.icon
 import com.platinum20.dashboard.settings.AppSettings
@@ -249,7 +251,7 @@ private fun rememberPhotoAttach(onReading: (Boolean) -> Unit): PhotoPick {
  * Il microfono detta dentro il testo a mani libere.
  */
 @Composable
-internal fun CaptureComposerInput(modifier: Modifier = Modifier, onMic: () -> Unit, onSend: () -> Unit) {
+internal fun CaptureComposerInput(modifier: Modifier = Modifier, onSend: () -> Unit) {
     val haptic = rememberHaptic()
     val text = CaptureComposer.text
     var reading by remember { mutableStateOf(false) }
@@ -265,10 +267,11 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier, onMic: () -> Un
             exampleAt += 1
         }
     }
-    Column(modifier.padding(start = 14.dp, end = 8.dp, top = 12.dp, bottom = 8.dp)) {
-        CaptureDestinationChips(text.text, Modifier.padding(bottom = 6.dp))
-        Box(Modifier.fillMaxWidth().padding(end = 6.dp, bottom = 4.dp), contentAlignment = Alignment.TopStart) {
-            val style = MaterialTheme.typography.bodyLarge
+    // Misure dell'app Claude (Antonio, 1.636): riquadro alto, testo più grande staccato dai tasti, tasti pieni.
+    Column(modifier.padding(start = 10.dp, end = 10.dp, top = 18.dp, bottom = 10.dp)) {
+        CaptureDestinationChips(text.text, Modifier.padding(start = 6.dp, bottom = 8.dp))
+        Box(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 22.dp), contentAlignment = Alignment.TopStart) {
+            val style = MaterialTheme.typography.bodyLarge.copy(fontSize = 19.sp, lineHeight = 26.sp)
             if (empty) {
                 val hint = if (reading) "Leggo la foto…" else CaptureHints.example(exampleAt)
                 Crossfade(hint, animationSpec = tween(Motion.EXIT_MS), label = "esempio") { shown ->
@@ -295,7 +298,7 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier, onMic: () -> Un
             exit = fadeOut(tween(Motion.EXIT_MS)) + shrinkVertically(Motion.settle(), shrinkTowards = Alignment.Bottom),
         ) {
             // Come "Aggiungi contesto" in Claude (Antonio, 1.635): la X e il titolo, sotto le tessere col bordo.
-            Column(Modifier.fillMaxWidth().padding(end = 6.dp, bottom = 10.dp)) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp).padding(bottom = 14.dp)) {
                 Box(Modifier.fillMaxWidth().padding(bottom = 10.dp), contentAlignment = Alignment.Center) {
                     Box(Modifier.align(Alignment.CenterStart)) {
                         ComposerKey(Icons.Rounded.Close, "Chiudi", plain = true) { haptic(Haptic.TICK); tray = false }
@@ -308,18 +311,23 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier, onMic: () -> Un
                 }
             }
         }
-        // I tasti come nell'app Claude (Antonio, 1.635): + per allegare a sinistra; a destra il microfono e Invia.
+        // I tasti come nell'app Claude (1.636, Antonio): la graffetta per allegare a sinistra, a destra solo la freccia. Il microfono
+        // non c'è: tenendo premuta la freccia si detta (i gesti li legge la barra in MainActivity, che resta sotto il dito).
         // Niente X: si chiude toccando fuori o con Indietro.
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            val turn by androidx.compose.animation.core.animateFloatAsState(if (tray) 45f else 0f, Motion.lively(), label = "plusTurn")
-            ComposerKey(Icons.Rounded.Add, if (tray) "Chiudi allegati" else "Allega", outlined = true, iconTurn = turn, danger = turn / 45f * 0.55f) { if (!reading) { haptic(Haptic.TICK); tray = !tray } }
+            // La graffetta (Antonio, 1.636): un + a sinistra sembrava il + di destra che si spostava.
+            ComposerKey(Icons.Rounded.AttachFile, if (tray) "Chiudi allegati" else "Allega") { if (!reading) { haptic(Haptic.TICK); tray = !tray } }
             Spacer(Modifier.weight(1f))
-            ComposerKey(Icons.Rounded.Mic, "Detta", plain = true) { haptic(Haptic.TICK); onMic() }
-            Spacer(Modifier.width(6.dp))
-            ComposerKey(Icons.Rounded.ArrowUpward, "Inserisci", main = true, enabled = !empty) { haptic(Haptic.TICK); onSend() }
+            // Il + che si è aperto ruota e diventa la freccia, nello stesso punto.
+            val spin = remember { androidx.compose.animation.core.Animatable(-135f) }
+            LaunchedEffect(Unit) { spin.animateTo(0f, Motion.lively()) }
+            ComposerKey(Icons.Rounded.ArrowUpward, "Inserisci", main = true, touch = false, iconTurn = spin.value) { onSend() }
         }
     }
 }
+
+/** Grande come il play di Riprendi e l'ingranaggio (Antonio, 1.636): tutti i tasti tondi uguali. */
+internal const val COMPOSER_KEY_DP = 40
 
 /** Un tasto tondo del riquadro: grigio, o blu pieno per Invia (blu = azione). */
 @Composable
@@ -336,25 +344,30 @@ internal fun ComposerKey(
     iconTurn: Float = 0f,
     /** Da 0 a 1: quanto diventa rosso (il vocale trascinato verso il cestino). */
     danger: Float = 0f,
+    /** False: il tocco lo legge chi sta sopra (la freccia, che tenuta premuta detta); resta solo per l'accessibilità. */
+    touch: Boolean = true,
     onClick: () -> Unit,
 ) {
     val base = when {
         main && enabled -> MaterialTheme.colorScheme.primary
         main -> MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
         outlined || plain -> Color.Transparent
-        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
     }
     val bg = if (danger > 0f) androidx.compose.ui.graphics.lerp(base, MaterialTheme.colorScheme.error, danger) else base
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .size(40.dp)
+            .size(COMPOSER_KEY_DP.dp)
             .bouncyPress(0.88f)
             .clip(CircleShape)
             .background(bg)
             .then(if (outlined) Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape) else Modifier)
-            .clickable(enabled = enabled, onClick = onClick)
-            .semantics { contentDescription = label },
+            .then(if (touch) Modifier.clickable(enabled = enabled, onClick = onClick) else Modifier)
+            .semantics {
+                contentDescription = label
+                if (!touch) semanticsClick(label = label) { onClick(); true }
+            },
     ) {
         Icon(
             icon,
@@ -364,7 +377,7 @@ internal fun ComposerKey(
                 main -> MaterialTheme.colorScheme.onPrimary
                 else -> MaterialTheme.colorScheme.onSurface
             },
-            modifier = Modifier.size(20.dp).graphicsLayer { rotationZ = iconTurn },
+            modifier = Modifier.size(24.dp).graphicsLayer { rotationZ = iconTurn },
         )
     }
 }
