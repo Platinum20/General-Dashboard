@@ -1,5 +1,11 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Radio
+import androidx.compose.material.icons.outlined.Podcasts
+import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -52,8 +58,11 @@ internal fun HomeMusicCard(open: (String) -> Unit) {
     }
     CardSection(
         title = "Musica",
+        modifier = Modifier.sharedItem(SharedKeys.MUSIC.takeIf { spotifyOn }, rounded = true),
         onClick = { open(if (spotifyOn) Routes.MUSIC_DISCOVER else Routes.login(MediaService.SPOTIFY)) },
         trailing = { HistoryButton { open(Routes.MUSIC_ALL) } },
+        // Tenendo premuta la card: le strade che ha dentro (regola della pressione lunga, 2026-11-25).
+        onLongClick = if (!spotifyOn) null else ({ ActionBubble.show(BubbleHead("Musica"), *musicCardActions(open)) }),
     ) {
         PerTeRow(
             onOpen = { open(Routes.spotifyItem(it)) },
@@ -94,8 +103,10 @@ internal fun HomeVideoCard(open: (String) -> Unit) {
     }
     CardSection(
         title = "Video",
+        modifier = Modifier.sharedItem(SharedKeys.VIDEO.takeIf { youTubeOn }, rounded = true),
         onClick = { open(if (youTubeOn) Routes.MEDIA_NEWS else Routes.login(MediaService.YOUTUBE)) },
         trailing = { HistoryButton { open(Routes.YOUTUBE_FEED) } },
+        onLongClick = if (!youTubeOn) null else ({ ActionBubble.show(BubbleHead("Video"), *videoCardActions(open)) }),
     ) {
         // Dentro la card i video sono larghi quanto la card meno il margine: il prossimo spunta a destra.
         val big = bigVideoWidth() - 32.dp
@@ -146,3 +157,19 @@ internal fun HomeVideoCard(open: (String) -> Unit) {
         }
     }
 }
+
+/** Pura: il fumetto della card Musica tenuta premuta. */
+internal fun musicCardActions(open: (String) -> Unit): Array<BubbleAction> = arrayOf(
+    act(BubbleGroup.VAI, Icons.Outlined.History, "Cronologia", "gli ultimi brani ascoltati su Spotify") { open(Routes.MUSIC_ALL) },
+    act(BubbleGroup.VAI, Icons.Outlined.FavoriteBorder, "Brani che ti piacciono", "quelli col cuore su Spotify") { open(Routes.LIKED_TRACKS) },
+    act(BubbleGroup.VAI, Icons.Outlined.Radio, "Radio", "le stazioni preferite e le ultime sentite") { open(Routes.RADIO) },
+    act(BubbleGroup.VAI, Icons.Outlined.Podcasts, "Podcast", "quelli che segui") { open(Routes.PODCAST) },
+    Slot.open { open(Routes.MUSIC_DISCOVER) },
+)
+
+/** Pura: il fumetto della card Video tenuta premuta. */
+internal fun videoCardActions(open: (String) -> Unit): Array<BubbleAction> = arrayOf(
+    act(BubbleGroup.VAI, Icons.Outlined.History, "Cronologia", "i video che hai guardato") { open(Routes.YOUTUBE_FEED) },
+    act(BubbleGroup.VAI, Icons.Outlined.WatchLater, "Da vedere dopo", "i video che hai salvato") { open(Routes.savedMedia(video = true)) },
+    Slot.open { open(Routes.MEDIA_NEWS) },
+)
