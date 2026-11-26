@@ -8,6 +8,16 @@
 - Note: un codice tra parentesi o a fine frase non si porta più dietro la parentesi o il punto quando lo copi
 - Note: Ricomincia rimette da fare anche le schede "In corso" della bacheca
 
+## 1.654.0
+**Note: liste, righe e Annulla più affidabili**
+- Grassetto, corsivo e colori su più voci scelte insieme non rompono più la lista, e toccati di nuovo si tolgono da tutte
+- Indietro all'inizio di una sotto-voce la riporta su di un livello invece di farla diventare testo
+- Spostando una riga (trascinandola o con Su/Giù) il cursore resta su quella riga
+- Il fumetto della riga si aggiorna dopo Su, Giù e rientro: toccare Su due volte la sposta di due
+- "Fatte giù" e "Togli fatte" si portano dietro le sotto-voci, che non finiscono più sotto la voce sbagliata
+- Annulla non unisce più lettere scritte in punti diversi della nota
+- Scrivere in una nota archiviata non la tira più fuori dall'archivio
+
 ## 1.653.0
 **Una X per svuotare il +**
 - Quando scrivi dal +, sopra la freccia compare una X: un tocco e cancella tutto quello che hai scritto

@@ -218,6 +218,11 @@ object NoteLines {
         ) {
             val line = lineAt(old, cursor)
             if (line.hasMark && !line.isBlock && cursor >= line.start && cursor < line.contentStart) {
+                // Una sotto-voce torna su di un livello, come Invio su una voce vuota: il testo resta voce (2026-11-26).
+                if (line.isList && line.level > 0) {
+                    val e = indent(old, line.contentStart, line.contentStart, -1)
+                    return Edit(e.text, e.start)
+                }
                 return Edit(old.removeRange(line.start, line.contentStart), line.start)
             }
             // Indietro all'inizio della riga sotto una linea: se ne va la linea, non il testo.
@@ -307,6 +312,27 @@ object NoteLines {
         return setKind(text, line.start, line.start, kind).let { if (line.kind == kind) text else it.text }
     }
 
+    /**
+     * Dove va il cursore [offset] quando la riga [index] si sposta su o giù (2026-11-26): resta nella stessa riga, allo
+     * stesso punto, anche se quella riga ha cambiato posto. Prima restava allo stesso numero e finiva nella riga accanto.
+     */
+    fun moveCursor(text: String, index: Int, up: Boolean, offset: Int): Int {
+        val all = text.split('\n')
+        val to = if (up) index - 1 else index + 1
+        if (index !in all.indices || to !in all.indices) return offset
+        val o = offset.coerceIn(0, text.length)
+        var start = 0
+        var at = all.lastIndex
+        for (i in all.indices) {
+            if (o <= start + all[i].length) { at = i; break }
+            start += all[i].length + 1
+        }
+        val col = o - start
+        val goes = when (at) { index -> to; to -> index; else -> at }
+        val order = all.toMutableList().also { it[index] = all[to]; it[to] = all[index] }
+        return order.take(goes).sumOf { it.length + 1 } + col
+    }
+
     /** Sposta la riga [index] su ([up]) o giù di una. */
     fun move(text: String, index: Int, up: Boolean): String {
         val all = text.split('\n').toMutableList()
@@ -337,9 +363,20 @@ object NoteLines {
         return t
     }
 
-    /** "Togli le fatte": le voci spuntate spariscono. */
-    fun removeDone(text: String): String =
-        text.split('\n').filter { line -> kindOf(line).let { (k, done, _) -> !(k == Kind.CHECK && done) } }.joinToString("\n")
+    /** "Togli le fatte": le voci spuntate spariscono, con le loro sotto-voci (2026-11-26: restavano orfane, rientrate nel vuoto). */
+    fun removeDone(text: String): String {
+        val out = mutableListOf<String>()
+        var under = -1 // il livello della voce fatta appena tolta: le righe più rientrate sotto vanno via con lei
+        text.split('\n').forEach { line ->
+            val (k, done, _) = kindOf(line)
+            val list = k.isListKind()
+            if (under >= 0 && list && levelOf(line) > under) return@forEach
+            under = -1
+            if (k == Kind.CHECK && done) { under = levelOf(line); return@forEach }
+            out += line
+        }
+        return out.joinToString("\n")
+    }
 
     /**
      * Le righe che hanno solo cambiato posto (2026-11-24, proposta 2): (dove stava, dove sta) di ognuna, se fra i due testi
@@ -369,8 +406,17 @@ object NoteLines {
         val all = text.split('\n')
         val out = mutableListOf<String>()
         var block = mutableListOf<String>()
+        // Ogni voce scende con le sue sotto-voci (2026-11-26): prima una sotto-voce fatta finiva sotto la voce sbagliata.
+        fun sorted(lines: List<String>): List<String> {
+            if (lines.isEmpty()) return lines
+            val top = lines.minOf { levelOf(it) }
+            val groups = mutableListOf<MutableList<String>>()
+            lines.forEach { l -> if (levelOf(l) == top || groups.isEmpty()) groups += mutableListOf(l) else groups.last() += l }
+            val ordered = groups.map { g -> listOf(g.first()) + sorted(g.drop(1)) }
+            return (ordered.filter { !kindOf(it.first()).second } + ordered.filter { kindOf(it.first()).second }).flatten()
+        }
         fun flush() {
-            out += block.filter { !kindOf(it).second } + block.filter { kindOf(it).second }
+            out += sorted(block)
             block = mutableListOf()
         }
         all.forEach { line ->
