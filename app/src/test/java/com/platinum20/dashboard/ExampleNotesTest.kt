@@ -59,4 +59,50 @@ class ExampleNotesTest {
         val data = NotesData(tasks = todos, notes = notes)
         assertEquals(data.notes.map { it.text }, NotesStore.parse(NotesStore.serialize(data)).notes.map { it.text })
     }
+
+    // ---- La guida (2026-11-26) ----
+    private val g = ExampleNotes.GuideIds(200, 201, 202, 203, 204)
+    private val guide = ExampleNotes.guide(g, 1_000_000_000L, "/foto/home.jpg", "/foto/copertina.jpg", "/audio/campanello.wav")
+
+    @Test
+    fun guidaUsaTuttiIBlocchi() {
+        val kinds = guide.flatMap { n -> NoteLines.parse(n.text).map { it.kind } }.toSet()
+        assertEquals(emptySet<NoteLines.Kind>(), NoteLines.Kind.values().toSet() - NoteLines.Kind.BOOKMARK - kinds)
+        assertTrue(guide.any { n -> NoteLines.parse(n.text).any { it.level >= 2 } })
+        val spans = guide.flatMap { NoteFormat.spans(it.text).map { s -> s.kind } }.toSet()
+        listOf(NoteFormat.Kind.BOLD, NoteFormat.Kind.ITALIC, NoteFormat.Kind.STRIKE, NoteFormat.Kind.HIGHLIGHT, NoteFormat.Kind.COLOR, NoteFormat.Kind.LINK)
+            .forEach { assertTrue("manca $it", it in spans) }
+    }
+
+    @Test
+    fun guidaIndiceFissatoELinkGiusti() {
+        assertEquals(listOf("🧭 Guida di Canvas", "➕ Il tasto +", "📅 Agenda e Da fare", "📝 Le note, tutto quello che sanno fare", "🎧 Musica, video e Cerca"), guide.map { it.title })
+        assertTrue(guide[0].pinned && guide.drop(1).none { it.pinned })
+        assertEquals(listOf("/foto/home.jpg"), guide[0].photos)
+        val pages = NoteLines.parse(guide[0].text).filter { it.kind == NoteLines.Kind.PAGE }
+            .map { NoteLines.pageId(guide[0].text.substring(it.start, it.end)) }
+        assertEquals(listOf(g.plus, g.agenda, g.notes, g.media), pages)
+        guide.drop(1).forEach { assertTrue(it.title, "nota:${g.hub}" in NoteFormat.mentionUrls(it.text)) }
+        guide.forEach { assertTrue(it.title, "guida" in NoteSmart.tags(it.text)) }
+    }
+
+    @Test
+    fun guidaSoloLAgendaInDaFare() {
+        assertEquals(listOf(g.agenda), NoteLists.rows(guide).map { it.noteId })
+    }
+
+    @Test
+    fun guidaDateECodiciSiToccano() {
+        val smart = NoteSmart.find(guide[3].text)
+        assertTrue(smart.any { it.kind == NoteSmart.Kind.CODE && it.value == "CanvasCasa24" })
+        assertTrue(smart.any { it.kind == NoteSmart.Kind.DATE && it.value.startsWith("domani alle 9") })
+    }
+
+    @Test
+    fun campanelloDuraTreSecondi() {
+        val wav = ExampleNotes.chimeWav()
+        assertEquals("RIFF", String(wav, 0, 4))
+        val seconds = (wav.size - 44) / 2.0 / 22_050
+        assertEquals(3.2, seconds, 0.01)
+    }
 }

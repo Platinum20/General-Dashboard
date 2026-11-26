@@ -36,6 +36,11 @@ class NoteSmartTest {
         assertEquals(listOf(Kind.CODE to "mare2024!", Kind.CODE to "4821"), k)
     }
 
+    @Test fun codeWithoutSentencePunctuation() {
+        assertEquals(listOf(Kind.CODE to "4821"), kinds("Il cancello (pin 4821) è a destra"))
+        assertEquals(listOf(Kind.CODE to "mare2024"), kinds("La rete è wifi: mare2024."))
+    }
+
     @Test fun parcelCode() {
         val k = kinds("Cuffie Marco, tracking RR123456789IT")
         assertEquals(listOf(Kind.PARCEL to "RR123456789IT"), k)

@@ -48,7 +48,11 @@ object NoteSmart {
             if (g.value.startsWith("#") || g.value.startsWith("http")) return@forEach
             // "codice fiscale", "pass del treno": senza ":" il valore deve avere almeno un numero.
             if (!m.value.contains(':') && !m.value.contains('=') && g.value.none { it.isDigit() }) return@forEach
-            if (free(g.range)) out += Smart(g.range, Kind.CODE, g.value)
+            // "(pin 1234)", "la wifi è wifi: casa24.": la parentesi o il punto della frase non fanno parte del codice (2026-11-26).
+            val value = g.value.trimEnd('.', ',', ':', ')', ']', '»', '"')
+            if (value.length < 3) return@forEach
+            val range = g.range.first until g.range.first + value.length
+            if (free(range)) out += Smart(range, Kind.CODE, value)
         }
         tagRx.findAll(text).forEach { m ->
             val name = m.groupValues[1]
