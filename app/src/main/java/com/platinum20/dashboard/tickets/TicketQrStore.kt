@@ -38,6 +38,10 @@ object TicketQrStore {
 
     private fun dir(context: Context) = File(context.filesDir, "tickets").apply { mkdirs() }
 
+    /** Gli eventi che hanno già un biglietto salvato: Cerca li trova con "biglietto" (2026-11-26). */
+    fun eventIds(context: Context): Set<Long> =
+        com.platinum20.dashboard.search.SearchSources.ticketEvents(dir(context).list()?.toList().orEmpty())
+
     /** I codici già salvati per l'evento, in ordine. */
     fun cached(context: Context, eventId: Long): List<File> =
         (0 until MAX_CODES).map { File(dir(context), "$eventId-$it.png") }.filter { it.exists() }

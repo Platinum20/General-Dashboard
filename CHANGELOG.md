@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.644.0
+**Cerca rifatta**
+- Le parole si trovano in qualunque ordine e anche con un errore: "turno marco" o "spotfy" trovano lo stesso
+- In cima il risultato migliore: un tocco e si apre o parte
+- Prima le tue cose (playlist, mix, iscrizioni, guardati, salvati), poi quello che si trova in rete
+- Si cercano anche posta, documenti, biglietti, #etichette, persone dei turni e impostazioni ("tema", "pioggia")
+- "domani", "venerdì", "marzo" o "turno venerdì" mostrano quel giorno o quel mese; il calendario si cerca tutto
+- Ogni risultato ha icona, copertina o ora a sinistra, la parola in blu, e tenuto premuto apre il suo fumetto
+- Senza rete lo dice, con Riprova; il campo vuoto mostra le cose aperte di recente e scorciatoie vere
+- I filtri stanno in una fila sola, senza scorrere
+- Scrivendo nel + compaiono già le cose che hai: tocchi e si aprono, tenute premute "Aggiungi qui"
+- Tirare giù per cercare funziona su tutte le pagine elenco, con un gesto più corto
+- Aperto un risultato, tornando indietro ritrovi la ricerca e il punto dove eri
+
 ## 1.643.0
 **Torna il riconoscimento delle canzoni**
 - Tieni premuta la freccia vicino a una canzone che suona, senza parlare, e lasciala: Canvas la riconosce, la fa partire e la mette in "Sentite da Canvas". Col tasto unico si era persa

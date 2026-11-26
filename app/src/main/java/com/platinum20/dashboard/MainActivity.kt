@@ -446,8 +446,12 @@ object Routes {
         MEDIA_MIX, MEDIA_NEWS, SAVED_MEDIA, MUSIC_ALL, MUSIC_DISCOVER, LIKED_TRACKS,
     )
     const val SEARCH = "home/search"
-    const val SEARCH_PATTERN = "home/search?f={f}"
-    fun search(filter: SearchFilter?) = if (filter == null) SEARCH else "$SEARCH?f=${filter.name}"
+    const val SEARCH_PATTERN = "home/search?f={f}&q={q}"
+    /** Cerca, ristretta a una fonte ([filter]) e con la parola già scritta ([query], dal + con "Tutti i risultati"). */
+    fun search(filter: SearchFilter?, query: String = ""): String {
+        val args = listOfNotNull(filter?.let { "f=${it.name}" }, query.takeIf { it.isNotBlank() }?.let { "q=${Uri.encode(it)}" })
+        return if (args.isEmpty()) SEARCH else SEARCH + "?" + args.joinToString("&")
+    }
     const val NOTES = "notes"
     const val NOTE_EDIT = "notes/edit?id={id}&find={find}"
     const val MEDIA = "media"
@@ -746,6 +750,9 @@ private fun CanvasNavBar(
                     val dragState = androidx.compose.foundation.gestures.rememberDraggableState { d ->
                         dragScope.launch { pullDown.snapTo((pullDown.value + d).coerceAtLeast(0f)) }
                     }
+                    // Scrivendo, sopra il riquadro le cose che hai già (idea 11, 2026-11-26).
+                    androidx.compose.foundation.layout.Column {
+                    if (mode == BAR_WRITE) com.platinum20.dashboard.ui.screens.CaptureMatches(Modifier.fillMaxWidth())
                     Surface(
                         shape = shape,
                         color = androidx.compose.ui.graphics.Color.Transparent,
@@ -782,6 +789,7 @@ private fun CanvasNavBar(
                             held = voiceHeld,
                             lift = voiceLift,
                         )
+                    }
                     }
                 }
             }
@@ -1386,7 +1394,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         // Nelle sezioni della barra, trascinare giù dalla cima apre Cerca ovunque; dentro Musica,
         // Video e Radio e podcast parte già ristretta a quella fonte (al posto delle loro ricerche).
         val pageFilter = SearchFilter.forRoute(currentRoute)
-        val pullSearch = rememberPullToSearch(enabled = topDestinations.any { it.route == currentRoute } || currentRoute == Routes.NOTES || pageFilter != null) {
+        // Tirare giù apre Cerca da ogni pagina che è un elenco (2026-11-26, punto 14), non solo dalla Home.
+        val pullSearch = rememberPullToSearch(enabled = topDestinations.any { it.route == currentRoute } || Routes.hasBar(currentRoute) || pageFilter != null) {
             navController.navigate(Routes.search(pageFilter)) { launchSingleTop = true }
         }
         // Trascinare qualunque pagina chiude la tastiera (KeyboardDismiss.kt): sta fuori, vede ogni scorrimento.
@@ -1600,9 +1609,13 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             }
             composable(
                 Routes.SEARCH_PATTERN,
-                arguments = listOf(navArgument("f") { type = NavType.StringType; nullable = true; defaultValue = null }),
+                arguments = listOf(
+                    navArgument("f") { type = NavType.StringType; nullable = true; defaultValue = null },
+                    navArgument("q") { type = NavType.StringType; nullable = true; defaultValue = null },
+                ),
             ) { entry ->
                 SearchScreen(
+                    initialQuery = entry.arguments?.getString("q").orEmpty(),
                     initialFilter = entry.arguments?.getString("f")
                         ?.let { f -> SearchFilter.entries.firstOrNull { it.name == f } } ?: SearchFilter.ALL,
                     onBack = { navController.popBackStack() },

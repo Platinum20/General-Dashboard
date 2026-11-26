@@ -58,13 +58,15 @@ class PullToSearchState internal constructor(private val threshold: Float) {
         override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
             if (!enabled || source != NestedScrollSource.UserInput || available.y <= 0f) return Offset.Zero
             // Più si tira più fa resistenza, come un elastico.
-            move(offset + available.y * 0.45f * (1f - progress * 0.5f))
+            // Meno resistenza di prima (punto 14, 2026-11-26): si arriva alla soglia con un gesto più corto.
+            move(offset + available.y * 0.6f * (1f - progress * 0.4f))
             return Offset(0f, available.y)
         }
 
         override suspend fun onPreFling(available: Velocity): Velocity {
             if (offset <= 0f) return Velocity.Zero
-            if (offset >= threshold) onOpen()
+            // Passata la soglia si apre; anche a metà strada, se il dito scende veloce (un colpetto in giù).
+            if (offset >= threshold || (offset >= threshold * 0.5f && available.y > FLING_OPEN)) onOpen()
             settle.snapTo(offset)
             settle.animateTo(0f) { offset = value }
             return available
@@ -78,15 +80,19 @@ class PullToSearchState internal constructor(private val threshold: Float) {
     }
 }
 
+/** Pixel al secondo: un colpetto in giù così veloce apre Cerca anche prima della soglia. */
+private const val FLING_OPEN = 2_500f
+
 @Composable
 fun rememberPullToSearch(enabled: Boolean, onOpen: () -> Unit): PullToSearchState {
-    val threshold = with(LocalDensity.current) { 96.dp.toPx() }
+    val threshold = with(LocalDensity.current) { 76.dp.toPx() }
     val haptic = rememberHaptic()
     val open by rememberUpdatedState(onOpen)
     val state = remember(threshold) { PullToSearchState(threshold) }
     state.enabled = enabled
     state.onOpen = { haptic(Haptic.CONFIRM); open() }
-    state.onArm = { haptic(Haptic.TICK) }
+    // Quando "aggancia" vibra un po' più forte: si sa che lasciando si apre.
+    state.onArm = { haptic(Haptic.THRESHOLD) }
     // Uscendo da una sezione la lente sparisce subito.
     LaunchedEffect(enabled) { if (!enabled) state.offset = 0f }
     return state
