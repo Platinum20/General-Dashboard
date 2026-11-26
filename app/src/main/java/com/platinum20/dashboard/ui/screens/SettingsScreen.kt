@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.outlined.Brush
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.border
 import androidx.compose.animation.togetherWith
@@ -662,6 +663,8 @@ private fun AppHero(onClick: () -> Unit) {
  * Il tema si sceglie guardandolo: tre anteprime in miniatura (fondo, una card, il colore d'accento),
  * quella scelta ha l'anello e si ingrandisce appena.
  */
+private val ThemeTileShape = RoundedCornerShape(18.dp)
+
 @Composable
 private fun ThemePicker(selected: AppTheme, onSelect: (AppTheme) -> Unit) {
     Column(Modifier.padding(12.dp)) {
@@ -669,7 +672,7 @@ private fun ThemePicker(selected: AppTheme, onSelect: (AppTheme) -> Unit) {
             AppTheme.entries.forEach { option ->
                 val on = option == selected
                 val ring by animateColorAsState(
-                    if (on) MaterialTheme.colorScheme.primary else Color.Transparent,
+                    if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
                     tween(Motion.ENTER_MS, easing = Motion.Decelerate),
                     label = "themeRing",
                 )
@@ -690,12 +693,11 @@ private fun ThemePicker(selected: AppTheme, onSelect: (AppTheme) -> Unit) {
                         Modifier
                             .fillMaxWidth()
                             .height(76.dp)
-                            // Anello sempre della stessa misura: cambia solo il colore, l'anteprima non si sposta.
-                            .border(2.dp, ring, MaterialTheme.shapes.large)
-                            .padding(4.dp)
-                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.medium)
-                            .clip(MaterialTheme.shapes.medium)
+                            // Un solo contorno sulla forma dell'anteprima: sottile e neutro, quella scelta più spesso e
+                            // del colore del tema. Niente anello staccato con lo spazio in mezzo (Antonio, 1.649).
+                            .clip(ThemeTileShape)
                             .background(fill)
+                            .border(if (on) 2.5.dp else 1.dp, ring, ThemeTileShape)
                             .padding(10.dp),
                     ) {
                         Column(
@@ -952,7 +954,7 @@ private fun VoicePicker() {
             ReadingVoice.entries.forEach { option ->
                 val on = option == selected
                 val ring by animateColorAsState(
-                    if (on) MaterialTheme.colorScheme.primary else Color.Transparent,
+                    if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
                     tween(Motion.ENTER_MS, easing = Motion.Decelerate),
                     label = "voiceRing",
                 )
