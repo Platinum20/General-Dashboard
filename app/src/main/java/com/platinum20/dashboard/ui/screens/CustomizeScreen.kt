@@ -68,6 +68,7 @@ fun CustomizeScreen(onBack: () -> Unit) {
     val layout by AppSettings.homeLayout.collectAsStateWithLifecycle()
 
     Scaffold(
+        modifier = Modifier.pageFloor(), containerColor = androidx.compose.ui.graphics.Color.Transparent,
         topBar = {
             TopLevelBar(
                 title = "Card della Home",

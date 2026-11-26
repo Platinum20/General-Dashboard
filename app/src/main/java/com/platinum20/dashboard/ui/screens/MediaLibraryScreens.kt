@@ -129,7 +129,8 @@ fun MediaLikedScreen(videosOnly: Boolean, onBack: () -> Unit, onPlayVideo: (Stri
     )
     val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     Scaffold(
-        modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        modifier = Modifier.nestedScroll(bar.nestedScrollConnection).pageFloor(),
         topBar = {
             TopLevelBar(
                 title = if (videosOnly) "Video che ti piacciono" else "Brani che ti piacciono",
@@ -261,7 +262,8 @@ fun MediaNewsScreen(onBack: () -> Unit, onPlayVideo: (String) -> Unit) {
     }
     val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     Scaffold(
-        modifier = Modifier.sharedItem(SharedKeys.VIDEO, rounded = true).nestedScroll(bar.nestedScrollConnection),
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        modifier = Modifier.sharedItem(SharedKeys.VIDEO, rounded = true).nestedScroll(bar.nestedScrollConnection).pageFloor(),
         topBar = { TopLevelBar(title = "Scopri", subtitle = "Home di YouTube", scrollBehavior = bar, onBack = onBack) },
     ) { inner ->
         val count = tips.size
@@ -316,7 +318,8 @@ fun MusicDiscoverScreen(onBack: () -> Unit, onOpen: (SpItem) -> Unit) {
     val rows = discover.data.orEmpty()
     val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     Scaffold(
-        modifier = Modifier.sharedItem(SharedKeys.MUSIC, rounded = true).nestedScroll(bar.nestedScrollConnection),
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        modifier = Modifier.sharedItem(SharedKeys.MUSIC, rounded = true).nestedScroll(bar.nestedScrollConnection).pageFloor(),
         topBar = { TopLevelBar(title = "Scopri", subtitle = "Musica dai tuoi ascolti", scrollBehavior = bar, onBack = onBack) },
     ) { inner ->
         val tile = coverTileWidth()
@@ -622,7 +625,8 @@ fun MusicAllScreen(onBack: () -> Unit, @Suppress("UNUSED_PARAMETER") onOpenRoute
         error = if (played.isEmpty()) listened.error else null,
     )
     Scaffold(
-        modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        modifier = Modifier.nestedScroll(bar.nestedScrollConnection).pageFloor(),
         topBar = { TopLevelBar(title = "Cronologia", subtitle = "Ascoltati di recente", scrollBehavior = bar, onBack = onBack) },
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {

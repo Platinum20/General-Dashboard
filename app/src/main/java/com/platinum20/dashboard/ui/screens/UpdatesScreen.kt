@@ -82,7 +82,8 @@ internal fun UpdatesContent(
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection).pageFloor(),
         topBar = {
             TopLevelBar(
                 title = "Aggiornamenti",

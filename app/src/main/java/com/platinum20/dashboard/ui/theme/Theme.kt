@@ -198,7 +198,7 @@ private val AppTypography = Typography().let { base ->
         displayLarge = title(base.displayLarge).copy(fontWeight = FontWeight.Light, letterSpacing = (-1.5).sp),
         displayMedium = title(base.displayMedium).copy(fontWeight = FontWeight.Light, letterSpacing = (-1).sp),
         displaySmall = title(base.displaySmall).copy(fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.Light, letterSpacing = (-0.8).sp),
-        headlineLarge = title(base.headlineLarge).copy(fontSize = 30.sp, lineHeight = 34.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.6).sp),
+        headlineLarge = title(base.headlineLarge).copy(fontSize = 34.sp, lineHeight = 38.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.9).sp),
         headlineMedium = title(base.headlineMedium).copy(fontSize = 24.sp, lineHeight = 29.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.4).sp),
         headlineSmall = title(base.headlineSmall).copy(fontSize = 21.sp, lineHeight = 26.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.3).sp),
         titleLarge = title(base.titleLarge).copy(fontSize = 19.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.2).sp),
@@ -218,6 +218,6 @@ private val AppShapes = Shapes(
     extraSmall = RoundedCornerShape(6.dp),
     small = RoundedCornerShape(10.dp),
     medium = RoundedCornerShape(14.dp),
-    large = RoundedCornerShape(18.dp),
-    extraLarge = RoundedCornerShape(22.dp),
+    large = RoundedCornerShape(24.dp),
+    extraLarge = RoundedCornerShape(28.dp),
 )

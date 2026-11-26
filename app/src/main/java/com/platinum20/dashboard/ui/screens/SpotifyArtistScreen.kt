@@ -89,7 +89,7 @@ internal fun ArtistScreen(artist: SpItem, onBack: () -> Unit, onOpenItem: (SpIte
     val name = page?.artist?.title ?: artist.title
     val playingKey = rememberPlayingKey()
     // Giro 2 (1.566): la foto a tutta larghezza col nome sopra, poi tutto sullo sfondo.
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Column(Modifier.fillMaxSize().pageFloor()) {
         LazyColumn(
             Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = listBottom(120.dp)),
@@ -173,7 +173,7 @@ private fun DiscographyScreen(page: SpArtistPage, loading: Boolean, onBack: () -
     val groups = SpReleaseGroup.entries.filter { it.of(page).isNotEmpty() }
     val rows = if (only == SpReleaseGroup.APPEARS) page.appearsOn.map { it to SpReleaseGroup.APPEARS } else SpotifyArtist.everything(page, only)
     val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Column(Modifier.fillMaxSize().pageFloor()) {
         TopLevelBar(
             title = "Discografia",
             subtitle = page.artist.title + " · " + releasesLine(maxOf(page.ownTotal, SpotifyArtist.everything(page).size)),

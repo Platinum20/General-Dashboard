@@ -34,6 +34,7 @@ layers (queue, video settings, What's new) drawn OUTSIDE the NavHost. Agenda pag
 - `StatusLine.kt` `LinkStatus` (old data says so + "Rientra"/"Aggiorna"), `net/Online.kt` connectivity.
 - `DetailPage.kt` = THE detail scaffold (back + meta line, bottom `primary` + "Altro"); `WhenHero.kt` first block.
 - `HomeScreen.kt` `Urgent.color()` = the attention orange in every theme (don't use `colorScheme.tertiary` for it).
+- `PageFloor.kt` `Modifier.pageFloor()` = THE page background (theme color + `Glow` blobs, toggle `AppSettings.glow`, rainy = slate), drawn in screen coords: every Scaffold uses `containerColor = Transparent` + `.pageFloor()` (TopLevelBar too). Cards = `glassCard` fill + `glassRim()`; hero blocks `heroBrush`.
 
 **Home** (`HomeScreen.kt`, `HomeCards.kt`, gear = Settings in `TopLevelBar` actions, `HomeMediaCards.kt` Musica/Video cards, order in `HomeCard` / `CustomizeScreen.kt`): `InvitesRow` (orange line on
 top, only when something needs doing), Adesso/weather (`WeatherBits.kt`, page `WeatherScreen.kt`, pure phrases `weather/WeatherText.kt`), Riprendi, `CalendarCard` = Home "Agenda" card (today + tomorrow, OGGI hidden when today is empty: `withoutEmptyToday`,

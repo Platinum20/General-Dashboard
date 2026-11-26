@@ -225,7 +225,8 @@ fun MediaScreen(
     androidx.compose.runtime.DisposableEffect(Unit) { onDispose { QueueOpen.open = false } }
     Box(Modifier.fillMaxSize()) {
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection).pageFloor(),
         contentWindowInsets = topLevelInsets,
         topBar = {
             TopLevelBar(

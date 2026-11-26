@@ -177,7 +177,8 @@ fun AutoFillScreen(onBack: () -> Unit) {
     val notifyPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection).pageFloor(),
         topBar = {
             TopLevelBar(
                 title = "Compila da solo",

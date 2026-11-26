@@ -105,6 +105,7 @@ object AppSettings {
     private const val KEY_AD_BLOCK = "ad_block"
     private const val KEY_UPDATE_NOTIFY = "update_notify"
     private const val KEY_RAIN_ALERT = "rain_alert"
+    private const val KEY_GLOW = "glow"
     private const val KEY_LIVE_TRIPS = "live_trips"
     private const val KEY_LIVE_SHIFTS = "live_shifts"
     private const val KEY_TRAIN_PACK = "train_pack"
@@ -134,6 +135,9 @@ object AppSettings {
     private val _updateNotify = MutableStateFlow(true)
     /** Notifica quando su GitHub esce una nuova versione dell'app. */
     val updateNotify: StateFlow<Boolean> = _updateNotify.asStateFlow()
+    private val _glow = MutableStateFlow(true)
+    /** L'alone colorato dietro le pagine, coi colori del tema (1.646, Antonio: A+B). Spento = fondo pieno. */
+    val glow: StateFlow<Boolean> = _glow.asStateFlow()
     private val _rainAlert = MutableStateFlow(false)
     /** Notifica quando sta per piovere (spenta di default). */
     val rainAlert: StateFlow<Boolean> = _rainAlert.asStateFlow()
@@ -236,6 +240,7 @@ object AppSettings {
         _adBlock.value = prefs.getBoolean(KEY_AD_BLOCK, true)
         _updateNotify.value = prefs.getBoolean(KEY_UPDATE_NOTIFY, true)
         _rainAlert.value = prefs.getBoolean(KEY_RAIN_ALERT, false)
+        _glow.value = prefs.getBoolean(KEY_GLOW, true)
         _liveTrips.value = prefs.getBoolean(KEY_LIVE_TRIPS, true)
         _liveShifts.value = prefs.getBoolean(KEY_LIVE_SHIFTS, true)
         _downloadSaved.value = prefs.getBoolean(KEY_TRAIN_PACK, true)
@@ -325,6 +330,11 @@ object AppSettings {
     fun setReadingVoice(voice: ReadingVoice) {
         _readingVoice.value = voice
         prefs.edit().putString(KEY_READING_VOICE, voice.name).apply()
+    }
+
+    fun setGlow(enabled: Boolean) {
+        _glow.value = enabled
+        prefs.edit().putBoolean(KEY_GLOW, enabled).apply()
     }
 
     fun setRainAlert(enabled: Boolean) {

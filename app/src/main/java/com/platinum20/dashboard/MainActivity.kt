@@ -247,6 +247,7 @@ import androidx.compose.runtime.setValue
 import com.platinum20.dashboard.ui.screens.Backdrop
 import com.platinum20.dashboard.ui.screens.LocalBackdrop
 import com.platinum20.dashboard.ui.screens.glassSource
+import com.platinum20.dashboard.ui.screens.pageFloor
 import com.platinum20.dashboard.ui.screens.backdropSource
 
 /** Cosa aprire quando l'app parte da widget o notifica. */
@@ -1408,7 +1409,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             com.platinum20.dashboard.ui.screens.LocalBarSpace provides if (showBottomBar) padding.calculateBottomPadding() else 0.dp,
         ) {
         NavHost(
-            modifier = Modifier.glassSource(hazeState, backdrop),
+            // Sotto le pagine senza fondo loro (playlist, mix) c'è lo stesso alone delle altre (PageFloor.kt).
+            modifier = Modifier.glassSource(hazeState, backdrop).pageFloor(),
             navController = navController,
             startDestination = Routes.HOME,
             // Tra le schede la pagina scivola dal lato della sua scheda; i dettagli entrano da destra

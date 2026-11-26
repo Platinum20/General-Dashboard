@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.647.0
+**Nuovo aspetto: carta calda di vetro**
+- Dietro le pagine un alone morbido preso dai colori del tema (con Material You quelli del tuo sfondo); quando piove diventa grigio ardesia
+- Le card sono di vetro: lasciano intravedere l'alone, senza il bordo netto, con angoli più tondi
+- Titoli delle card in minuscolo e più grandi ("Da fare ›"), data in alto più grande, saluto in minuscolo
+- Meteo e "Quando" degli eventi sono blocchi pieni con una leggera sfumatura
+- Fumetti più tondi
+- L'alone si spegne in Impostazioni › Aspetto › Alone colorato
+
 ## 1.646.0
 **Agenda**
 - Il Calendario ora si chiama Agenda: card della Home, pagina, impostazioni, Cerca, il "+" e il widget

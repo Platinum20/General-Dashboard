@@ -367,7 +367,7 @@ fun SearchScreen(
     val shown = groups.map { (k, list) -> k to list.filter { it.key != best?.key } }.filter { it.second.isNotEmpty() }
     val waiting = q.length >= 2 && online && (media.loading || media.query != q)
 
-    Scaffold(topBar = { TopLevelBar(title = "Cerca", onBack = onBack) }) { inner ->
+    Scaffold(modifier = Modifier.pageFloor(), containerColor = androidx.compose.ui.graphics.Color.Transparent, topBar = { TopLevelBar(title = "Cerca", onBack = onBack) }) { inner ->
         LazyColumn(
             state = listState,
             contentPadding = PaddingValues(

@@ -145,6 +145,7 @@ fun ShiftsLoginScreen(onClose: () -> Unit) {
         if (p.canGoBack()) p.goBack() else popups.close(p)
     }
     Scaffold(
+        modifier = Modifier.pageFloor(), containerColor = androidx.compose.ui.graphics.Color.Transparent,
         topBar = {
             Column {
                 TopAppBar(

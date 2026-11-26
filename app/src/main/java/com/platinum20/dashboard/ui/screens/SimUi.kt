@@ -238,7 +238,7 @@ fun SimScreen(onBack: () -> Unit, bottomPadding: PaddingValues = PaddingValues()
         WindTreLogin(onClose = { login = false; if (!SimStore.linked.value) onBack() })
         return
     }
-    Scaffold(modifier = Modifier.sharedItem(SharedKeys.SIM, rounded = true), topBar = { TopLevelBar(
+    Scaffold(containerColor = androidx.compose.ui.graphics.Color.Transparent, modifier = Modifier.sharedItem(SharedKeys.SIM, rounded = true).pageFloor(), topBar = { TopLevelBar(
         title = "SIM",
         // Quando è stato letto, sotto il titolo (1.357): si rilegge da solo, la frase "Tira giù" non serve più.
         subtitle = status?.let { "WindTre · letto " + relativeTime(Instant.ofEpochMilli(it.at)) } ?: "WindTre",
@@ -403,6 +403,7 @@ private fun WindTreLogin(onClose: () -> Unit) {
     // Dentro l'accesso niente barra né "+" (regola della barra).
     BarHide.Here()
     Scaffold(
+        modifier = Modifier.pageFloor(), containerColor = androidx.compose.ui.graphics.Color.Transparent,
         topBar = {
             Column {
                 TopAppBar(

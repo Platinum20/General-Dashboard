@@ -111,8 +111,8 @@ import java.time.Instant
 fun YouTubeHistoryScreen(onBack: () -> Unit, onPlay: (String) -> Unit) {
     val barScroll = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
     Scaffold(
-        modifier = Modifier.nestedScroll(barScroll.nestedScrollConnection),
-        containerColor = MaterialTheme.colorScheme.background,
+        modifier = Modifier.nestedScroll(barScroll.nestedScrollConnection).pageFloor(),
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
         topBar = { TopLevelBar(title = "Cronologia", subtitle = "I video che hai guardato", scrollBehavior = barScroll, onBack = onBack) },
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) { HistoryTab(onPlay) }
@@ -289,7 +289,7 @@ fun YouTubeChannelScreen(
     val avatar = info?.avatar?.ifBlank { null } ?: channel.thumbnail
     // Giro 2 (1.566): il canale come una persona, foto grande al centro, nome, iscritti e un solo tasto; poi i
     // video sullo sfondo (il più nuovo in grande), Shorts e Playlist in file che scorrono di lato.
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Column(Modifier.fillMaxSize().pageFloor()) {
         LazyColumn(
             Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = listBottom(120.dp)),
@@ -869,6 +869,7 @@ private fun Thumbnail(url: String, modifier: Modifier, large: Boolean = false) {
 @Composable
 fun YouTubePlaylistScreen(playlist: YtPlaylist, onBack: () -> Unit, onPlay: (String) -> Unit) {
     Scaffold(
+        modifier = Modifier.pageFloor(), containerColor = androidx.compose.ui.graphics.Color.Transparent,
         topBar = { TopLevelBar(title = playlist.title, subtitle = if (playlist.count > 0) "Playlist · ${playlist.count} video" else "Playlist", onBack = onBack) },
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) { PlaylistVideos(playlist, onPlay) }

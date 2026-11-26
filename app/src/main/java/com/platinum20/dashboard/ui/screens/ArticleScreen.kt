@@ -104,6 +104,7 @@ fun ArticleScreen(
     BackHandler(enabled = canGoBack) { webView.goBack() }
 
     Scaffold(
+        modifier = Modifier.pageFloor(), containerColor = androidx.compose.ui.graphics.Color.Transparent,
         topBar = {
             Column {
                 TopAppBar(

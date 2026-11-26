@@ -115,7 +115,8 @@ fun TagScreen(name: String, onBack: () -> Unit) {
     val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val count = notes.size + tasks.size
     Scaffold(
-        modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        modifier = Modifier.nestedScroll(bar.nestedScrollConnection).pageFloor(),
         topBar = { TopLevelBar(title = "#$name", subtitle = if (count == 1) "1 cosa con questa etichetta" else "$count cose con questa etichetta", scrollBehavior = bar, onBack = onBack) },
     ) { inner ->
         LazyColumn(Modifier.fillMaxSize().padding(inner), contentPadding = PaddingValues(bottom = listBottom(160.dp))) {
@@ -167,7 +168,8 @@ fun PersonScreen(name: String, onBack: () -> Unit) {
     val inApp = LocalInAppNav.current
     val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     Scaffold(
-        modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        modifier = Modifier.nestedScroll(bar.nestedScrollConnection).pageFloor(),
         topBar = {
             TopLevelBar(
                 title = name,

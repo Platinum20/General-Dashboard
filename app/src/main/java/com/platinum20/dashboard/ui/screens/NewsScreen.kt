@@ -134,7 +134,8 @@ fun NewsScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val barrier = rememberVisitBarrier(listState, markerIndex.takeIf { feed.fresh.isNotEmpty() })
     Scaffold(
-        modifier = Modifier.sharedItem(SharedKeys.NEWS, rounded = true).nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        modifier = Modifier.sharedItem(SharedKeys.NEWS, rounded = true).nestedScroll(scrollBehavior.nestedScrollConnection).pageFloor(),
         contentWindowInsets = topLevelInsets,
         topBar = {
             TopLevelBar(

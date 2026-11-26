@@ -370,7 +370,8 @@ fun HomeScreen(
     }
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection).pageFloor(),
         contentWindowInsets = topLevelInsets,
         topBar = {
             // La data fa da titolo, il saluto sta piccolo sopra; scorrendo resta solo "Martedì 10".
@@ -517,10 +518,12 @@ private fun WeatherCard(
                 Slot.open(onClick),
             )
         },
-        modifier = Modifier.fillMaxWidth().sharedItem(SharedKeys.WEATHER, rounded = true).bouncyPress(0.98f),
+        // Pieno con una sfumatura (1.646, A+B): il colore resta quello del tema, il vetro attorno lo fa risaltare.
+        modifier = Modifier.fillMaxWidth().sharedItem(SharedKeys.WEATHER, rounded = true)
+            .background(heroBrush(MaterialTheme.colorScheme.primaryContainer), MaterialTheme.shapes.extraLarge).bouncyPress(0.98f),
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            containerColor = androidx.compose.ui.graphics.Color.Transparent,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         ),
     ) {
