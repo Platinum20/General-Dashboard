@@ -75,7 +75,7 @@ internal fun ShiftAccountRow(tile: AccountTile) {
         accent = TileAccent.BLUE,
         title = "Creators Pro",
         subtitle = when {
-            !linked -> "I tuoi turni nel calendario"
+            !linked -> "I tuoi turni in agenda"
             expired -> "Accesso scaduto"
             readAt > 0 -> shiftsLine(shifts) + " · letto " + relativeTime(Instant.ofEpochMilli(readAt))
             else -> "Collegato"

@@ -171,7 +171,7 @@ internal fun CalendarCard(
     // Un nuovo ritardo letto ridisegna le righe dei treni con gli orari spostati.
     val trains by com.platinum20.dashboard.trips.TrainLive.statuses.collectAsState()
     val allNotes by com.platinum20.dashboard.notes.NotesStore.data.collectAsState()
-    val all = remember(pending, today, trains, allNotes.notes) { timelineEntries(pending.withoutLoose(), today, notes = allNotes.notes) }
+    val all = remember(pending, today, trains, allNotes.notes) { timelineEntries(pending.withoutLoose().let { if (habits.isEmpty()) it.withoutEmptyToday(today) else it }, today, notes = allNotes.notes) }
     val todayCount = all.count { it.second.day == today && !it.first.past }
     // Dopo oggi tutto domani e sempre le prossime 3 cose, anche più avanti (Antonio, 2026-11-22).
     val (later, _) = calendarCardCut(all.drop(todayCount).map { it.second.day }, today)
@@ -188,7 +188,7 @@ internal fun CalendarCard(
         if (extraAt < 0) list else list.toMutableList().apply { addAll(extraAt.coerceAtMost(size), items) }
     TimelineCard(
         // Il nome in cima come le altre card (Antonio, 2026-11-12: prima era senza titolo), poi OGGI.
-        "Calendario",
+        "Agenda",
         withExtras(shown.map { it.first }, extras.map { it.first }),
         onOpenAll,
         empty = "Niente in programma.",

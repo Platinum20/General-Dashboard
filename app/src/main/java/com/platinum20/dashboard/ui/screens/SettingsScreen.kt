@@ -263,7 +263,7 @@ fun SettingsScreen(
                         SettingsSummary.home(layout.visible.size, HomeCard.entries.size, place?.name)) { onOpenPage(SettingsPage.HOME) }
                     RowDivider()
                     // La sezione Note non c'è più dalla 1.314: la riga porta il nome del calendario unico (1.357).
-                    MenuRow(Icons.Outlined.AutoAwesome, TileAccent.GREEN, "Calendario",
+                    MenuRow(Icons.Outlined.AutoAwesome, TileAccent.GREEN, "Agenda",
                         if (autoFillOn) "Pacchi e scadenze da soli" else "Compilazione automatica spenta",
                         onClick = onOpenAutoFill)
                     RowDivider()

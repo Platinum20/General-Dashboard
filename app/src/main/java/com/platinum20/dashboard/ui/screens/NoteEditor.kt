@@ -371,7 +371,7 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
         val nid = id
         return listOfNotNull(
             if (open) Slot.open { viewer = index.coerceAtLeast(0) } else null,
-            if (index > 0 && nid != null) act(BubbleGroup.CAMBIA, Icons.Outlined.Star, "Metti per prima", "diventa la copertina nel Calendario") {
+            if (index > 0 && nid != null) act(BubbleGroup.CAMBIA, Icons.Outlined.Star, "Metti per prima", "diventa la copertina in Agenda") {
                 haptic(Haptic.CONFIRM)
                 NotesStore.editNotePhotos(nid) { NotePhotos.toFront(it, path) }
             } else null,

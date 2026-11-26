@@ -364,8 +364,8 @@ internal fun GmailAccountRow(tile: AccountTile) {
                         imap && GmailImap.rejected.value -> "Gmail non accetta più la password"
                         !imap && GmailAuth.needsConsent.value -> "Google chiede di ricollegare Gmail"
                         n == 0 -> "Niente di nuovo nelle mail"
-                        n == 1 -> "Trovata 1 cosa: la vedi nel calendario"
-                        else -> "Trovate $n cose: le vedi nel calendario"
+                        n == 1 -> "Trovata 1 cosa: la vedi in agenda"
+                        else -> "Trovate $n cose: le vedi in agenda"
                     }
                 },
                 onFailure = { it.userMessage("Gmail non risponde, riprova") },

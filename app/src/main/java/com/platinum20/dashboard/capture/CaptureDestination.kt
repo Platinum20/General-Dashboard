@@ -10,7 +10,7 @@ import java.time.LocalDateTime
 internal enum class CaptureDestination(val label: String) {
     TODO("Da fare"),
     JOTTINGS("Appunti"),
-    CALENDAR("Calendario"),
+    CALENDAR("Agenda"),
     HABITS("Abitudine"),
     ;
 

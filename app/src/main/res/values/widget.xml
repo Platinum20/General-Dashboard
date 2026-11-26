@@ -3,7 +3,7 @@
     <!-- Nomi e descrizioni nell'elenco dei widget del telefono. -->
     <string name="widget_today_label">Oggi</string>
     <string name="widget_description">Il meteo con le prossime ore e la prossima cosa da fare</string>
-    <string name="widget_calendar_label">Calendario</string>
+    <string name="widget_calendar_label">Agenda</string>
     <string name="widget_tasks_description">Oggi e i prossimi giorni: eventi, turni, treni, date</string>
     <string name="widget_todo_label">Da fare</string>
     <string name="widget_todo_description">Le cose da fare e le abitudini, da spuntare col dito</string>
