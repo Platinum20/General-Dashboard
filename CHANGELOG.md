@@ -1,7 +1,7 @@
 # Changelog
 
 ## 1.654.0
-**Note: otto bug sistemati**
+**Note: liste, righe e Annulla più affidabili**
 - Grassetto, corsivo e colori su più voci scelte insieme non rompono più la lista, e toccati di nuovo si tolgono da tutte
 - Indietro all'inizio di una sotto-voce la riporta su di un livello invece di farla diventare testo
 - Spostando una riga (trascinandola o con Su/Giù) il cursore resta su quella riga
