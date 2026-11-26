@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.648.0
+**Alone come nel mockup**
+- Al buio l'alone è scuro e caldo (brace, vino), non più chiaro e verdognolo: le card tornano vetro fumé
+- I colori vengono solo dal colore principale del tema, mai dal verde oliva di Material You
+- Di giorno, con Puro e Canvas, le card hanno di nuovo il filo grigio attorno e non spariscono sul bianco
+
 ## 1.647.0
 **Nuovo aspetto: carta calda di vetro**
 - Dietro le pagine un alone morbido preso dai colori del tema (con Material You quelli del tuo sfondo); quando piove diventa grigio ardesia
