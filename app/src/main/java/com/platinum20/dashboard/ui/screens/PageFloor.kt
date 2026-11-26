@@ -43,7 +43,7 @@ object Glow {
      * Antonio è verde oliva: 1.647 virava al cachi). Al buio sono toni scuri, quasi neri come nel mockup A+B
      * (brace, vino, ambra spenta); di giorno pastelli leggeri. [wine] = il rosso scuro del tema per la macchia a destra.
      */
-    fun blobs(primary: Color, wine: Color, dark: Boolean, rainy: Boolean): List<Blob> {
+    fun blobs(primary: Color, wine: Color, dark: Boolean, rainy: Boolean, strong: Color = primary): List<Blob> {
         fun tone(c: Color, alpha: Float): Color {
             val base = if (rainy) lerp(c, if (dark) RAIN_DARK else RAIN_LIGHT, 0.8f) else c
             return base.copy(alpha = alpha)
@@ -53,17 +53,30 @@ object Glow {
             Blob(0.10f, 0.04f, tone(lerp(primary, Color.Black, 0.22f), 0.85f)),
             Blob(0.96f, 0.36f, tone(lerp(side, Color.Black, 0.45f), 0.75f)),
             Blob(0.18f, 0.92f, tone(lerp(primary, Color.Black, 0.5f), 0.6f)),
-        ) else listOf(
-            Blob(0.10f, 0.04f, tone(primary, 0.6f)),
-            Blob(0.96f, 0.36f, tone(side, 0.4f)),
-            Blob(0.18f, 0.92f, tone(primary, 0.35f)),
-        )
+        ) else {
+            // Di giorno il pastello da solo non si vedeva sulla carta e il vetro sembrava bianco pieno (Antonio, 1.648):
+            // un po' del colore pieno del tema dà all'alone abbastanza colore da far leggere le card come vetro.
+            val tint = lerp(primary, strong, 0.3f)
+            listOf(
+                Blob(0.10f, 0.04f, tone(tint, 0.6f)),
+                Blob(0.96f, 0.36f, tone(lerp(tint, wine, 0.4f), 0.45f)),
+                Blob(0.18f, 0.92f, tone(tint, 0.4f)),
+            )
+        }
     }
 
-    fun blobs(scheme: ColorScheme, rainy: Boolean): List<Blob> = blobs(
-        scheme.primaryContainer, scheme.errorContainer,
-        dark = scheme.background.luminance() < 0.5f, rainy = rainy,
-    )
+    fun blobs(scheme: ColorScheme, rainy: Boolean): List<Blob> {
+        val dark = scheme.background.luminance() < 0.5f
+        return blobs(liftedBase(scheme.primaryContainer, scheme.primary, dark), scheme.errorContainer,
+            dark = dark, rainy = rainy, strong = scheme.primary)
+    }
+
+    /**
+     * Al buio un colore principale già quasi nero (il blu notte di Canvas e Puro) scurito ancora sparirebbe: lo si
+     * schiarisce verso l'accento finché l'alone si vede come col marrone di Material You (1.649, tutti i temi).
+     */
+    fun liftedBase(container: Color, accent: Color, dark: Boolean): Color =
+        if (dark && container.luminance() < 0.06f) lerp(container, accent, 0.35f) else container
 
     /** Piove adesso? Basta il codice del meteo attuale (pioggia, pioviggine, temporale). */
     fun rainy(code: Int?): Boolean =

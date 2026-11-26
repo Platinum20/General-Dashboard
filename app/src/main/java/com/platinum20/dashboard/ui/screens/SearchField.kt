@@ -1,5 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
@@ -62,8 +64,10 @@ fun CanvasSearchField(
     val colors = MaterialTheme.colorScheme
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
+    // Vetro come le card (Antonio, 1.649): mentre si scrive il velo si fa appena più pieno.
+    val dark = colors.background.luminance() < 0.5f
     val fill by animateColorAsState(
-        if (focused) colors.surfaceContainerHighest else colors.surfaceContainerHigh,
+        if (!focused) colors.glassCard else if (dark) colors.onSurface.copy(alpha = 0.1f) else colors.surfaceContainerLowest.copy(alpha = 0.75f),
         Motion.settle(), label = "fondo ricerca",
     )
     val lens by animateColorAsState(
@@ -90,6 +94,7 @@ fun CanvasSearchField(
                     .heightIn(min = FIELD_HEIGHT)
                     .clip(CircleShape)
                     .background(fill)
+                    .border(glassRim(), CircleShape)
                     .padding(start = 18.dp, end = 8.dp),
             ) {
                 Icon(Icons.Outlined.Search, contentDescription = null, tint = lens, modifier = Modifier.size(22.dp))

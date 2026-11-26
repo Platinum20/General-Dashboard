@@ -693,15 +693,18 @@ val ColorScheme.card: Color
  * è una card un filo più chiara del fondo.
  */
 val ColorScheme.glassCard: Color
-    get() = if (background.luminance() < 0.5f) onSurface.copy(alpha = 0.06f) else surfaceContainerLowest.copy(alpha = 0.72f)
+    get() = if (background.luminance() < 0.5f) onSurface.copy(alpha = 0.06f) else surfaceContainerLowest.copy(alpha = 0.5f)
 
 /** Il bordo delle card di vetro: un filo di luce, non una riga netta. */
 @Composable
 fun glassRim(): BorderStroke {
     val scheme = MaterialTheme.colorScheme
     val dark = scheme.background.luminance() < 0.5f
-    // Di giorno un filo grigio: bianco su bianco (Puro, Canvas) le card sparivano (Antonio, 1.647).
-    return BorderStroke(1.dp, if (dark) scheme.onSurface.copy(alpha = 0.10f) else scheme.outlineVariant)
+    // Luce in alto che sfuma in basso: è il bordo che fa leggere la card come vetro. Di giorno sotto finisce in un filo
+    // grigio, se no bianco su bianco (Puro, Canvas) le card sparivano (Antonio, 1.647).
+    val top = if (dark) scheme.onSurface.copy(alpha = 0.18f) else Color.White
+    val bottom = if (dark) scheme.onSurface.copy(alpha = 0.05f) else scheme.outlineVariant
+    return BorderStroke(1.dp, Brush.verticalGradient(listOf(top, bottom)))
 }
 
 /** Il blocco colorato della pagina (meteo, Quando): pieno, con una sfumatura appena più chiara verso il basso a destra. */
@@ -905,8 +908,8 @@ fun CardSection(
 /** Campi di testo sulla carta: fondo della card e bordo sottile, l'accento solo quando si scrive. */
 @Composable
 fun canvasFieldColors(): TextFieldColors = OutlinedTextFieldDefaults.colors(
-    unfocusedContainerColor = MaterialTheme.colorScheme.card,
-    focusedContainerColor = MaterialTheme.colorScheme.card,
+    unfocusedContainerColor = MaterialTheme.colorScheme.glassCard,
+    focusedContainerColor = MaterialTheme.colorScheme.glassCard,
     unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
     // I segnaposto nel grigio del testo (1.402): quello dei bordi era sotto il contrasto minimo, al sole non si leggeva.
     unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -921,7 +924,7 @@ fun canvasFieldColors(): TextFieldColors = OutlinedTextFieldDefaults.colors(
 fun Modifier.cardGroupItem(
     first: Boolean,
     last: Boolean,
-    container: Color = MaterialTheme.colorScheme.card,
+    container: Color = MaterialTheme.colorScheme.glassCard,
     /** Le liste di Media non hanno separatori (Antonio li ha tolti dalle copertine, 1.461). */
     divider: Boolean = true,
 ): Modifier {
@@ -964,7 +967,7 @@ fun CanvasChip(selected: Boolean, onClick: () -> Unit, label: String, modifier: 
         label = { Text(label, style = MaterialTheme.typography.labelLarge) },
         shape = CircleShape,
         colors = FilterChipDefaults.filterChipColors(
-            containerColor = MaterialTheme.colorScheme.card,
+            containerColor = MaterialTheme.colorScheme.glassCard,
             labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
             selectedContainerColor = MaterialTheme.colorScheme.onSurface,
             selectedLabelColor = MaterialTheme.colorScheme.surface,
@@ -999,7 +1002,7 @@ fun CanvasTabChip(
     val base = MaterialTheme.typography.labelLarge
     var style by remember(label, base) { mutableStateOf(base) }
     val on = if (tonal) colors.primary.copy(alpha = 0.14f).compositeOver(colors.card) else colors.onSurface
-    val container by androidx.compose.animation.animateColorAsState(if (selected) on else colors.card, Motion.settle(), label = "chip")
+    val container by androidx.compose.animation.animateColorAsState(if (selected) on else colors.glassCard, Motion.settle(), label = "chip")
     val content by androidx.compose.animation.animateColorAsState(
         if (!selected) colors.onSurfaceVariant else if (tonal) colors.primary else colors.surface, Motion.settle(), label = "chipText",
     )
