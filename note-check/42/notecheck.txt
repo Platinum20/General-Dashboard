@@ -1,0 +1,36 @@
+
+com.platinum20.dashboard.NoteEditorDeviceCheck:
+Error in titleEnterMovesToBody(com.platinum20.dashboard.NoteEditorDeviceCheck):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.titleEnterMovesToBody(NoteEditorDeviceCheck.kt:252)
+
+Error in bulletsContinueAndEnterOnEmptyExits(com.platinum20.dashboard.NoteEditorDeviceCheck):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:203)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.bulletsContinueAndEnterOnEmptyExits(NoteEditorDeviceCheck.kt:266)
+
+
+Time: 31.744
+There were 2 failures:
+1) titleEnterMovesToBody(com.platinum20.dashboard.NoteEditorDeviceCheck)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.titleEnterMovesToBody(NoteEditorDeviceCheck.kt:252)
+2) bulletsContinueAndEnterOnEmptyExits(com.platinum20.dashboard.NoteEditorDeviceCheck)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 8000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.focusBody(NoteEditorDeviceCheck.kt:203)
+	at com.platinum20.dashboard.NoteEditorDeviceCheck.bulletsContinueAndEnterOnEmptyExits(NoteEditorDeviceCheck.kt:266)
+
+FAILURES!!!
+Tests run: 2,  Failures: 2
+
+
+
+---- log
