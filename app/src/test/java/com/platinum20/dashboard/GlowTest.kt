@@ -40,4 +40,12 @@ class GlowTest {
         assertFalse(Glow.rainy(3))
         assertFalse(Glow.rainy(null))
     }
+
+    @Test fun diGiornoSiVedeIlColore() {
+        val pastel = Color(0xFFE3E8FF); val blue = Color(0xFF3550E8); val paper = Color(0xFFF5F3EE)
+        val b = Glow.blobs(pastel, Color(0xFFFDE2DC), dark = false, rainy = false, strong = blue)
+        // Più colore del solo pastello: la macchia in alto è più blu della carta, così il vetro si legge.
+        assertTrue(b[0].color.blue - b[0].color.red > pastel.blue - pastel.red)
+        assertTrue(b[0].color.blue > paper.blue - 0.2f)
+    }
 }

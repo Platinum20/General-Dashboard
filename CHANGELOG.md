@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.649.0
+**Vetro anche di giorno**
+- In modalità chiara l'alone ha più colore e le card sono più trasparenti: si leggono come vetro, non bianco pieno
+- Il bordo delle card è una luce in alto che sfuma in basso, di giorno e al buio
+
 ## 1.648.0
 **Alone come nel mockup**
 - Al buio l'alone è scuro e caldo (brace, vino), non più chiaro e verdognolo: le card tornano vetro fumé
