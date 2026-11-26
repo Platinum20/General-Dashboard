@@ -291,7 +291,7 @@ internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
         )
         DetailTapRow(
             Icons.Outlined.EventBusy,
-            doc.expiry?.let { "Scade il " + it.format(docDate) + " · nel calendario" } ?: "Aggiungi la scadenza",
+            doc.expiry?.let { "Scade il " + it.format(docDate) + " · in agenda" } ?: "Aggiungi la scadenza",
             onClick = { pickDate = true },
             onClear = doc.expiry?.let { { DocumentsStore.setExpiry(id, null) } },
         )

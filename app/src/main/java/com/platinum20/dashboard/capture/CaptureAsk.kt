@@ -192,7 +192,7 @@ object Ask {
                 val items = events.map { e ->
                     (if (e.allDay) "" else hour.format(Instant.ofEpochMilli(e.begin).atZone(d.zone)) + " ") + eventName(e)
                 } + tasks.map { it.text }
-                if (items.isEmpty()) return Answer("${dayWord(day, today).cap()} niente in calendario", OpenRequest(OpenRequest.NOTES))
+                if (items.isEmpty()) return Answer("${dayWord(day, today).cap()} niente in agenda", OpenRequest(OpenRequest.NOTES))
                 Answer("${dayWord(day, today).cap()}: " + items.take(4).joinToString(", ") + if (items.size > 4) " e altre ${items.size - 4}" else "", OpenRequest(OpenRequest.NOTES))
             }
             AskKind.WHEN -> {

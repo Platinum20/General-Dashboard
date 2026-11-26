@@ -14,7 +14,7 @@ no history ("since 1.x", "removed in"). Add a line only when you create or move 
 everything (opened it turns into the send arrow), gestures read by the bar's pointerInput: tap = Claude-style box `CaptureComposerInput` (open: tap sends), hold = voice
 `VoiceBox`, up = lock, left = cancel (`VoiceSlide`); voice text always lands in the box, never sent; keys `COMPOSER_KEY_DP`; News and Media
 are pages pushed over Home, `switchTab`), predictive back, `OpenRequest` deep links, PullToSearch, mini player and glass
-layers (queue, video settings, What's new) drawn OUTSIDE the NavHost. Calendario page = `Routes.NOTES`, pushed over Home. Bar + "+" rule = `Routes.hasBar` (list pages yes; detail/editor/player/settings/search no); list pages pad their bottom with `listBottom(min)` (Common.kt, reads `LocalBarSpace`).
+layers (queue, video settings, What's new) drawn OUTSIDE the NavHost. Agenda page (UI name "Agenda"; code keeps Calendar*/NOTES names) = `Routes.NOTES`, pushed over Home. Bar + "+" rule = `Routes.hasBar` (list pages yes; detail/editor/player/settings/search no); list pages pad their bottom with `listBottom(min)` (Common.kt, reads `LocalBarSpace`).
 `settings/AppSettings.kt` = every preference (StateFlow). `ui/theme/Theme.kt` = themes Canvas / Material You / Puro, Inter.
 
 **Shared UI (`ui/screens/`, always reuse)**
@@ -36,14 +36,14 @@ layers (queue, video settings, What's new) drawn OUTSIDE the NavHost. Calendario
 - `HomeScreen.kt` `Urgent.color()` = the attention orange in every theme (don't use `colorScheme.tertiary` for it).
 
 **Home** (`HomeScreen.kt`, `HomeCards.kt`, gear = Settings in `TopLevelBar` actions, `HomeMediaCards.kt` Musica/Video cards, order in `HomeCard` / `CustomizeScreen.kt`): `InvitesRow` (orange line on
-top, only when something needs doing), Adesso/weather (`WeatherBits.kt`, page `WeatherScreen.kt`, pure phrases `weather/WeatherText.kt`), Riprendi, `CalendarCard` (today + tomorrow,
+top, only when something needs doing), Adesso/weather (`WeatherBits.kt`, page `WeatherScreen.kt`, pure phrases `weather/WeatherText.kt`), Riprendi, `CalendarCard` = Home "Agenda" card (today + tomorrow, OGGI hidden when today is empty: `withoutEmptyToday`,
 count to month end), `LaterCard` (LaterUi.kt) = ONE "Da fare" card, in order: to-dos (max `HOME_TODO_MAX`),
 habits (`HabitTodoRow`, repeat badge; `habitTodoLine`/`habitFlame` in BriefActions.kt; orange from `HABIT_LATE_HOUR`),
 note checklists (`NoteListRow`), thin line, then notes/photos/saved media (`withoutLists`: a note shows once); one
 full page `LaterArchiveScreen` (also `Routes.JOTTINGS_ARCHIVE`). News card, SIM (`ContiCard`),
 Documenti, Dalla posta. Logic in `today/` (`Briefing`, `Upcoming`, `Invites`, `Greeting`, `HomeResume`).
 
-**Calendario** (one calendar for everything): page `NotesScreen.kt`, pure `NotesTimeline.kt` (`dueDays`,
+**Agenda** (UI name; one calendar for everything): page `NotesScreen.kt`, pure `NotesTimeline.kt` (`dueDays`,
 `pastDays`, `timelineEntries`, `looseItems`/`withoutLoose` = undated things go to Da fare/Appunti), data
 `notes/NotesStore.kt` (one JSON: tasks, notes, habits, parcels). Dated tasks = events-like (`alert`, `place`,
 `notes`, `allDay` dates; only undated tasks are tickable). `ItemDetailScreen.kt` (tasks, dates, parcels, habits),

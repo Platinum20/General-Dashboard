@@ -629,6 +629,13 @@ internal fun isLoose(row: DueRow): Boolean =
 internal fun List<DueDay>.withoutLoose(): List<DueDay> =
     map { g -> g.copy(rows = g.rows.filterNot(::isLoose)) }.filter { it.rows.isNotEmpty() }
 
+/**
+ * La card Agenda della Home senza OGGI quando oggi non ha niente (Antonio, 2026-11-26): parte dal primo giorno con
+ * qualcosa. Se oggi c'è anche una sola cosa (fatta, in ritardo, finita) OGGI resta. La pagina intera tiene sempre OGGI.
+ */
+internal fun List<DueDay>.withoutEmptyToday(today: LocalDate): List<DueDay> =
+    filterNot { g -> g.day == today && !g.past && !g.late && g.rows.all { it.today } }
+
 internal enum class LooseKind { TODO, NOTE, PHOTO, PARCEL, SAVED }
 
 /** Una riga della card "Per dopo": a sinistra la spunta o l'immagine, il nome, al massimo una riga sotto. */

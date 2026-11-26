@@ -87,7 +87,7 @@ internal object CapturePreview {
         }
     }
 
-    const val CALENDAR = "Va nel Calendario"
+    const val CALENDAR = "Va in Agenda"
     const val TODO = "Va in Da fare"
     const val JOTTINGS = "Va negli Appunti"
     const val HABITS = "Va nelle abitudini"

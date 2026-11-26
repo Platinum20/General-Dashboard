@@ -25,7 +25,7 @@ enum class HomeCard(val label: String, val description: String) {
     WEATHER("Adesso", "Meteo e cose da sapere ora"),
     RESUME("Media", "Quello che suona o da riprendere"),
     // Il nome resta DAY per le preferenze salvate: dalla 1.314 è il calendario unico, con le note dentro.
-    DAY("Calendario", "Oggi e prossimi giorni"),
+    DAY("Agenda", "Oggi e prossimi giorni"),
     // 1.490: le cose senza scadenza escono dal Calendario in una card loro (Antonio, 2026-11-12).
     // Il nome resta LATER per le preferenze salvate. Dalla 1.616 una card sola con gli appunti (Antonio, 2026-11-24):
     // "Appunti" (JOTTINGS) non c'è più, chi l'aveva salvata la perde senza toccare il resto.
