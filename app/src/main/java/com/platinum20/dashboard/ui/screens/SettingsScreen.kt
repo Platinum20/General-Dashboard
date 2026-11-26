@@ -779,8 +779,9 @@ internal fun SettingsRow(
 internal fun SettingsGroup(content: @Composable () -> Unit) {
     Surface(
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.card,
-        border = cardBorder(),
+        // Le stesse card di vetro delle altre pagine (Antonio, 1.649).
+        color = MaterialTheme.colorScheme.glassCard,
+        border = glassRim(),
     ) {
         Column { content() }
     }

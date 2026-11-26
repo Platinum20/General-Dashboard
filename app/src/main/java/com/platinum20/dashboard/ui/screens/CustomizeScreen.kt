@@ -164,7 +164,7 @@ private fun CardRow(
         topStart = if (first) corner else 0.dp, topEnd = if (first) corner else 0.dp,
         bottomStart = if (last) corner else 0.dp, bottomEnd = if (last) corner else 0.dp,
     )
-    Column(modifier.fillMaxWidth().clip(shape).background(MaterialTheme.colorScheme.card)) {
+    Column(modifier.fillMaxWidth().clip(shape).background(MaterialTheme.colorScheme.glassCard)) {
         if (!first) RowDivider()
         Row(
             Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(start = 14.dp, end = 4.dp),

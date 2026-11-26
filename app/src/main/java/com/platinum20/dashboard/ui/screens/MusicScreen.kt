@@ -723,8 +723,8 @@ private fun ChildrenList(parent: SpItem, onBack: () -> Unit, onGone: () -> Unit,
 private fun ArrangeRow(item: SpItem, modifier: Modifier, handle: Modifier, onClick: () -> Unit) {
     Surface(
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.card,
-        border = cardBorder(),
+        color = MaterialTheme.colorScheme.glassCard,
+        border = glassRim(),
         modifier = modifier.fillMaxWidth().clip(MaterialTheme.shapes.large).clickable(onClick = onClick),
     ) {
         Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -755,8 +755,8 @@ internal fun TrackLine(item: SpItem, onClick: () -> Unit) = MediaLine(
 internal fun ItemRow(item: SpItem, onClick: () -> Unit) {
     Surface(
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.card,
-        border = cardBorder(),
+        color = MaterialTheme.colorScheme.glassCard,
+        border = glassRim(),
         // Tenendo premuto un brano si salva nelle note (album e playlist no: non si riaprono fermi).
         modifier = Modifier.fillMaxWidth().bouncyPress(0.97f).clip(MaterialTheme.shapes.large)
             .tapOrSave({ SavedLinks.spotify(item) }, onClick),
