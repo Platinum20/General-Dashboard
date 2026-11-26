@@ -46,6 +46,12 @@ object CaptureComposer {
         text = TextFieldValue("")
     }
 
+    /** La X sopra la freccia (Antonio, 1.652): via tutto quello che c'è nel riquadro, il riquadro resta aperto. */
+    fun clear() {
+        text = TextFieldValue("")
+        chosen = null
+    }
+
     /** Chiuso senza salvare: il testo resta come bozza per la prossima volta. */
     fun close() {
         request = null

@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
@@ -311,7 +312,12 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier, onSend: () -> U
             shape = androidx.compose.foundation.shape.CircleShape,
             modifier = Modifier.padding(start = 6.dp, bottom = 8.dp).then(appear),
         )
-        Box(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 22.dp).then(appear), contentAlignment = Alignment.TopStart) {
+        // Sotto: testo, allegati e tasti, con la X che svuota tutto sospesa sopra la freccia.
+        Box(Modifier.fillMaxWidth()) {
+        Column(Modifier.fillMaxWidth()) {
+        // A destra il testo lascia il posto alla X (sempre, così non va a capo di colpo alla prima lettera).
+        // Alto almeno quanto serve perché la X (sopra la freccia) resti tutta dentro e si possa toccare tutta.
+        Box(Modifier.fillMaxWidth().heightIn(min = 54.dp).padding(start = 12.dp, end = CLEAR_ROOM_DP.dp, bottom = 22.dp).then(appear), contentAlignment = Alignment.TopStart) {
             val style = MaterialTheme.typography.bodyLarge.copy(fontSize = 19.sp, lineHeight = 26.sp)
             if (empty) {
                 // Prima la riga che spiega la freccia (1.637), poi gli esempi che girano.
@@ -361,7 +367,7 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier, onSend: () -> U
         }
         // I tasti come nell'app Claude (1.636, Antonio): la graffetta per allegare a sinistra, a destra solo la freccia. Il microfono
         // non c'è: tenendo premuta la freccia si detta (i gesti li legge la barra in MainActivity, che resta sotto il dito).
-        // Niente X: si chiude toccando fuori o con Indietro.
+        // Si chiude toccando fuori o con Indietro; la X sopra la freccia svuota soltanto.
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             // La graffetta (Antonio, 1.636): un + a sinistra sembrava il + di destra che si spostava.
             Box(appear) {
@@ -383,8 +389,29 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier, onSend: () -> U
                 ComposerKey(Icons.Rounded.ArrowUpward, "Inserisci", main = true, touch = false) { onSend() }
             }
         }
+        }
+        // La X (Antonio, 1.652): solo quando c'è qualcosa, sopra la freccia. Abbastanza in alto da restare fuori
+        // dall'angolo dove la barra legge i gesti della freccia (64dp), così tenere premuto e trascinare non cambiano.
+        androidx.compose.animation.AnimatedVisibility(
+            visible = !empty && !tray,
+            enter = fadeIn(Motion.lively()) + androidx.compose.animation.scaleIn(Motion.lively(), initialScale = 0.6f),
+            exit = fadeOut(tween(Motion.EXIT_MS)) + androidx.compose.animation.scaleOut(tween(Motion.EXIT_MS), targetScale = 0.6f),
+            modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = CLEAR_LIFT_DP.dp).then(appear),
+        ) {
+            ComposerKey(Icons.Rounded.Close, "Cancella tutto") {
+                haptic(Haptic.TICK)
+                CaptureComposer.clear()
+            }
+        }
+        }
     }
 }
+
+/** Quanto sta sopra il fondo dei tasti la X: con il fondo del riquadro (10) arriva ai 64dp dei gesti, senza entrarci. */
+private const val CLEAR_LIFT_DP = 54
+
+/** Lo spazio a destra del testo per la X. */
+private const val CLEAR_ROOM_DP = 44
 
 /** Colora le parole del quando ([CaptureMarks.whenRanges]) senza toccare il testo. */
 @Composable
