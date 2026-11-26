@@ -352,6 +352,8 @@ internal fun RichNoteField(
     val emit by rememberUpdatedState(onValueChange)
     var focused by remember { mutableStateOf(false) }
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
+    // Il tocco dopo la fine di una riga (2026-11-26): dove il campo metterebbe il cursore e dove va davvero.
+    var tapEnd by remember { mutableStateOf<TapEnd?>(null) }
     // Le righe che si chiudono (1.588): i titoli chiusi, per testo del titolo; e la tabella che si sta cambiando.
     var folded by remember { mutableStateOf(setOf<String>()) }
     // Le righe nascoste: sotto i titoli chiusi e, dalla 1.590, le spunte di una bacheca (si vedono come schede).
@@ -399,6 +401,12 @@ internal fun RichNoteField(
     fun change(v: TextFieldValue, typed: Boolean = true) {
         val old = current
         var next = v
+        // Toccando dopo il testo di una riga il campo metteva il cursore all'inizio della riga dopo: va in fondo a quella toccata.
+        val end = tapEnd
+        if (end != null && typed && v.text == old.text && v.selection.collapsed && v.selection.start == end.raw &&
+            android.os.SystemClock.uptimeMillis() - end.at <= TAP_WINDOW_MS) {
+            next = v.copy(selection = TextRange(end.goal.coerceIn(0, v.text.length)))
+        }
         // Un link "@" si cancella tutto insieme (1.589): basta togliere una lettera.
         // Tabella, linea e vocale sono pezzi unici (1.589): la tastiera non li rompe.
         val guard = if (typed && v.text != old.text) NoteLines.guardBlocks(old.text, v.text) else null
@@ -718,6 +726,26 @@ internal fun RichNoteField(
                 }
             }
         }
+        /** Dove deve andare il cursore per un tocco in [p] dopo il testo di una riga o sotto l'ultima; null = dove dice il campo. */
+        fun tapTarget(p: androidx.compose.ui.geometry.Offset): TapEnd? {
+            val l = layout ?: return null
+            val text = current.text
+            if (text.isEmpty() || l.lineCount == 0) return null
+            val map = transformation.filter(AnnotatedString(text)).offsetMapping
+            val raw = map.transformedToOriginal(l.getOffsetForPosition(p))
+            val last = l.lineCount - 1
+            val goal = when {
+                p.y > l.getLineBottom(last) -> text.length
+                else -> {
+                    val row = l.getLineForVerticalPosition(p.y)
+                    if (p.x <= l.getLineRight(row)) return null
+                    map.transformedToOriginal(rowEnd(l.layoutInput.text, l.getLineEnd(row)))
+                }
+            }
+            return if (goal == raw) null else TapEnd(raw, goal, android.os.SystemClock.uptimeMillis())
+        }
+        // Il gesto resta lo stesso fra una composizione e l'altra: legge sempre il testo e il disegno di adesso.
+        val tapDown by rememberUpdatedState<(androidx.compose.ui.geometry.Offset) -> Unit> { p -> tapEnd = if (readOnly) null else tapTarget(p) }
         BasicTextField(
             value = value,
             onValueChange = { change(it) },
@@ -737,7 +765,10 @@ internal fun RichNoteField(
             modifier = Modifier
                 .fillMaxWidth()
                 .onGloballyPositioned { fieldAt = it }
-                .tapWatch { tapAt = android.os.SystemClock.uptimeMillis(); tapCount++ }
+                .tapWatch(
+                    onDown = { p -> tapDown(p) },
+                    onTap = { tapAt = android.os.SystemClock.uptimeMillis(); tapCount++ },
+                )
                 .bringIntoViewRequester(follow)
                 .heightIn(min = minHeight)
                 .focusRequester(mainFocus)
@@ -2348,10 +2379,23 @@ internal fun followMode(typing: Boolean, moved: Boolean, collapsed: Boolean, sin
     else -> wasAtTop
 }
 
+/** Un tocco dopo il testo: [raw] = dove il campo mette il cursore, [goal] = dove deve andare. */
+internal data class TapEnd(val raw: Int, val goal: Int, val at: Long)
+
+/**
+ * La fine di una riga disegnata: l'"a capo" fra due paragrafi è disegnato come spazio di larghezza zero e sta in fondo
+ * alla riga, così il cursore va prima di lui (dopo, sarebbe già la riga sotto).
+ */
+internal fun rowEnd(shown: CharSequence, end: Int): Int {
+    val e = end.coerceIn(0, shown.length)
+    return if (e > 0 && (shown[e - 1] == '\u200B' || shown[e - 1] == '\n')) e - 1 else e
+}
+
 /** Vede i tocchi brevi sul campo senza consumarli (il campo mette lo stesso il cursore); un trascinamento non conta. */
-private fun Modifier.tapWatch(onTap: () -> Unit): Modifier = pointerInput(Unit) {
+private fun Modifier.tapWatch(onDown: (androidx.compose.ui.geometry.Offset) -> Unit = {}, onTap: () -> Unit): Modifier = pointerInput(Unit) {
     awaitEachGesture {
         val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        onDown(down.position)
         var far = false
         while (true) {
             val event = awaitPointerEvent(PointerEventPass.Initial)
