@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.650.0
+## 1.651.0
 **Contorno del tema preciso**
 - Il bordo del tema scelto ha lo stesso spessore tutto intorno, anche in alto: niente più taglio
 - Lo stesso contorno pulito anche nella scelta della voce delle News
