@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.654.0
+## 1.655.0
 **La guida di Canvas, nelle note**
 - Cinque note nuove, con l'etichetta #guida: un indice fissato in cima e una pagina per il tasto +, l'Agenda e Da fare, le note, musica video e Cerca
 - Ognuna usa pezzi diversi dell'editor (tabelle, colonne, bacheca, riquadri, citazioni, colori, foto, un vocale, link fra note), così si vede cosa sa fare
