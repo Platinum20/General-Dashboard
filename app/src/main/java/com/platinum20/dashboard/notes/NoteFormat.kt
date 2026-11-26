@@ -288,6 +288,26 @@ object NoteFormat {
             return Edit(t, head.length, head.length + e - s)
         }
 
+        // Più righe già tutte con questo formato (2026-11-26): si toglie da tutte. Prima G le riformattava e non si spegneva mai.
+        if ('\n' in text.substring(s, e)) {
+            var at = s
+            val cores = text.substring(s, e).split('\n').mapIndexedNotNull { i, seg ->
+                val from = at
+                at += seg.length + 1
+                val mark = if (i > 0 || from == 0 || text[from - 1] == '\n') lineMark(seg) else 0
+                var cs = from + mark
+                var ce = from + seg.length
+                while (cs < ce && (cs in marks || text[cs].isWhitespace())) cs++
+                while (ce > cs && (ce - 1 in marks || text[ce - 1].isWhitespace())) ce--
+                if (cs < ce) cs to ce else null
+            }
+            val covering = cores.map { (cs, ce) -> same.firstOrNull { it.contentStart <= cs && ce <= it.contentEnd } }
+            if (cores.isNotEmpty() && covering.all { it != null }) {
+                val d = Dropped(text, covering.filterNotNull().flatMap { it.open + it.close!! }.toSet())
+                return Edit(d.text, d.map(s), d.map(e))
+            }
+        }
+
         var a = s
         var b = e
         // Il corsivo vale per parole intere, se no i segni non si riconoscono.
@@ -313,8 +333,12 @@ object NoteFormat {
         val sb = StringBuilder(t.substring(0, na))
         var first = -1
         var last = na
-        t.substring(na, nb).split('\n').forEachIndexed { i, seg ->
+        t.substring(na, nb).split('\n').forEachIndexed { i, whole ->
             if (i > 0) sb.append('\n')
+            // Il segno della riga (punto, spunta, numero, titolo) resta fuori dal formato: dentro, la voce non era più voce.
+            val mark = if (i > 0 || na == 0 || t[na - 1] == '\n') lineMark(whole) else 0
+            sb.append(whole, 0, mark)
+            val seg = whole.substring(mark)
             val lead = seg.length - seg.trimStart().length
             val core = seg.trim()
             if (core.isEmpty()) { sb.append(seg); return@forEachIndexed }
@@ -329,6 +353,12 @@ object NoteFormat {
         sb.append(t, nb, t.length)
         return Edit(sb.toString(), if (first < 0) na else first, last)
     }
+
+    /**
+     * Quanto è lungo il segno davanti a una riga intera ([NoteLines.kindOf]) che grassetto e colori lasciano fuori (2026-11-26):
+     * scegliendo più voci e toccando G, "- a" diventava "**- a**" e la lista si rompeva. I pezzi unici restano interi.
+     */
+    private fun lineMark(line: String): Int = NoteLines.kindOf(line).let { (k, _, p) -> if (k == NoteLines.Kind.TEXT) 0 else p }
 
     /** Mette o toglie "## " all'inizio di ogni riga toccata dalla selezione. */
     fun heading(text: String, start: Int, end: Int): Edit {
@@ -509,8 +539,11 @@ object NoteFormat {
         val sb = StringBuilder(text.substring(0, s))
         var first = -1
         var last = s
-        text.substring(s, e).split('\n').forEachIndexed { i, seg ->
+        text.substring(s, e).split('\n').forEachIndexed { i, whole ->
             if (i > 0) sb.append('\n')
+            val mark = if (i > 0 || s == 0 || text[s - 1] == '\n') lineMark(whole) else 0
+            sb.append(whole, 0, mark)
+            val seg = whole.substring(mark)
             val core = seg.trim()
             if (core.isEmpty()) { sb.append(seg); return@forEachIndexed }
             val lead = seg.length - seg.trimStart().length

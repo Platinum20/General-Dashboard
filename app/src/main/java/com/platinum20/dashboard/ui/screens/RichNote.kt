@@ -453,6 +453,17 @@ internal fun RichNoteField(
         emit(safe)
     }
 
+    /**
+     * Il fumetto di una riga (tieni premuto sul segno, o tocco sulla maniglia). Dopo Su, Giù, rientro o tipo si rifà sulla
+     * stessa riga (2026-11-26): prima restava quello di prima e il secondo tocco ripartiva dal testo vecchio (Su due
+     * volte = su di una sola). Le modifiche passano da [change]: Annulla le conosce e i numeri si rifanno.
+     */
+    fun lineBubble(v: TextFieldValue, l: NoteLines.Line) {
+        val apply: (TextFieldValue) -> Unit = { change(it, typed = false) }
+        val again: (TextFieldValue, Int) -> Unit = { nv, i -> NoteLines.parse(nv.text).getOrNull(i)?.let { lineBubble(nv, it) } }
+        ActionBubble.show(lineHead(l, v.text), *(lineActions(context, l, v, apply, sendToTodo, again) + lineMore?.invoke(v.text, l.end).orEmpty()).toTypedArray())
+    }
+
     // Anche con del testo scelto senza tastiera (1.586): la barra Aa deve esserci lo stesso.
     val choosing = !value.selection.collapsed
     DisposableEffect(focused, choosing, readOnly) {
@@ -809,14 +820,14 @@ internal fun RichNoteField(
                             haptic(Haptic.TICK)
                             dragMoved = true
                             dragging = from + 1
-                            change(TextFieldValue(NoteLines.move(now.text, from, up = false), now.selection), typed = false)
+                            change(TextFieldValue(NoteLines.move(now.text, from, up = false), TextRange(NoteLines.moveCursor(now.text, from, false, now.selection.start), NoteLines.moveCursor(now.text, from, false, now.selection.end))), typed = false)
                         }
                         LineDrag.UP -> if (from > 0) {
                             dragPull += rowPx
                             haptic(Haptic.TICK)
                             dragMoved = true
                             dragging = from - 1
-                            change(TextFieldValue(NoteLines.move(now.text, from, up = true), now.selection), typed = false)
+                            change(TextFieldValue(NoteLines.move(now.text, from, up = true), TextRange(NoteLines.moveCursor(now.text, from, true, now.selection.start), NoteLines.moveCursor(now.text, from, true, now.selection.end))), typed = false)
                         }
                         LineDrag.IN, LineDrag.OUT -> {
                             val by = if (dragPullX > 0) 1 else -1
@@ -876,7 +887,7 @@ internal fun RichNoteField(
                             onLongClickLabel = if (readOnly) null else "Scelte della riga",
                             onLongClick = if (readOnly) null else ({
                                 haptic(Haptic.LONG_PRESS)
-                                ActionBubble.show(lineHead(lineNow, current.text), *(lineActions(context, lineNow, current, emit, sendToTodo) + lineMore?.invoke(current.text, lineNow.end).orEmpty()).toTypedArray())
+                                lineBubble(current, lineNow)
                             }),
                             onClick = {
                                 // Il tocco che chiude un tieni premuto non spunta.
@@ -934,7 +945,7 @@ internal fun RichNoteField(
                             ) {
                                 if (System.currentTimeMillis() - dragEndedAt < 400) return@clickable
                                 haptic(Haptic.LONG_PRESS)
-                                ActionBubble.show(lineHead(curNow, current.text), *(lineActions(context, curNow, current, emit, sendToTodo) + lineMore?.invoke(current.text, curNow.end).orEmpty()).toTypedArray())
+                                lineBubble(current, curNow)
                             },
                     ) {
                         Icon(
@@ -1771,24 +1782,32 @@ private fun lineActions(
     value: TextFieldValue,
     emit: (TextFieldValue) -> Unit,
     sendToTodo: Boolean,
+    /** Il fumetto si rifà sulla riga [Int] del testo nuovo, dopo un tocco che lo lascia aperto. */
+    again: (TextFieldValue, Int) -> Unit = { _, _ -> },
 ): List<BubbleAction> {
     val text = value.text
     val count = NoteLines.parse(text).size
     fun set(next: String) = emit(TextFieldValue(next, TextRange(NoteLines.parse(next).getOrNull(line.index)?.end ?: next.length)))
+    // La riga resta la stessa (spostata in [at]): il cursore la segue e il fumetto riparte da lì.
+    fun keep(next: String, at: Int = line.index) {
+        val nv = TextFieldValue(next, TextRange(NoteLines.parse(next).getOrNull(at)?.end ?: next.length))
+        emit(nv)
+        again(nv, at)
+    }
     val words = NoteLines.plainLine(text.substring(line.start, line.end))
     return listOfNotNull(
-        transformAction(line.kind) { k -> set(NoteLines.renumber(NoteLines.transform(text, line.start, line.start, k)).text) },
+        transformAction(line.kind) { k -> keep(NoteLines.renumber(NoteLines.transform(text, line.start, line.start, k)).text) },
         listOfNotNull(
-            if (line.index > 0) BubbleChip("Su", icon = Icons.Outlined.ArrowUpward) { set(NoteLines.move(text, line.index, up = true)) } else null,
-            if (line.index < count - 1) BubbleChip("Giù", icon = Icons.Outlined.ArrowDownward) { set(NoteLines.move(text, line.index, up = false)) } else null,
+            if (line.index > 0) BubbleChip("Su", icon = Icons.Outlined.ArrowUpward) { keep(NoteLines.move(text, line.index, up = true), line.index - 1) } else null,
+            if (line.index < count - 1) BubbleChip("Giù", icon = Icons.Outlined.ArrowDownward) { keep(NoteLines.move(text, line.index, up = false), line.index + 1) } else null,
         ).takeIf { it.isNotEmpty() }?.let { choice("Sposta", *it.toTypedArray()) },
         // Il rientro (2026-11-24): uscito dalla barra, sta qui e sul segno trascinato di lato.
         listOfNotNull(
             if (NoteLines.canIndent(text, line.start, -1)) BubbleChip("In fuori", icon = Icons.AutoMirrored.Outlined.FormatIndentDecrease) {
-                val e = NoteLines.indent(text, line.start, line.start, -1); emit(TextFieldValue(e.text, TextRange(e.start)))
+                keep(NoteLines.indent(text, line.start, line.start, -1).text)
             } else null,
             if (NoteLines.canIndent(text, line.start, 1)) BubbleChip("Sotto-voce", icon = Icons.AutoMirrored.Outlined.FormatIndentIncrease) {
-                val e = NoteLines.indent(text, line.start, line.start, 1); emit(TextFieldValue(e.text, TextRange(e.start)))
+                keep(NoteLines.indent(text, line.start, line.start, 1).text)
             } else null,
         ).takeIf { it.isNotEmpty() }?.let { choice("Rientro", *it.toTypedArray()) },
         if (sendToTodo && words.isNotEmpty()) act(BubbleGroup.METTI, Icons.Outlined.TaskAlt, "Manda in Da fare", "la trovi nella card della Home") {
