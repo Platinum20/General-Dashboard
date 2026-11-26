@@ -462,7 +462,8 @@ private fun PlayerTools(
                     copyTitle = "Copia",
                     copyDetail = com.platinum20.dashboard.share.ShareTexts.preview(text),
                     pdf = null,
-                ) { runCatching { shareText(context, text) } }.toTypedArray(),
+                    send = { runCatching { shareText(context, text) } },
+                ).toTypedArray(),
             )
         }
     }
