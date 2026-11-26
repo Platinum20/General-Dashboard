@@ -282,9 +282,9 @@ fun NotesScreen(
 
     val barScroll = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
     Scaffold(
-        modifier = Modifier.pageFloor(), containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
         // La stessa card Calendario della Home, allargata: si apre da lì e lì si richiude.
-        modifier = Modifier.sharedItem(SharedKeys.CALENDAR, rounded = true).nestedScroll(barScroll.nestedScrollConnection),
+        modifier = Modifier.sharedItem(SharedKeys.CALENDAR, rounded = true).nestedScroll(barScroll.nestedScrollConnection).pageFloor(),
         contentWindowInsets = topLevelInsets,
         // Come le altre sezioni: solo il titolo in alto, tutto il resto scorre. Dentro un tipo, il titolo
         // è il tipo con la freccia per tornare ai tre.
