@@ -1,0 +1,6 @@
+
+com.platinum20.dashboard.NoteEditorDeviceCheck:INSTRUMENTATION_RESULT: longMsg=Input dispatching timed out (b88b136 com.platinum20.dashboard/androidx.activity.ComponentActivity (server) is not responding. Waited 5002ms for FocusEvent(hasFocus=false))
+INSTRUMENTATION_RESULT: shortMsg=keyDispatchingTimedOut
+INSTRUMENTATION_CODE: 0
+
+---- log
