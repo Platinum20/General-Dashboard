@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.650.0
+**Cursore dove tocchi nelle note**
+- Toccando dopo la fine di una frase il cursore va in fondo a quella riga, non più all'inizio della riga sotto (voci, liste, titoli compresi)
+- Toccando sotto l'ultima riga il cursore va in fondo alla nota
+
 ## 1.648.0
 **Alone come nel mockup**
 - Al buio l'alone è scuro e caldo (brace, vino), non più chiaro e verdognolo: le card tornano vetro fumé
