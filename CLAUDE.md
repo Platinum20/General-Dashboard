@@ -94,7 +94,10 @@ documents scan. `security/Vault.kt` = Keystore for tokens.
 `TodoWidget` "Da fare" (habits + to-dos, tick in place, pure `TodoWidgetRows`), `SimWidget` (ring), `TasksWidget`
 "Calendario" (`AgendaRows.build`), `NoteWidget` "Nota" (chosen note via "Mostra nel widget", ticks, `NoteWidgetRows`), `MoreWidgets.kt` News/Meteo/Scrivi. Never rename widget classes (placed ones vanish).
 
-**Other**: `search/` (Cerca ovunque),
+**Other**: Cerca = `SearchScreen.kt` (groups, best result, filters in one row, `SearchCache` keeps results on back) +
+`SearchResults.kt` (`Found` row model, `Finder` builds rows from every source, `FoundRow`) + pure `search/` (`SearchMatch` words in any order + typos + highlight ranges,
+`SearchWhen` "domani/venerdì/marzo", `SearchSources` settings index/mail/docs/tags/tickets, `SearchRecents` queries + opened items, `CaptureMatch`);
+`CaptureMatchesUi.kt` = matches above the "+" box while typing,
 `work/` (Morning, Refresh, RainAlert, UpdateCheck), `update/` (self-update, `UpdateTrust`, `WhatsNew` from
 CHANGELOG), `SettingsScreen.kt` (`SettingsPageScreen(SettingsPage)`: main page = theme + menu rows Le sezioni / L'app),
 `AccountsUi.kt` + pure `AccountTiles.kt` (Account page: one row per account, bubble actions; rows live in SimUi/ShiftsUi/MailUi),

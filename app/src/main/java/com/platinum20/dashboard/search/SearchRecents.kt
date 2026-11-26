@@ -14,14 +14,38 @@ object SearchRecents {
     const val MAX = 5
     private const val PREFS = "search_recents"
     private const val KEY = "list"
+    private const val KEY_OPENED = "opened"
+    const val MAX_OPENED = 5
     private lateinit var prefs: SharedPreferences
     private val _list = MutableStateFlow<List<String>>(emptyList())
     val list: StateFlow<List<String>> = _list.asStateFlow()
+
+    /**
+     * Una cosa aperta da Cerca (2026-11-26, punto 9): sotto il campo vuoto si torna lì con un tocco.
+     * [route] = dove si apre (Routes), [icon] = che tipo di cosa è, per l'icona.
+     */
+    data class Opened(val title: String, val line: String, val route: String, val icon: String)
+
+    private val _opened = MutableStateFlow<List<Opened>>(emptyList())
+    val opened: StateFlow<List<Opened>> = _opened.asStateFlow()
 
     fun init(context: Context) {
         if (::prefs.isInitialized) return
         prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         _list.value = prefs.getString(KEY, null)?.split('\n')?.filter { it.isNotBlank() }.orEmpty()
+        _opened.value = decode(prefs.getString(KEY_OPENED, null))
+    }
+
+    fun open(item: Opened) {
+        if (!::prefs.isInitialized) return
+        _opened.value = addOpened(_opened.value, item)
+        prefs.edit().putString(KEY_OPENED, encode(_opened.value)).apply()
+    }
+
+    fun forgetOpened(item: Opened) {
+        if (!::prefs.isInitialized) return
+        _opened.value = _opened.value.filterNot { it.route == item.route }
+        prefs.edit().putString(KEY_OPENED, encode(_opened.value)).apply()
     }
 
     /** Si ricorda la ricerca uscendo da Cerca: le lettere a metà non contano. */
@@ -45,4 +69,20 @@ object SearchRecents {
         if (q.length < 2) return list
         return (listOf(q) + list.filterNot { it.equals(q, ignoreCase = true) }).take(MAX)
     }
+
+    /** Pura: la più nuova in cima, una volta sola per pagina, al massimo [MAX_OPENED]. */
+    fun addOpened(list: List<Opened>, item: Opened): List<Opened> =
+        (listOf(item) + list.filterNot { it.route == item.route }).take(MAX_OPENED)
+
+    fun encode(list: List<Opened>): String = org.json.JSONArray().apply {
+        list.forEach { o -> put(org.json.JSONObject().put("t", o.title).put("l", o.line).put("r", o.route).put("i", o.icon)) }
+    }.toString()
+
+    fun decode(raw: String?): List<Opened> = runCatching {
+        val arr = org.json.JSONArray(raw ?: return emptyList())
+        (0 until arr.length()).map { i ->
+            val o = arr.getJSONObject(i)
+            Opened(o.optString("t"), o.optString("l"), o.getString("r"), o.optString("i"))
+        }
+    }.getOrDefault(emptyList())
 }

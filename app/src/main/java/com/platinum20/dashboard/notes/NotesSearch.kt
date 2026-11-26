@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.notes
 
+import com.platinum20.dashboard.search.SearchMatch
 import java.text.Normalizer
 
 /** Dove sta un risultato della ricerca, nell'ordine in cui compaiono i gruppi. */
@@ -15,7 +16,15 @@ enum class SearchKind(val label: String) {
  * Un risultato. [line] = per le note, la riga dove c'è la parola (Antonio, 2026-11-23, idea 9), già accorciata;
  * [inPhoto] = la parola sta nel testo letto da una foto della nota (idea 30). Null quando basta il titolo.
  */
-data class SearchHit(val kind: SearchKind, val id: Long, val title: String, val line: String? = null, val inPhoto: Boolean = false)
+data class SearchHit(
+    val kind: SearchKind,
+    val id: Long,
+    val title: String,
+    val line: String? = null,
+    val inPhoto: Boolean = false,
+    /** Quanto vale per la ricerca ([com.platinum20.dashboard.search.SearchMatch.score]): sceglie il risultato migliore. */
+    val score: Int = 0,
+)
 
 /**
  * Cerca in tutte le Note insieme: promemoria (anche completati), note libere, pacchi (nome e codice), date e abitudini. Senza badare ad accenti
@@ -32,19 +41,19 @@ object NotesSearch {
      * scritto nelle sue foto (la lavagna, lo scontrino della garanzia).
      */
     fun search(data: NotesData, query: String, photoText: Map<String, String> = emptyMap()): List<SearchHit> {
-        val q = normalize(query)
-        if (q.isEmpty()) return emptyList()
-        fun hit(vararg texts: String) = texts.any { normalize(it).contains(q) }
+        if (normalize(query).isEmpty()) return emptyList()
+        // Le parole in qualunque ordine e con un errore di battitura (2026-11-26, punto 1): vedi SearchMatch.
+        fun score(title: String, vararg more: String) = SearchMatch.score(query, title, *more)
         return buildList {
             // Prima quelli ancora da fare, poi i completati.
             // Le date di tutto il giorno sono promemoria (1.361), ma si cercano con la loro riga "12 marzo · compie…".
-            data.tasks.sortedBy { it.done }.filter { hit(it.text) }
-                .forEach { add(SearchHit(if (it.allDay) SearchKind.DATE else SearchKind.TASK, it.id, it.text)) }
-            data.notes.sortedByDescending { it.updatedAt }.forEach { n -> noteHit(n, q, photoText)?.let(::add) }
-            data.parcels.filter { hit(it.title, it.code) }
-                .forEach { add(SearchHit(SearchKind.PARCEL, it.id, it.title)) }
-            data.habits.filter { hit(it.title) }
-                .forEach { add(SearchHit(SearchKind.HABIT, it.id, it.title)) }
+            data.tasks.sortedBy { it.done }.forEach { t ->
+                val s = score(t.text, t.notes, t.place)
+                if (s > 0) add(SearchHit(if (t.allDay) SearchKind.DATE else SearchKind.TASK, t.id, t.text, score = s))
+            }
+            data.notes.sortedByDescending { it.updatedAt }.forEach { n -> noteHit(n, query, photoText)?.let(::add) }
+            data.parcels.forEach { p -> score(p.title, p.code).takeIf { it > 0 }?.let { add(SearchHit(SearchKind.PARCEL, p.id, p.title, score = it)) } }
+            data.habits.forEach { h -> score(h.title).takeIf { it > 0 }?.let { add(SearchHit(SearchKind.HABIT, h.id, h.title, score = it)) } }
         }
     }
 
@@ -60,15 +69,20 @@ object NotesSearch {
     /** Le foto della nota: quelle in cima e quelle messe nel testo. */
     fun photosOf(n: Note): List<String> = (n.photos + n.text.lines().mapNotNull(NoteLines::imagePath)).distinct()
 
-    private fun noteHit(n: Note, q: String, photoText: Map<String, String>): SearchHit? {
+    private fun noteHit(n: Note, query: String, photoText: Map<String, String>): SearchHit? {
         val title = n.title.ifEmpty { "Nota" }
-        // La riga trovata anche quando c'è nel titolo, se il titolo non basta (una riga sola sotto, come nella card).
-        noteLines(n).firstOrNull { normalize(it).contains(q) }?.let { return SearchHit(SearchKind.NOTE, n.id, title, snippet(it, q)) }
-        if (normalize(n.plainTitle).contains(q) || (n.emoji != null && normalize(n.title).contains(q))) return SearchHit(SearchKind.NOTE, n.id, title)
-        photosOf(n).asSequence().mapNotNull { photoText[it] }.flatMap { it.lineSequence() }
-            .firstOrNull { normalize(it).contains(q) }
-            ?.let { return SearchHit(SearchKind.NOTE, n.id, title, snippet(it.trim(), q), inPhoto = true) }
-        return null
+        val lines = noteLines(n)
+        // La riga con più parole cercate, anche quando c'è nel titolo (una riga sola sotto, come nella card).
+        fun bestLine(candidates: List<String>) = candidates.map { it to SearchMatch.count(it, query) }
+            .filter { it.second > 0 }.maxByOrNull { it.second }?.first
+        val head = if (n.emoji != null) n.title else n.plainTitle
+        val s = SearchMatch.score(query, head, lines.joinToString("\n"))
+        if (s > 0) return SearchHit(SearchKind.NOTE, n.id, title, bestLine(lines)?.let { snippet(it, query) }, score = s)
+        val photoLines = photosOf(n).asSequence().mapNotNull { photoText[it] }.flatMap { it.lineSequence() }.map { it.trim() }.filter { it.isNotEmpty() }.toList()
+        if (photoLines.isEmpty()) return null
+        val sp = SearchMatch.score(query, head, lines.joinToString("\n"), photoLines.joinToString("\n"))
+        if (sp == 0) return null
+        return SearchHit(SearchKind.NOTE, n.id, title, bestLine(photoLines)?.let { snippet(it, query) }, inPhoto = true, score = sp)
     }
 
     /**
@@ -78,7 +92,7 @@ object NotesSearch {
     fun snippet(line: String, query: String, max: Int = 70): String {
         val text = line.trim()
         if (text.length <= max) return text
-        val at = matchRange(text, query)?.first ?: 0
+        val at = SearchMatch.ranges(text, query).firstOrNull()?.first ?: 0
         val start = (at - max / 3).coerceIn(0, text.length - max)
         val end = start + max
         return (if (start > 0) "…" else "") + text.substring(start, end).trim() + (if (end < text.length) "…" else "")
