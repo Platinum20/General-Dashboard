@@ -1204,7 +1204,7 @@ private fun CommentsPeek(thread: CommentThread?, onOpen: () -> Unit) {
     val first = thread?.comments?.firstOrNull()
     if (thread != null && thread.loaded && thread.disabled) return
     Column(
-        Modifier.fillMaxWidth().clip(MaterialTheme.shapes.large).background(MaterialTheme.colorScheme.card)
+        Modifier.fillMaxWidth().clip(MaterialTheme.shapes.large).background(MaterialTheme.colorScheme.glassCard)
             .bouncyPress(0.98f).clickable(onClickLabel = "Apri i commenti", onClick = onOpen)
             .padding(horizontal = 14.dp, vertical = 10.dp),
     ) {
@@ -1235,7 +1235,7 @@ private fun PillButton(
     Row(
         modifier
             .clip(CircleShape)
-            .background(if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.card)
+            .background(if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.glassTile)
             .bouncyPress()
             .clickable(onClickLabel = description, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp),
@@ -1296,7 +1296,7 @@ private fun Description(stream: YtStream) {
                     indication = null,
                     onClickLabel = if (expanded) "Riduci la descrizione" else "Leggi tutta la descrizione",
                 ) { expanded = !expanded }
-                .clip(MaterialTheme.shapes.large).background(MaterialTheme.colorScheme.card)
+                .clip(MaterialTheme.shapes.large).background(MaterialTheme.colorScheme.glassCard)
                 .padding(horizontal = 14.dp, vertical = 12.dp),
         ) {
             Text(
@@ -1337,7 +1337,7 @@ private fun Chapters(chapters: List<YtChapter>) {
             val chapter = chapters[i]
             val now = i == current
             Column(
-                Modifier.widthIn(max = 200.dp).clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.card)
+                Modifier.widthIn(max = 200.dp).clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.glassTile)
                     .then(if (now) Modifier.border(1.dp, accent, MaterialTheme.shapes.medium) else Modifier)
                     .bouncyPress(0.96f).clickable { YtPlayer.seekTo(context, chapter.startSec * 1000L) }
                     .padding(horizontal = 12.dp, vertical = 8.dp),

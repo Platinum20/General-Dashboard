@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.652.0
+**Vetro anche sui tasti**
+- I filtri di Cerca sono di vetro, quello scelto resta pieno
+- Di vetro anche i tasti secondari (Riprova, Apri, Salva nel calendario…) e le schede in parti uguali
+- Nell'editor delle note: tasti della barra sopra la tastiera, tasti tondi in basso, blocchi, tabelle e note vocali
+- Nel video: capitoli, righe e scelte della pagina
+
 ## 1.651.0
 **Contorno del tema preciso**
 - Il bordo del tema scelto ha lo stesso spessore tutto intorno, anche in alto: niente più taglio

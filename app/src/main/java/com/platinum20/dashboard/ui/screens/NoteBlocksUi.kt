@@ -147,8 +147,8 @@ internal fun NotePageRow(emoji: String, title: String, modifier: Modifier, onOpe
             .padding(vertical = 3.dp)
             .height(44.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(colors.card)
-            .border(cardBorder(), RoundedCornerShape(12.dp))
+            .background(colors.glassCard)
+            .border(glassRim(), RoundedCornerShape(12.dp))
             .combinedClickable(onClick = onOpen, onLongClick = onLongPress)
             .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -179,8 +179,8 @@ internal fun NoteBookmarkCard(url: String, card: LinkPreview.Card?, fallback: St
             .padding(vertical = 4.dp)
             .height(76.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(colors.card)
-            .border(cardBorder(), RoundedCornerShape(12.dp))
+            .background(colors.glassCard)
+            .border(glassRim(), RoundedCornerShape(12.dp))
             .combinedClickable(onClick = onOpen, onLongClick = onLongPress),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -274,8 +274,8 @@ internal fun NoteBoard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(8.dp))
-                            .background(colors.card)
-                            .border(cardBorder(), RoundedCornerShape(8.dp))
+                            .background(colors.glassCard)
+                            .border(glassRim(), RoundedCornerShape(8.dp))
                             .combinedClickable(enabled = !readOnly, onClick = { onCard(c) }, onLongClick = { onCard(c) })
                             .padding(horizontal = 8.dp, vertical = 7.dp),
                     )
@@ -322,7 +322,7 @@ internal fun BoardTextDialog(title: String, start: String, onDone: (String) -> U
                     Box(
                         Modifier
                             .fillMaxWidth()
-                            .border(cardBorder(), RoundedCornerShape(12.dp))
+                            .border(glassRim(), RoundedCornerShape(12.dp))
                             .padding(horizontal = 12.dp, vertical = 10.dp),
                     ) {
                         if (value.text.isEmpty()) Text("Cosa c'è da fare", style = style, color = colors.onSurfaceVariant.copy(alpha = 0.6f))

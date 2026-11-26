@@ -476,7 +476,7 @@ private fun SearchFilters(selected: SearchFilter, onPick: (SearchFilter) -> Unit
         SearchFilter.entries.filter { it != SearchFilter.AGENDA }.forEach { f ->
             val on = selected == f || (f == SearchFilter.NOTES && selected == SearchFilter.AGENDA)
             val weight by animateFloatAsState(if (on) 3.4f else 1f, Motion.settle(), label = "filtro")
-            val container by animateColorAsState(if (on) colors.onSurface else colors.card, Motion.settle(), label = "filtroFondo")
+            val container by animateColorAsState(if (on) colors.onSurface else colors.glassTile, Motion.settle(), label = "filtroFondo")
             val content by animateColorAsState(if (on) colors.surface else colors.onSurfaceVariant, Motion.settle(), label = "filtroTesto")
             Surface(
                 selected = on,
@@ -484,7 +484,7 @@ private fun SearchFilters(selected: SearchFilter, onPick: (SearchFilter) -> Unit
                 shape = CircleShape,
                 color = container,
                 contentColor = content,
-                border = if (on) null else BorderStroke(1.dp, colors.outlineVariant),
+                border = if (on) null else glassRim(),
                 modifier = Modifier.weight(weight).height(36.dp).bouncyPress(0.94f),
             ) {
                 Row(
