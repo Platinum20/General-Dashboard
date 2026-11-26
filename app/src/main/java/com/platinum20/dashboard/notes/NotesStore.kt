@@ -639,7 +639,8 @@ object NotesStore {
             val existing = d.notes.firstOrNull { it.id == noteId }
             if (existing != null && existing.text == text) return@update d
             val now = System.currentTimeMillis()
-            val note = Note(noteId, text, now, existing?.pinned ?: false, existing?.createdAt ?: now, existing?.photos.orEmpty(), emoji = existing?.emoji, cover = existing?.cover, about = existing?.about)
+            // Tutto il resto della nota resta com'era (2026-11-26): scrivere in una nota archiviata la tirava fuori dall'archivio.
+            val note = existing?.copy(text = text, updatedAt = now) ?: Note(noteId, text, now, createdAt = now)
             d.copy(notes = listOf(note) + d.notes.filter { it.id != noteId })
         }
         return noteId

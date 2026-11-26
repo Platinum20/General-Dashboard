@@ -11,6 +11,8 @@ class NoteHistory(private val max: Int = 200) {
     private val ahead = ArrayDeque<Snap>()
     private var lastAt = 0L
     private var typing = false
+    /** Dove stava il cursore dopo l'ultima lettera: una lettera scritta altrove è un passo nuovo (2026-11-26). */
+    private var lastEnd = -1
 
     val canUndo: Boolean get() = back.isNotEmpty()
     val canRedo: Boolean get() = ahead.isNotEmpty()
@@ -20,13 +22,14 @@ class NoteHistory(private val max: Int = 200) {
         if (before.text == after.text) return
         val c = after.start - 1
         val oneLetter = after.text.length == before.text.length + 1 && c in after.text.indices && !after.text[c].isWhitespace()
-        if (!(oneLetter && typing && now - lastAt < PAUSE)) {
+        if (!(oneLetter && typing && now - lastAt < PAUSE && after.start - 1 == lastEnd)) {
             back.addLast(before)
             if (back.size > max) back.removeFirst()
         }
         ahead.clear()
         lastAt = now
         typing = oneLetter
+        lastEnd = after.start
     }
 
     fun undo(current: Snap): Snap? {
