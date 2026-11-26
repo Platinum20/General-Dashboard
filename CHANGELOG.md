@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.652.0
+**Una X per svuotare il +**
+- Quando scrivi dal +, sopra la freccia compare una X: un tocco e cancella tutto quello che hai scritto
+- Compare solo se c'è qualcosa; tenere premuto e trascinare la freccia per dettare funzionano come prima
+
 ## 1.651.0
 **Contorno del tema preciso**
 - Il bordo del tema scelto ha lo stesso spessore tutto intorno, anche in alto: niente più taglio
