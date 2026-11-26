@@ -80,7 +80,7 @@ internal fun showArticleBubble(context: Context, link: SavedLink.Article, openRo
         *(extra + listOfNotNull(
             (read ?: openRoute?.let { o -> { SavedLinks.open(context, link, o) } })?.let { Slot.read(it) },
             saveSlot(context, link),
-            Slot.shareText(context, link.url, link = true),
+            articleShare(context, link.url, link.title, link.source),
         )).toTypedArray(),
     )
 }
@@ -160,8 +160,10 @@ internal fun showMediaBubble(
             else Slot.play { openResumeItem(context, item, openRoute = openRoute) },
         )
         add(saveSlot(context, link))
-        if (item.kind == ResumeKind.YOUTUBE || item.kind == ResumeKind.VIDEO) {
-            add(Slot.shareText(context, SavedLinks.shareText(link), link = true))
+        // Condividi in ogni media con un link che si apre fuori (Spotify compreso), più podcast e radio (2026-11-26).
+        val url = mediaUrl(item)
+        if (url != null || item.kind == ResumeKind.PODCAST || item.kind == ResumeKind.RADIO) {
+            mediaShare(context, item.title, item.subtitle, url)?.let(::add)
         }
         if (remove != null) add(remove)
         else if (playlistId != null) playlistAway(context, playlistId, item)?.let(::add)

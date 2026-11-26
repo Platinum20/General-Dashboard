@@ -163,7 +163,6 @@ fun ReaderScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val pdfScope = androidx.compose.runtime.rememberCoroutineScope()
     val url = viewModel.url
     val loaded = (state as? ReaderUiState.Loaded)?.article
     val title = loaded?.title?.takeIf { it.isNotBlank() } ?: fallbackTitle
@@ -212,16 +211,15 @@ fun ReaderScreen(
         },
         more = listOf(
             Slot.save(saved) { if (saved) SavedLinks.remove(context, link) else SavedLinks.save(context, link) },
-            // Condividi: Copia il link · Salva come PDF (il testo dell'articolo) · Manda a… (Antonio 2026-11-24).
-            Slot.share(
-                copy = { Clip.copy(context, "Link", url, "Link copiato") },
-                copyTitle = "Copia il link",
-                copyDetail = "da incollare altrove",
-                pdf = loaded?.let { article -> { articlePdf(context, pdfScope, title, article.spokenParagraphs().joinToString("\n\n")) } },
-            ) {
-                val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, url).putExtra(Intent.EXTRA_SUBJECT, title)
-                runCatching { context.startActivity(Intent.createChooser(send, null)) }
-            },
+            // Condividi: PDF dell'articolo · Copia · Manda a…, con titolo, fonte e link (Antonio 2026-11-26).
+            Slot.shareText(
+                context, com.platinum20.dashboard.share.ShareTexts.article(title, sourceName, url),
+                pdf = {
+                    loaded?.let { article -> pdfToDownloads(context, title, article.spokenParagraphs().joinToString("\n\n")) }
+                        ?: articlePdfFromWeb(context, url, title)
+                },
+                pdfDetail = "l'articolo intero, nei Download",
+            ),
         ),
         scroll = scroll,
         topExtra = { ReadingProgress { if (scroll.maxValue in 1 until Int.MAX_VALUE) scroll.value / scroll.maxValue.toFloat() else 0f } },
@@ -522,11 +520,3 @@ private fun List<TextRun>.toAnnotated(linkColor: Color, onOpenLink: (String) -> 
     }
 
 /** L'articolo come PDF nei Download, come "Salva come PDF" delle note. */
-private fun articlePdf(context: android.content.Context, scope: kotlinx.coroutines.CoroutineScope, title: String, body: String) {
-    scope.launch {
-        val file = runCatching { com.platinum20.dashboard.notes.NotePdf.make(context, title, body, emptyList()) }.getOrNull()
-        if (file == null) { com.platinum20.dashboard.capture.CaptureFeedback.tell(context, "Il PDF non si è fatto"); return@launch }
-        val saved = com.platinum20.dashboard.notes.NotePdf.saveToDownloads(context, file)
-        com.platinum20.dashboard.capture.CaptureFeedback.tell(context, if (saved) "PDF nei Download" else "Il PDF non si è salvato", androidx.compose.material.icons.Icons.Outlined.PictureAsPdf)
-    }
-}

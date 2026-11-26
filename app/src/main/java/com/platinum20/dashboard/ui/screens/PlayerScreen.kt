@@ -450,16 +450,17 @@ private fun PlayerTools(
         }
         // La musica di YouTube suona in solo audio: da qui si passa al video, dallo stesso punto.
         ytLink?.let { link -> PlayerTool(Icons.Outlined.OndemandVideo, "Video") { YtPlayer.play(context, link) } }
-        // Condividi come in ogni fumetto: Copia il link · Manda a…, non subito il foglio di Android.
-        if (!now.live) PlayerTool(Icons.Outlined.Share, "Condividi") {
-            val text = seed?.webUrl ?: listOf(now.title, now.subtitle).filter { it.isNotBlank() }.joinToString(" · ")
-            val link = seed?.webUrl != null
+        // Condividi come in ogni fumetto (Antonio 2026-11-26): titolo, chi e il link che si apre fuori, radio compresa.
+        PlayerTool(Icons.Outlined.Share, "Condividi") {
+            val item = com.platinum20.dashboard.media.Playback.currentAsItem()
+            val url = item?.let(::mediaUrl) ?: seed?.webUrl
+            val text = com.platinum20.dashboard.share.ShareTexts.media(now.title, now.subtitle, url)
             ActionBubble.show(
                 BubbleHead("Condividi", now.title),
                 *shareRows(
-                    copy = { Clip.copy(context, if (link) "Link" else "Testo", text, if (link) "Link copiato" else "Testo copiato") },
-                    copyTitle = if (link) "Copia il link" else "Copia il testo",
-                    copyDetail = "da incollare altrove",
+                    copy = { Clip.copy(context, "Testo", text, "Copiato") },
+                    copyTitle = "Copia",
+                    copyDetail = com.platinum20.dashboard.share.ShareTexts.preview(text),
                     pdf = null,
                 ) { runCatching { shareText(context, text) } }.toTypedArray(),
             )

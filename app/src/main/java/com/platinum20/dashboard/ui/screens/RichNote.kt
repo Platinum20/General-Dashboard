@@ -1142,7 +1142,7 @@ internal fun RichNoteField(
                                             val title = (card?.title ?: NoteLines.host(url)).replace('[', '(').replace(']', ')')
                                             replaceLine(line.index, "[$title]($url)")
                                         },
-                                        Slot.shareText(context, url, link = true),
+                                        Slot.shareText(context, com.platinum20.dashboard.share.ShareTexts.lines(card?.title, url)),
                                         Slot.remove { undoable("Anteprima tolta") { replaceLine(line.index, null) } },
                                     )
                                 }),

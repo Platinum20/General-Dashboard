@@ -98,27 +98,20 @@ internal fun docLine(doc: Document, today: LocalDate = LocalDate.now()): String 
  * Elimina chiede conferma: con il documento vanno via anche le foto.
  */
 internal fun docActions(context: android.content.Context, scope: kotlinx.coroutines.CoroutineScope, doc: Document, open: (() -> Unit)?, extra: List<BubbleAction> = emptyList()): Array<BubbleAction> =
-    (listOfNotNull(
-        docPdfChoice(context, scope, doc),
-    ) + extra + listOfNotNull(
+    (extra + listOfNotNull(
         open?.let { Slot.open(it) },
-        doc.number?.takeIf { it.isNotBlank() }?.let { number ->
-            Slot.share(copy = { Clip.copy(context, "Numero del documento", number, "Numero copiato") }, copyTitle = "Copia il numero", copyDetail = "da incollare altrove") {
-                runCatching { shareText(context, number) }
-            }
-        },
+        // Condividi come ovunque (Antonio 2026-11-26): PDF fronte e retro, Copia il numero, Manda a… = il PDF.
+        Slot.share(
+            copy = doc.number?.takeIf { it.isNotBlank() }?.let { number -> { Clip.copy(context, "Numero del documento", number, "Numero copiato") } },
+            copyTitle = "Copia il numero",
+            copyDetail = doc.number.orEmpty(),
+            pdf = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) ({ exportDocPdf(context, scope, doc, save = true) }) else null,
+            pdfDetail = "fronte e retro, nei Download",
+            sendDetail = "il PDF del documento",
+        ) { exportDocPdf(context, scope, doc, save = false) },
         // Con il documento vanno via anche le foto, senza Annulla: si tocca due volte.
         Slot.delete(confirm = "Tocca ancora: sparisce con le sue foto") { DocumentsStore.delete(doc.id) },
     )).toTypedArray()
-
-/** "PDF fronte e retro": condividerlo o salvarlo sono la stessa cosa, una fila di scelte. */
-internal fun docPdfChoice(context: android.content.Context, scope: kotlinx.coroutines.CoroutineScope, doc: Document) = choice(
-    "PDF fronte e retro",
-    *listOfNotNull(
-        BubbleChip("Condividi", icon = Icons.Outlined.Share) { exportDocPdf(context, scope, doc, save = false) },
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) BubbleChip("Salva", icon = Icons.Outlined.Download) { exportDocPdf(context, scope, doc, save = true) } else null,
-    ).toTypedArray(),
-)
 
 /** La testata del documento. */
 internal fun docHead(doc: Document) = BubbleHead("Documento", doc.title)

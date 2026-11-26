@@ -18,10 +18,12 @@ data class RadioStation(
     val tags: String,
     val country: String,
     val bitrate: Int,
+    /** Il sito della radio, per Condividi (vuoto se l'elenco non lo dà). */
+    val homepage: String = "",
 ) {
     fun toJson(): JSONObject = JSONObject()
         .put("id", id).put("name", name).put("url", streamUrl).put("logo", logo)
-        .put("tags", tags).put("country", country).put("bitrate", bitrate)
+        .put("tags", tags).put("country", country).put("bitrate", bitrate).put("home", homepage)
 
     companion object {
         fun fromJson(o: JSONObject) = RadioStation(
@@ -32,6 +34,7 @@ data class RadioStation(
             tags = o.optString("tags"),
             country = o.optString("country"),
             bitrate = o.optInt("bitrate"),
+            homepage = o.optString("home"),
         )
     }
 }
@@ -68,6 +71,7 @@ object RadioApi {
                 tags = o.optString("tags").split(',').filter { it.isNotBlank() }.take(3).joinToString(", "),
                 country = o.optString("country"),
                 bitrate = o.optInt("bitrate"),
+                homepage = o.optString("homepage").trim(),
             )
         }.distinctBy { it.name.lowercase() }
     }

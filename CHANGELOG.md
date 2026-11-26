@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.645.0
+**Condividi uguale ovunque**
+- Ogni Condividi apre lo stesso fumetto: PDF (dove serve), Copia, Manda a…, e sotto Copia vedi cosa copi
+- Eventi con giorno, orario e luogo; Manda a… allega l'invito che si aggiunge al calendario con un tocco
+- Turni con orario e compagni (mai il guadagno), treni con tratta, orari, carrozza e posto
+- Promemoria con data e luogo, pacchi con corriere, codice e link per seguirli
+- Le note tenute premute hanno PDF e foto come dentro la nota; le liste escono con ☐ e ☑
+- Spotify si condivide anche dal fumetto (brani, album, playlist, artisti), podcast e radio col loro link
+- La pagina del video YouTube passa dal fumetto, con titolo, canale e link
+- Notizie: PDF dell'articolo anche senza aprirlo, e Copia dà titolo, fonte e link
+- Mail con mittente, oggetto e data, e il PDF; documenti con PDF fronte e retro e Copia il numero
+
 ## 1.644.0
 **Cerca rifatta**
 - Le parole si trovano in qualunque ordine e anche con un errore: "turno marco" o "spotfy" trovano lo stesso
