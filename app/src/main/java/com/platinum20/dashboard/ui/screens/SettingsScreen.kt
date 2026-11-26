@@ -685,7 +685,7 @@ private fun ThemePicker(selected: AppTheme, onSelect: (AppTheme) -> Unit) {
                     Modifier
                         .weight(1f)
                         .bouncyPress(0.94f)
-                        .clip(MaterialTheme.shapes.large)
+                        .clip(ThemeTileShape) // Stessa curva della miniatura: il contorno in alto non viene tagliato.
                         .clickable { onSelect(option) },
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -964,7 +964,7 @@ private fun VoicePicker() {
                     Modifier
                         .weight(1f)
                         .bouncyPress(0.94f)
-                        .clip(MaterialTheme.shapes.large)
+                        .clip(ThemeTileShape)
                         .clickable {
                             haptic(Haptic.TICK)
                             RecapSpeaker.retryNeural()
@@ -983,12 +983,10 @@ private fun VoicePicker() {
                         Modifier
                             .fillMaxWidth()
                             .height(76.dp)
-                            // Anello sempre della stessa misura: cambia solo il colore, il riquadro non si sposta.
-                            .border(2.dp, ring, MaterialTheme.shapes.large)
-                            .padding(4.dp)
-                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.medium)
-                            .clip(MaterialTheme.shapes.medium)
-                            .background(MaterialTheme.colorScheme.card)
+                            // Un solo contorno, come le miniature dei temi.
+                            .clip(ThemeTileShape)
+                            .background(MaterialTheme.colorScheme.glassCard)
+                            .border(if (on) 2.5.dp else 1.dp, ring, ThemeTileShape)
                             .padding(horizontal = 10.dp),
                         contentAlignment = Alignment.Center,
                     ) {

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.651.0
+**Contorno del tema preciso**
+- Il bordo del tema scelto ha lo stesso spessore tutto intorno, anche in alto: niente più taglio
+- Lo stesso contorno pulito anche nella scelta della voce delle News
+- Di vetro anche i quadratini delle icone (Impostazioni, card della Home) e i tasti tondi
+
 ## 1.650.0
 **Cursore dove tocchi nelle note**
 - Toccando dopo la fine di una frase il cursore va in fondo a quella riga, non più all'inizio della riga sotto (voci, liste, titoli compresi)
