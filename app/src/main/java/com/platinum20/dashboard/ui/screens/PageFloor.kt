@@ -65,10 +65,18 @@ object Glow {
         }
     }
 
-    fun blobs(scheme: ColorScheme, rainy: Boolean): List<Blob> = blobs(
-        scheme.primaryContainer, scheme.errorContainer,
-        dark = scheme.background.luminance() < 0.5f, rainy = rainy, strong = scheme.primary,
-    )
+    fun blobs(scheme: ColorScheme, rainy: Boolean): List<Blob> {
+        val dark = scheme.background.luminance() < 0.5f
+        return blobs(liftedBase(scheme.primaryContainer, scheme.primary, dark), scheme.errorContainer,
+            dark = dark, rainy = rainy, strong = scheme.primary)
+    }
+
+    /**
+     * Al buio un colore principale già quasi nero (il blu notte di Canvas e Puro) scurito ancora sparirebbe: lo si
+     * schiarisce verso l'accento finché l'alone si vede come col marrone di Material You (1.649, tutti i temi).
+     */
+    fun liftedBase(container: Color, accent: Color, dark: Boolean): Color =
+        if (dark && container.luminance() < 0.06f) lerp(container, accent, 0.35f) else container
 
     /** Piove adesso? Basta il codice del meteo attuale (pioggia, pioviggine, temporale). */
     fun rainy(code: Int?): Boolean =

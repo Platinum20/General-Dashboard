@@ -48,4 +48,13 @@ class GlowTest {
         assertTrue(b[0].color.blue - b[0].color.red > pastel.blue - pastel.red)
         assertTrue(b[0].color.blue > paper.blue - 0.2f)
     }
+
+    @Test fun alBuioIlBluNotteSiSchiarisceIlMarroneNo() {
+        val navy = Color(0xFF26326E)
+        val lifted = Glow.liftedBase(navy, Color(0xFF9AABFF), dark = true)
+        assertTrue(lifted.luminance() > navy.luminance())
+        val brown = Color(0xFF73482C)
+        assertEquals(brown, Glow.liftedBase(brown, Color(0xFFFFB68A), dark = true))
+        assertEquals(navy, Glow.liftedBase(navy, Color(0xFF9AABFF), dark = false))
+    }
 }
