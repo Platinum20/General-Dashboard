@@ -160,11 +160,17 @@ private fun RowScope.TableCell(
         BasicTextField(
             value = local,
             onValueChange = { v ->
+                // La casella va a capo da sola (2026-11-26) ma resta una riga: Invio passa alla casella dopo.
+                if ('\n' in v.text) {
+                    onNext(r, c)
+                    return@BasicTextField
+                }
                 local = v
                 if (v.text != text) onCell(r, c, v.text)
             },
             readOnly = readOnly,
-            singleLine = true,
+            singleLine = false,
+            visualTransformation = InlineMarks(colors.primary),
             textStyle = style,
             cursorBrush = SolidColor(colors.primary),
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Next),
@@ -179,7 +185,7 @@ private fun RowScope.TableCell(
                     }
                 },
             decorationBox = { field ->
-                Box(Modifier.fillMaxSize().padding(horizontal = 10.dp), contentAlignment = Alignment.CenterStart) { field() }
+                Box(Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 6.dp), contentAlignment = Alignment.CenterStart) { field() }
             },
         )
         if (!focused) {

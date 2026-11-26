@@ -37,6 +37,8 @@ import androidx.compose.ui.test.performTextInputSelection
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.swipeDown
+import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.core.view.ViewCompat
@@ -793,6 +795,23 @@ class NoteEditorDeviceCheck {
         Log.i(TAG, "tocco sotto: ${kinds()}")
         assertEquals(2, kinds().size)
         assertEquals(NoteLines.Kind.CHECK, kinds()[1])
+    }
+
+    /** La guida (2026-11-26): ogni nota da cima a fondo, per vedere tabelle che vanno a capo, colonne e spazi. */
+    @Test
+    fun guideNotesLook() {
+        val ids = com.platinum20.dashboard.notes.ExampleNotes.GuideIds(1, 2, 3, 4, 5)
+        com.platinum20.dashboard.notes.ExampleNotes.guide(ids, System.currentTimeMillis(), "", "", "").forEachIndexed { i, n ->
+            NotesStore.data.value.notes.forEach { NotesStore.deleteNote(it.id) }
+            open(n.text, "guida_$i")
+            settle(1200)
+            shot("cima")
+            repeat(3) { k ->
+                compose.onRoot().performTouchInput { swipeUp(startY = bottom * 0.8f, endY = bottom * 0.25f) }
+                settle(900)
+                shot("giu_$k")
+            }
+        }
     }
 
     private companion object {

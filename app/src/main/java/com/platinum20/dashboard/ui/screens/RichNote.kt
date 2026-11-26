@@ -113,6 +113,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TextFieldValue
@@ -252,6 +255,35 @@ private val BREATH_SIZE = 25.sp
 /** L'ultima riga della tabella mentre ci si scrive (1.590): la riga più lo spazio per il + sotto. */
 private val TALL_SIZE = 42.sp
 
+/** L'aria sopra un titoletto e sotto un riquadro o una tabella (2026-11-26): il carattere invisibile è più grande. */
+private val HEADING_AIR = 34.sp
+private val TABLE_AIR = 8.dp
+private val BLOCK_AIR = 8.dp
+private val AFTER_BOX_AIR = 34.sp
+
+/**
+ * Dove comincia il testo vero di una riga del campo, sotto l'aria (il carattere invisibile più grande): la linea di
+ * base meno l'altezza di una riga di testo normale (16 sp circa, come nel resto dell'editor).
+ */
+internal fun textTopPx(l: androidx.compose.ui.text.TextLayoutResult, row: Int, density: androidx.compose.ui.unit.Density): Float {
+    val font = l.layoutInput.style.fontSize.let { if (it.isSp) it else 16.sp }
+    val ascent = with(density) { font.toPx() } * 1.0f
+    return (l.getLineBaseline(row) - ascent).coerceIn(l.getLineTop(row), l.getLineBottom(row))
+}
+
+/** Quanto è grande il carattere dell'aria in cima a una riga di testo: dipende da cosa è e da cosa c'è sopra. */
+internal fun lineAir(line: NoteLines.Line, above: NoteLines.Line?): androidx.compose.ui.unit.TextUnit {
+    // Sotto ogni pezzo inserito (riquadro, tabella, colonne, bacheca, vocale, link…) e sopra un riquadro: la stessa aria.
+    val afterBox = above != null && (above.kind == NoteLines.Kind.CALLOUT || above.isBlock)
+    val boxHere = above != null && line.kind == NoteLines.Kind.CALLOUT
+    val heading = line.kind == NoteLines.Kind.HEADING && line.index > 0
+    return when {
+        heading -> HEADING_AIR
+        afterBox || boxHere -> AFTER_BOX_AIR
+        else -> BREATH_SIZE
+    }
+}
+
 /** Lo spazio dell'icona davanti a un link "@" (1.596) e l'aria in fondo alla bolla. */
 private val MENTION_ICON_SPACE = 17.sp
 private val MENTION_END_SPACE = 5.sp
@@ -361,10 +393,13 @@ internal fun RichNoteField(
     // Quanto deve essere alta la riga nascosta sotto due colonne, sotto-nota, anteprima, bacheca (1.590): la misura il
     // pezzo disegnato sopra, la chiave è il testo della riga.
     var blockSp by remember { mutableStateOf(mapOf<String, Float>()) }
-    fun fit(key: String, linePx: Float, needPx: Int) {
-        if (needPx <= 0 || linePx <= 0f || kotlin.math.abs(needPx - linePx) < 3f) return
+    // [extra] = gli sp in più che la riga ha comunque (l'ultima riga della tabella col + sotto): non si contano.
+    fun fit(key: String, linePx: Float, needPx: Int, extra: Float = 0f) {
+        if (needPx <= 0 || linePx <= 0f) return
         val cur = blockSp[key] ?: BREATH_SIZE.value
-        val next = (cur * needPx / linePx).coerceIn(8f, 4000f)
+        val own = linePx * cur / (cur + extra)
+        if (kotlin.math.abs(needPx - own) < 3f) return
+        val next = (needPx * (cur + extra) / linePx).coerceIn(8f, 4000f)
         if (kotlin.math.abs(next - cur) > 0.3f) blockSp = blockSp.filterKeys { it in value.text } + (key to next)
     }
     var boardDialog by remember { mutableStateOf<Triple<Int, Int, String>?>(null) }
@@ -488,6 +523,9 @@ internal fun RichNoteField(
     val foundNow = SpanStyle(background = colors.primary.copy(alpha = 0.5f))
     val accent = colors.primary
     val marker = androidx.compose.ui.graphics.Color(0x66FFD54F)
+    // Le caselle della tabella vanno a capo (2026-11-26): si misura il testo per fare la riga alta quanto serve.
+    val cellMeasurer = rememberTextMeasurer()
+    val cellStyle = MaterialTheme.typography.bodyMedium
     // Mentre si scrive in una tabella la sua ultima riga è più alta: sotto ci sta il + per una riga nuova (1.590).
     val tallAt = activeTable?.let { NoteTable.blockAt(value.text, it) }?.let { NoteLines.parse(value.text)[it.last].start }
     // Le parti intelligenti (2026-11-23): #etichette in blu, date e codici di spedizione sottolineati, codici in una bolla.
@@ -655,14 +693,15 @@ internal fun RichNoteField(
             shown.lines.filter { it.kind == NoteLines.Kind.CALLOUT && !hiddenLine(it) && shown.toShown(it.start) < drawn }.forEach { line ->
                 val first = l.getLineForOffset(shown.toShown(line.start))
                 val last = l.getLineForOffset(shown.toShown(line.end).coerceAtMost(drawn))
-                val top = l.getLineTop(first)
-                val h = with(density) { (l.getLineBottom(last) - top).toDp() }
+                // Dal testo, non dall'aria sopra la riga (2026-11-26): il riquadro ha lo stesso margine sopra e sotto.
+                val pad = with(density) { 7.dp.toPx() }
+                val top = (textTopPx(l, first, density) - pad).coerceAtLeast(l.getLineTop(first))
+                val h = with(density) { (l.getLineBottom(last) + pad - top).toDp() }
                 Box(
                     Modifier
                         .offset { IntOffset(0, top.toInt()) }
                         .fillMaxWidth()
-                        .height(h + 4.dp)
-                        .offset(y = (-2).dp)
+                        .height(h)
                         .clip(RoundedCornerShape(12.dp))
                         .background(colors.glassCard),
                 )
@@ -961,7 +1000,8 @@ internal fun RichNoteField(
                 val at = shown.toShown(line.start)
                 val first = l.getLineForOffset(at)
                 val last = l.getLineForOffset(shown.toShown(line.end).coerceAtMost(drawn))
-                val top = l.getLineTop(first)
+                // Barra ed emoji partono dal testo, non dall'aria sopra la riga (2026-11-26).
+                val top = if (line.kind == NoteLines.Kind.DIVIDER) l.getLineTop(first) else textTopPx(l, first, density)
                 val height = with(density) { (l.getLineBottom(if (line.kind == NoteLines.Kind.QUOTE) last else first) - top).toDp() }
                 val textX = l.getHorizontalPosition(shown.toShown(line.contentStart).coerceAtMost(drawn), true)
                 val left = if (line.kind == NoteLines.Kind.DIVIDER) 0f else (textX - with(density) { INDENT.toPx() }).coerceAtLeast(0f)
@@ -1121,10 +1161,14 @@ internal fun RichNoteField(
                 val row = l.getLineForOffset(shown.toShown(line.start))
                 val top = l.getLineTop(row)
                 val bottom = l.getLineBottom(row)
+                // Sopra un pezzo inserito dopo il testo un po' d'aria (2026-11-26), come sotto; fra due uguali no.
+                val above = shown.lines.subList(0, line.index.coerceAtMost(shown.lines.size)).lastOrNull { !hiddenLine(it) }
+                val gap = if (above != null && above.kind != line.kind && !above.isBlock) BLOCK_AIR else 0.dp
                 val place = Modifier
                     .offset { IntOffset(0, top.toInt()) }
                     .fillMaxWidth()
                     .onSizeChanged { fit(raw, bottom - top, it.height) }
+                    .padding(top = gap)
                 androidx.compose.runtime.key("b${line.index}:${line.kind}") {
                     when (line.kind) {
                         NoteLines.Kind.COLUMNS -> {
@@ -1304,10 +1348,31 @@ internal fun RichNoteField(
                 val tops = rows.map { l.getLineTop(l.getLineForOffset(shown.toShown(it.start))) }
                 val bottoms = rows.map { l.getLineBottom(l.getLineForOffset(shown.toShown(it.start))) }
                 val active = activeTable == block.first
-                val heights = rows.indices.map { bottoms[it] - tops[it] }
-                // L'ultima riga, se è alta per il +, ha l'altezza delle altre (o la sua parte, se la tabella ha una riga sola).
-                val lastH = if (!active) heights.last() else heights.dropLast(1).minOrNull() ?: (heights.last() * BREATH_SIZE.value / TALL_SIZE.value)
                 val grid = NoteTable.grid(text, block)
+                // Ogni riga è alta quanto la casella più lunga, che va a capo (2026-11-26: prima il testo usciva dai lati).
+                // Sopra la tabella un po' d'aria, dentro la prima riga.
+                val air = with(density) { TABLE_AIR.toPx() }
+                val plusW = if (active && !readOnly) with(density) { 28.dp.toPx() } else 0f
+                val cellPad = with(density) { 20.dp.toPx() }
+                val needs = rows.indices.map { r ->
+                    val cells = grid.getOrNull(r).orEmpty()
+                    val cellW = ((l.size.width - plusW) / cells.size.coerceAtLeast(1) - cellPad).toInt().coerceAtLeast(1)
+                    val style = cellStyle.copy(fontWeight = if (r == 0) FontWeight.SemiBold else FontWeight.Normal)
+                    val tallest = cells.maxOfOrNull { cell ->
+                        cellMeasurer.measure(NoteFormat.plain(cell).ifEmpty { " " }, style, constraints = Constraints(maxWidth = cellW)).size.height
+                    } ?: 0
+                    tallest + with(density) { 16.dp.toPx() } + if (r == 0) air else 0f
+                }
+                val heightsNow = rows.indices.map { bottoms[it] - tops[it] }
+                SideEffect {
+                    rows.forEachIndexed { i, row ->
+                        val tallRow = active && i == rows.lastIndex
+                        fit(text.substring(row.start, row.end), heightsNow[i], needs[i].toInt(), if (tallRow) TALL_SIZE.value - BREATH_SIZE.value else 0f)
+                    }
+                }
+                val heights = heightsNow.mapIndexed { i, h -> if (i == 0) (h - air).coerceAtLeast(1f) else h }
+                // L'ultima riga, se è alta per il +, è alta quanto il suo testo; sotto resta il posto del +.
+                val lastH = if (!active) heights.last() else (needs.last() - if (rows.size == 1) air else 0f).coerceAtMost(heights.last())
                 fun put(g: List<List<String>>, cell: Pair<Int, Int>? = null) {
                     val t = NoteTable.replace(current.text, block, g)
                     val lines = NoteLines.parse(t)
@@ -1319,11 +1384,11 @@ internal fun RichNoteField(
                     NoteTableBlock(
                         grid = grid,
                         heights = heights.dropLast(1).map { with(density) { it.toDp() } } + with(density) { lastH.toDp() },
-                        total = with(density) { (bottoms.last() - tops.first()).toDp() },
+                        total = with(density) { (bottoms.last() - tops.first() - air).coerceAtLeast(1f).toDp() },
                         active = active,
                         readOnly = readOnly,
                         want = wantCell?.takeIf { it.first == block.first }?.let { it.second to it.third },
-                        modifier = Modifier.offset { IntOffset(0, tops.first().toInt()) }.fillMaxWidth(),
+                        modifier = Modifier.offset { IntOffset(0, (tops.first() + air).toInt()) }.fillMaxWidth(),
                         onWanted = { wantCell = null },
                         onFocus = { focusedNow -> if (focusedNow) activeTable = block.first else if (activeTable == block.first) activeTable = null },
                         onCell = { r, c, v -> put(NoteTable.setCell(NoteTable.grid(current.text, block), r, c, v)) },
@@ -1744,10 +1809,17 @@ internal fun richText(
         }
         // L'aria fra le righe (1.589): il carattere invisibile in cima a ogni riga è più grande del testo, così la riga
         // dopo un Invio ha più spazio sopra; le righe che vanno a capo da sole restano strette.
+        // Più aria sopra i titoletti e sotto riquadri e tabelle (2026-11-26, la guida): prima il titolo toccava il blocco sopra.
         view.lines.filter { folds.none { f -> it.start in f } }.forEach { line ->
             val at = view.toShown(line.start) + if (line.hasMark && line.prefix > 0) 1 else 0
             if (!firstAir && line.index == 0 && !line.isBlock && line.start != tall) return@forEach
-            val size = if (line.start == tall) TALL_SIZE else if (line.isBlock) sizes[text.substring(line.start, line.end)]?.sp ?: BREATH_SIZE else BREATH_SIZE
+            val stored = sizes[text.substring(line.start, line.end)]
+            val size = when {
+                line.start == tall -> (maxOf(TALL_SIZE.value, (stored ?: BREATH_SIZE.value) + TALL_SIZE.value - BREATH_SIZE.value)).sp
+                line.isBlock -> stored?.sp ?: BREATH_SIZE
+                // La riga visibile sopra: sotto una bacheca le sue spunte sono nascoste.
+                else -> lineAir(line, view.lines.subList(0, line.index.coerceAtMost(view.lines.size)).lastOrNull { p -> folds.none { p.start in it } })
+            }
             if (at < length) addStyle(SpanStyle(fontSize = size), at, at + 1)
         }
     }

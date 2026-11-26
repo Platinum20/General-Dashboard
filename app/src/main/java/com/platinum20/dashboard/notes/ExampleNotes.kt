@@ -21,6 +21,10 @@ object ExampleNotes {
     private const val KEY = "seeded_v1"
     /** La guida (2026-11-26) ha il suo segno: arriva anche a chi ha già avuto (o cancellato) gli esempi di prima. */
     private const val GUIDE_KEY = "guide_v1"
+    /** 2026-11-26: l'emoji del "Tasto +" era un + grigio; chi ha già la guida la riceve cambiata, una volta. */
+    private const val GUIDE_FIX_KEY = "guide_fix_v1"
+    private const val OLD_PLUS_EMOJI = "➕"
+    const val PLUS_EMOJI = "✍️"
 
     /** Gli id delle quattro note: servono per i link tra una nota e l'altra. */
     data class Ids(val gifts: Long, val shopping: Long, val trip: Long, val board: Long)
@@ -244,7 +248,7 @@ object ExampleNotes {
             Note(id, text, now - ago * minute, pinned = pinned, createdAt = now - ago * minute, photos = photos, emoji = emoji, cover = cover)
         return listOf(
             note(ids.hub, hub, 0, "🧭", photos = listOfNotNull(map.ifEmpty { null }), cover = cover.ifEmpty { null }, pinned = true),
-            note(ids.plus, plus, 1, "➕"),
+            note(ids.plus, plus, 1, PLUS_EMOJI),
             note(ids.agenda, agenda, 2, "📅"),
             note(ids.notes, notes, 3, "📝"),
             note(ids.media, media, 4, "🎧"),
@@ -278,8 +282,16 @@ object ExampleNotes {
     /** La guida, una volta sola: se la cancella non torna. */
     private fun seedGuideOnce(context: Context) {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        if (prefs.getBoolean(GUIDE_KEY, false)) return
-        prefs.edit().putBoolean(GUIDE_KEY, true).apply()
+        if (prefs.getBoolean(GUIDE_KEY, false)) {
+            if (prefs.getBoolean(GUIDE_FIX_KEY, false)) return
+            prefs.edit().putBoolean(GUIDE_FIX_KEY, true).apply()
+            runCatching {
+                NotesStore.init(context)
+                plusNoteToFix(NotesStore.data.value.notes)?.let { NotesStore.setNoteEmoji(it, PLUS_EMOJI) }
+            }
+            return
+        }
+        prefs.edit().putBoolean(GUIDE_KEY, true).putBoolean(GUIDE_FIX_KEY, true).apply()
         runCatching {
             NotesStore.init(context)
             val base = System.nanoTime() + 100
@@ -293,6 +305,10 @@ object ExampleNotes {
             NotesStore.addExamples(guide(ids, System.currentTimeMillis(), map, cover, chime), emptyList())
         }
     }
+
+    /** La nota "Il tasto +" della guida con l'emoji vecchia, se c'è ancora (e lui non l'ha cambiata). */
+    fun plusNoteToFix(notes: List<Note>): Long? =
+        notes.firstOrNull { it.emoji == OLD_PLUS_EMOJI && it.text.startsWith("Il tasto +") && "#guida" in it.text }?.id
 
     /**
      * Il vocale della guida: tre note che salgono (do, mi, sol) e l'accordo, poco più di tre secondi. Un WAV fatto a mano

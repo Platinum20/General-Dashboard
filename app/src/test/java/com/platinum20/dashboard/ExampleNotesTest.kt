@@ -76,7 +76,7 @@ class ExampleNotesTest {
 
     @Test
     fun guidaIndiceFissatoELinkGiusti() {
-        assertEquals(listOf("🧭 Guida di Canvas", "➕ Il tasto +", "📅 Agenda e Da fare", "📝 Le note, tutto quello che sanno fare", "🎧 Musica, video e Cerca"), guide.map { it.title })
+        assertEquals(listOf("🧭 Guida di Canvas", "✍️ Il tasto +", "📅 Agenda e Da fare", "📝 Le note, tutto quello che sanno fare", "🎧 Musica, video e Cerca"), guide.map { it.title })
         assertTrue(guide[0].pinned && guide.drop(1).none { it.pinned })
         assertEquals(listOf("/foto/home.jpg"), guide[0].photos)
         val pages = NoteLines.parse(guide[0].text).filter { it.kind == NoteLines.Kind.PAGE }
@@ -104,5 +104,14 @@ class ExampleNotesTest {
         assertEquals("RIFF", String(wav, 0, 4))
         val seconds = (wav.size - 44) / 2.0 / 22_050
         assertEquals(3.2, seconds, 0.01)
+    }
+
+    @Test
+    fun guidaVecchiaPrendeLEmojiNuova() {
+        val old = guide[1].copy(emoji = "➕")
+        assertEquals(old.id, ExampleNotes.plusNoteToFix(listOf(guide[0], old)))
+        // Se l'ha già cambiata, o è un'altra nota col +, non si tocca.
+        assertEquals(null, ExampleNotes.plusNoteToFix(guide))
+        assertEquals(null, ExampleNotes.plusNoteToFix(listOf(old.copy(text = "Il tasto + del telecomando"))))
     }
 }

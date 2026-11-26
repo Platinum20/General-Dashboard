@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.656.0
+**Note: tabelle, colonne e spazi sistemati**
+- Nelle tabelle il testo lungo va a capo dentro la casella invece di uscire dai lati
+- Grassetto e colori dentro le due colonne si vedono formattati, senza asterischi
+- Più aria sopra i titoletti e prima e dopo i pezzi inseriti (riquadri, tabelle, colonne, bacheca, vocale, link): niente più blocchi attaccati
+- Il riquadro ha lo stesso margine sopra e sotto il testo, e l'emoji è in riga col testo
+- I link alle altre note vanno su due righe se il titolo è lungo
+- Guida: il tasto + ha un'emoji nuova al posto del + grigio
+
 ## 1.655.0
 **La guida di Canvas, nelle note**
 - Cinque note nuove, con l'etichetta #guida: un indice fissato in cima e una pagina per il tasto +, l'Agenda e Da fare, le note, musica video e Cerca

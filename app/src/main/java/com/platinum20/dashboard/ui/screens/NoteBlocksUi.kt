@@ -109,6 +109,7 @@ private fun ColumnText(
             },
             readOnly = readOnly,
             textStyle = style,
+            visualTransformation = InlineMarks(colors.primary),
             cursorBrush = SolidColor(colors.primary),
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
             modifier = Modifier
@@ -145,7 +146,7 @@ internal fun NotePageRow(emoji: String, title: String, modifier: Modifier, onOpe
     Row(
         modifier
             .padding(vertical = 3.dp)
-            .height(44.dp)
+            .heightIn(min = 44.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(colors.glassCard)
             .border(glassRim(), RoundedCornerShape(12.dp))
@@ -160,9 +161,10 @@ internal fun NotePageRow(emoji: String, title: String, modifier: Modifier, onOpe
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
             color = colors.onSurface,
-            maxLines = 1,
+            // Due righe (2026-11-26): "Le note, tutto quello che sanno fare" si legge tutto.
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).padding(vertical = 10.dp),
         )
         Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
     }
