@@ -693,14 +693,15 @@ val ColorScheme.card: Color
  * è una card un filo più chiara del fondo.
  */
 val ColorScheme.glassCard: Color
-    get() = if (background.luminance() < 0.5f) onSurface.copy(alpha = 0.065f) else surfaceContainerLowest.copy(alpha = 0.62f)
+    get() = if (background.luminance() < 0.5f) onSurface.copy(alpha = 0.06f) else surfaceContainerLowest.copy(alpha = 0.72f)
 
 /** Il bordo delle card di vetro: un filo di luce, non una riga netta. */
 @Composable
 fun glassRim(): BorderStroke {
     val scheme = MaterialTheme.colorScheme
     val dark = scheme.background.luminance() < 0.5f
-    return BorderStroke(1.dp, if (dark) scheme.onSurface.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.85f))
+    // Di giorno un filo grigio: bianco su bianco (Puro, Canvas) le card sparivano (Antonio, 1.647).
+    return BorderStroke(1.dp, if (dark) scheme.onSurface.copy(alpha = 0.10f) else scheme.outlineVariant)
 }
 
 /** Il blocco colorato della pagina (meteo, Quando): pieno, con una sfumatura appena più chiara verso il basso a destra. */

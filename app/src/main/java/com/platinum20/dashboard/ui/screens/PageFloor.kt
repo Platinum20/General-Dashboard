@@ -38,22 +38,30 @@ object Glow {
     private val RAIN_DARK = Color(0xFF3A4250)
     private val RAIN_LIGHT = Color(0xFFCDD6E0)
 
-    /** Le macchie per questi colori: in alto a sinistra il colore principale, a destra il terzo, in basso il secondo. */
-    fun blobs(primary: Color, tertiary: Color, secondary: Color, dark: Boolean, rainy: Boolean): List<Blob> {
+    /**
+     * Le macchie, tutte dalla tinta del colore principale (mai dal terzo colore di Material You, che sul telefono di
+     * Antonio è verde oliva: 1.647 virava al cachi). Al buio sono toni scuri, quasi neri come nel mockup A+B
+     * (brace, vino, ambra spenta); di giorno pastelli leggeri. [wine] = il rosso scuro del tema per la macchia a destra.
+     */
+    fun blobs(primary: Color, wine: Color, dark: Boolean, rainy: Boolean): List<Blob> {
         fun tone(c: Color, alpha: Float): Color {
             val base = if (rainy) lerp(c, if (dark) RAIN_DARK else RAIN_LIGHT, 0.8f) else c
             return base.copy(alpha = alpha)
         }
-        val a = if (dark) 0.62f else 0.55f
-        return listOf(
-            Blob(0.10f, 0.04f, tone(primary, a)),
-            Blob(0.96f, 0.36f, tone(tertiary, a * 0.8f)),
-            Blob(0.18f, 0.92f, tone(secondary, a * 0.7f)),
+        val side = lerp(primary, wine, 0.5f)
+        return if (dark) listOf(
+            Blob(0.10f, 0.04f, tone(lerp(primary, Color.Black, 0.22f), 0.85f)),
+            Blob(0.96f, 0.36f, tone(lerp(side, Color.Black, 0.45f), 0.75f)),
+            Blob(0.18f, 0.92f, tone(lerp(primary, Color.Black, 0.5f), 0.6f)),
+        ) else listOf(
+            Blob(0.10f, 0.04f, tone(primary, 0.6f)),
+            Blob(0.96f, 0.36f, tone(side, 0.4f)),
+            Blob(0.18f, 0.92f, tone(primary, 0.35f)),
         )
     }
 
     fun blobs(scheme: ColorScheme, rainy: Boolean): List<Blob> = blobs(
-        scheme.primaryContainer, scheme.tertiaryContainer, scheme.secondaryContainer,
+        scheme.primaryContainer, scheme.errorContainer,
         dark = scheme.background.luminance() < 0.5f, rainy = rainy,
     )
 
