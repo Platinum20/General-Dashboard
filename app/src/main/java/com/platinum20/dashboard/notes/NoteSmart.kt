@@ -43,12 +43,22 @@ object NoteSmart {
             val at = text.uppercase().indexOf(code)
             if (at >= 0) (at until at + code.length).takeIf(::free)?.let { out += Smart(it, Kind.PARCEL, code) }
         }
-        codeRx.findAll(text).forEach { m ->
-            val g = m.groups[1] ?: return@forEach
-            if (g.value.startsWith("#") || g.value.startsWith("http")) return@forEach
+        // Una parola scartata ("cancello (pin 4821)": "(pin" non è un codice) non deve mangiarsi quella dopo: si riparte
+        // dal valore scartato, non dalla fine del pezzo trovato (2026-11-26).
+        var at = 0
+        while (at < text.length) {
+            val m = codeRx.find(text, at) ?: break
+            val g = m.groups[1] ?: break
+            at = g.range.first
+            if (g.value.startsWith("#") || g.value.startsWith("http")) continue
             // "codice fiscale", "pass del treno": senza ":" il valore deve avere almeno un numero.
-            if (!m.value.contains(':') && !m.value.contains('=') && g.value.none { it.isDigit() }) return@forEach
-            if (free(g.range)) out += Smart(g.range, Kind.CODE, g.value)
+            if (!m.value.contains(':') && !m.value.contains('=') && g.value.none { it.isDigit() }) continue
+            // "(pin 1234)", "wifi: casa24.": la parentesi o il punto della frase non fanno parte del codice.
+            val value = g.value.trimEnd('.', ',', ':', ')', ']', '»', '"')
+            if (value.length < 3) continue
+            val range = g.range.first until g.range.first + value.length
+            if (free(range)) out += Smart(range, Kind.CODE, value)
+            at = m.range.last + 1
         }
         tagRx.findAll(text).forEach { m ->
             val name = m.groupValues[1]

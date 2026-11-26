@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.655.0
+**La guida di Canvas, nelle note**
+- Cinque note nuove, con l'etichetta #guida: un indice fissato in cima e una pagina per il tasto +, l'Agenda e Da fare, le note, musica video e Cerca
+- Ognuna usa pezzi diversi dell'editor (tabelle, colonne, bacheca, riquadri, citazioni, colori, foto, un vocale, link fra note), così si vede cosa sa fare
+- Arrivano una volta sola: se le cancelli non tornano
+- Note: un codice tra parentesi o a fine frase non si porta più dietro la parentesi o il punto quando lo copi
+- Note: Ricomincia rimette da fare anche le schede "In corso" della bacheca
+
 ## 1.654.0
 **Note: liste, righe e Annulla più affidabili**
 - Grassetto, corsivo e colori su più voci scelte insieme non rompono più la lista, e toccati di nuovo si tolgono da tutte
