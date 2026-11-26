@@ -147,6 +147,7 @@ separate functions so it can be unit-tested; new logic ships with a test. `TopLe
   main, open PRs and active `claude/*` branches, then merge immediately.
 - CI errors: GitHub MCP `get_job_logs` with `tail_lines` ~600, grep ` e: ` (Kotlin) or `FAILED` (tests). Runs:
   `curl https://api.github.com/repos/Platinum20/General-Dashboard/actions/runs?branch=<b>&per_page=3`.
+- Look changes: check every theme × light/dark with `ThemeTour` (dispatch `screenshots.yml` with input `tests=*ThemeTour`).
 - Visual check for risky changes: dispatch `screenshots.yml`; PNGs land on branch `screenshots` under
   `<branch>/<run>/`. In tours never use `performScrollToNode` (hangs), use `performScrollToIndex`.
 - Other dispatch-only workflows: `verifica.yml`, `ytcheck.yml`, `logincheck.yml`, `bubblecheck.yml` (androidTest `BubbleShotsCheck`: real bubbles on an emulator, PNGs in `screenshots` under `bubble-check/<n>/`).
