@@ -4,6 +4,11 @@ name: Screenshot
 # nel ramo "screenshots", cartella <ramo>/<run>. Si lancia a mano su qualsiasi ramo.
 on:
   workflow_dispatch:
+    inputs:
+      tests:
+        description: "Solo questi test (es. *ThemeTour); vuoto = tutto"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -28,7 +33,7 @@ jobs:
         run: python3 scripts/update_filter_lists.py
 
       - name: Test e giro fotografico
-        run: gradle :app:testDebugUnitTest -Ptour=true --no-daemon --stacktrace
+        run: gradle :app:testDebugUnitTest -Ptour=true ${{ inputs.tests != '' && format('--tests "{0}"', inputs.tests) || '' }} --no-daemon --stacktrace
 
       - uses: actions/upload-artifact@v4
         if: always()

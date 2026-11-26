@@ -5,6 +5,15 @@
 - Toccando dopo la fine di una frase il cursore va in fondo a quella riga, non più all'inizio della riga sotto (voci, liste, titoli compresi)
 - Toccando sotto l'ultima riga il cursore va in fondo alla nota
 
+## 1.649.0
+**Vetro in ogni tema, di giorno e di sera**
+- Canvas, Material You e Puro, chiari e scuri: alone e card di vetro in tutte e sei le combinazioni
+- In modalità chiara l'alone ha più colore e le card sono più trasparenti: si leggono come vetro, non bianco pieno
+- Al buio, con Canvas e Puro, l'alone blu ora si vede
+- Di vetro anche le Impostazioni, la barra di ricerca, i campi di testo, i chip e le righe di Musica
+- Il bordo delle card è una luce in alto che sfuma in basso
+- Il tema scelto nelle Impostazioni ha un solo contorno pulito, senza il doppio anello
+
 ## 1.648.0
 **Alone come nel mockup**
 - Al buio l'alone è scuro e caldo (brace, vino), non più chiaro e verdognolo: le card tornano vetro fumé
