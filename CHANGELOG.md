@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.646.0
+**Agenda**
+- Il Calendario ora si chiama Agenda: card della Home, pagina, impostazioni, Cerca, il "+" e il widget
+- Nella card Agenda, se oggi non hai niente, OGGI non c'è: si parte dal primo giorno con qualcosa
+
 ## 1.645.0
 **Condividi uguale ovunque**
 - Ogni Condividi apre lo stesso fumetto: PDF (dove serve), Copia, Manda a…, e sotto Copia vedi cosa copi

@@ -101,7 +101,7 @@ import java.time.LocalDate
 enum class SearchFilter(val label: String) {
     // Dalla 1.357 note ed eventi sono un filtro solo, "Calendario", come il calendario unico. AGENDA resta per le
     // ricerche salvate nelle rotte, ma non ha più il suo chip.
-    ALL("Tutto"), NOTES("Calendario"), AGENDA("Calendario"), NEWS("News"),
+    ALL("Tutto"), NOTES("Agenda"), AGENDA("Agenda"), NEWS("News"),
     // Dalla 1.437 i podcast stanno con la Musica, come in Media; Radio è solo radio.
     MUSIC("Musica"), VIDEO("Video"), RADIO("Radio");
 
@@ -449,7 +449,7 @@ private val ONLINE_GROUPS = setOf("people", "spotify", "youtube", "radio", "podc
 /** Il nome di un gruppo. */
 private fun groupTitle(key: String, query: String, today: LocalDate): String = when (key) {
     "when" -> SearchWhen.split(query, today)?.first?.label ?: "Quel giorno"
-    "events" -> "Calendario"
+    "events" -> "Agenda"
     "names" -> "Etichette e persone"
     "mail" -> "Posta"
     "docs" -> "Documenti"

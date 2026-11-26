@@ -1387,16 +1387,16 @@ internal fun smartActions(
         val due = com.platinum20.dashboard.notes.NoteSmart.dateOf(sm.value)
         val title = com.platinum20.dashboard.notes.NoteSmart.titleAround(text, sm)
         if (due == null) emptyList() else listOf(
-            act(BubbleGroup.METTI, Icons.Outlined.Event, "Metti in calendario", "\"$title\", ${dueLabel(due)}") {
+            act(BubbleGroup.METTI, Icons.Outlined.Event, "Metti in agenda", "\"$title\", ${dueLabel(due)}") {
                 val at = due.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
                 val task = NotesStore.addTaskAt(title, at)
                 val nid = noteId
                 if (nid != null) NotesStore.note(nid)?.let { n ->
                     NotesStore.setTaskNotes(task.id, "[${n.plainTitle.ifEmpty { "Nota" }.replace('[', '(').replace(']', ')')}](${NoteFormat.NOTE_LINK}$nid)")
                 }
-                com.platinum20.dashboard.capture.CaptureFeedback.tell(context, "In calendario: ${dueLabel(due)}", Icons.Outlined.Event, "Annulla") { NotesStore.deleteTask(task.id) }
+                com.platinum20.dashboard.capture.CaptureFeedback.tell(context, "In agenda: ${dueLabel(due)}", Icons.Outlined.Event, "Annulla") { NotesStore.deleteTask(task.id) }
             },
-            act(BubbleGroup.VAI, Icons.Outlined.CalendarMonth, "Vedi quel giorno", "il calendario su ${dueLabel(due).substringBefore(',')}") {
+            act(BubbleGroup.VAI, Icons.Outlined.CalendarMonth, "Vedi quel giorno", "l'agenda su ${dueLabel(due).substringBefore(',')}") {
                 inApp?.openRoute?.invoke(Routes.NOTES)
             },
         )
@@ -1477,7 +1477,7 @@ internal fun mentionTargets(
 
 /** Le sezioni di Canvas che si possono collegare con "@". */
 private val MENTION_PAGES = listOf(
-    "Meteo" to Routes.WEATHER, "SIM" to Routes.SIM, "Calendario" to Routes.NOTES, "News" to Routes.NEWS,
+    "Meteo" to Routes.WEATHER, "SIM" to Routes.SIM, "Agenda" to Routes.NOTES, "News" to Routes.NEWS,
     "Musica" to Routes.MUSIC_DISCOVER, "Video" to Routes.MEDIA_NEWS, "Radio" to Routes.RADIO, "Podcast" to Routes.PODCAST,
     "Da fare" to Routes.LATER_ARCHIVE, "Cerca" to Routes.SEARCH,
 )
@@ -1889,7 +1889,7 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
         val e = NoteFormat.mentionLink(now.text, l.contentStart, l.end, plain, NoteFormat.APP_LINK + Routes.noteItem(ItemKind.TASK, task.id))
         val t = e.text.let { if (it.getOrNull(e.start - 1) == ' ') it.removeRange(e.start - 1, e.start) else it }
         target.set(TextFieldValue(t, TextRange((e.start - 1).coerceIn(0, t.length))))
-        CaptureFeedback.tell(context, "Nel Calendario: " + dueLabel(due), Icons.Outlined.Event)
+        CaptureFeedback.tell(context, "In agenda: " + dueLabel(due), Icons.Outlined.Event)
     }
     val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
@@ -1999,7 +1999,7 @@ internal fun RichToolbar(modifier: Modifier = Modifier) {
                     if (mention == null && (dated != null || linkHere != null)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.End)) {
                             linkHere?.let { (url, label) -> FloatChip(Icons.AutoMirrored.Outlined.OpenInNew, "Apri il link") { openLink(url, label) } }
-                            datedShown?.let { (_, due) -> FloatChip(Icons.Outlined.Event, dueLabel(due) + " → Calendario") { toCalendar() } }
+                            datedShown?.let { (_, due) -> FloatChip(Icons.Outlined.Event, dueLabel(due) + " → Agenda") { toCalendar() } }
                         }
                     }
                 }

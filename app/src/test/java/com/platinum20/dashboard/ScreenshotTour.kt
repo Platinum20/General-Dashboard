@@ -174,7 +174,7 @@ class ScreenshotTour {
 
         if (tap("News")) { settle(3_000); shot(p + "10_news") } else missing += p + "10_news"
         // Il calendario unico (1.314) si apre dalla sua card in Home: niente più scheda Note nella barra.
-        if (tap("Home") && tap("Calendario")) {
+        if (tap("Home") && tap("Agenda")) {
             settle(1_500); shot(p + "20_calendario")
             scroll(down = true)
             shot(p + "22_calendario_fondo")

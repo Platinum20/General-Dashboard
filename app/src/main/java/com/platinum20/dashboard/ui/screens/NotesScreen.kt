@@ -290,7 +290,7 @@ fun NotesScreen(
         // è il tipo con la freccia per tornare ai tre.
         topBar = {
             TopLevelBar(
-                title = "Calendario",
+                title = "Agenda",
                 scrollBehavior = barScroll,
                 subtitle = listOfNotNull(
                     dueToday.takeIf { it > 0 }?.let { "$it oggi" },
@@ -409,7 +409,7 @@ fun NotesScreen(
                     Box(Modifier.padding(bottom = 4.dp)) { EmptyHint(
                         "Tocca + e scrivi come parli: Canvas capisce da solo se c'è una data. \"venerdì alle 18 palestra\", " +
                             "\"compleanno di Marta 12 marzo\" o un pacco Amazon finiscono nel loro giorno; " +
-                            "un'idea senza data va in fondo alla card Calendario della Home."
+                            "un'idea senza data va in fondo alla card Agenda della Home."
                     ) }
                 }
             }
