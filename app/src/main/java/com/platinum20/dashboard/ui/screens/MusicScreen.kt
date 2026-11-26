@@ -203,7 +203,8 @@ fun PodcastsScreen(onBack: () -> Unit) {
     }
     val barScroll = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
     Scaffold(
-        modifier = Modifier.nestedScroll(barScroll.nestedScrollConnection),
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        modifier = Modifier.nestedScroll(barScroll.nestedScrollConnection).pageFloor(),
         topBar = { TopLevelBar(title = "I tuoi podcast", subtitle = "Podcast", scrollBehavior = barScroll, onBack = onBack) },
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {

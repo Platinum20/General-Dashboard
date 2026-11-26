@@ -14,11 +14,11 @@ class TopBarCollapseTest {
     }
 
     @Test fun altezzaTitoloERigaSopra() {
-        assertEquals(76f, TopBarCollapse.height(0f), 0.001f)
-        assertEquals(64f, TopBarCollapse.height(0.5f), 0.001f)
+        assertEquals(84f, TopBarCollapse.height(0f), 0.001f)
+        assertEquals(68f, TopBarCollapse.height(0.5f), 0.001f)
         assertEquals(52f, TopBarCollapse.height(1f), 0.001f)
         assertEquals(1f, TopBarCollapse.titleScale(0f), 0.001f)
-        assertEquals(19f / 30f, TopBarCollapse.titleScale(1f), 0.001f)
+        assertEquals(19f / 34f, TopBarCollapse.titleScale(1f), 0.001f)
         assertEquals(1f, TopBarCollapse.subtitleAlpha(0f), 0.001f)
         assertEquals(0f, TopBarCollapse.subtitleAlpha(0.5f), 0.001f)
     }

@@ -131,7 +131,7 @@ internal fun BoxScope.BottomBubble(
                 modifier = Modifier.swipeAway(swipe) { if (visible) onDismiss() },
             ) {
                 // Un solo blocco di vetro con le righe dentro (1.402): prima ogni azione era una pillola a sé.
-                val shape = RoundedCornerShape(22.dp)
+                val shape = RoundedCornerShape(28.dp)
                 Surface(
                     shape = shape,
                     color = Color.Transparent,

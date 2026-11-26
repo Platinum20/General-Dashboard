@@ -46,6 +46,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.luminance
@@ -452,6 +453,9 @@ fun TopLevelBar(
     val barHeight = TopBarCollapse.height(fraction).dp
     val titleScale = TopBarCollapse.titleScale(fraction)
     TopAppBar(
+        // Il fondo è quello della pagina, alone compreso, disegnato in coordinate dello schermo: scorrendo sotto il
+        // titolo il contenuto sparisce come prima, ma senza una fascia piatta sopra l'alone (1.646).
+        modifier = if (transparent) Modifier else Modifier.pageFloor(),
         navigationIcon = {
             if (onBack != null) {
                 IconButton(onClick = onBack) {
@@ -479,7 +483,7 @@ fun TopLevelBar(
                 if (line != null && fraction < 1f) {
                     // Quando cambia ("3 nuove" → "5 nuove") la riga nuova sale e la vecchia svanisce.
                     AnimatedContent(
-                        line.uppercase(),
+                        line,
                         modifier = Modifier
                             .collapseHeight { 1f - fraction }
                             .graphicsLayer { alpha = TopBarCollapse.subtitleAlpha(fraction) },
@@ -492,7 +496,8 @@ fun TopLevelBar(
                     ) { line ->
                         Text(
                             line,
-                            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.8.sp, fontWeight = FontWeight.SemiBold),
+                            // In minuscolo e più grande (1.646, A+B): si legge come una frase, non come un'etichetta.
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -536,8 +541,8 @@ fun TopLevelBar(
         },
         expandedHeight = barHeight,
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = if (transparent) Color.Transparent else MaterialTheme.colorScheme.background,
-            scrolledContainerColor = if (transparent) Color.Transparent else MaterialTheme.colorScheme.background,
+            containerColor = Color.Transparent,
+            scrolledContainerColor = Color.Transparent,
         ),
     )
 }
@@ -556,12 +561,12 @@ private fun Modifier.collapseHeight(factor: () -> Float): Modifier = this.then(
  * e segue lo scorrimento: le pagine usano exitUntilCollapsedScrollBehavior, la barra si riapre tornando in cima.
  */
 object TopBarCollapse {
-    const val EXPANDED_DP = 76
+    const val EXPANDED_DP = 84
     const val COLLAPSED_DP = 52
     const val RANGE_DP = EXPANDED_DP - COLLAPSED_DP
 
-    /** Da titleLarge (19 sp) a headlineLarge (30 sp). */
-    const val SMALL_SCALE = 19f / 30f
+    /** Da titleLarge (19 sp) a headlineLarge (34 sp, 1.646). */
+    const val SMALL_SCALE = 19f / 34f
 
     /** [heightOffset] è negativo quando la barra si sta chiudendo (come in TopAppBarState). */
     fun fraction(heightOffset: Float, rangePx: Float): Float =
@@ -682,6 +687,26 @@ fun IconTile(icon: ImageVector, @Suppress("UNUSED_PARAMETER") accent: TileAccent
 val ColorScheme.card: Color
     get() = if (background.luminance() < 0.5f) surfaceContainerLow else surfaceContainerLowest
 
+/**
+ * Il fondo delle card dell'app dal 1.646 (A+B, Antonio): vetro velato che lascia intravedere l'alone dietro.
+ * Al buio un velo chiaro appena percettibile, di giorno bianco latte. Senza alone resta lo stesso: su un fondo pieno
+ * è una card un filo più chiara del fondo.
+ */
+val ColorScheme.glassCard: Color
+    get() = if (background.luminance() < 0.5f) onSurface.copy(alpha = 0.065f) else surfaceContainerLowest.copy(alpha = 0.62f)
+
+/** Il bordo delle card di vetro: un filo di luce, non una riga netta. */
+@Composable
+fun glassRim(): BorderStroke {
+    val scheme = MaterialTheme.colorScheme
+    val dark = scheme.background.luminance() < 0.5f
+    return BorderStroke(1.dp, if (dark) scheme.onSurface.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.85f))
+}
+
+/** Il blocco colorato della pagina (meteo, Quando): pieno, con una sfumatura appena più chiara verso il basso a destra. */
+fun heroBrush(base: Color): Brush =
+    Brush.linearGradient(listOf(base, androidx.compose.ui.graphics.lerp(base, Color.White, 0.12f)))
+
 /** Il bordo sottile che separa le card dallo sfondo, al posto dell'ombra. */
 @Composable
 fun cardBorder(): BorderStroke = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
@@ -702,10 +727,10 @@ fun CanvasCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val cardColors = colors ?: CardDefaults.cardColors(
-        containerColor = MaterialTheme.colorScheme.card,
+        containerColor = MaterialTheme.colorScheme.glassCard,
         contentColor = MaterialTheme.colorScheme.onSurface,
     )
-    val border = if (colors == null) cardBorder() else null
+    val border = if (colors == null) glassRim() else null
     // Ogni card entra a cascata con la pagina, sempre già alla sua grandezza: niente crescere o
     // rimpicciolire mentre arrivano i dati (Antonio le vuole ferme).
     // Le card che si toccano rispondono al dito, anche dove la schermata non l'ha chiesto.
@@ -821,7 +846,7 @@ fun Section(
 
 /**
  * Il titolo dentro una card della Home (1.404, punto 7 B): la card è un oggetto a sé col suo nome in alto.
- * Dal 1.539 (Antonio, mockup archivi-card A) il nome è maiuscolo come le sezioni di Media e, se la card apre
+ * Dal 1.539 (Antonio, mockup archivi-card A), se la card apre
  * una pagina ([opens]), ha la freccia accanto: "DA FARE ›". A destra un valore, se c'è.
  */
 @Composable
@@ -833,15 +858,16 @@ fun CardTitle(
 ) {
     val color = MaterialTheme.colorScheme.onSurface
     Row(
-        modifier = modifier.fillMaxWidth().heightIn(min = 40.dp).padding(start = 16.dp, end = 12.dp, top = 6.dp),
+        modifier = modifier.fillMaxWidth().heightIn(min = 42.dp).padding(start = 16.dp, end = 12.dp, top = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Titolo e freccia in una riga che prende tutto lo spazio: il numero resta attaccato al bordo destro
         // (con due pesi uguali finiva a metà card, 2026-11-20).
         Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+            // Dal 1.646 (A+B) in minuscolo e più grande: "Da fare ›" invece di "DA FARE ›".
             Text(
-                title.uppercase(),
-                style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.sp, fontWeight = FontWeight.Bold),
+                title,
+                style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp),
                 color = color,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -850,8 +876,8 @@ fun CardTitle(
             if (opens) Icon(
                 Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                 contentDescription = "Apri",
-                tint = color,
-                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
             )
         }
         trailing()

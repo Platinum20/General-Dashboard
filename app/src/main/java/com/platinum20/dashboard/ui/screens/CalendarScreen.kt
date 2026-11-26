@@ -444,7 +444,8 @@ fun EventEditScreen(
     }
 
     Scaffold(
-        modifier = Modifier.imePadding(),
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        modifier = Modifier.imePadding().pageFloor(),
         bottomBar = { KeyboardBarSwap(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), richBarShown()) {} },
         topBar = {
             TopAppBar(

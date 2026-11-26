@@ -109,7 +109,7 @@ internal fun MediaHero(
             }
         } else {
             // Il colore della copertina dietro al blocco, che sfuma nello sfondo prima delle righe.
-            Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf((tint ?: bg).copy(alpha = 0.55f), bg))))
+            Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf((tint ?: bg).copy(alpha = 0.55f), Color.Transparent))))
         }
         Column(Modifier.fillMaxWidth().statusBarsPadding()) {
             if (onBack != null) IconButton(onClick = onBack, modifier = Modifier.padding(start = 4.dp, top = 4.dp)) {

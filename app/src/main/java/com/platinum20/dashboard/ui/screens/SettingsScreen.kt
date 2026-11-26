@@ -1,6 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
 import androidx.compose.material.icons.outlined.Build
+import androidx.compose.material.icons.outlined.Gradient
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.height
@@ -235,7 +236,8 @@ fun SettingsScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection).pageFloor(),
         // La versione nella riga sopra il titolo (1.528): si vede senza scendere in fondo.
         topBar = { TopLevelBar(title = "Impostazioni", subtitle = "Versione ${BuildConfig.VERSION_NAME}", scrollBehavior = scrollBehavior, onBack = onBack) },
     ) { inner ->
@@ -254,6 +256,17 @@ fun SettingsScreen(
                         if (theme != option) haptic(Haptic.TICK)
                         AppSettings.setTheme(option)
                     }
+                    RowDivider()
+                    // L'alone dietro le pagine (1.646, A+B): acceso di serie, spento = fondo pieno come prima.
+                    val glow by AppSettings.glow.collectAsState()
+                    SettingsItem(
+                        icon = Icons.Outlined.Gradient,
+                        accent = TileAccent.NEUTRAL,
+                        title = "Alone colorato",
+                        subtitle = if (glow) "Dietro le pagine, coi colori del tema" else "Fondo pieno, senza alone",
+                        onClick = { AppSettings.setGlow(!glow) },
+                        trailing = { Switch(checked = glow, onCheckedChange = hapticToggle { v: Boolean -> AppSettings.setGlow(v) }) },
+                    )
                 }
             }
             // Le sezioni nell'ordine della barra in basso, ognuna una riga che apre la sua pagina (1.576).
@@ -335,7 +348,8 @@ fun SettingsPageScreen(
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection).pageFloor(),
         topBar = { TopLevelBar(title = page.title, subtitle = "Impostazioni", scrollBehavior = scrollBehavior, onBack = onBack) },
     ) { inner ->
         LazyColumn(

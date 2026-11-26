@@ -82,6 +82,7 @@ internal fun DetailPage(
             onDelete?.let { Slot.delete(confirm = deleteConfirm, onClick = it) },
         )
     Scaffold(
+        modifier = Modifier.pageFloor(), containerColor = androidx.compose.ui.graphics.Color.Transparent,
         topBar = {
             Column(
                 Modifier

@@ -103,6 +103,7 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
 
     val barScroll = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
     Scaffold(
+        modifier = Modifier.pageFloor(), containerColor = androidx.compose.ui.graphics.Color.Transparent,
         // Il blocco Adesso della Home si allarga fino a diventare questa pagina (1.357).
         modifier = Modifier.sharedItem(SharedKeys.WEATHER, rounded = true).nestedScroll(barScroll.nestedScrollConnection),
         topBar = {

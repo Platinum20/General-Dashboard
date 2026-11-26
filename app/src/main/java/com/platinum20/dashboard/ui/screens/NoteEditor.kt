@@ -684,6 +684,7 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
 
     Box(Modifier.fillMaxSize()) {
         Scaffold(
+            modifier = Modifier.pageFloor(), containerColor = androidx.compose.ui.graphics.Color.Transparent,
             topBar = {
                 Column(
                     Modifier

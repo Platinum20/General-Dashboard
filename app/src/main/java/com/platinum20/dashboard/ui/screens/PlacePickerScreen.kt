@@ -75,6 +75,7 @@ fun PlacePickerScreen(onBack: () -> Unit) {
     }
 
     Scaffold(
+        modifier = Modifier.pageFloor(), containerColor = androidx.compose.ui.graphics.Color.Transparent,
         topBar = {
             TopLevelBar(
                 title = "Località del meteo",

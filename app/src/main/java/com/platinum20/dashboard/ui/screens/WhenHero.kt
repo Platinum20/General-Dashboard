@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -152,13 +153,19 @@ object WhenHero {
 @Composable
 fun WhenHeroCard(text: WhenText3, onClick: (() -> Unit)? = null, onLongClick: (() -> Unit)? = null) {
     CanvasCard(
-        modifier = Modifier.fillMaxWidth().then(if (onClick != null) Modifier.bouncyPress(0.98f) else Modifier),
+        // Pieno con una sfumatura come il meteo in Home (1.646, A+B).
+        modifier = Modifier.fillMaxWidth()
+            .background(
+                heroBrush(if (text.late) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.primaryContainer),
+                MaterialTheme.shapes.extraLarge,
+            )
+            .then(if (onClick != null) Modifier.bouncyPress(0.98f) else Modifier),
         onClick = onClick,
         onLongClick = onLongClick,
         shape = MaterialTheme.shapes.extraLarge,
         // Un treno in ritardo: blocco arancio, "Parte tra" in arancio pieno (una sola cosa da guardare).
         colors = CardDefaults.cardColors(
-            containerColor = if (text.late) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.primaryContainer,
+            containerColor = androidx.compose.ui.graphics.Color.Transparent,
             contentColor = if (text.late) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onPrimaryContainer,
         ),
     ) {
