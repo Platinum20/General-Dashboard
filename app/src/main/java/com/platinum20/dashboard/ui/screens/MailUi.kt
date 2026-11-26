@@ -458,7 +458,7 @@ fun MailScreen(id: String, onBack: () -> Unit) {
         },
         more = mail?.let { m -> mailNoteActions(context, m, LocalInAppNav.current?.let { nav -> { id: Long -> nav.openRoute(com.platinum20.dashboard.Routes.noteEdit(id)) } }) }.orEmpty() + listOfNotNull(
             mail?.let { m ->
-                Slot.shareText(context, m.body.ifEmpty { m.snippet })
+                mailShare(context, m)
             },
         ),
     ) {

@@ -215,9 +215,9 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
     } else null
     val context = androidx.compose.ui.platform.LocalContext.current
     val task = if (kind == ItemKind.TASK) data.tasks.firstOrNull { it.id == id } else null
-    val shareLine = when (kind) {
-        ItemKind.TASK -> task?.text
-        ItemKind.PARCEL -> data.parcels.firstOrNull { it.id == id }?.title
+    val share = when (kind) {
+        ItemKind.TASK -> task?.let { taskShare(context, it) }
+        ItemKind.PARCEL -> data.parcels.firstOrNull { it.id == id }?.let { parcelShare(context, it) }
         ItemKind.HABIT -> null
     }
     DetailPage(
@@ -233,7 +233,7 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
         more = listOfNotNull(
             tracking?.let { open -> act(BubbleGroup.VAI, Icons.Outlined.LocalShipping, "Traccia la spedizione", "dove si trova adesso, in Canvas", onClick = open) },
             task?.let { snoozeAction(it) },
-            shareLine?.let { text -> Slot.shareText(context, text) },
+            share,
         ),
     ) {
         if (detail == null) {

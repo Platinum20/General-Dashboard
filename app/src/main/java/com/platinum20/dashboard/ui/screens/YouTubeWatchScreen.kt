@@ -1136,12 +1136,19 @@ private fun TitleBlock(
                 haptic(if (saved) Haptic.TICK else Haptic.CONFIRM)
                 if (saved) SavedLinks.remove(context, link) else SavedLinks.save(context, link)
             }
+            // Come in ogni fumetto (Antonio 2026-11-26): Copia › Manda a…, con titolo, canale e link.
             PillButton(icon = Icons.Outlined.Share, label = "Condividi", selected = false, description = "Condividi il video") {
-                val send = android.content.Intent(android.content.Intent.ACTION_SEND)
-                    .setType("text/plain")
-                    .putExtra(android.content.Intent.EXTRA_SUBJECT, stream.title)
-                    .putExtra(android.content.Intent.EXTRA_TEXT, "https://youtu.be/${stream.id}")
-                context.startActivity(android.content.Intent.createChooser(send, "Condividi il video"))
+                val text = com.platinum20.dashboard.share.ShareTexts.media(stream.title, stream.channel, "https://youtu.be/${stream.id}")
+                ActionBubble.show(
+                    BubbleHead("Condividi", stream.title),
+                    *shareRows(
+                        copy = { Clip.copy(context, "Testo", text, "Copiato") },
+                        copyTitle = "Copia",
+                        copyDetail = com.platinum20.dashboard.share.ShareTexts.preview(text),
+                        pdf = null,
+                        send = { runCatching { shareText(context, text) } },
+                ).toTypedArray(),
+                )
             }
         }
     }

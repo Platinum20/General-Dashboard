@@ -225,7 +225,17 @@ fun EventDetailScreen(
         head = current?.let { ev -> BubbleHead(if (shift != null) "Turno" else "Evento", ev.title + if (ev.allDay) "" else " · " + clock(ev.begin)) },
         editDetail = "titolo, orario, luogo, avviso",
         deleteConfirm = if (current?.recurring == true) "Tocca ancora: tutte le volte, anche dal telefono" else "Tocca ancora: sparisce anche dal telefono",
-        more = listOfNotNull(current?.let { ev -> Slot.shareText(context, eventShareText(ev.title, ev.begin)) }),
+        // Condividi col testo giusto per turno, treno o evento (Antonio 2026-11-26).
+        more = listOfNotNull(current?.let { ev ->
+            val trip = com.platinum20.dashboard.calendar.Trips.tripOf(ev.title, ev.location, ev.description)
+            val from = if (begin > 0 && trip == null) begin else ev.begin
+            val to = if (begin > 0 && end > 0 && trip == null) end else ev.end
+            when {
+                shift != null -> shiftShare(context, shift.start, shift.end, shift.mates)
+                trip != null -> trainShare(context, trip, ev.begin, ev.end)
+                else -> eventShare(context, ev.id, ev.title, from, to, ev.allDay, ev.location)
+            }
+        }),
         onEdit = if (writable) ({ withWrite { current?.let { onEdit(it.id) } } }) else null,
         onDelete = if (writable) ({
             current?.let { ev ->

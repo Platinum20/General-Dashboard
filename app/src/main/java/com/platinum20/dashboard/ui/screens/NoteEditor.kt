@@ -642,10 +642,16 @@ fun NoteEditorScreen(noteId: Long?, find: String = "", onBack: () -> Unit) {
                     }
                 },
                 // Condividi diventa Copia il testo · Salva come PDF · Manda a… (Antonio 2026-11-24).
-                if (text.isBlank() && photos.isEmpty()) null else Slot.share(
-                    copy = if (text.isBlank()) null else { { Clip.copy(context, "Nota", NoteFormat.plain(text), "Testo copiato") } },
-                    pdf = { exportPdf() },
-                ) { NotePhotoFiles.share(context, NoteFormat.plain(text), photos) },
+                // Le spunte escono come ☐ / ☑, i titoletti senza segni (ShareTexts.note, Antonio 2026-11-26).
+                if (text.isBlank() && photos.isEmpty()) null else com.platinum20.dashboard.share.ShareTexts.note(text).let { out ->
+                    Slot.share(
+                        copy = if (out.isBlank()) null else { { Clip.copy(context, "Nota", out, "Testo copiato") } },
+                        copyDetail = com.platinum20.dashboard.share.ShareTexts.preview(out),
+                        pdf = { exportPdf() },
+                        pdfDetail = if (photos.isEmpty()) "nei Download, da mandare o stampare" else "con le foto, nei Download",
+                        sendDetail = when (photos.size) { 0 -> "WhatsApp, Gmail e le altre app"; 1 -> "il testo e la foto"; else -> "il testo e le ${photos.size} foto" },
+                    ) { NotePhotoFiles.share(context, out, photos) }
+                },
                 Slot.delete {
                     deleted = true
                     id?.let { n ->

@@ -49,3 +49,25 @@ internal fun saveTextToDownloads(context: Context, name: String, text: String): 
 /** Il file salvato porta l'ora, così salvarlo due volte non lo sovrascrive né lo rinomina a caso. */
 internal fun stampedName(base: String, now: java.time.LocalDateTime = java.time.LocalDateTime.now()): String =
     "$base-" + now.format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd-HHmm")) + ".txt"
+
+/**
+ * Manda un testo con un file accanto (l'invito .ics di un evento): Gmail lo allega col testo nel corpo,
+ * WhatsApp lo manda come file con il testo sotto. Il file sta nella cache, l'unica cartella che il FileProvider apre.
+ */
+internal fun shareTextWithFile(context: Context, text: String, subject: String?, name: String, mime: String, content: String) {
+    val dir = File(context.cacheDir, "shared").apply { mkdirs() }
+    val file = File(dir, name).apply { writeText(content) }
+    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+    val send = Intent(Intent.ACTION_SEND)
+        .setType(mime)
+        .putExtra(Intent.EXTRA_STREAM, uri)
+        .putExtra(Intent.EXTRA_TEXT, text)
+        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    subject?.let { send.putExtra(Intent.EXTRA_SUBJECT, it) }
+    send.clipData = ClipData.newRawUri(name, uri)
+    context.startActivity(Intent.createChooser(send, null).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
+}
+
+/** Il nome di un file da un titolo: "Cena da Luca.ics", senza caratteri che i telefoni rifiutano. */
+internal fun fileName(title: String, ext: String): String =
+    title.replace(Regex("""[\\/:*?"<>|\n]"""), " ").trim().take(60).ifEmpty { "Canvas" } + ".$ext"

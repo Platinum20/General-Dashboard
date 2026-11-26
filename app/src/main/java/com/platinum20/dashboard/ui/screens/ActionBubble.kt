@@ -130,22 +130,37 @@ internal object Slot {
         copyTitle: String = "Copia il testo",
         copyDetail: String = "senza formati, da incollare altrove",
         pdf: (() -> Unit)? = null,
+        pdfDetail: String = "nei Download, da mandare o stampare",
+        sendDetail: String = "WhatsApp, Gmail e le altre app",
         send: () -> Unit,
     ): BubbleAction {
-        val rows = shareRows(copy, copyTitle, copyDetail, pdf, send)
+        val rows = shareRows(copy, copyTitle, copyDetail, pdf, send, pdfDetail, sendDetail)
         if (rows.size == 1) return BubbleAction(Icons.Outlined.Share, "Condividi", slot = BubbleSlot.SEND, onClick = send)
         return BubbleAction(Icons.Outlined.Share, "Condividi", slot = BubbleSlot.SEND, stay = true) {
             ActionBubble.morph(BubbleHead("Condividi", ActionBubble.head?.name.orEmpty()), rows + back())
         }
     }
 
-    /** Condividi per un testo (o un link): Copia e Manda a…. */
-    fun shareText(context: android.content.Context, text: String, link: Boolean = false, pdf: (() -> Unit)? = null) = share(
-        copy = { Clip.copy(context, if (link) "Link" else "Testo", text, if (link) "Link copiato" else "Testo copiato") },
-        copyTitle = if (link) "Copia il link" else "Copia il testo",
-        copyDetail = if (link) "da incollare altrove" else "senza formati, da incollare altrove",
+    /**
+     * Condividi per un testo ([com.platinum20.dashboard.share.ShareTexts]): Copia e Manda a… danno lo stesso testo,
+     * sotto Copia l'anteprima di cosa si copia (Antonio 2026-11-26). [send] cambia solo come parte (con un file allegato).
+     */
+    fun shareText(
+        context: android.content.Context,
+        text: String,
+        copyTitle: String = "Copia",
+        pdf: (() -> Unit)? = null,
+        pdfDetail: String = "nei Download, da mandare o stampare",
+        sendDetail: String = "WhatsApp, Gmail e le altre app",
+        send: (() -> Unit)? = null,
+    ) = share(
+        copy = { Clip.copy(context, "Testo", text, "Copiato") },
+        copyTitle = copyTitle,
+        copyDetail = com.platinum20.dashboard.share.ShareTexts.preview(text),
         pdf = pdf,
-    ) { runCatching { com.platinum20.dashboard.ui.screens.shareText(context, text) } }
+        pdfDetail = pdfDetail,
+        sendDetail = sendDetail,
+    ) { runCatching { send?.invoke() ?: com.platinum20.dashboard.ui.screens.shareText(context, text) } }
 
     /** Torna al fumetto di prima (dopo Condividi). */
     fun back() = BubbleAction(Icons.AutoMirrored.Outlined.ArrowBack, "Indietro", slot = BubbleSlot.MAIN, stay = true) { ActionBubble.back() }
@@ -163,11 +178,19 @@ internal object Slot {
 }
 
 /** Pura: le righe di Condividi, sempre in quest'ordine. */
-internal fun shareRows(copy: (() -> Unit)?, copyTitle: String, copyDetail: String, pdf: (() -> Unit)?, send: () -> Unit): List<BubbleAction> = listOfNotNull(
+internal fun shareRows(
+    copy: (() -> Unit)?,
+    copyTitle: String,
+    copyDetail: String,
+    pdf: (() -> Unit)?,
+    send: () -> Unit,
+    pdfDetail: String = "nei Download, da mandare o stampare",
+    sendDetail: String = "WhatsApp, Gmail e le altre app",
+): List<BubbleAction> = listOfNotNull(
     // Il PDF in cima (Antonio): c'è solo in note e articoli, così Copia e Manda a… restano sempre negli stessi punti.
-    pdf?.let { act(BubbleGroup.SEGNA, Icons.Outlined.PictureAsPdf, "Salva come PDF", "nei Download, da mandare o stampare", onClick = it) },
+    pdf?.let { act(BubbleGroup.SEGNA, Icons.Outlined.PictureAsPdf, "Salva come PDF", pdfDetail, onClick = it) },
     copy?.let { act(BubbleGroup.VAI, Icons.Outlined.ContentCopy, copyTitle, copyDetail, onClick = it) },
-    act(BubbleGroup.METTI, Icons.Outlined.Share, "Manda a…", "WhatsApp, Gmail e le altre app", onClick = send),
+    act(BubbleGroup.METTI, Icons.Outlined.Share, "Manda a…", sendDetail, onClick = send),
 )
 
 /** Una riga nel suo gruppo, in breve. */
