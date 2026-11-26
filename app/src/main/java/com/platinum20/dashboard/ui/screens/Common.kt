@@ -586,8 +586,8 @@ fun RoundIconButton(icon: ImageVector, contentDescription: String, enabled: Bool
     OutlinedIconButton(
         onClick = onClick,
         enabled = enabled,
-        border = cardBorder(),
-        colors = IconButtonDefaults.outlinedIconButtonColors(containerColor = MaterialTheme.colorScheme.card),
+        border = glassRim(),
+        colors = IconButtonDefaults.outlinedIconButtonColors(containerColor = MaterialTheme.colorScheme.glassTile),
         modifier = Modifier.padding(horizontal = 2.dp).size(40.dp).bouncyPress(0.9f),
     ) {
         Icon(icon, contentDescription = contentDescription, modifier = Modifier.size(20.dp))
@@ -670,13 +670,12 @@ enum class TileAccent(val light: Long, val lightBg: Long, val dark: Long, val da
  */
 @Composable
 fun IconTile(icon: ImageVector, @Suppress("UNUSED_PARAMETER") accent: TileAccent, size: Dp = 40.dp, iconSize: Dp = 22.dp) {
-    val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val neutral = TileAccent.NEUTRAL
     Box(
         Modifier
             .size(size)
             .clip(MaterialTheme.shapes.medium)
-            .background(Color(if (dark) neutral.darkBg else neutral.lightBg)),
+            .background(MaterialTheme.colorScheme.glassTile)
+            .border(glassRim(), MaterialTheme.shapes.medium),
         contentAlignment = Alignment.Center,
     ) {
         Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(iconSize))
@@ -694,6 +693,13 @@ val ColorScheme.card: Color
  */
 val ColorScheme.glassCard: Color
     get() = if (background.luminance() < 0.5f) onSurface.copy(alpha = 0.06f) else surfaceContainerLowest.copy(alpha = 0.5f)
+
+/**
+ * Il quadratino delle icone e i tasti tondi (Antonio, 1.651): vetro anche loro, un velo appena più pieno della card su
+ * cui stanno, così si staccano senza un colore loro.
+ */
+val ColorScheme.glassTile: Color
+    get() = if (background.luminance() < 0.5f) onSurface.copy(alpha = 0.09f) else Color.White.copy(alpha = 0.6f)
 
 /** Il bordo delle card di vetro: un filo di luce, non una riga netta. */
 @Composable
