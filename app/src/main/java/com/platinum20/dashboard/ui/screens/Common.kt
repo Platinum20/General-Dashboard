@@ -1007,7 +1007,7 @@ fun CanvasTabChip(
     val colors = MaterialTheme.colorScheme
     val base = MaterialTheme.typography.labelLarge
     var style by remember(label, base) { mutableStateOf(base) }
-    val on = if (tonal) colors.primary.copy(alpha = 0.14f).compositeOver(colors.card) else colors.onSurface
+    val on = if (tonal) colors.primary.copy(alpha = 0.14f).compositeOver(colors.background) else colors.onSurface
     val container by androidx.compose.animation.animateColorAsState(if (selected) on else colors.glassCard, Motion.settle(), label = "chip")
     val content by androidx.compose.animation.animateColorAsState(
         if (!selected) colors.onSurfaceVariant else if (tonal) colors.primary else colors.surface, Motion.settle(), label = "chipText",
@@ -1021,7 +1021,7 @@ fun CanvasTabChip(
         border = when {
             selected && tonal -> BorderStroke(1.dp, colors.primary.copy(alpha = 0.4f))
             selected -> null
-            else -> BorderStroke(1.dp, colors.outlineVariant)
+            else -> glassRim()
         },
         modifier = modifier.height(32.dp).bouncyPress(0.94f),
     ) {
@@ -1251,8 +1251,7 @@ fun CanvasButton(
     when (level) {
         ButtonLevel.PRIMARY ->
             androidx.compose.material3.Button(onClick = onClick, enabled = enabled, modifier = modifier.bouncyPress(), shape = CircleShape, content = content)
-        ButtonLevel.TONAL ->
-            androidx.compose.material3.FilledTonalButton(onClick = onClick, enabled = enabled, modifier = modifier.bouncyPress(), shape = CircleShape, content = content)
+        ButtonLevel.TONAL -> GlassButton(onClick = onClick, enabled = enabled, modifier = modifier, content = content)
         ButtonLevel.ATTENTION ->
             androidx.compose.material3.Button(
                 onClick = onClick,
@@ -1276,6 +1275,26 @@ fun CanvasButton(
             )
     }
 }
+
+/** Il tasto secondario di vetro (Antonio, 1.652): velo delle icone e filo di luce, come le card. */
+@Composable
+fun GlassButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit,
+) = androidx.compose.material3.OutlinedButton(
+    onClick = onClick,
+    enabled = enabled,
+    modifier = modifier.bouncyPress(),
+    shape = CircleShape,
+    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+        containerColor = MaterialTheme.colorScheme.glassTile,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+    ),
+    border = glassRim(),
+    content = content,
+)
 
 /** La conferma di un dialogo ("Salva", "Collega"): piena, è l'azione principale; [danger] rossa ("Cancella"). */
 @Composable

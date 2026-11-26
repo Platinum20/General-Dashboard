@@ -299,8 +299,8 @@ private fun RecentVideo(
     Surface(
         onClick = onClick,
         shape = MaterialTheme.shapes.large,
-        color = if (playing) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.card,
-        border = if (playing) null else cardBorder(),
+        color = if (playing) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.glassTile,
+        border = if (playing) null else glassRim(),
     ) {
         Column {
             ListItem(

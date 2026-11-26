@@ -740,7 +740,7 @@ private fun CardMessage(
             Text(text, style = MaterialTheme.typography.bodyMedium, color = content.copy(alpha = 0.75f))
         }
         Spacer(Modifier.size(8.dp))
-        FilledTonalButton(onClick = onAction) { Text(action) }
+        GlassButton(onClick = onAction) { Text(action) }
     }
 }
 
