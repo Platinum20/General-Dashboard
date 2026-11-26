@@ -798,21 +798,24 @@ class NoteEditorDeviceCheck {
     }
 
     /** La guida (2026-11-26): ogni nota da cima a fondo, per vedere tabelle che vanno a capo, colonne e spazi. */
-    @Test
-    fun guideNotesLook() {
+    private fun guideNote(i: Int) {
         val ids = com.platinum20.dashboard.notes.ExampleNotes.GuideIds(1, 2, 3, 4, 5)
-        com.platinum20.dashboard.notes.ExampleNotes.guide(ids, System.currentTimeMillis(), "", "", "").forEachIndexed { i, n ->
-            NotesStore.data.value.notes.forEach { NotesStore.deleteNote(it.id) }
-            open(n.text, "guida_$i")
-            settle(1200)
-            shot("cima")
-            repeat(3) { k ->
-                compose.onRoot().performTouchInput { swipeUp(startY = bottom * 0.8f, endY = bottom * 0.25f) }
-                settle(900)
-                shot("giu_$k")
-            }
+        val n = com.platinum20.dashboard.notes.ExampleNotes.guide(ids, System.currentTimeMillis(), "", "", "")[i]
+        open(n.text, "guida_$i")
+        settle(1500)
+        shot("cima")
+        repeat(3) { k ->
+            compose.onRoot().performTouchInput { swipeUp(startY = bottom * 0.8f, endY = bottom * 0.3f) }
+            settle(1000)
+            shot("giu_$k")
         }
     }
+
+    @Test fun guide0() = guideNote(0)
+    @Test fun guide1() = guideNote(1)
+    @Test fun guide2() = guideNote(2)
+    @Test fun guide3() = guideNote(3)
+    @Test fun guide4() = guideNote(4)
 
     private companion object {
         const val TAG = "NoteCheck"

@@ -57,7 +57,7 @@ jobs:
             adb shell settings put secure show_ime_with_hard_keyboard 1
             for p in RECORD_AUDIO READ_CALENDAR WRITE_CALENDAR POST_NOTIFICATIONS; do adb shell pm grant com.platinum20.dashboard android.permission.$p || true; done
             if [ "${{ github.event.inputs.night }}" = "true" ]; then adb shell cmd uimode night yes; fi
-            CLS=com.platinum20.dashboard.NoteEditorDeviceCheck; if [ -n "${{ github.event.inputs.only }}" ]; then CLS="$CLS#${{ github.event.inputs.only }}"; fi; adb shell am instrument -w -e class "$CLS" com.platinum20.dashboard.test/androidx.test.runner.AndroidJUnitRunner | tee instrument.txt || true
+            CLS=com.platinum20.dashboard.NoteEditorDeviceCheck; if [ -n "${{ github.event.inputs.only }}" ]; then CLS=$(echo "${{ github.event.inputs.only }}" | tr ',' '\n' | sed "s/^/$CLS#/" | paste -sd, -); fi; adb shell am instrument -w -e class "$CLS" com.platinum20.dashboard.test/androidx.test.runner.AndroidJUnitRunner | tee instrument.txt || true
             (cat instrument.txt; echo; echo ---- log; adb logcat -d -s NoteCheck:V AndroidRuntime:E) > notecheck.txt || true
             mkdir -p shots && adb pull /sdcard/Android/data/com.platinum20.dashboard/files/note-check shots/ || true
       - name: Risultato
