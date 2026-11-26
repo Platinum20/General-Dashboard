@@ -7,6 +7,8 @@ import android.os.Handler
 import android.os.Looper
 import android.view.PixelCopy
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
@@ -88,6 +90,16 @@ class ThemeTour {
             settle(2_000)
             shot("tema_${theme.name}_${mode}_home")
         }
+        // Cerca: la barra di ricerca di vetro.
+        if (action("Cerca ovunque")) {
+            for (theme in AppTheme.entries) {
+                AppSettings.setTheme(theme)
+                settle(2_000)
+                shot("tema_${theme.name}_${mode}_cerca")
+            }
+            scenario?.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+            settle(1_500)
+        }
         // Le Impostazioni: il tema scelto con il suo contorno.
         val gear = compose.onAllNodes(hasContentDescription("Impostazioni") and hasClickAction())
         if (gear.fetchSemanticsNodes().isNotEmpty()) {
@@ -98,6 +110,16 @@ class ThemeTour {
                 shot("tema_${theme.name}_${mode}_impostazioni")
             }
         }
+    }
+
+    private fun action(label: String): Boolean {
+        val withAction = SemanticsMatcher("azione $label") { node ->
+            node.config.getOrNull(SemanticsActions.CustomActions)?.any { it.label == label } == true
+        }
+        val nodes = compose.onAllNodes(withAction).fetchSemanticsNodes()
+        val custom = nodes.firstOrNull()?.config?.get(SemanticsActions.CustomActions)?.first { it.label == label } ?: return false
+        scenario?.onActivity { custom.action() }
+        return true
     }
 
     private fun settle(maxMs: Long = 20_000, until: () -> Boolean = { false }) {
