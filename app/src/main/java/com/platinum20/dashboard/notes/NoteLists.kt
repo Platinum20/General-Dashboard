@@ -46,11 +46,15 @@ object NoteLists {
     fun restart(text: String): String {
         var t = text
         Checklist.lines(text).filterIsInstance<Checklist.Item>().filter { it.done }.forEach { t = Checklist.toggle(t, it.index) }
-        return t
+        // Anche le schede "In corso" della bacheca tornano da fare (2026-11-26: restavano a metà dopo Ricomincia).
+        return t.lines().mapIndexed { i, l -> if (i == 0) l else doingRx.replace(l, "$1[ ]$2") }.joinToString("\n")
     }
 
-    /** Quante spunte toglie "Ricomincia": il sottotitolo del fumetto. */
-    fun doneCount(text: String): Int = Checklist.lines(text).count { it is Checklist.Item && it.done }
+    private val doingRx = Regex("""^(\s*)\[-]( |$)""")
+
+    /** Quante spunte toglie "Ricomincia": il sottotitolo del fumetto (le fatte e quelle in corso). */
+    fun doneCount(text: String): Int =
+        Checklist.lines(text).count { it is Checklist.Item && it.done } + text.lines().drop(1).count { doingRx.containsMatchIn(it) }
 
     /** "Duplica" (idea 15): stessa nota con il titolo "Valigia (2)", le spunte da rifare. */
     fun duplicate(text: String): String {

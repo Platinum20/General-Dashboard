@@ -108,4 +108,11 @@ class NoteListsHomeTest {
         val texts = mapOf("/a.jpg" to "riga 1\nriga \"2\"", "/b.jpg" to "")
         assertEquals(texts, NotePhotoText.parse(NotePhotoText.serialize(texts)))
     }
+
+    @Test
+    fun ricominciaRimetteDaFareAncheLeSchedeInCorso() {
+        val text = "Trasloco\n[bacheca]\n[ ] Scatoloni\n[-] Chiamare il furgone\n  [x] Etichette"
+        assertEquals("Trasloco\n[bacheca]\n[ ] Scatoloni\n[ ] Chiamare il furgone\n  [ ] Etichette", com.platinum20.dashboard.notes.NoteLists.restart(text))
+        assertEquals(2, com.platinum20.dashboard.notes.NoteLists.doneCount(text))
+    }
 }

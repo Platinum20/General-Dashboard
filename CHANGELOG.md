@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.654.0
+**La guida di Canvas, nelle note**
+- Cinque note nuove, con l'etichetta #guida: un indice fissato in cima e una pagina per il tasto +, l'Agenda e Da fare, le note, musica video e Cerca
+- Ognuna usa pezzi diversi dell'editor (tabelle, colonne, bacheca, riquadri, citazioni, colori, foto, un vocale, link fra note), così si vede cosa sa fare
+- Arrivano una volta sola: se le cancelli non tornano
+- Note: un codice tra parentesi o a fine frase non si porta più dietro la parentesi o il punto quando lo copi
+- Note: Ricomincia rimette da fare anche le schede "In corso" della bacheca
+
 ## 1.653.0
 **Una X per svuotare il +**
 - Quando scrivi dal +, sopra la freccia compare una X: un tocco e cancella tutto quello che hai scritto
