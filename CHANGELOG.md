@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.650.0
+**Cursore dove tocchi nelle note**
+- Toccando dopo la fine di una frase il cursore va in fondo a quella riga, non più all'inizio della riga sotto (voci, liste, titoli compresi)
+- Toccando sotto l'ultima riga il cursore va in fondo alla nota
+
 ## 1.649.0
 **Vetro in ogni tema, di giorno e di sera**
 - Canvas, Material You e Puro, chiari e scuri: alone e card di vetro in tutte e sei le combinazioni
