@@ -232,7 +232,7 @@ fun AutoFillScreen(onBack: () -> Unit) {
                             title = "Consenti l'accesso alle notifiche",
                             subtitle = "Attiva Canvas nell'elenco",
                             onClick = { openListenerSettings(context) },
-                            trailing = { FilledTonalButton(onClick = { openListenerSettings(context) }) { Text("Apri") } },
+                            trailing = { GlassButton(onClick = { openListenerSettings(context) }) { Text("Apri") } },
                         )
                         RowDivider()
                         SettingsItem(
@@ -240,7 +240,7 @@ fun AutoFillScreen(onBack: () -> Unit) {
                             title = "\"Impostazione con limitazioni\"?",
                             subtitle = "Info app › ⋮ › Consenti",
                             onClick = { openAppInfo(context) },
-                            trailing = { FilledTonalButton(onClick = { openAppInfo(context) }) { Text("Info app") } },
+                            trailing = { GlassButton(onClick = { openAppInfo(context) }) { Text("Info app") } },
                         )
                     }
                 }
@@ -258,7 +258,7 @@ fun AutoFillScreen(onBack: () -> Unit) {
                             }
                         },
                         trailing = {
-                            FilledTonalButton(
+                            GlassButton(
                                 enabled = !scanning,
                                 onClick = { if (smsAllowed) scanSms() else smsPermission.launch(Manifest.permission.READ_SMS) },
                             ) { Text(if (scanning) "Cerco…" else "Cerca") }

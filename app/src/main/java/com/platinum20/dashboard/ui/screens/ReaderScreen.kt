@@ -467,7 +467,7 @@ private fun ArticleVideo(video: ReaderBlock.Video) {
 private fun ReaderMessage(message: String, onRetry: () -> Unit) {
     Column(Modifier.padding(horizontal = 4.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(message, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        FilledTonalButton(onClick = onRetry) { Text("Riprova") }
+        GlassButton(onClick = onRetry) { Text("Riprova") }
     }
 }
 

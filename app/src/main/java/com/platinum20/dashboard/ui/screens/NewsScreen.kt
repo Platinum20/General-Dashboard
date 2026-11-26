@@ -392,6 +392,6 @@ private fun ErrorState(message: String, onRetry: () -> Unit) {
         Spacer(Modifier.height(12.dp))
         Text(message, style = MaterialTheme.typography.bodyLarge)
         Spacer(Modifier.height(16.dp))
-        FilledTonalButton(onClick = onRetry) { Text("Riprova") }
+        GlassButton(onClick = onRetry) { Text("Riprova") }
     }
 }

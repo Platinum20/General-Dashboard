@@ -653,7 +653,7 @@ internal fun RichNoteField(
                         .height(h + 4.dp)
                         .offset(y = (-2).dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(colors.card),
+                        .background(colors.glassCard),
                 )
             }
             // Le righe spostate scivolano (proposta 2): una banda leggera parte da dove stava la riga e si posa dove sta ora.
@@ -2105,7 +2105,7 @@ private fun FloatPanel(content: @Composable androidx.compose.foundation.layout.R
             .shadow(10.dp, shape)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.97f))
-            .border(cardBorder(), shape)
+            .border(glassRim(), shape)
             .padding(5.dp),
         content = content,
     )
@@ -2163,8 +2163,8 @@ private fun BarLabel(icon: ImageVector, label: String, onClick: () -> Unit) {
             .heightIn(min = 42.dp)
             .bouncyPress(0.92f)
             .clip(RoundedCornerShape(21.dp))
-            .background(colors.card)
-            .border(cardBorder(), RoundedCornerShape(21.dp))
+            .background(colors.glassTile)
+            .border(glassRim(), RoundedCornerShape(21.dp))
             .clickable(onClickLabel = label, onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 9.dp),
     ) {
@@ -2196,8 +2196,8 @@ private fun BarIcon(
             .size(side)
             .then(if (enabled) Modifier.bouncyPress(0.9f) else Modifier)
             .clip(CircleShape)
-            .background(if (plus) colors.onSurface else if (on) colors.primary else colors.card)
-            .border(cardBorder(), CircleShape)
+            .background(if (plus) colors.onSurface else if (on) colors.primary else colors.glassTile)
+            .border(glassRim(), CircleShape)
             .clickable(enabled = enabled, onClickLabel = description, onClick = onClick),
     ) {
         Icon(icon, contentDescription = description, tint = tint, modifier = Modifier.size(21.dp))
@@ -2260,8 +2260,8 @@ private fun AudioPill(path: String, label: String, modifier: Modifier, onLongPre
         modifier = modifier
             .padding(vertical = 2.dp)
             .clip(RoundedCornerShape(50))
-            .background(colors.card)
-            .border(cardBorder(), RoundedCornerShape(50))
+            .background(colors.glassCard)
+            .border(glassRim(), RoundedCornerShape(50))
             .combinedClickable(onClick = { NoteAudio.toggle(path) }, onLongClick = onLongPress)
             .padding(start = 4.dp, end = 14.dp),
         verticalAlignment = Alignment.CenterVertically,

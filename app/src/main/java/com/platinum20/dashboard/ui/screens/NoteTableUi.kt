@@ -82,8 +82,8 @@ internal fun NoteTableBlock(
                     .weight(1f)
                     .fillMaxHeight()
                     .clip(RoundedCornerShape(10.dp))
-                    .background(colors.card)
-                    .border(cardBorder(), RoundedCornerShape(10.dp)),
+                    .background(colors.glassCard)
+                    .border(glassRim(), RoundedCornerShape(10.dp)),
             ) {
                 grid.forEachIndexed { r, row ->
                     Row(
@@ -204,7 +204,7 @@ private fun PlusStrip(modifier: Modifier, label: String, onClick: () -> Unit) {
     Box(
         modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(colors.card)
+            .background(colors.glassCard)
             .border(1.dp, colors.outlineVariant, RoundedCornerShape(8.dp))
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,

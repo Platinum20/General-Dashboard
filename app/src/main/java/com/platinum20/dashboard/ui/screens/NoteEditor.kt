@@ -984,8 +984,8 @@ private fun HoldRoundButton(icon: ImageVector, label: String, tint: Color = Mate
             .size(40.dp)
             .bouncyPress(0.9f)
             .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.card)
-            .border(cardBorder(), CircleShape)
+            .background(MaterialTheme.colorScheme.glassTile)
+            .border(glassRim(), CircleShape)
             .combinedClickable(onClickLabel = label, onLongClick = onLongClick, onClick = onClick),
     ) {
         Icon(icon, contentDescription = label, tint = tint, modifier = Modifier.size(20.dp))
@@ -1143,8 +1143,8 @@ private fun PhotoMosaic(
                     .size(with(density) { aside.toDp() })
                     .bouncyPress(0.95f)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.card)
-                    .border(cardBorder(), RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.glassTile)
+                    .border(glassRim(), RoundedCornerShape(16.dp))
                     .combinedClickable(onClickLabel = "Aggiungi foto", onLongClick = onAddMenu, onClick = onAdd),
             ) {
                 Icon(Icons.Outlined.Add, contentDescription = "Aggiungi foto", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(28.dp))

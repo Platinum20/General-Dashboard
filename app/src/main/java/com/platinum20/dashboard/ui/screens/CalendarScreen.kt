@@ -137,7 +137,7 @@ private fun CalendarMessage(text: String, action: String, onAction: () -> Unit, 
         Spacer(Modifier.height(8.dp))
         Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(12.dp))
-        FilledTonalButton(onClick = onAction) { Text(action) }
+        GlassButton(onClick = onAction) { Text(action) }
     }
 }
 
@@ -581,7 +581,7 @@ private fun EventForm(
         Column(
             Modifier
                 .fillMaxWidth()
-                .border(cardBorder(), RoundedCornerShape(4.dp))
+                .border(glassRim(), RoundedCornerShape(4.dp))
                 .padding(horizontal = 16.dp, vertical = 10.dp),
         ) {
             Text("Note", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -601,7 +601,7 @@ private fun EventForm(
         if (error != null) {
             Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
         }
-        FilledTonalButton(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text("Salva nel calendario") }
+        GlassButton(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text("Salva nel calendario") }
         Spacer(Modifier.height(16.dp))
     }
 

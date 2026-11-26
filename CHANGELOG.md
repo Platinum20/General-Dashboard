@@ -1,9 +1,16 @@
 # Changelog
 
-## 1.652.0
+## 1.653.0
 **Una X per svuotare il +**
 - Quando scrivi dal +, sopra la freccia compare una X: un tocco e cancella tutto quello che hai scritto
 - Compare solo se c'è qualcosa; tenere premuto e trascinare la freccia per dettare funzionano come prima
+
+## 1.652.0
+**Vetro anche sui tasti**
+- I filtri di Cerca sono di vetro, quello scelto resta pieno
+- Di vetro anche i tasti secondari (Riprova, Apri, Salva nel calendario…) e le schede in parti uguali
+- Nell'editor delle note: tasti della barra sopra la tastiera, tasti tondi in basso, blocchi, tabelle e note vocali
+- Nel video: capitoli, righe e scelte della pagina
 
 ## 1.651.0
 **Contorno del tema preciso**

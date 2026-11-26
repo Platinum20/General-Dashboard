@@ -247,7 +247,7 @@ internal fun SlashMenu(target: RichBar.Target, query: String) {
                 .shadow(12.dp, shape)
                 .clip(shape)
                 .background(colors.surfaceContainerHigh.copy(alpha = 0.97f))
-                .border(cardBorder(), shape),
+                .border(glassRim(), shape),
         ) {
             // Un pannello di righe di chip, una per categoria: niente lista da scorrere (scorre solo se lo spazio è poco).
             Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).padding(horizontal = 8.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
